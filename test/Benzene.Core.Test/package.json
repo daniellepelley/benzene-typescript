@@ -8,12 +8,14 @@
   "dependencies": {
     "@benzene/abstractions": "0.1.0",
     "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-validation": "0.1.0",
     "@benzene/abstractions-messages": "0.1.0",
     "@benzene/abstractions-middleware": "0.1.0",
     "@benzene/core": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/core-messages": "0.1.0",
     "@benzene/core-middleware": "0.1.0",
+    "@benzene/data-annotations": "0.1.0",
     "@benzene/dependencies": "0.1.0",
     "@benzene/results": "0.1.0"
   }
