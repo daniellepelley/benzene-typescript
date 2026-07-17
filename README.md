@@ -29,6 +29,10 @@ Mirrors the .NET repository:
 | `src/Benzene.Core.Messages` | `@benzene/core-messages` | `Benzene.Core.Messages` (partial) |
 | `src/Benzene.Core.MessageHandlers` | `@benzene/core-message-handlers` | `Benzene.Core.MessageHandlers` (partial) |
 | `src/Benzene.Results` | `@benzene/results` | `Benzene.Results` (partial) |
+| `src/Benzene.Abstractions.Validation` | `@benzene/abstractions-validation` | `Benzene.Abstractions.Validation` |
+| `src/Benzene.DataAnnotations` | `@benzene/data-annotations` | `Benzene.DataAnnotations` |
+| `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
+| `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -182,17 +186,38 @@ Ported (with tests):
   - **`IGetTopic.getTopic`.** C# passes `typeof(TRequest)`, which is erased in TypeScript; the
     parameter is optional and `MessageSender` passes nothing (`DefaultGetTopic` ignores it).
 
+- Request/response "context items" (`Benzene.Core.MessageHandlers` Request/Response/MediaFormats):
+  `RequestMapper` / `EnrichingRequestMapper` / `MultiSerializerOptionsRequestMapper`, the response
+  chain (`DefaultResponsePayloadMapper`, `ResponseHandlerContainer`, `RendererResponseHandler`,
+  `SerializerResponseRenderer`, `ResponseIfHandledMessageHandlerResultSetter`), media-format
+  negotiation (`JsonMediaFormat`, `MediaFormatNegotiator`, `AcceptHeaderMediaFormatBase`),
+  `JsonSerializer`, and the transport/application `Info` types. Erasure handling: C#
+  `Activator.CreateInstance<T>()` empty-body fallback → `{} as TRequest`; `DictionaryUtils.Enrich`
+  reflection → a case-insensitive first-key-wins key merge; C# `is`/`as` interface checks →
+  duck-typing guards.
+- Validation: `@benzene/abstractions-validation` (schema interfaces, `IValidationStatusMapper`,
+  `@validationStatus`) and `@benzene/data-annotations`. C#'s `System.ComponentModel.DataAnnotations`
+  reflection has no Node equivalent, so the attribute set is ported as property decorators
+  (`@required`, `@maxLength`, `@minLength`, `@stringLength`, `@range`, `@regularExpression`,
+  `@emailAddress`) recorded in a per-class registry; `validateObject` mirrors
+  `Validator.TryValidateObject`. `ValidationMiddleware` recovers the request type from the handler's
+  `@message` metadata (since `JSON.parse` yields plain objects) before validating.
+- Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
+- Diagnostics (partial): `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`.
+  C# `Stopwatch` → `Date.now()` deltas; `Debug.WriteLine` → an injectable, silent-by-default sink.
+
 Next, in dependency order, following the .NET repository:
 
-1. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (the concrete
-   `MessageSenderDefinition` and its finders, once the mesh/schema tooling that consumes them is
-   ported) — the sender pipeline, predicates, DI registration extensions and BenzeneMessage
-   transport are now ported
-2. The response-writing chain (`ResponseMessageMessageHandlerResultSetterBase`, renderers,
-   media formats, serializers) and the generic `IMessageHandlerResult<TResponse>` variant
-3. `Benzene.Abstractions.Validation` / validation counterpart
-4. Transport adapters (`Benzene.Aws.Lambda.*` for Node Lambda runtimes, `Benzene.Http`, ...)
-5. Diagnostics, resilience, clients
+1. Transport adapters — the largest remaining area: AWS Lambda entry points (`Benzene.Aws.Lambda.*`:
+   ApiGateway, SQS, SNS, DynamoDb, EventBridge, Kafka, Kinesis, S3) for Node Lambda runtimes, and an
+   HTTP adapter. Each is its own package building on the ported `MiddlewareApplication` + context
+   getters/setters.
+2. Clients (`Benzene.Clients`, `Benzene.Client.Http`) and health checks — the outbound counterpart
+   to the ported message senders, over real transports.
+3. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
+   trace context, correlation ids, metrics, process timers) — needs a Node tracing abstraction.
+4. Caching (`Benzene.Cache.Core`), and the concrete `MessageSenderDefinition` + mesh/schema tooling
+   that consumes it, and the generic `IMessageHandlerResult<TResponse>` variant.
 
 ## License
 
