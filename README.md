@@ -137,13 +137,21 @@ Ported (with tests):
   and request-mapper thunks. C#'s expression-tree dispatch and its runtime split between
   response/no-response handler interfaces are unnecessary in JavaScript — closures close the
   generics, and a handler resolving `undefined` maps to `Accepted`.
+- Message routing: `MessageRouter` (topic → lookup → factory → handler → result-setter, with
+  the same short-circuit-on-error semantics as .NET), `MessageRouterBuilder`, the
+  `IMessageHandlerContext` / `MessageHandlerContext` per-invocation context, the handler-pipeline
+  vertical (`HandlerPipelineBuilder` + `PipelineMessageHandler` + `PipelineMessageHandlerWrapper`
+  + `MessageHandlerMiddleware`), the boundary getters (`IMessageBodyGetter` /
+  `IMessageHeadersGetter` / `IMessageTopicGetter` / `IMessageGetter`), `MessageHandlerResult`,
+  and the two lightweight result-setter bases
 
 Next, in dependency order, following the .NET repository:
 
-1. Message routing: `MessageRouter`/`MessageRouterBuilder`, `MessageHandlerMiddleware`,
-   request/response mappers, `BenzeneMessageContext` and the handler-pipeline wrapper
-2. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (senders,
-   BenzeneMessage, predicates) and DI registration extensions (`AddBenzene`-style setup)
+1. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (senders,
+   BenzeneMessage, predicates) and DI registration extensions (`AddBenzene`-style setup that
+   wires the router/builder — the routing types are constructed manually for now)
+2. The response-writing chain (`ResponseMessageMessageHandlerResultSetterBase`, renderers,
+   media formats, serializers) and the generic `IMessageHandlerResult<TResponse>` variant
 3. `Benzene.Abstractions.Validation` / validation counterpart
 4. Transport adapters (`Benzene.Aws.Lambda.*` for Node Lambda runtimes, `Benzene.Http`, ...)
 5. Diagnostics, resilience, clients
