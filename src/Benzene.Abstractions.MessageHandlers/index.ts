@@ -18,3 +18,8 @@ export * from './IMessageRouterBuilder';
 export * from './Mappers/IMessageTopicGetter';
 export * from './Mappers/IMessageGetter';
 export * from './Mappers/IMessageHandlerResultSetter';
+export * from './Info/IApplicationInfo';
+export * from './Info/ITransportInfo';
+export * from './Info/ITransportsInfo';
+export * from './Info/ICurrentTransport';
+export * from './Info/ISetCurrentTransport';
