@@ -6,3 +6,7 @@ export * from './IMessageHandlersFinder';
 export * from './IMessageHandlersList';
 export * from './IMessageResult';
 export * from './IVersionSelector';
+export * from './IMessageHandlerFactory';
+export * from './IMessageHandlerWrapper';
+export * from './IRequestMapperThunk';
+export * from './Request/IRequestMapper';

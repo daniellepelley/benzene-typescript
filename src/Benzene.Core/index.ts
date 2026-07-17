@@ -6,3 +6,4 @@ export * from './Logging/IContextDictionaryBuilder';
 export * from './Logging/ContextDictionaryBuilder';
 export * from './Logging/ContextDictionaryBuilderExtensions';
 export * from './Logging/LogContextBuilder';
+export * from './Exceptions/ArgumentException';

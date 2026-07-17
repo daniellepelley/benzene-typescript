@@ -28,6 +28,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Abstractions.MessageHandlers` | `@benzene/abstractions-message-handlers` | `Benzene.Abstractions.MessageHandlers` (partial) |
 | `src/Benzene.Core.Messages` | `@benzene/core-messages` | `Benzene.Core.Messages` (partial) |
 | `src/Benzene.Core.MessageHandlers` | `@benzene/core-message-handlers` | `Benzene.Core.MessageHandlers` (partial) |
+| `src/Benzene.Results` | `@benzene/results` | `Benzene.Results` (partial) |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -131,10 +132,16 @@ Ported (with tests):
   `CompositeMessageHandlersFinder` / `CacheMessageHandlersFinder` / `MessageHandlersList`,
   definition index + lookup, version selection, and `importMessageHandlers` directory scanning
 
+- Message-handler execution: `BenzeneResult`/`BenzeneResultStatus`, `MessageHandler`,
+  `MessageHandlerFactory` (container-resolved handlers), handler wrappers, default statuses
+  and request-mapper thunks. C#'s expression-tree dispatch and its runtime split between
+  response/no-response handler interfaces are unnecessary in JavaScript — closures close the
+  generics, and a handler resolving `undefined` maps to `Accepted`.
+
 Next, in dependency order, following the .NET repository:
 
-1. Message-handler execution: `MessageHandler`, `MessageHandlerFactory`, wrappers, statuses,
-   results, request/response mappers and `MessageHandlerMiddleware`/`MessageRouter`
+1. Message routing: `MessageRouter`/`MessageRouterBuilder`, `MessageHandlerMiddleware`,
+   request/response mappers, `BenzeneMessageContext` and the handler-pipeline wrapper
 2. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (senders,
    BenzeneMessage, predicates) and DI registration extensions (`AddBenzene`-style setup)
 3. `Benzene.Abstractions.Validation` / validation counterpart

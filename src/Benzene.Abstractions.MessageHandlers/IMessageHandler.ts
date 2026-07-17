@@ -1,4 +1,6 @@
+import { IBenzeneResult } from '@benzene/abstractions';
 import { IMessageHandlerBase } from './IMessageHandlerBase';
+import { IRequestMapperThunk } from './IRequestMapperThunk';
 
 /**
  * A message handler for a request that produces a response.
@@ -14,4 +16,15 @@ export interface IMessageHandler<TRequest, TResponse>
  */
 export interface IMessageHandlerNoResponse<TRequest> {
   handleAsync(request: TRequest): Promise<void>;
+}
+
+/**
+ * A fully-bound handler ready to execute against a request thunk — the shape the
+ * pipeline invokes after routing.
+ * Port of the non-generic C# `IMessageHandler` (renamed `IExecutableMessageHandler`
+ * since TypeScript cannot overload a type name on arity); the C# `HandlerAsync`
+ * spelling is preserved.
+ */
+export interface IExecutableMessageHandler {
+  handlerAsync(requestMapperThunk: IRequestMapperThunk): Promise<IBenzeneResult>;
 }
