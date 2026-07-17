@@ -1,0 +1,12 @@
+{
+  "name": "@benzene/resilience",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Resilience",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions-middleware": "0.1.0"
+  }
+}
