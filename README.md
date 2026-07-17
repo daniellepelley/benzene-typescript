@@ -145,11 +145,21 @@ Ported (with tests):
   `IMessageHeadersGetter` / `IMessageTopicGetter` / `IMessageGetter`), `MessageHandlerResult`,
   and the two lightweight result-setter bases
 
+- The `BenzeneMessage` transport (`Benzene.Core.Messages/BenzeneMessage`: request/response envelope
+  `BenzeneMessageContext`, distinct from the handler-pipeline `MessageHandlerContext`), its handler
+  glue (`BenzeneMessageGetter`, response adapter, status handler, result setter,
+  `BenzeneMessageApplication`), `ResponseMessageMessageHandlerResultSetterBase`, the `PresetTopic`
+  trio, and the top-level DI registration free functions (`addBenzene` / `addBenzeneMessage` /
+  `addContextItems` / `addMessageHandlers` / `setApplicationInfo`) plus the pipeline-builder helpers
+  (`useMessageHandlers`, `useMessageHandlersWithRouter`, `usePresetTopic`, `addMessageHandler`).
+  C# open-generic registrations (`TryAddScoped(typeof(IFace<>), typeof(Impl<>))`) map to closed
+  factory registrations under each shared `<unknown>` token, and C# assembly-scan handler discovery
+  maps to the decorator-registry (`RegistryMessageHandlersFinder`).
+
 Next, in dependency order, following the .NET repository:
 
 1. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (senders,
-   BenzeneMessage, predicates) and DI registration extensions (`AddBenzene`-style setup that
-   wires the router/builder — the routing types are constructed manually for now)
+   predicates) — the DI registration extensions and BenzeneMessage transport are now ported
 2. The response-writing chain (`ResponseMessageMessageHandlerResultSetterBase`, renderers,
    media formats, serializers) and the generic `IMessageHandlerResult<TResponse>` variant
 3. `Benzene.Abstractions.Validation` / validation counterpart

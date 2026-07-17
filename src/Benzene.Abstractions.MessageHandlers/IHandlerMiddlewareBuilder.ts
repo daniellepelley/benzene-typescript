@@ -1,4 +1,4 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver, ServiceToken, serviceToken } from '@benzene/abstractions';
 import { IMiddleware } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from './IMessageHandler';
 import { IMessageHandlerContext } from './IBenzeneMessageContext';
@@ -21,3 +21,6 @@ export interface IHandlerMiddlewareBuilder {
     messageHandler: IMessageHandler<TRequest, TResponse>,
   ): IMiddleware<IMessageHandlerContext<TRequest, TResponse>> | undefined;
 }
+
+export const IHandlerMiddlewareBuilder: ServiceToken<IHandlerMiddlewareBuilder> =
+  serviceToken<IHandlerMiddlewareBuilder>('IHandlerMiddlewareBuilder');
