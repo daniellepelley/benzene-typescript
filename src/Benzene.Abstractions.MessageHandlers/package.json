@@ -1,0 +1,10 @@
+{
+  "name": "@benzene/abstractions-message-handlers",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Abstractions.MessageHandlers",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {"@benzene/abstractions": "0.1.0","@benzene/abstractions-messages": "0.1.0"}
+}

@@ -24,6 +24,10 @@ Mirrors the .NET repository:
 | `src/Benzene.Abstractions.Middleware` | `@benzene/abstractions-middleware` | `Benzene.Abstractions.Middleware` |
 | `src/Benzene.Core` | `@benzene/core` | `Benzene.Core` |
 | `src/Benzene.Core.Middleware` | `@benzene/core-middleware` | `Benzene.Core.Middleware` |
+| `src/Benzene.Abstractions.Messages` | `@benzene/abstractions-messages` | `Benzene.Abstractions.Messages` (partial) |
+| `src/Benzene.Abstractions.MessageHandlers` | `@benzene/abstractions-message-handlers` | `Benzene.Abstractions.MessageHandlers` (partial) |
+| `src/Benzene.Core.Messages` | `@benzene/core-messages` | `Benzene.Core.Messages` (partial) |
+| `src/Benzene.Core.MessageHandlers` | `@benzene/core-message-handlers` | `Benzene.Core.MessageHandlers` (partial) |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -102,9 +106,15 @@ next to its C# counterpart:
 - **Logging.** `Microsoft.Extensions.Logging` has no Node equivalent; `@benzene/abstractions`
   ships a minimal `ILogger`/`ILoggerFactory`/`LogLevel` with structured scopes, which adapters
   for concrete loggers can implement.
-- **Reflection.** Assembly scanning (`ReflectionMessageHandlersFinder`, `Utils.GetAllTypes`)
-  has no JavaScript equivalent; those features will use explicit registration when their
-  packages are ported.
+- **Handler discovery.** `IMessageHandlersFinder` remains the extension point, exactly as in
+  .NET — only the default implementation differs. The C# `[Message("topic")]` attribute becomes
+  the `@message('topic')` class decorator, which self-registers the class with a
+  `MessageHandlersRegistry` when its module loads; `RegistryMessageHandlersFinder` (the
+  counterpart of `ReflectionMessageHandlersFinder`) reads that registry, or an explicit class
+  list (the C# `Type[]` constructor). `importMessageHandlers(dir)` recursively imports every
+  module in a directory so decorated handlers are found automatically — the Node equivalent of
+  assembly scanning. The `Dependency`/`Composite`/`Cache` finders and `MessageHandlersList`
+  port unchanged, so discovery can be overridden the same way as in .NET.
 
 ## Porting status and roadmap
 
@@ -116,13 +126,18 @@ Ported (with tests):
 - `Benzene.Core.Middleware` (pipeline, builder + fluent extensions, exception handler,
   context converters, applications, routers, null objects)
 - `Benzene.Dependencies` (first-party DI container)
+- Message-handler discovery: topics, definitions, the `@message` decorator + registry,
+  `RegistryMessageHandlersFinder` / `DependencyMessageHandlersFinder` /
+  `CompositeMessageHandlersFinder` / `CacheMessageHandlersFinder` / `MessageHandlersList`,
+  definition index + lookup, version selection, and `importMessageHandlers` directory scanning
 
 Next, in dependency order, following the .NET repository:
 
-1. `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` (message definitions, senders, topics)
-2. `Benzene.Abstractions.MessageHandlers` + `Benzene.Core.MessageHandlers` (handlers, routing,
-   request/response mapping — explicit handler registration in place of reflection discovery)
-3. `Benzene.Abstractions.Validation` / `Benzene.FluentValidation` counterpart
+1. Message-handler execution: `MessageHandler`, `MessageHandlerFactory`, wrappers, statuses,
+   results, request/response mappers and `MessageHandlerMiddleware`/`MessageRouter`
+2. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (senders,
+   BenzeneMessage, predicates) and DI registration extensions (`AddBenzene`-style setup)
+3. `Benzene.Abstractions.Validation` / validation counterpart
 4. Transport adapters (`Benzene.Aws.Lambda.*` for Node Lambda runtimes, `Benzene.Http`, ...)
 5. Diagnostics, resilience, clients
 

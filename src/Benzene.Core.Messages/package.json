@@ -1,0 +1,10 @@
+{
+  "name": "@benzene/core-messages",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Core.Messages",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {"@benzene/abstractions-messages": "0.1.0"}
+}
