@@ -156,10 +156,38 @@ Ported (with tests):
   factory registrations under each shared `<unknown>` token, and C# assembly-scan handler discovery
   maps to the decorator-registry (`RegistryMessageHandlersFinder`).
 
+- Outbound message senders and context predicates (`Benzene.Abstractions.Messages` senders +
+  `BenzeneClient` client context, `Benzene.Core.Messages/MessageSender` + `Predicates`): the
+  `IMessageSender` / `MessageSender` pair, `MessageSenderBuilder` and the `out(...)` registration
+  free function, `BenzeneClientContext` / `BenzeneClientRequest` / `DefaultGetTopic` / `IGetTopic`,
+  the sender/predicate definition interfaces (`IMessageSenderDefinition`, `IMessageSendersFinder`,
+  `IBenzeneClientContextMiddlewareBuilder`), and the `IContextPredicate` family
+  (`ContextPredicateBuilder`, `HeaderContextPredicate`, `MediaTypeHeaderContextPredicate`,
+  `InlineContextPredicate`). Naming/arity decisions specific to this slice:
+  - **Sender arity collision.** C# overloads both the interface and the class named
+    `(I)MessageSender` on generic arity. Mirroring the handler precedent, the two-arg
+    request/response variants keep the name (`IMessageSender<TRequest, TResponse>` /
+    `MessageSender<TRequest, TResponse>`) and the one-arg no-response variants are renamed
+    `IMessageSenderNoResponse<TRequest>` / `MessageSenderNoResponse<TMessage>`. Both container
+    tokens follow the `<unknown>` precedent.
+  - **`CreateSender` overload split.** C#'s arity-overloaded `CreateSender` becomes `createSender`
+    (no response) and `createSenderWithResponse` (typed response), since the two are
+    indistinguishable once generics erase.
+  - **`BenzeneClientContext` shipped twice.** The .NET source contains this identical concrete class
+    in both `Benzene.Abstractions.Messages.BenzeneClient` and `Benzene.Core.Messages.MessageSender`;
+    the port mirrors both (one per package), and `MessageSender` uses the core-messages copy.
+  - **Pipeline registration.** C# `TryAddScoped(_ => pipeline)` cannot be keyed by an erased
+    per-context pipeline type in TypeScript, so each sender is registered by a factory closing over
+    its built pipeline directly instead of resolving the pipeline from a token.
+  - **`IGetTopic.getTopic`.** C# passes `typeof(TRequest)`, which is erased in TypeScript; the
+    parameter is optional and `MessageSender` passes nothing (`DefaultGetTopic` ignores it).
+
 Next, in dependency order, following the .NET repository:
 
-1. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (senders,
-   predicates) — the DI registration extensions and BenzeneMessage transport are now ported
+1. Remaining `Benzene.Abstractions.Messages` + `Benzene.Core.Messages` surface (the concrete
+   `MessageSenderDefinition` and its finders, once the mesh/schema tooling that consumes them is
+   ported) — the sender pipeline, predicates, DI registration extensions and BenzeneMessage
+   transport are now ported
 2. The response-writing chain (`ResponseMessageMessageHandlerResultSetterBase`, renderers,
    media formats, serializers) and the generic `IMessageHandlerResult<TResponse>` variant
 3. `Benzene.Abstractions.Validation` / validation counterpart
