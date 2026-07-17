@@ -17,6 +17,7 @@
     "@benzene/core-middleware": "0.1.0",
     "@benzene/data-annotations": "0.1.0",
     "@benzene/dependencies": "0.1.0",
+    "@benzene/diagnostics": "0.1.0",
     "@benzene/resilience": "0.1.0",
     "@benzene/results": "0.1.0"
   }
