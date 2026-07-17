@@ -1,0 +1,15 @@
+{
+  "name": "@benzene/core-test",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript port of Benzene.Core.Test",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/dependencies": "0.1.0"
+  }
+}
