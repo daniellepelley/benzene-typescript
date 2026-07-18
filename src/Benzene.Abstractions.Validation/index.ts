@@ -7,3 +7,4 @@ export * from './IValidationSchemaBuilder';
 export * from './IValidationStatusMapper';
 export * from './ValidationConstants';
 export * from './ValidationStatusAttribute';
+export * from './DefaultValidationStatusMapper';

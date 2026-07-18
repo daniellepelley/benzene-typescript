@@ -1,16 +1,19 @@
 {
-  "name": "@benzene/data-annotations",
+  "name": "@benzene/zod",
   "version": "0.1.0",
-  "description": "TypeScript port of Benzene.DataAnnotations",
+  "description": "Benzene validation integration adapting Zod (mirrors Benzene.FluentValidation)",
   "license": "MIT",
   "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
     "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
     "@benzene/abstractions-message-handlers": "0.1.0",
     "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/abstractions-validation": "0.1.0",
+    "@benzene/results": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "zod": "^4.4.3"
   }
 }
