@@ -19,6 +19,8 @@
     "@benzene/diagnostics": "0.1.0",
     "@benzene/resilience": "0.1.0",
     "@benzene/results": "0.1.0",
+    "@benzene/joi": "0.1.0",
+    "@benzene/yup": "0.1.0",
     "@benzene/zod": "0.1.0"
   }
 }
