@@ -1,0 +1,21 @@
+{
+  "name": "@benzene/azure-function-service-bus",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Azure.Function.ServiceBus",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@azure/service-bus": "^7",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core": "0.1.0",
+    "@benzene/core-messages": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/azure-function-core": "0.1.0"
+  }
+}

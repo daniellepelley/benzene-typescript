@@ -1,0 +1,17 @@
+{
+  "name": "@benzene/azure-function-core",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Azure.Function.Core",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@azure/functions": "^4",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/dependencies": "0.1.0"
+  }
+}
