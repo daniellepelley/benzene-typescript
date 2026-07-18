@@ -30,7 +30,9 @@ Mirrors the .NET repository:
 | `src/Benzene.Core.MessageHandlers` | `@benzene/core-message-handlers` | `Benzene.Core.MessageHandlers` (partial) |
 | `src/Benzene.Results` | `@benzene/results` | `Benzene.Results` (partial) |
 | `src/Benzene.Abstractions.Validation` | `@benzene/abstractions-validation` | `Benzene.Abstractions.Validation` |
-| `src/Benzene.DataAnnotations` | `@benzene/data-annotations` | `Benzene.DataAnnotations` |
+| `src/Benzene.Zod` | `@benzene/zod` | `Benzene.FluentValidation`† (Zod adapter) |
+| `src/Benzene.Joi` | `@benzene/joi` | `Benzene.FluentValidation`† (Joi adapter) |
+| `src/Benzene.Yup` | `@benzene/yup` | `Benzene.FluentValidation`† (Yup adapter) |
 | `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
@@ -40,6 +42,12 @@ Mirrors the .NET repository:
 so `@benzene/dependencies` ships a first-party `ServiceCollection` /
 `DefaultBenzeneServiceContainer` / `DefaultServiceResolverFactory` with the same
 singleton/scoped/transient semantics.
+
+† .NET's validation integrations wrap .NET-only libraries (`Benzene.DataAnnotations` →
+`System.ComponentModel.DataAnnotations`, `Benzene.FluentValidation` → FluentValidation). Per the
+"Third-party library integrations" convention, these are re-created as adapters over the popular
+JavaScript validation libraries (Zod, Joi, Yup) rather than ported literally; all three mirror the
+`Benzene.FluentValidation` integration shape.
 
 ## Getting started
 
@@ -210,13 +218,16 @@ Ported (with tests):
   `Activator.CreateInstance<T>()` empty-body fallback → `{} as TRequest`; `DictionaryUtils.Enrich`
   reflection → a case-insensitive first-key-wins key merge; C# `is`/`as` interface checks →
   duck-typing guards.
-- Validation: `@benzene/abstractions-validation` (schema interfaces, `IValidationStatusMapper`,
-  `@validationStatus`) and `@benzene/data-annotations`. C#'s `System.ComponentModel.DataAnnotations`
-  reflection has no Node equivalent, so the attribute set is ported as property decorators
-  (`@required`, `@maxLength`, `@minLength`, `@stringLength`, `@range`, `@regularExpression`,
-  `@emailAddress`) recorded in a per-class registry; `validateObject` mirrors
-  `Validator.TryValidateObject`. `ValidationMiddleware` recovers the request type from the handler's
-  `@message` metadata (since `JSON.parse` yields plain objects) before validating.
+- Validation: `@benzene/abstractions-validation` (schema interfaces, `IValidationStatusMapper` +
+  shared `DefaultValidationStatusMapper`, `@validationStatus`) plus three ecosystem-native adapter
+  packages — `@benzene/zod`, `@benzene/joi`, `@benzene/yup` — each mirroring the
+  `Benzene.FluentValidation` integration shape (handler- and client-side `ValidationMiddleware` +
+  builders, a schema registry keyed by request class, and a `use<Lib>Validation` router helper). The
+  schema plays the role of FluentValidation's `IValidator<TRequest>`; the erased request type is
+  recovered from the handler's `@message` metadata (handler side) or the message's constructor
+  (client side). This is the "third-party integrations are adapted, not reimplemented" convention in
+  action — .NET's `Benzene.DataAnnotations` / `Benzene.FluentValidation` (both wrapping .NET-only
+  libraries) become adapters over the popular JS validation libraries instead.
 - Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
 - Diagnostics (partial): `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`.
   C# `Stopwatch` → `Date.now()` deltas; `Debug.WriteLine` → an injectable, silent-by-default sink.
