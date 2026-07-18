@@ -35,6 +35,13 @@ Mirrors the .NET repository:
 | `src/Benzene.Yup` | `@benzene/yup` | `Benzene.FluentValidation`† (Yup adapter) |
 | `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
+| `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
+| `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
+| `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
+| `src/Benzene.Aws.Lambda.ApiGateway` | `@benzene/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
+| `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
+| `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
+| `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -42,6 +49,16 @@ Mirrors the .NET repository:
 so `@benzene/dependencies` ships a first-party `ServiceCollection` /
 `DefaultBenzeneServiceContainer` / `DefaultServiceResolverFactory` with the same
 singleton/scoped/transient semantics.
+
+‡ `Benzene.Azure.Function.AspNet` routes Azure Functions HTTP through the .NET-only ASP.NET Core
+stack (`HttpRequest`/`IActionResult`). Per the "Third-party library integrations" convention it is
+retargeted onto the ecosystem-native `@azure/functions` v4 HTTP model (`HttpRequest`/
+`HttpResponseInit`) and named `@benzene/azure-function-http`. Transport adapters likewise target the
+Node event types: the AWS Lambda packages depend on `@types/aws-lambda`, the Azure packages on
+`@azure/functions` (+ `@azure/service-bus`). The one structural adaptation across all AWS adapters:
+.NET Lambda takes a raw `Stream` and deserializes/sniffs it to route, whereas Node Lambda receives an
+already-parsed event object — so `AwsEventStreamContext` holds the parsed event and the router
+discriminates on its shape rather than deserializing a stream.
 
 † .NET's validation integrations wrap .NET-only libraries (`Benzene.DataAnnotations` →
 `System.ComponentModel.DataAnnotations`, `Benzene.FluentValidation` → FluentValidation). Per the
@@ -231,13 +248,26 @@ Ported (with tests):
 - Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
 - Diagnostics (partial): `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`.
   C# `Stopwatch` → `Date.now()` deltas; `Debug.WriteLine` → an injectable, silent-by-default sink.
+- HTTP routing (`@benzene/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
+  + `RouteFinder`/`UrlMatcher`, and the Benzene-status → HTTP-status-code mapping.
+- Transport adapters (entry points), each over the ecosystem-native event types:
+  - **AWS Lambda** (`@types/aws-lambda`): `@benzene/aws-lambda-core` (the unified entry point with the
+    parsed-event router), `@benzene/aws-lambda-sqs` (queue, partial-batch failures),
+    `@benzene/aws-lambda-api-gateway` (HTTP request/response).
+  - **Azure Functions** (`@azure/functions` + `@azure/service-bus`): `@benzene/azure-function-core`
+    (isolated-worker entry point), `@benzene/azure-function-service-bus` (queue),
+    `@benzene/azure-function-http` (HTTP; the retargeted `AspNet` adapter — see ‡).
+  Each is a `@message`-decorated handler reached end-to-end: a real cloud event/request routes by
+  topic through mapping → dispatch → response. The unported host/bootstrap layer
+  (`BenzeneApplicationBuilder`, `AwsLambdaHost`, the Azure generic-host extensions) and the
+  registration-diagnostics surface are deferred (each transport ships an `Inline*StartUp` adapted to
+  the first-party container instead).
 
 Next, in dependency order, following the .NET repository:
 
-1. Transport adapters — the largest remaining area: AWS Lambda entry points (`Benzene.Aws.Lambda.*`:
-   ApiGateway, SQS, SNS, DynamoDb, EventBridge, Kafka, Kinesis, S3) for Node Lambda runtimes, and an
-   HTTP adapter. Each is its own package building on the ported `MiddlewareApplication` + context
-   getters/setters.
+1. The remaining event-source adapters — near-mechanical mirrors of the queue/HTTP patterns now
+   established: AWS `Sns`, `DynamoDb`, `EventBridge`, `Kinesis`, `S3`, `Kafka`; Azure `EventHub`,
+   `Kafka`. Plus the deferred host/bootstrap + registration-diagnostics layer.
 2. Clients (`Benzene.Clients`, `Benzene.Client.Http`) and health checks — the outbound counterpart
    to the ported message senders, over real transports.
 3. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
