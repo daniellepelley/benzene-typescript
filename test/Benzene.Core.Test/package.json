@@ -15,6 +15,7 @@
     "@benzene/aws-lambda-api-gateway": "0.1.0",
     "@benzene/aws-lambda-sqs": "0.1.0",
     "@benzene/azure-function-core": "0.1.0",
+    "@benzene/azure-function-http": "0.1.0",
     "@benzene/azure-function-service-bus": "0.1.0",
     "@benzene/http": "0.1.0",
     "@benzene/core": "0.1.0",

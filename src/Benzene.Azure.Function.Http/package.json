@@ -1,0 +1,23 @@
+{
+  "name": "@benzene/azure-function-http",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Azure.Function.AspNet (retargeted from ASP.NET Core onto the @azure/functions v4 HTTP model)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@azure/functions": "^4",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core": "0.1.0",
+    "@benzene/core-messages": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/azure-function-core": "0.1.0",
+    "@benzene/http": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}
