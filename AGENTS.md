@@ -24,11 +24,18 @@ and port it, rather than designing from scratch. Apply the mapping rules in the 
 - Run both before considering a task complete
 
 ## Conventions
-- Strict TypeScript, ESM, no runtime dependencies outside the workspace
+- Strict TypeScript, ESM, no runtime dependencies outside the workspace — EXCEPT third-party
+  adapter packages (see next bullet), which depend on the library they adapt
 - Interfaces keep the C# `I` prefix and declare a merged `ServiceToken` constant when they are
   resolved from the container
 - C# extension methods → base-class members (fluent builders) or free functions (everything
   else); see README for the full mapping table
+- **Third-party integrations are adapted, not reimplemented.** When a .NET package exists only to
+  wrap a third-party library (DataAnnotations, FluentValidation, Autofac, ...), keep the shared
+  abstraction core and aligned, but re-create the integration against the popular JavaScript-
+  ecosystem equivalent(s) — one adapter package per library (e.g. `@benzene/zod`, `@benzene/joi`,
+  `@benzene/yup`), each mirroring the integration's shape. Pick the 2–3 most-used equivalents; skip
+  little-used ones. See the README "Third-party library integrations" convention for detail.
 
 ## Do NOT
 - Do not introduce third-party runtime dependencies without asking first

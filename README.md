@@ -120,6 +120,21 @@ next to its C# counterpart:
   module in a directory so decorated handlers are found automatically — the Node equivalent of
   assembly scanning. The `Dependency`/`Composite`/`Cache` finders and `MessageHandlersList`
   port unchanged, so discovery can be overridden the same way as in .NET.
+- **Third-party library integrations.** Some .NET packages exist *only* to wrap a specific
+  third-party library — e.g. `Benzene.DataAnnotations` wraps `System.ComponentModel.DataAnnotations`,
+  `Benzene.FluentValidation` wraps FluentValidation, `Benzene.Autofac` wraps Autofac. These are
+  **not** ported literally, because the wrapped library usually has no TypeScript existence. Instead
+  the shared **abstraction** stays core and aligned (e.g. `Benzene.Abstractions.Validation` →
+  `@benzene/abstractions-validation`), and each integration is re-created against the *popular
+  equivalent library in the JavaScript ecosystem*, one adapter package per library. So .NET's
+  validation integrations become `@benzene/zod`, `@benzene/joi`, `@benzene/yup` (schema validation),
+  each mirroring the `Benzene.FluentValidation` integration shape (a `ValidationMiddleware` that
+  resolves the schema for the request type and maps failures to a Benzene result). Rule of thumb:
+  when a .NET package's reason for existing is the third party, find the 2–3 most-used ecosystem
+  equivalents and adapt those; skip a candidate that is not widely used. Adapter packages *may*
+  take their third-party library as a real runtime dependency (that is their whole purpose) — the
+  "no runtime dependencies outside the workspace" rule applies to the core port, not to these
+  deliberately library-specific adapters.
 
 ## Porting status and roadmap
 
