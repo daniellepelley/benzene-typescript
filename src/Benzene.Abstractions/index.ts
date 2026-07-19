@@ -9,6 +9,8 @@ export * from './Logging/ILogger';
 export * from './Logging/ILogContextBuilder';
 export * as LogContextBuilderExtensions from './Logging/LogContextBuilderExtensions';
 export * from './Results/IBenzeneResult';
+export * from './Results/IRawJsonMessage';
+export * from './Results/IBase64JsonMessage';
 export * from './Results/Void';
 export * from './Serialization/ISerializer';
 export * from './Serialization/IPayloadSerializer';

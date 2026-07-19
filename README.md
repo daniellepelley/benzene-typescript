@@ -301,6 +301,12 @@ Ported (with tests):
 - The strongly-typed `IMessageHandlerResult<TResponse>` / `MessageHandlerResult<TResponse>` variant
   (ported as `IMessageHandlerResultOf` / `MessageHandlerResultOf`, with the C# explicit
   typed→untyped conversion operator as a `toUntyped()` method).
+- Extras (`@benzene/extras`): the assorted `Benzene.Extras` utilities — PATCH support (`IPatchMessage`
+  / `PatchMessage` + `hasField` / `tryGet` / `set`, with C# expression trees mapped to typed property
+  keys), the broadcast-event middleware (`BroadcastEventMiddleware` publishing `"<topic>d"` after a
+  matching create/update/delete via an `IEventSender`), `ResponseBuilder`, `InlineMediaFormat`, and the
+  `RawJsonMessage` / `Base64JsonMessage` result markers (their `IRawJsonMessage` / `IBase64JsonMessage`
+  interfaces folded into `@benzene/abstractions`).
 
 Next, in dependency order, following the .NET repository:
 
