@@ -19,3 +19,11 @@ export * from './RegisterDependency';
 export * from './BenzeneApplicationBuilder';
 export * from './BenzeneInvocation';
 export * from './BenzeneInvocationExtensions';
+
+// Streaming
+export * from './Streaming/IStreamCheckpointer';
+export * from './Streaming/NullStreamCheckpointer';
+export * from './Streaming/StreamContext';
+export * from './Streaming/StreamMiddlewareApplication';
+export * from './Streaming/StreamOperators';
+export * from './Streaming/StreamExtensions';
