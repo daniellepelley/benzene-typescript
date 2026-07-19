@@ -39,9 +39,15 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
 | `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
 | `src/Benzene.Aws.Lambda.ApiGateway` | `@benzene/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
+| `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzene/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
+| `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
+| `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
+| `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
+| `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
+| `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -59,6 +65,10 @@ Node event types: the AWS Lambda packages depend on `@types/aws-lambda`, the Azu
 .NET Lambda takes a raw `Stream` and deserializes/sniffs it to route, whereas Node Lambda receives an
 already-parsed event object — so `AwsEventStreamContext` holds the parsed event and the router
 discriminates on its shape rather than deserializing a stream.
+
+§ `Benzene.Cache.Redis` wraps the .NET-only `StackExchange.Redis`; per the same convention it is
+re-created as an adapter over `ioredis`, the popular Node Redis client. (`@benzene/clients` also
+depends on the Node global `fetch` rather than .NET's `HttpClient`.)
 
 † .NET's validation integrations wrap .NET-only libraries (`Benzene.DataAnnotations` →
 `System.ComponentModel.DataAnnotations`, `Benzene.FluentValidation` → FluentValidation). Per the
@@ -250,30 +260,37 @@ Ported (with tests):
   C# `Stopwatch` → `Date.now()` deltas; `Debug.WriteLine` → an injectable, silent-by-default sink.
 - HTTP routing (`@benzene/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
   + `RouteFinder`/`UrlMatcher`, and the Benzene-status → HTTP-status-code mapping.
-- Transport adapters (entry points), each over the ecosystem-native event types:
-  - **AWS Lambda** (`@types/aws-lambda`): `@benzene/aws-lambda-core` (the unified entry point with the
-    parsed-event router), `@benzene/aws-lambda-sqs` (queue, partial-batch failures),
-    `@benzene/aws-lambda-api-gateway` (HTTP request/response).
-  - **Azure Functions** (`@azure/functions` + `@azure/service-bus`): `@benzene/azure-function-core`
-    (isolated-worker entry point), `@benzene/azure-function-service-bus` (queue),
-    `@benzene/azure-function-http` (HTTP; the retargeted `AspNet` adapter — see ‡).
-  Each is a `@message`-decorated handler reached end-to-end: a real cloud event/request routes by
-  topic through mapping → dispatch → response. The unported host/bootstrap layer
-  (`BenzeneApplicationBuilder`, `AwsLambdaHost`, the Azure generic-host extensions) and the
-  registration-diagnostics surface are deferred (each transport ships an `Inline*StartUp` adapted to
-  the first-party container instead).
+- Transport adapters (entry points) — the **complete event-source matrix for both clouds**, each
+  over the ecosystem-native event types, each reaching a `@message`-decorated handler end-to-end (a
+  real cloud event/request routes by topic through mapping → dispatch → response):
+  - **AWS Lambda** (`@types/aws-lambda`): `aws-lambda-core` (unified entry point with the parsed-event
+    router) + `sqs`, `sns`, `dynamodb`, `kinesis`, `s3`, `eventbridge`, `kafka` (queue/stream/
+    notification sources) and `api-gateway` (HTTP request/response).
+  - **Azure Functions** (`@azure/functions` + `@azure/service-bus` + `@azure/event-hubs`):
+    `azure-function-core` (isolated-worker entry point) + `service-bus`, `event-hub`, `kafka` and
+    `http` (the retargeted `AspNet` adapter — see ‡).
+- Host/invocation layer: `IBenzeneApplicationBuilder`/`BenzeneApplicationBuilder`, `BenzeneInvocation`
+  + `useBenzeneInvocation` (per-invocation correlation context). The `Microsoft.Extensions.Hosting`
+  generic-host runners (`AwsLambdaHost`, host-builder extensions) and the registration-diagnostics
+  surface remain deferred (each transport ships an `Inline*StartUp` on the first-party container).
+- Outbound HTTP client (`@benzene/client-http` + `@benzene/clients` core): the client pipeline sends
+  over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`. The broader
+  `Benzene.Clients` wrapper suite (retry/correlation/trace message clients) is deferred.
+- Caching (`@benzene/cache-core` + `@benzene/cache-redis`§): the lazy-load `CacheEntry` abstraction
+  and a Redis adapter over `ioredis`.
 
 Next, in dependency order, following the .NET repository:
 
-1. The remaining event-source adapters — near-mechanical mirrors of the queue/HTTP patterns now
-   established: AWS `Sns`, `DynamoDb`, `EventBridge`, `Kinesis`, `S3`, `Kafka`; Azure `EventHub`,
-   `Kafka`. Plus the deferred host/bootstrap + registration-diagnostics layer.
-2. Clients (`Benzene.Clients`, `Benzene.Client.Http`) and health checks — the outbound counterpart
-   to the ported message senders, over real transports.
+1. The streaming engine (`StreamMiddlewareApplication`/`StreamContext`/`useStream`) — deferred by the
+   Kinesis and Event Hub adapters, which currently use per-record fan-out; porting it lets those take
+   their true streaming shape.
+2. Health checks (`Benzene.HealthChecks`) — unblocks the deferred cache/API-Gateway health-check
+   extensions.
 3. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
-   trace context, correlation ids, metrics, process timers) — needs a Node tracing abstraction.
-4. Caching (`Benzene.Cache.Core`), and the concrete `MessageSenderDefinition` + mesh/schema tooling
-   that consumes it, and the generic `IMessageHandlerResult<TResponse>` variant.
+   trace context, correlation ids, metrics, process timers) — needs a Node tracing abstraction; the
+   deferred `Benzene.Clients` correlation/trace wrappers depend on it.
+4. Mesh/schema tooling (`MessageSenderDefinition` + finders), the generic `IMessageHandlerResult<T>`
+   variant, an Avro serializer adapter, and the `Microsoft.Extensions.Hosting` generic-host runners.
 
 ## License
 
