@@ -1,0 +1,14 @@
+{
+  "name": "@benzene/cache-redis",
+  "version": "0.1.0",
+  "description": "Benzene Redis cache implementation adapting ioredis (mirrors Benzene.Cache.Redis)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/cache-core": "0.1.0",
+    "ioredis": "^5.11.1"
+  }
+}
