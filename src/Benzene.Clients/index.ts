@@ -1,13 +1,55 @@
 /**
- * Port of Benzene.Clients — MINIMAL slice: only the HTTP-status-code -> `BenzeneResult` mapping that
- * `@benzene/client-http` needs (`BenzeneResultHttpMapper` + the `convertStatusCode` conversion).
+ * Port of Benzene.Clients — the client-wrapper suite for calling Benzene services through a
+ * transport-agnostic `IBenzeneMessageClient`.
  *
- * DEFERRED (not yet ported) — the entire client-wrapper suite: `ClientBuilder`, `ClientsBuilder`,
- * `IBenzeneMessageClient`, `ClientMessageSender`, the `Retry`/`CorrelationId`/`TraceContext`/`Header`
- * message-client wrappers, `BenzeneMessageClientFactory`, `ClientMapping*`, and
- * `BenzeneResultExtensions.asBenzeneResult`. Several depend on unported distributed-tracing /
- * correlation-id infrastructure (see the roadmap's Diagnostics tracing item), so they are held back
- * until that lands.
+ * Ported here:
+ * - Core types: `IBenzeneMessageClient`, `IClientMessageRouter`, `IClientHeaders` + `ClientHeaders`,
+ *   `BenzeneMessageClientResponse`, `BenzeneClientRequest`, `TopicAndServiceKey`.
+ * - Routing sender: `ClientMessageSender` (an `IMessageSender` over router + `IGetTopic`).
+ * - Decorator model: `DependencyWrapperFactory`, `ClientBuilder`, and the builders/factory
+ *   (`ClientsBuilder`, `SingleClientsBuilder`, `BenzeneMessageClientFactory` +
+ *   `IBenzeneMessageClientFactory`, `ClientMapping` + `ClientMappingBuilder`).
+ * - Portable decorators (+ their `IDependencyWrapper` wrappers where the .NET source has one):
+ *   `RetryBenzeneMessageClient`, `CorrelationIdBenzeneMessageClient`, `HeaderBenzeneMessageClient`,
+ *   `HeadersBenzeneMessageClient`.
+ * - Free-function extensions: `withRetry`, `withCorrelationId`, `sendMessageAsync` /
+ *   `sendMessageNoResponseAsync`.
+ * - Common: the HTTP-status -> `BenzeneResult` mapping used by `@benzene/client-http`.
+ *
+ * DEFERRED (not ported): `Benzene.Clients.TraceContext.*` (`TraceContextBenzeneMessageClient` +
+ * its wrapper + `WithW3CTraceContext`). These stamp the current `System.Diagnostics.Activity`'s W3C
+ * `traceparent`/`tracestate` onto outgoing headers, depending on the deferred Activity-based
+ * distributed-tracing surface (only the portable `parseTraceparent` slice is in `@benzene/diagnostics`).
+ * They land once a Node tracing/OpenTelemetry abstraction exists — see the README roadmap's tracing item.
+ *
+ * NOT re-ported: `Benzene.Clients.JsonSerializer` (identical to the already-ported serializer in
+ * `@benzene/core-message-handlers`); `Benzene.Clients.BenzeneClientRequest` is shipped locally
+ * (identical to the `@benzene/core-messages` copy — see that file's shipped-twice note).
  */
+export * from './IBenzeneMessageClient';
+export * from './IClientMessageRouter';
+export * from './IClientHeaders';
+export * from './ClientHeaders';
+export * from './BenzeneMessageClientResponse';
+export * from './BenzeneClientRequest';
+export * from './TopicAndServiceKey';
+export * from './ClientMessageSender';
+export * from './DependencyWrapperFactory';
+export * from './ClientBuilder';
+export * from './ClientsBuilder';
+export * from './SingleClientsBuilder';
+export * from './IBenzeneMessageClientFactory';
+export * from './BenzeneMessageClientFactory';
+export * from './ClientMapping';
+export * from './ClientMappingBuilder';
+export * from './RetryBenzeneMessageClient';
+export * from './RetryBenzeneMessageClientWrapper';
+export * from './HeaderBenzeneMessageClient';
+export * from './HeadersBenzeneMessageClient';
+export * from './CorrelationId/CorrelationIdBenzeneMessageClient';
+export * from './CorrelationId/CorrelationIdBenzeneMessageClientWrapper';
+export * from './CorrelationId/Extensions';
+export * from './Extensions';
+export * from './ClientExtensions';
 export * from './Common/BenzeneResultHttpMapper';
 export * from './Common/ClientResultExtensions';
