@@ -1,0 +1,12 @@
+{
+  "name": "@benzene/health-checks-core",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.HealthChecks.Core",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0"
+  }
+}
