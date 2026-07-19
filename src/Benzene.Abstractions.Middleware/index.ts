@@ -7,3 +7,8 @@ export * from './IMiddlewareFactory';
 export * from './IMiddlewarePipeline';
 export * from './IMiddlewarePipelineBuilder';
 export * from './IMiddlewareWrapper';
+export * from './Hosting/IBenzeneInvocation';
+export * from './Hosting/IBenzeneInvocationAccessor';
+export * from './Hosting/IBenzeneApplicationBuilder';
+export * from './Hosting/IStartUp';
+export * from './Hosting/IBenzeneWorker';
