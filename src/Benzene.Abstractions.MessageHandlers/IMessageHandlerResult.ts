@@ -1,4 +1,4 @@
-import { IBenzeneResult } from '@benzene/abstractions';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
 import { ITopic } from '@benzene/abstractions-messages';
 import { IMessageHandlerDefinition } from './IMessageHandlerDefinition';
 
@@ -21,11 +21,21 @@ export interface IMessageHandlerResultBase {
  * back to the transport.
  * Port of Benzene.Abstractions.MessageHandlers.IMessageHandlerResult.
  *
- * The strongly-typed C# `IMessageHandlerResult<TResponse>` variant is deferred: the routing path
- * (`MessageRouter`) only produces and consumes the untyped form, and TypeScript cannot share the
- * `IMessageHandlerResult` name across arities anyway.
+ * The strongly-typed variant is `IMessageHandlerResultOf<TResponse>` below (TypeScript cannot share
+ * the `IMessageHandlerResult` name across arities, so the generic one gets the `Of` suffix — the same
+ * convention as `IBenzeneResult` / `IBenzeneResultOf<T>`). The routing path (`MessageRouter`) produces
+ * and consumes the untyped form; the typed variant is for strongly-typed consumers.
  */
 export interface IMessageHandlerResult extends IMessageHandlerResultBase {
   /** The untyped result returned by the handler (or a routing failure, e.g. not-found). */
   readonly benzeneResult: IBenzeneResult;
+}
+
+/**
+ * The strongly-typed outcome of routing and invoking a handler for one message.
+ * Port of Benzene.Abstractions.MessageHandlers.IMessageHandlerResult&lt;TResponse&gt;.
+ */
+export interface IMessageHandlerResultOf<TResponse> extends IMessageHandlerResultBase {
+  /** The strongly-typed result returned by the handler. */
+  readonly benzeneResult: IBenzeneResultOf<TResponse>;
 }
