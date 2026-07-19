@@ -288,30 +288,29 @@ Ported (with tests):
 - Health checks (`@benzene/health-checks-core` + `@benzene/health-checks` aggregator +
   `@benzene/health-checks-http` ping): the `IHealthCheck` abstraction, aggregating runner, and an
   HTTP-ping check over the global `fetch`.
-- Serialization: two ecosystem-native adapter packages under the "adapted, not reimplemented"
-  convention — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the schema-registry
-  pattern the validation adapters use) and `@benzene/messagepack` (over `@msgpack/msgpack`,
-  schemaless like the C# contractless resolver). Both expose an `AcceptHeaderMediaFormatBase` format
-  (`application/avro` / `application/msgpack`) plus `IPayloadSerializer`: the string path Base64-armors
-  the binary so it flows through string-bodied transports, the byte path carries genuine binary.
+- Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
+  convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
+  alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the
+  schema-registry pattern the validation adapters use), `@benzene/messagepack` (over `@msgpack/msgpack`,
+  schemaless like the C# contractless resolver), and `@benzene/xml` (over `fast-xml-parser`). The two
+  binary formats implement `IPayloadSerializer`: the string path Base64-armors the binary so it flows
+  through string-bodied transports, the byte path carries genuine binary. XML is text `ISerializer`
+  only; erasure handling recovers the root element name from the payload's `constructor.name` (the C#
+  `typeof(T).Name`) and returns a plain object on read. `Benzene.NewtonsoftJson` has no distinct JS
+  analogue (there is one JSON) and is intentionally skipped.
 - The strongly-typed `IMessageHandlerResult<TResponse>` / `MessageHandlerResult<TResponse>` variant
   (ported as `IMessageHandlerResultOf` / `MessageHandlerResultOf`, with the C# explicit
   typed→untyped conversion operator as a `toUntyped()` method).
 
 Next, in dependency order, following the .NET repository:
 
-1. The remaining third-party serialization adapter: XML (`Benzene.Xml` → a JS XML library such as
-   `fast-xml-parser`, wired as an `AcceptHeaderMediaFormatBase` content-type/accept-negotiated
-   `application/xml` format), completing the MessagePack/Avro/XML set alongside the built-in JSON.
-   `Benzene.NewtonsoftJson` has no distinct JS analogue (there is one JSON) and is intentionally
-   skipped.
-2. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
+1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
    the deferred `Benzene.Clients` trace wrapper depends on it. Held for a design decision on the
    tracing abstraction.
-3. Mesh/schema tooling (`MessageSenderDefinition` + finders, the `Benzene.Mesh.*` catalog/topology/
+2. Mesh/schema tooling (`MessageSenderDefinition` + finders, the `Benzene.Mesh.*` catalog/topology/
    contract-drift surface) and schema generation (`Benzene.JsonSchema` / `Benzene.Schema.OpenApi`).
-4. Host / self-host runners (`Benzene.HostedService`, `Benzene.SelfHost.Http`) and the
+3. Host / self-host runners (`Benzene.HostedService`, `Benzene.SelfHost.Http`) and the
    `Microsoft.Extensions.Hosting` generic-host layer — held for a design decision on the Node HTTP
    host and long-running-worker shape. Third cloud (`Benzene.GoogleCloud.Functions`) is a
    straightforward extension of the Azure Functions port when the two-cloud scope widens.
