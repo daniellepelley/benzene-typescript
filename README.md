@@ -48,6 +48,13 @@ Mirrors the .NET repository:
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
 | `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
 | `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |
+| `src/Benzene.HealthChecks.Core` | `@benzene/health-checks-core` | `Benzene.HealthChecks.Core` |
+| `src/Benzene.HealthChecks` | `@benzene/health-checks` | `Benzene.HealthChecks` |
+| `src/Benzene.HealthChecks.Http` | `@benzene/health-checks-http` | `Benzene.HealthChecks.Http` |
+| `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
+| `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
+| `src/Benzene.Xml` | `@benzene/xml` | `Benzene.Xml`† (`fast-xml-parser` adapter) |
+| `src/Benzene.Extras` | `@benzene/extras` | `Benzene.Extras` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -70,11 +77,14 @@ discriminates on its shape rather than deserializing a stream.
 re-created as an adapter over `ioredis`, the popular Node Redis client. (`@benzene/clients` also
 depends on the Node global `fetch` rather than .NET's `HttpClient`.)
 
-† .NET's validation integrations wrap .NET-only libraries (`Benzene.DataAnnotations` →
-`System.ComponentModel.DataAnnotations`, `Benzene.FluentValidation` → FluentValidation). Per the
-"Third-party library integrations" convention, these are re-created as adapters over the popular
-JavaScript validation libraries (Zod, Joi, Yup) rather than ported literally; all three mirror the
-`Benzene.FluentValidation` integration shape.
+† Marks a third-party-library integration re-created against the JavaScript ecosystem rather than
+ported literally, per the "Third-party library integrations" convention. **Validation:** .NET's
+`Benzene.DataAnnotations` (→ `System.ComponentModel.DataAnnotations`) and `Benzene.FluentValidation`
+(→ FluentValidation) become adapters over the popular JS validation libraries (Zod, Joi, Yup), all
+three mirroring the `Benzene.FluentValidation` integration shape. **Serialization:** `Benzene.Avro`
+(→ Apache.Avro), `Benzene.MessagePack` (→ MessagePack-CSharp) and `Benzene.Xml` (→
+`System.Xml.Serialization`) become adapters over `avsc`, `@msgpack/msgpack` and `fast-xml-parser`,
+each mirroring the .NET package's `IMediaFormat` / serializer shape.
 
 ## Getting started
 
