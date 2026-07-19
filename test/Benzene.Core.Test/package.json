@@ -25,6 +25,8 @@
     "@benzene/azure-function-service-bus": "0.1.0",
     "@benzene/azure-function-event-hub": "0.1.0",
     "@benzene/azure-function-kafka": "0.1.0",
+    "@benzene/client-http": "0.1.0",
+    "@benzene/clients": "0.1.0",
     "@benzene/http": "0.1.0",
     "@benzene/core": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",

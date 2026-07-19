@@ -1,0 +1,13 @@
+{
+  "name": "@benzene/clients",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Clients (minimal: HTTP-status-code -> BenzeneResult mapping)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}
