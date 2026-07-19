@@ -13,6 +13,7 @@ export * from './MessageSender/DefaultGetTopic';
 export * from './MessageSender/MessageSender';
 export * from './MessageSender/IMessageSenderBuilder';
 export * from './MessageSender/MessageSenderBuilder';
+export * from './MessageSender/MessageSenderDefinition';
 export * from './MessageSender/MessageSenderExtensions';
 export * from './Predicates/ContextPredicateBuilder';
 export * from './Predicates/HeaderContextPredicate';

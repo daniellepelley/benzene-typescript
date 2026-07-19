@@ -314,8 +314,10 @@ Next, in dependency order, following the .NET repository:
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
    the deferred `Benzene.Clients` trace wrapper depends on it. Held for a design decision on the
    tracing abstraction.
-2. Mesh/schema tooling (`MessageSenderDefinition` + finders, the `Benzene.Mesh.*` catalog/topology/
-   contract-drift surface) and schema generation (`Benzene.JsonSchema` / `Benzene.Schema.OpenApi`).
+2. Mesh/schema tooling — the sender-definition building blocks (`IMessageSenderDefinition` /
+   `MessageSenderDefinition`, the `IMessageDefinitionFinder` token) are ported; the remaining
+   `Benzene.Mesh.*` catalog/topology/contract-drift surface and schema generation
+   (`Benzene.JsonSchema` / `Benzene.Schema.OpenApi`) build on them.
 3. Host / self-host runners (`Benzene.HostedService`, `Benzene.SelfHost.Http`) and the
    `Microsoft.Extensions.Hosting` generic-host layer — held for a design decision on the Node HTTP
    host and long-running-worker shape. Third cloud (`Benzene.GoogleCloud.Functions`) is a
