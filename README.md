@@ -256,8 +256,11 @@ Ported (with tests):
   action — .NET's `Benzene.DataAnnotations` / `Benzene.FluentValidation` (both wrapping .NET-only
   libraries) become adapters over the popular JS validation libraries instead.
 - Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
-- Diagnostics (partial): `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`.
-  C# `Stopwatch` → `Date.now()` deltas; `Debug.WriteLine` → an injectable, silent-by-default sink.
+- Diagnostics: `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`, plus the
+  correlation-id middleware and the process-timer surface. C# `Stopwatch` → `Date.now()` deltas;
+  `Debug.WriteLine` → an injectable, silent-by-default sink; `Guid.NewGuid()` →
+  `crypto.randomUUID()`. The distributed-tracing surface (`ActivityMiddleware`, W3C trace context,
+  metrics) still needs a Node tracing abstraction and stays deferred.
 - HTTP routing (`@benzene/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
   + `RouteFinder`/`UrlMatcher`, and the Benzene-status → HTTP-status-code mapping.
 - Transport adapters (entry points) — the **complete event-source matrix for both clouds**, each
@@ -274,23 +277,44 @@ Ported (with tests):
   generic-host runners (`AwsLambdaHost`, host-builder extensions) and the registration-diagnostics
   surface remain deferred (each transport ships an `Inline*StartUp` on the first-party container).
 - Outbound HTTP client (`@benzene/client-http` + `@benzene/clients` core): the client pipeline sends
-  over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`. The broader
-  `Benzene.Clients` wrapper suite (retry/correlation/trace message clients) is deferred.
+  over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`, plus the full
+  `Benzene.Clients` wrapper suite — retry, correlation-id and header-forwarding message-client
+  decorators, their builders, and the client factory.
 - Caching (`@benzene/cache-core` + `@benzene/cache-redis`§): the lazy-load `CacheEntry` abstraction
   and a Redis adapter over `ioredis`.
+- Streaming engine (`@benzene/core-middleware` `Streaming/`): `StreamContext`,
+  `StreamMiddlewareApplication`, the `StreamOperators`, `IStreamCheckpointer`, and `useStream`. C#
+  `IAsyncEnumerable<T>` → `AsyncIterable<T>` / `async function*`.
+- Health checks (`@benzene/health-checks-core` + `@benzene/health-checks` aggregator +
+  `@benzene/health-checks-http` ping): the `IHealthCheck` abstraction, aggregating runner, and an
+  HTTP-ping check over the global `fetch`.
+- Serialization: two ecosystem-native adapter packages under the "adapted, not reimplemented"
+  convention — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the schema-registry
+  pattern the validation adapters use) and `@benzene/messagepack` (over `@msgpack/msgpack`,
+  schemaless like the C# contractless resolver). Both expose an `AcceptHeaderMediaFormatBase` format
+  (`application/avro` / `application/msgpack`) plus `IPayloadSerializer`: the string path Base64-armors
+  the binary so it flows through string-bodied transports, the byte path carries genuine binary.
+- The strongly-typed `IMessageHandlerResult<TResponse>` / `MessageHandlerResult<TResponse>` variant
+  (ported as `IMessageHandlerResultOf` / `MessageHandlerResultOf`, with the C# explicit
+  typed→untyped conversion operator as a `toUntyped()` method).
 
 Next, in dependency order, following the .NET repository:
 
-1. The streaming engine (`StreamMiddlewareApplication`/`StreamContext`/`useStream`) — deferred by the
-   Kinesis and Event Hub adapters, which currently use per-record fan-out; porting it lets those take
-   their true streaming shape.
-2. Health checks (`Benzene.HealthChecks`) — unblocks the deferred cache/API-Gateway health-check
-   extensions.
-3. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
-   trace context, correlation ids, metrics, process timers) — needs a Node tracing abstraction; the
-   deferred `Benzene.Clients` correlation/trace wrappers depend on it.
-4. Mesh/schema tooling (`MessageSenderDefinition` + finders), the generic `IMessageHandlerResult<T>`
-   variant, an Avro serializer adapter, and the `Microsoft.Extensions.Hosting` generic-host runners.
+1. The remaining third-party serialization adapter: XML (`Benzene.Xml` → a JS XML library such as
+   `fast-xml-parser`, wired as an `AcceptHeaderMediaFormatBase` content-type/accept-negotiated
+   `application/xml` format), completing the MessagePack/Avro/XML set alongside the built-in JSON.
+   `Benzene.NewtonsoftJson` has no distinct JS analogue (there is one JSON) and is intentionally
+   skipped.
+2. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
+   trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
+   the deferred `Benzene.Clients` trace wrapper depends on it. Held for a design decision on the
+   tracing abstraction.
+3. Mesh/schema tooling (`MessageSenderDefinition` + finders, the `Benzene.Mesh.*` catalog/topology/
+   contract-drift surface) and schema generation (`Benzene.JsonSchema` / `Benzene.Schema.OpenApi`).
+4. Host / self-host runners (`Benzene.HostedService`, `Benzene.SelfHost.Http`) and the
+   `Microsoft.Extensions.Hosting` generic-host layer — held for a design decision on the Node HTTP
+   host and long-running-worker shape. Third cloud (`Benzene.GoogleCloud.Functions`) is a
+   straightforward extension of the Azure Functions port when the two-cloud scope widens.
 
 ## License
 
