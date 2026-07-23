@@ -1,0 +1,16 @@
+{
+  "name": "@benzene/idempotency",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Idempotency",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}

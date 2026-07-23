@@ -57,6 +57,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Extras` | `@benzene/extras` | `Benzene.Extras` |
 | `src/Benzene.Auth.Core` | `@benzene/auth-core` | `Benzene.Auth.Core` (+ minimal `System.Security.Claims`) |
 | `src/Benzene.Auth.Basic` | `@benzene/auth-basic` | `Benzene.Auth.Basic` |
+| `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -341,6 +342,18 @@ Ported (with tests):
     transport (a genuine `IHttpContext`) as the HTTP host, and — since the OAuth2 bearer adapter is
     deferred (below) — seed the authenticated principal directly to exercise the authorization
     primitives, plus one end-to-end case composing real `useBasicAuth` with `requireRole`.
+- Idempotency (`@benzene/idempotency`): at-least-once de-duplication — `useIdempotency` +
+  `IdempotencyMiddleware` (claim → run-once → complete/release, releasing the claim when the handler
+  throws or reports failure so a redelivery reprocesses), the pluggable `IIdempotencyStore` with an
+  `InMemoryIdempotencyStore` default (lazy TTL expiry), the header-or-body-hash key strategy
+  (case-insensitive header lookup, length-prefixed topic/body hashing so distinct triples can't collide
+  through separator ambiguity), and the options/records/status/`InProgressBehavior` surface plus
+  `addInMemoryIdempotencyStore`. Divergences: C# `CancellationToken` → an optional `AbortSignal`
+  (`signal?.throwIfAborted()`), `SHA256`/`Convert.ToHexString` → `node:crypto` `createHash('sha256')`
+  hex, `TimeSpan`/`DateTimeOffset` → epoch-millisecond `number`s with an injectable clock, and the
+  store's `lock` is dropped (Node runs each method's synchronous body to completion, so the
+  check-and-insert is already atomic). The `is IHasMessageResult` interface check → a `messageResult`
+  duck-typing guard.
 
 Next, in dependency order, following the .NET repository:
 
@@ -348,7 +361,10 @@ Next, in dependency order, following the .NET repository:
    that sets the same `AuthenticationHolder` principal `@benzene/auth-core` already reads. Deferred
    because, unlike Auth.Core/Auth.Basic (which have no external dependencies), it needs a JWT/JWKS
    verification library — a new third-party runtime dependency (`jose` is the likely target, adapted
-   under the "adapted, not reimplemented" convention). Held for that dependency decision.
+   under the "adapted, not reimplemented" convention). Held for that dependency decision. A shared
+   `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication sits in the same
+   bucket — the idempotency analogue of the `@benzene/cache-redis` split, since
+   `InMemoryIdempotencyStore` is single-instance only.
 
 1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
