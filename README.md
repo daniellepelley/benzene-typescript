@@ -55,6 +55,8 @@ Mirrors the .NET repository:
 | `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
 | `src/Benzene.Xml` | `@benzene/xml` | `Benzene.Xml`† (`fast-xml-parser` adapter) |
 | `src/Benzene.Extras` | `@benzene/extras` | `Benzene.Extras` |
+| `src/Benzene.Auth.Core` | `@benzene/auth-core` | `Benzene.Auth.Core` (+ minimal `System.Security.Claims`) |
+| `src/Benzene.Auth.Basic` | `@benzene/auth-basic` | `Benzene.Auth.Basic` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -317,8 +319,36 @@ Ported (with tests):
   matching create/update/delete via an `IEventSender`), `ResponseBuilder`, `InlineMediaFormat`, and the
   `RawJsonMessage` / `Base64JsonMessage` result markers (their `IRawJsonMessage` / `IBase64JsonMessage`
   interfaces folded into `@benzene/abstractions`).
+- Authentication & authorization (`@benzene/auth-core` + `@benzene/auth-basic`): the
+  `AuthenticationHolder` scoped principal seam (Context Purity, like `PresetTopicHolder`), the
+  `AuthResults` short-circuit helper (`Unauthorized`/`Forbidden` via the `IMessageHandlerResultSetter`
+  idiom the health-check middleware uses), the mechanism-agnostic authorization layer (`requireRole` /
+  `requirePolicy` / `requireAuthorization` + `IAuthorizationPolicy` / `IAuthorizationHandler` /
+  `DelegateAuthorizationPolicy` / `addAuthorizationPolicy`, with the `role`/`roles` claim normalization
+  including Azure AD's JSON-array app-roles shape), and RFC 7617 `useBasicAuth` (`BasicAuthMiddleware`
+  + `IBasicAuthCredentialValidator`, first-colon password split, `WWW-Authenticate` challenge on every
+  401). Two divergences specific to this slice:
+  - **`System.Security.Claims` has no JS equivalent.** The .NET auth stack carries the caller as a BCL
+    `ClaimsPrincipal` every JWT/OAuth2 library already produces; JavaScript has no such shared type, so
+    the port re-creates the small slice the middleware actually reads (`Claim`, `ClaimsIdentity`,
+    `ClaimsPrincipal`, `ClaimTypes`) inside `@benzene/auth-core` rather than inventing a
+    Benzene-specific principal abstraction. BCL comparison semantics are preserved (claim-type match
+    case-insensitive, value case-sensitive); unused `Claim` fields (`ValueType`/`Issuer`/…) are omitted.
+  - **`BenzeneResult.unauthorized` / `.forbidden`.** The two status factories the C# `BenzeneResult`
+    already exposes were added to the TypeScript `BenzeneResult` (no consumer had needed them before).
+  - **C# integration tests → API Gateway host.** The C# suite hosts a real Kestrel `AspNetContext`
+    pipeline over HTTP; with no ASP.NET host in the port, the ported tests reuse the API Gateway
+    transport (a genuine `IHttpContext`) as the HTTP host, and — since the OAuth2 bearer adapter is
+    deferred (below) — seed the authenticated principal directly to exercise the authorization
+    primitives, plus one end-to-end case composing real `useBasicAuth` with `requireRole`.
 
 Next, in dependency order, following the .NET repository:
+
+0. `Benzene.Auth.OAuth2` (`useOAuth2Bearer` / `requireScope`) — the JWT/JWKS bearer authentication
+   that sets the same `AuthenticationHolder` principal `@benzene/auth-core` already reads. Deferred
+   because, unlike Auth.Core/Auth.Basic (which have no external dependencies), it needs a JWT/JWKS
+   verification library — a new third-party runtime dependency (`jose` is the likely target, adapted
+   under the "adapted, not reimplemented" convention). Held for that dependency decision.
 
 1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);

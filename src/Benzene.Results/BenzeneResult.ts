@@ -76,6 +76,14 @@ export const BenzeneResult = {
     return BenzeneResult.setErrors(BenzeneResultStatus.badRequest, ...errors);
   },
 
+  unauthorized<T = VoidResult>(...errors: string[]): IBenzeneResultOf<T> {
+    return BenzeneResult.setErrors(BenzeneResultStatus.unauthorized, ...errors);
+  },
+
+  forbidden<T = VoidResult>(...errors: string[]): IBenzeneResultOf<T> {
+    return BenzeneResult.setErrors(BenzeneResultStatus.forbidden, ...errors);
+  },
+
   validationError<T = VoidResult>(...errors: string[]): IBenzeneResultOf<T> {
     return BenzeneResult.setErrors(BenzeneResultStatus.validationError, ...errors);
   },

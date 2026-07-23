@@ -11,6 +11,8 @@
     "@benzene/abstractions-messages": "0.1.0",
     "@benzene/abstractions-middleware": "0.1.0",
     "@benzene/abstractions-validation": "0.1.0",
+    "@benzene/auth-core": "0.1.0",
+    "@benzene/auth-basic": "0.1.0",
     "@benzene/avro": "0.1.0",
     "@benzene/aws-lambda-core": "0.1.0",
     "@benzene/aws-lambda-api-gateway": "0.1.0",

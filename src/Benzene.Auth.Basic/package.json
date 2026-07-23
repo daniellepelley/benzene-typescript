@@ -1,0 +1,16 @@
+{
+  "name": "@benzene/auth-basic",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Auth.Basic",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/auth-core": "0.1.0",
+    "@benzene/http": "0.1.0"
+  }
+}
