@@ -68,6 +68,7 @@ Mirrors the .NET repository:
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
 | `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
+| `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -513,6 +514,18 @@ Ported (with tests):
   const-string classes → frozen objects. Two Mesh.Contracts-scoped test files ported (discovery runner +
   registry JSON round-trip + filter matching, and the hashing test — its cross-check against the unported
   `Benzene.CodeGen.Core` replaced by pinned known-answer HMAC digests).
+- Mesh dispatch (`@benzene/mesh-dispatch`): the opt-in, environment-gated `mesh:dispatch` handler that
+  invokes ONE registered service's real handler with a caller-supplied payload (the direct-to-consumer test
+  path) — `MeshDispatchMessageHandler` + `MeshDispatchGate` (refused in Production unless
+  `MeshDispatchOptions.allowInProduction`), the `IMeshServiceDispatcher` transport seam with a shipped
+  `HttpMeshServiceDispatcher` (POSTs the `{ topic, headers, body }` envelope to `<origin>/benzene-message`
+  or an explicit `invokeUrl`), and `useMeshDispatch` wiring. Adaptations: `HttpClient` → injectable `fetch`
+  (`@benzene/health-checks-http`'s pattern); `CancellationToken` → optional `AbortSignal`; the environment
+  reader checks `NODE_ENV` first (then the .NET `ASPNETCORE_ENVIRONMENT`/`DOTNET_ENVIRONMENT` for migrating
+  teams), unset = Production (the safe default). Also ported the concrete `RawStringMessage` class into
+  `@benzene/core-messages` (the handler's response type). The gate + handler test classes ported (9 tests);
+  the AWS-Lambda-dispatcher test needs the unported `Benzene.Mesh.Aws.Lambda`, so HTTP-dispatcher
+  port-verification tests stand in.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

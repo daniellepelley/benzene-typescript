@@ -1,5 +1,6 @@
 export * from './Constants';
 export * from './Topic';
+export * from './RawStringMessage';
 export * from './Helper/MediaType';
 export * from './BenzeneMessage/IBenzeneMessageRequest';
 export * from './BenzeneMessage/IBenzeneMessageResponse';
