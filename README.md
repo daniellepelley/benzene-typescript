@@ -53,6 +53,7 @@ Mirrors the .NET repository:
 | `src/Benzene.HealthChecks.Http` | `@benzene/health-checks-http` | `Benzene.HealthChecks.Http` |
 | `src/Benzene.HealthChecks.Tcp` | `@benzene/health-checks-tcp` | `Benzene.HealthChecks.Tcp` (over `node:net`) |
 | `src/Benzene.HealthChecks.Disk` | `@benzene/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
+| `src/Benzene.Clients.HealthChecks` | `@benzene/clients-health-checks` | `Benzene.Clients.HealthChecks` |
 | `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
 | `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
 | `src/Benzene.Xml` | `@benzene/xml` | `Benzene.Xml`† (`fast-xml-parser` adapter) |
@@ -330,6 +331,18 @@ Ported (with tests):
   the drive identifier). The TCP check's ambient `ICancellationTokenAccessor` DI seam is not ported
   yet, so its factory constructs the check with no `AbortSignal` (the constructor accepts one for when
   a scoped-signal accessor is ported).
+- Contract-drift check (`@benzene/clients-health-checks`): the consumer side of the
+  provider/consumer contract-hash comparison — `ClientHealthCheck` probes a downstream provider via its
+  generated client (`IHasHealthCheck`) and reports reachable+matching as `ok`, reachable+drifted as
+  `warning` (does not flip aggregate `isHealthy`), unreachable as `failed`; `ClientHealthCheckProcessor`
+  annotates the provider's `schema` health check with the `ClientHashMatch` verdict; `addContractCheck`
+  (client resolved from DI via its `ServiceIdentifier`, since the C# generic `AddContractCheck<TClient>`
+  erases) / `addContractCheckInstance` register it on the contracts diagnostic topic. Ported
+  `SchemaHealthCheckConstants` (the shared `schema`/`hashCode`/`match` keys) into `@benzene/health-checks-core`.
+  DIVERGENCE: C# treats a `null` payload as "provider unreachable"; the port's `BenzeneResult` never
+  yields a null payload (a failure result carries the `VoidResult` sentinel), so the check treats
+  null/undefined OR that sentinel as "no payload". The C# package ships no test suite, so its tests here
+  are new port-verification tests rather than ported C# scenarios.
 - Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
   convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
   alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the

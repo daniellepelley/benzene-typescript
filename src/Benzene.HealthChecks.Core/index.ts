@@ -1,4 +1,5 @@
 export * from './HealthCheckStatus';
+export * from './SchemaHealthCheckConstants';
 export * from './HealthCheckDependency';
 export * from './IHealthCheckResult';
 export * from './HealthCheckResult';
