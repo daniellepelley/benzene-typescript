@@ -60,6 +60,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Auth.OAuth2` | `@benzene/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
+| `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -386,6 +387,19 @@ Ported (with tests):
   `number`s with an injectable clock, `System.IO.File` → `node:fs/promises` (missing file → the caught
   `ENOENT`), `Environment.GetEnvironmentVariable` → `process.env`, `FormatException` → `Error`, and `Uri`
   → the WHATWG `URL`.
+- Sagas (`@benzene/saga`): the in-code distributed-transaction orchestrator — `SagaBuilder` /
+  `StageBuilder` / `StepBuilder` (ordered stages of concurrently-run steps), the `Saga` engine
+  (thread each stage's results forward, and on a stage failure compensate every completed effect
+  newest-first, leaving the system at its starting state), `SagaResult`/`SagaOutcome`/`SagaStepState`,
+  the optional whole-saga `SagaRetryPolicy` (retry a *clean* rollback with exponential backoff; never
+  retry a success or a partial rollback), and the pluggable `ISagaStateStore` with an
+  `InMemorySagaStateStore` default. Divergences: `Task.WhenAll` → `Promise.all`, `TimeSpan` → millisecond
+  `number`s with an injectable delay, `Guid.NewGuid()` → `crypto.randomUUID()`, `CancellationToken` →
+  optional `AbortSignal`, and — the notable one — **`SagaContext` keys strictly by explicit string key**.
+  The .NET context keys published step-results by their reified type (`typeof(T).FullName`) with an
+  optional string override; TypeScript erases generics and `get<T>()` has no instance to fall back to, so
+  the type-as-default-key can't be ported. A step publishes only when it declares a key
+  (`StepBuilder.key`), and a later stage reads it by that same key (`ctx.get<T>(key)`).
 
 Next, in dependency order, following the .NET repository:
 
