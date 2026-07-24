@@ -70,6 +70,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
+| `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -539,6 +540,31 @@ Ported (with tests):
   Both test classes ported (7 tests: publisher POST + non-2xx-throws, and the five middleware tests —
   calls-next, first-call-publishes, throttle-skips-second-call, publisher-throws-swallowed, and
   doesn't-block-on-a-slow-publisher — with the C# `TaskCompletionSource` signal → a deferred promise).
+- Mesh aggregator (`@benzene/mesh-aggregator`): the polling side of the mesh. `MeshAggregator.runOnceAsync`
+  fetches every registered service's spec + health (via an `IMeshServiceSource` — `HttpMeshServiceSource`
+  ships), computes each service's `MeshServiceSnapshot` + contract-drift (shared `MeshSnapshotBuilder`), and
+  publishes a full artifact set to an `IMeshArtifactStore` (`FileSystemMeshArtifactStore` ships):
+  `manifest.json`, per-service snapshots, the cross-service topic catalog (`topics.json` — version
+  reconciliation, deprecation/gap status, schema-mismatch detection, and a run-over-run diff read back from
+  the previous catalog), the structural `topology.json` (with usage-derived req/min + error-rate attribution
+  where a merged `IMeshUsageSource` feed can pin traffic to an edge unambiguously), the composite
+  `asyncapi.json` (`AsyncApiCompositor` namespaces every service's channels/operations/schemas and rewrites
+  `$ref`s), and an optional `usage.json`. Also the push path (`ArtifactStoreMeshReportPublisher` +
+  `MeshReportMessageHandler`), the discussion write path (`MeshAnnotationPublisher` +
+  `MeshAnnotationsMessageHandler`), and `addMeshAggregator` wiring. Adaptations: `System.Text.Json` (nodes +
+  document) → native `JSON.parse`/`JSON.stringify` throughout (schema `$ref`-inlining, the key-order-normalized
+  canonical compare, and the AsyncAPI `$ref`-rewrite all work on parsed JSON); `HttpClient` → injectable
+  `fetch` (`GetStringAsync`'s throw-on-non-2xx → a ported `HttpRequestException`, whose `name` is the only
+  thing the aggregator records so a failed fetch can't leak a body); `DateTimeOffset`/`TimeSpan` → epoch-ms /
+  ms `number`; `Task.WhenAll` → `Promise.all`; `SemaphoreSlim` (annotation-log write) → a promise-chain
+  mutex; `File`/`Directory` → `node:fs/promises` (path-traversal guard preserved for untrusted push-report
+  service names); `Guid.NewGuid()` → `node:crypto` `randomUUID`. The `[HttpEndpoint]`/`[Message]` handler
+  attributes become `IHttpEndpointDefinition`/`IMessageHandlerDefinition` registrations in
+  `addMeshAggregator` (the port's Extensions-registration convention, since JS has no assembly scan or
+  constructor-parameter reflection). All six aggregator test classes ported (78 tests: catalog/topology/
+  drift/usage-attribution, AsyncAPI composition, artifact-store round-trip + traversal rejection,
+  snapshot-report drift, annotations, and the two message handlers) — two topology tests use the port's
+  PascalCase `BenzeneResultStatus` wire vocabulary where the C# original used lowercase-kebab.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

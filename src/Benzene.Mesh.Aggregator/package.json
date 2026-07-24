@@ -1,0 +1,18 @@
+{
+  "name": "@benzene/mesh-aggregator",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Mesh.Aggregator",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/health-checks-core": "0.1.0",
+    "@benzene/http": "0.1.0",
+    "@benzene/mesh-contracts": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}
