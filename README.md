@@ -440,19 +440,18 @@ Ported (with tests):
   the coarser case it *can* detect — a route that produced no `IBenzeneResult` at all. `useParallel` fans a
   single topic out to several transports concurrently (all-must-succeed aggregate), over the new
   `BoundedFanOut` primitive in `@benzene/core-middleware` (`Task.WhenAll` + `SemaphoreSlim` → `Promise.all`
-  + an async semaphore, results in source order). Still deferred: `validateOutboundRouting` (assembly
+  + an async semaphore, results in source order). The outbound `useW3CTraceContext`
+  (`Benzene.Clients.TraceContext`) stamps the active span's `traceparent`/`tracestate` onto an outbound
+  route's headers (built from `trace.getActiveSpan()`'s span context — the outbound counterpart of
+  `@benzene/diagnostics`' inbound `useW3CTraceContext`). Still deferred: `validateOutboundRouting` (assembly
   reflection over `Benzene.CodeGen.Client` generated-client contracts).
 
 Next, in dependency order, following the .NET repository:
 
-0. The `Benzene.Clients` trace wrapper (`TraceContextBenzeneMessageClient` / `withW3CTraceContext`) —
-   stamps the current span's W3C `traceparent`/`tracestate` onto outgoing client headers. Now unblocked
-   by the distributed-tracing surface above (`@opentelemetry/api` + `BenzeneDiagnostics`); it was the one
-   `Benzene.Clients` piece still deferred pending that abstraction.
-
-1. `validateOutboundRouting` — startup validation of a generated client's required topics; needs
+0. `validateOutboundRouting` — startup validation of a generated client's required topics; needs
    `Benzene.CodeGen.Client` and assembly reflection, neither ported. (The rest of the outbound-routing
-   surface — `IBenzeneMessageSender` + `addOutboundRouting` + `useParallel` — is ported.)
+   surface — `IBenzeneMessageSender` + `addOutboundRouting` + `useParallel` + the outbound
+   `useW3CTraceContext` — is ported.)
 
    Note: a shared `IIdempotencyStore` adapter (Redis/DynamoDB) is intentionally **not** on this list —
    the .NET repo ships no such package (it's a copy-paste example in `docs/cookbooks/idempotency.md`), so

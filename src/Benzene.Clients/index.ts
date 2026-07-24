@@ -16,12 +16,6 @@
  *   `sendMessageNoResponseAsync`.
  * - Common: the HTTP-status -> `BenzeneResult` mapping used by `@benzene/client-http`.
  *
- * DEFERRED (not ported): `Benzene.Clients.TraceContext.*` (`TraceContextBenzeneMessageClient` +
- * its wrapper + `WithW3CTraceContext`). These stamp the current `System.Diagnostics.Activity`'s W3C
- * `traceparent`/`tracestate` onto outgoing headers, depending on the deferred Activity-based
- * distributed-tracing surface (only the portable `parseTraceparent` slice is in `@benzene/diagnostics`).
- * They land once a Node tracing/OpenTelemetry abstraction exists — see the README roadmap's tracing item.
- *
  * NOT re-ported: `Benzene.Clients.JsonSerializer` (identical to the already-ported serializer in
  * `@benzene/core-message-handlers`); `Benzene.Clients.BenzeneClientRequest` is shipped locally
  * (identical to the `@benzene/core-messages` copy — see that file's shipped-twice note).
@@ -67,3 +61,7 @@ export * from './DuplicateOutboundRouteException';
 export * from './OutboundResponseTypeMismatchException';
 export * from './DependencyInjectionExtensions';
 export * from './OutboundParallelExtensions';
+
+// Outbound W3C trace-context propagation (stamps the active span onto the outbound headers).
+export * from './TraceContext/W3CTraceContextMiddleware';
+export * from './TraceContext/Extensions';
