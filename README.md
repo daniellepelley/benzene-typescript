@@ -57,6 +57,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Extras` | `@benzene/extras` | `Benzene.Extras` |
 | `src/Benzene.Auth.Core` | `@benzene/auth-core` | `Benzene.Auth.Core` (+ minimal `System.Security.Claims`) |
 | `src/Benzene.Auth.Basic` | `@benzene/auth-basic` | `Benzene.Auth.Basic` |
+| `src/Benzene.Auth.OAuth2` | `@benzene/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
@@ -87,7 +88,9 @@ ported literally, per the "Third-party library integrations" convention. **Valid
 three mirroring the `Benzene.FluentValidation` integration shape. **Serialization:** `Benzene.Avro`
 (→ Apache.Avro), `Benzene.MessagePack` (→ MessagePack-CSharp) and `Benzene.Xml` (→
 `System.Xml.Serialization`) become adapters over `avsc`, `@msgpack/msgpack` and `fast-xml-parser`,
-each mirroring the .NET package's `IMediaFormat` / serializer shape.
+each mirroring the .NET package's `IMediaFormat` / serializer shape. **Auth:** `Benzene.Auth.OAuth2`
+(→ `Microsoft.IdentityModel`'s `JsonWebTokenHandler` + JWKS `ConfigurationManager`) becomes an adapter
+over `jose`, mirroring the middleware shape (`useOAuth2Bearer` / `requireScope`).
 
 ## Getting started
 
@@ -340,8 +343,25 @@ Ported (with tests):
   - **C# integration tests → API Gateway host.** The C# suite hosts a real Kestrel `AspNetContext`
     pipeline over HTTP; with no ASP.NET host in the port, the ported tests reuse the API Gateway
     transport (a genuine `IHttpContext`) as the HTTP host, and — since the OAuth2 bearer adapter is
-    deferred (below) — seed the authenticated principal directly to exercise the authorization
-    primitives, plus one end-to-end case composing real `useBasicAuth` with `requireRole`.
+    seed the authenticated principal directly to exercise the authorization primitives, plus one
+    end-to-end case composing real `useBasicAuth` with `requireRole`. (OAuth2 bearer is now ported —
+    see the next bullet — so the OAuth2 authorization tests could equally run over real tokens.)
+- OAuth2 bearer (`@benzene/auth-oauth2`): JWT bearer authentication and scope authorization —
+  `useOAuth2Bearer` (`OAuth2BearerMiddleware` + `OAuth2BearerOptions` with fail-fast wire-up validation)
+  and `requireScope` (`scope`/`scp` claim normalization, including Azure AD's JSON-array shape). This is
+  the "adapted, not reimplemented" convention applied to auth: .NET's `Microsoft.IdentityModel`
+  (`JsonWebTokenHandler` + `TokenValidationParameters` + a JWKS-caching `ConfigurationManager`) becomes
+  an adapter over **`jose`**, the standard ecosystem JWT/JWKS library — `jwtVerify` + a
+  `createRemoteJWKSet` key resolver. Divergences: the two C# retriever classes
+  (`OpenIdConnectConfigurationRetriever` / `JwksOnlyConfigurationRetriever`) and the caching
+  `ConfigurationManager` collapse into jose's native `createRemoteJWKSet` (so `JwksOnlyConfigurationRetriever`
+  has no counterpart; the OIDC-discovery path is a thin lazy wrapper resolving `jwks_uri`); `ClockSkew`
+  (`TimeSpan`) → `clockToleranceSeconds`; `RequireHttpsMetadata` enforced when the resolver is built; and
+  `ILoggerFactory` → the port's `ILogger` (`NullLogger` fallback), still logging the real failure reason
+  server-side only and never returning it to the caller. The security posture is preserved: an explicit
+  algorithm allowlist (an HS256 token is rejected against an RS256-only allowlist — the algorithm-confusion
+  guard) and mandatory issuer/audience/lifetime validation, all covered by the ported tests against a real
+  loopback JWKS endpoint (`FakeJwksServer` over `node:http` + jose).
 - Idempotency (`@benzene/idempotency`): at-least-once de-duplication — `useIdempotency` +
   `IdempotencyMiddleware` (claim → run-once → complete/release, releasing the claim when the handler
   throws or reports failure so a redelivery reprocesses), the pluggable `IIdempotencyStore` with an
@@ -357,14 +377,10 @@ Ported (with tests):
 
 Next, in dependency order, following the .NET repository:
 
-0. `Benzene.Auth.OAuth2` (`useOAuth2Bearer` / `requireScope`) — the JWT/JWKS bearer authentication
-   that sets the same `AuthenticationHolder` principal `@benzene/auth-core` already reads. Deferred
-   because, unlike Auth.Core/Auth.Basic (which have no external dependencies), it needs a JWT/JWKS
-   verification library — a new third-party runtime dependency (`jose` is the likely target, adapted
-   under the "adapted, not reimplemented" convention). Held for that dependency decision. A shared
-   `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication sits in the same
-   bucket — the idempotency analogue of the `@benzene/cache-redis` split, since
-   `InMemoryIdempotencyStore` is single-instance only.
+0. A shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication — the
+   idempotency analogue of the `@benzene/cache-redis` split, since `InMemoryIdempotencyStore` is
+   single-instance only. (The other dependency-gated auth item, `Benzene.Auth.OAuth2`, is now ported
+   over `jose` — see the "Ported" list above.)
 
 1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);

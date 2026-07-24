@@ -1,0 +1,17 @@
+{
+  "name": "@benzene/auth-oauth2",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Auth.OAuth2 (JWT bearer validation over jose)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/auth-core": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/http": "0.1.0",
+    "jose": "^5.9.6"
+  }
+}
