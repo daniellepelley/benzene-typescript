@@ -36,6 +36,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
+| `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
 | `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
 | `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
 | `src/Benzene.Aws.Lambda.ApiGateway` | `@benzene/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
@@ -480,6 +481,24 @@ Ported (with tests):
   W3C `traceparent`. The 7-case unit test runs against a real `node:http` loopback server (mirroring the
   C# `HttpListener` approach); the C# integration test isn't ported (it wires a full `Benzene.AspNet.Core`
   + `Benzene.CloudService` host, neither of which is ported yet).
+- Express host adapter (`@benzene/express`) — **no C# counterpart to port.** `Benzene.AspNet.Core` is
+  ASP.NET Core-specific; Express is the Node/JS host equivalent, so this is a new adapter built to the same
+  *shape* (added under the "third-party integrations are adapted, not reimplemented" convention — Express
+  plays the role ASP.NET Core plays in .NET). `benzene((pipeline) => useMessageHandlers(pipeline, ...))`
+  returns a standard Express/Connect `(req, res, next)` middleware for the **strangler-fig pattern**:
+  Benzene handles the HTTP verbs + URLs it has `@httpEndpoint` handlers for, and falls through to the rest
+  of the Express app for everything else. The fallback mirrors `Benzene.AspNet.Core`'s
+  `if (!Response.HasStarted) next()`, realized explicitly via `IRouteFinder` — the middleware checks the
+  route table first and calls `next()` *without reading the request body* when no route matches, so
+  downstream middleware sees an untouched request. The adapter set (context, getters, request/response
+  adapters, enricher, result setter, `addExpress`) is a structural analog of
+  `@benzene/aws-lambda-api-gateway`'s. Typed against Node's `http` (`IncomingMessage`/`ServerResponse`)
+  with no runtime `express` dependency (Express is an optional peer); the raw body is read up front
+  (ASP.NET's `UseBufferedRequestBody` equivalent), so mount it before any body parser. Tested end-to-end
+  against a real Express 5 app. Known limitation (port-wide, not Express-specific): a bodyless request
+  (GET) yields `{} as TRequest`, and `enrich` only fills properties the object already has, so path/query
+  params can't populate a field the empty body lacks — TypeScript has no `Activator.CreateInstance<T>()`
+  to default-construct the erased DTO.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
