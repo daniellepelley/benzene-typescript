@@ -51,6 +51,8 @@ Mirrors the .NET repository:
 | `src/Benzene.HealthChecks.Core` | `@benzene/health-checks-core` | `Benzene.HealthChecks.Core` |
 | `src/Benzene.HealthChecks` | `@benzene/health-checks` | `Benzene.HealthChecks` |
 | `src/Benzene.HealthChecks.Http` | `@benzene/health-checks-http` | `Benzene.HealthChecks.Http` |
+| `src/Benzene.HealthChecks.Tcp` | `@benzene/health-checks-tcp` | `Benzene.HealthChecks.Tcp` (over `node:net`) |
+| `src/Benzene.HealthChecks.Disk` | `@benzene/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
 | `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
 | `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
 | `src/Benzene.Xml` | `@benzene/xml` | `Benzene.Xml`† (`fast-xml-parser` adapter) |
@@ -319,8 +321,13 @@ Ported (with tests):
   `StreamMiddlewareApplication`, the `StreamOperators`, `IStreamCheckpointer`, and `useStream`. C#
   `IAsyncEnumerable<T>` → `AsyncIterable<T>` / `async function*`.
 - Health checks (`@benzene/health-checks-core` + `@benzene/health-checks` aggregator +
-  `@benzene/health-checks-http` ping): the `IHealthCheck` abstraction, aggregating runner, and an
-  HTTP-ping check over the global `fetch`.
+  `@benzene/health-checks-http` ping + `@benzene/health-checks-tcp` + `@benzene/health-checks-disk`):
+  the `IHealthCheck` abstraction, aggregating runner, an HTTP-ping check over the global `fetch`, a
+  TCP-connect check over `node:net`, and a free-disk-space check over `node:fs`'s `statfs`
+  (`System.IO.DriveInfo` → `statfs`; `statfs` exposes no mount name, so the checked path stands in as
+  the drive identifier). The TCP check's ambient `ICancellationTokenAccessor` DI seam is not ported
+  yet, so its factory constructs the check with no `AbortSignal` (the constructor accepts one for when
+  a scoped-signal accessor is ported).
 - Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
   convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
   alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the
