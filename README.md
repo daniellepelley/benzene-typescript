@@ -69,6 +69,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
 | `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
+| `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -526,6 +527,18 @@ Ported (with tests):
   `@benzene/core-messages` (the handler's response type). The gate + handler test classes ported (9 tests);
   the AWS-Lambda-dispatcher test needs the unported `Benzene.Mesh.Aws.Lambda`, so HTTP-dispatcher
   port-verification tests stand in.
+- Mesh self-reporting (`@benzene/mesh-reporting`): push-based reporting for services an aggregator can't
+  poll — `HttpMeshReportPublisher` (POSTs a `MeshServiceReport` to an aggregator's ingestion endpoint) and
+  `MeshSelfReportMiddleware`, which opportunistically publishes the service's own spec/health *after* real
+  traffic completes, throttled by `MeshSelfReportOptions.minimumIntervalMs` (tracked in a singleton
+  `MeshSelfReportState`) and fully best-effort (fire-and-forget, never delays the wrapped response, swallows
+  publish/provider failures). Wired via `addMeshHttpReporting`/`addMeshSelfReport`/`useMeshSelfReport`.
+  Adaptations: `HttpClient` → injectable `fetch` (`@benzene/health-checks-http`'s pattern); `DateTimeOffset`/
+  `TimeSpan` → epoch-millisecond / millisecond `number`; the C# `Interlocked`-guarded `long` last-published
+  tick → a plain `number | undefined` (Node's single-threaded event loop has no torn read/write to guard).
+  Both test classes ported (7 tests: publisher POST + non-2xx-throws, and the five middleware tests —
+  calls-next, first-call-publishes, throttle-skips-second-call, publisher-throws-swallowed, and
+  doesn't-block-on-a-slow-publisher — with the C# `TaskCompletionSource` signal → a deferred promise).
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
