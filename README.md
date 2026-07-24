@@ -61,7 +61,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
-| `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` (default publisher deferred) |
+| `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -411,21 +411,31 @@ Ported (with tests):
   and the `findUnmappedResponseHandlers`/`logUnmappedResponseHandlers` startup diagnostic. Divergences:
   C#'s `Map<TPayload>` (which reads `typeof(TPayload)`) becomes `mapWithPayload(payloadType, …)` with an
   explicit constructor, since generics erase; the "no payload" check also treats the `VoidResult`
-  sentinel as empty (what `BenzeneResult.accepted<T>()` carries in the port). **Deferred:** the default
-  publisher `BenzeneMessageSenderResponseEventPublisher` wraps the topic-addressed `IBenzeneMessageSender`
-  / `AddOutboundRouting` surface, which isn't ported yet — so `useResponseEvents` registers no default
-  publisher (the caller registers an `IResponseEventPublisher`), and the C# end-to-end pipeline test is
-  ported as a middleware-level test driving a capturing publisher directly.
+  sentinel as empty (what `BenzeneResult.accepted<T>()` carries in the port). The default publisher
+  `BenzeneMessageSenderResponseEventPublisher` (over the outbound-routing `IBenzeneMessageSender` — see
+  below) is registered by `useResponseEvents`, and the end-to-end chain (middleware → default publisher →
+  outbound route) is covered by a test.
+- Outbound routing (`@benzene/clients`): the topic-addressed `IBenzeneMessageSender` surface —
+  `addOutboundRouting(routing => routing.route(topic, pipeline => …))` builds one outbound
+  `IMiddlewarePipeline<OutboundContext>` per topic ahead of time (`OutboundRoutingBuilder`,
+  `OutboundRoutingTopics`), and `DefaultBenzeneMessageSender.sendAsync(topic, request, headers?)` runs the
+  matching route, with `UnroutedTopicException` / `DuplicateOutboundRouteException` /
+  `OutboundResponseTypeMismatchException`. Erasure divergence: `sendAsync<TRequest, TResponse>` can't
+  compare the produced payload type against the erased `TResponse` (the .NET `is IBenzeneResult<TResponse>`
+  check), so it returns the route's result cast to `TResponse` and only throws the mismatch exception for
+  the coarser case it *can* detect — a route that produced no `IBenzeneResult` at all. Deferred within this
+  surface: `useParallel` (needs a bounded-fan-out helper not yet ported) and `validateOutboundRouting`
+  (assembly reflection over `Benzene.CodeGen.Client` generated-client contracts).
 
 Next, in dependency order, following the .NET repository:
 
-0. The topic-addressed outbound-routing surface (`IBenzeneMessageSender` + `AddOutboundRouting`/`Route`
-   / `OutboundContext`), and on top of it the default response-event publisher
-   `BenzeneMessageSenderResponseEventPublisher` — the one `Benzene.ResponseEvents` piece deferred (the
-   rest is ported; `useResponseEvents` currently expects a caller-registered `IResponseEventPublisher`).
-   Plus a shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication — the
-   idempotency analogue of the `@benzene/cache-redis` split, since `InMemoryIdempotencyStore` is
-   single-instance only.
+0. The rest of the outbound-routing surface: `useParallel` (concurrent multi-transport fan-out — needs a
+   bounded-fan-out helper ported first) and `validateOutboundRouting` (startup validation of a generated
+   client's required topics — depends on `Benzene.CodeGen.Client` and assembly reflection). The core
+   `IBenzeneMessageSender` + `addOutboundRouting` and the response-event default publisher over it are
+   now ported. Plus a shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance
+   de-duplication — the idempotency analogue of the `@benzene/cache-redis` split, since
+   `InMemoryIdempotencyStore` is single-instance only.
 
 1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);

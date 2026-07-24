@@ -53,3 +53,16 @@ export * from './Extensions';
 export * from './ClientExtensions';
 export * from './Common/BenzeneResultHttpMapper';
 export * from './Common/ClientResultExtensions';
+
+// Outbound routing: the topic-addressed `IBenzeneMessageSender` surface (`Benzene.Clients` outbound
+// routing) - build one outbound pipeline per topic ahead of time and send by topic. `UseParallel`
+// (needs a bounded-fan-out helper not yet ported) and `ValidateOutboundRouting` (assembly-reflection
+// over generated-client contracts) are deferred - see the README roadmap.
+export * from './IBenzeneMessageSender';
+export * from './OutboundContext';
+export * from './OutboundRoutingBuilder';
+export * from './OutboundRoutingTopics';
+export * from './UnroutedTopicException';
+export * from './DuplicateOutboundRouteException';
+export * from './OutboundResponseTypeMismatchException';
+export * from './DependencyInjectionExtensions';

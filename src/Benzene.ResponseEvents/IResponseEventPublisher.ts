@@ -1,16 +1,11 @@
 import { IBenzeneResult, ServiceToken, serviceToken } from '@benzene/abstractions';
 
 /**
- * The outbound port {@link ResponseEventsMiddleware} publishes matched events through. Register an
- * implementation per pipeline (see {@link useResponseEvents}); a test fake, a custom fan-out, or an
- * adapter over an outbound message sender.
+ * The outbound port {@link ResponseEventsMiddleware} publishes matched events through. The default
+ * implementation ({@link BenzeneMessageSenderResponseEventPublisher}) sends via `IBenzeneMessageSender`'s
+ * outbound routing; replace the scoped registration to publish differently (a test fake, a custom
+ * fan-out, or a transactional outbox relay).
  * Port of Benzene.ResponseEvents.IResponseEventPublisher.
- *
- * Deviation: the .NET default implementation `BenzeneMessageSenderResponseEventPublisher` wraps the
- * topic-addressed `IBenzeneMessageSender` (`AddOutboundRouting`) surface, which is not yet ported. Until
- * that outbound-routing surface exists in TypeScript, `useResponseEvents` registers no default
- * publisher - the caller registers an `IResponseEventPublisher` (or the middleware throws when a mapping
- * matches). See the README roadmap.
  */
 export interface IResponseEventPublisher {
   /**

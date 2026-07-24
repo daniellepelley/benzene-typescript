@@ -1,6 +1,7 @@
 export * from './PublishFailureMode';
 export * from './ResponseEventPublication';
 export * from './IResponseEventPublisher';
+export * from './BenzeneMessageSenderResponseEventPublisher';
 export * from './IResponseEventMapping';
 export * from './ExplicitResponseEventMapping';
 export * from './CrudConventionResponseEventMapping';

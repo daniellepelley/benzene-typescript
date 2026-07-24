@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResult, IBenzeneResultOf, IServiceResolver, ServiceIdentifier } from '@benzene/abstractions';
+import {
+  IBenzeneResult,
+  IBenzeneResultOf,
+  IServiceResolver,
+  ServiceIdentifier,
+  tryAddScopedFactory,
+} from '@benzene/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IMessageHandlerContext,
   IMessageRouterBuilder,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageDefinition, IMessageDefinitionFinder } from '@benzene/abstractions-messages';
+import { addOutboundRouting, IBenzeneMessageSender } from '@benzene/clients';
 import { Topic } from '@benzene/core-messages';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
 import {
+  BenzeneMessageSenderResponseEventPublisher,
   IResponseEventCatalog,
   IResponseEventPublisher,
   PublishFailureMode,
@@ -205,5 +213,49 @@ describe('useResponseEvents catalog registration', () => {
     expect(definitions).toHaveLength(1);
     expect(definitions[0]!.topic.id).toBe('order:created');
     expect(definitions[0]!.requestType).toBe(OrderPayload);
+  });
+});
+
+describe('ResponseEvents end-to-end over the default publisher', () => {
+  it('the middleware publishes a matched event through the default publisher and an outbound route', async () => {
+    // The full chain the C# pipeline test covers: handler result -> ResponseEventsMiddleware ->
+    // BenzeneMessageSenderResponseEventPublisher (the default) -> IBenzeneMessageSender -> outbound route.
+    const container = new DefaultBenzeneServiceContainer();
+    const routed: unknown[] = [];
+    addOutboundRouting(container, (routing) =>
+      routing.route('order:created', (pipeline) =>
+        pipeline.onRequest((context) => {
+          routed.push(context.request);
+          context.response = BenzeneResult.accepted();
+        }),
+      ),
+    );
+    tryAddScopedFactory(
+      container,
+      IResponseEventPublisher,
+      (resolver) => new BenzeneMessageSenderResponseEventPublisher(resolver.getService(IBenzeneMessageSender)),
+    );
+
+    const resolver = container.createServiceResolverFactory().createScope();
+    const middleware = new ResponseEventsMiddleware<OrderPayload, OrderPayload>(
+      mappingsOf((e) => e.map('order:create', 'order:created')),
+      resolver,
+    );
+    const context = {
+      topic: new Topic('order:create'),
+      handlerType: undefined,
+      request: new OrderPayload(),
+      response: undefined as unknown as IBenzeneResultOf<OrderPayload>,
+    } satisfies IMessageHandlerContext<OrderPayload, OrderPayload>;
+
+    await middleware.handleAsync(context, () => {
+      context.response = created(42);
+      return Promise.resolve();
+    });
+
+    // The handler response is kept, and the event reached the outbound route with the payload.
+    expect(context.response.status).toBe(BenzeneResultStatus.created);
+    expect(routed).toHaveLength(1);
+    expect((routed[0] as OrderPayload).id).toBe(42);
   });
 });

@@ -1,6 +1,13 @@
-import { IBenzeneServiceContainer, tryAddSingletonFactory } from '@benzene/abstractions';
+import {
+  IBenzeneServiceContainer,
+  tryAddScopedFactory,
+  tryAddSingletonFactory,
+} from '@benzene/abstractions';
 import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
 import { IMessageDefinition, IMessageDefinitionFinder } from '@benzene/abstractions-messages';
+import { IBenzeneMessageSender } from '@benzene/clients';
+import { BenzeneMessageSenderResponseEventPublisher } from './BenzeneMessageSenderResponseEventPublisher';
+import { IResponseEventPublisher } from './IResponseEventPublisher';
 import { IResponseEventCatalog, ResponseEventCatalog } from './ResponseEventCatalog';
 import { ResponseEventDeclarations } from './ResponseEventDeclarations';
 import { ResponseEventMappings } from './ResponseEventMappings';
@@ -16,13 +23,10 @@ import { ResponseEventsMiddlewareBuilder } from './ResponseEventsMiddlewareBuild
 /**
  * Adds response-event publishing to this pipeline's handler dispatch: after a handler runs, every
  * configured mapping that matches the (topic, result) pair publishes the response payload as an event
- * through the registered {@link IResponseEventPublisher}. Scoped to the pipeline whose
+ * through the registered {@link IResponseEventPublisher} (by default,
+ * {@link BenzeneMessageSenderResponseEventPublisher} over `IBenzeneMessageSender` - each event topic
+ * needs an `addOutboundRouting` route). Scoped to the pipeline whose
  * `useMessageHandlers(..., router => ...)` call this is made in.
- *
- * Deviation: the .NET version also registers a default `IResponseEventPublisher`
- * (`BenzeneMessageSenderResponseEventPublisher`, over the `IBenzeneMessageSender`/`AddOutboundRouting`
- * surface). That outbound-routing surface is not yet ported, so no default publisher is registered here
- * - register an {@link IResponseEventPublisher} yourself (scoped) for the middleware to publish through.
  */
 export function useResponseEvents(
   builder: IMessageRouterBuilder,
@@ -35,6 +39,11 @@ export function useResponseEvents(
   builder.add(new ResponseEventsMiddlewareBuilder(mappings));
   builder.register((services) => {
     services.addSingletonInstance(ResponseEventMappings, mappings);
+    tryAddScopedFactory(
+      services,
+      IResponseEventPublisher,
+      (resolver) => new BenzeneMessageSenderResponseEventPublisher(resolver.getService(IBenzeneMessageSender)),
+    );
     addResponseEventCatalog(services);
   });
 
