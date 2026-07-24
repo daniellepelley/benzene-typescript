@@ -278,8 +278,22 @@ Ported (with tests):
 - Diagnostics: `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`, plus the
   correlation-id middleware and the process-timer surface. C# `Stopwatch` → `Date.now()` deltas;
   `Debug.WriteLine` → an injectable, silent-by-default sink; `Guid.NewGuid()` →
-  `crypto.randomUUID()`. The distributed-tracing surface (`ActivityMiddleware`, W3C trace context,
-  metrics) still needs a Node tracing abstraction and stays deferred.
+  `crypto.randomUUID()`.
+- Distributed tracing & metrics (`@benzene/diagnostics`, over **`@opentelemetry/api`**): the
+  span-per-middleware surface (`ActivityMiddlewareDecorator`/`Wrapper` + `addActivityPerMiddleware`/
+  `addDiagnostics`, tagging `benzene.topic`/`version`/`transport`/`handler`/`status`), `useW3CTraceContext`
+  (continues an inbound `traceparent` as the root span's remote parent), `useBenzeneMetrics` (the
+  `benzene.messages.processed` counter + `benzene.message.duration` histogram, tagged topic/transport/
+  result), `useBenzeneEnrichment` (log-scope + span enrichment), and the span-backed
+  `ActivityProcessTimer`. .NET's `System.Diagnostics.Activity`/`ActivitySource`/`Meter` map to
+  OpenTelemetry JS's tracer/meter; divergences: instruments resolve lazily (OTel JS instruments created
+  before a provider is registered stay no-op, unlike .NET's `MeterListener`); `ActivityContext.TryParse`
+  → a `SpanContext` built from the ported `parseTraceparent` (self-contained, no globally-set propagator
+  needed; `tracestate` isn't threaded through); `Counter.Enabled` gating is dropped (OTel JS's no-op
+  meter is already cheap); `benzene.status`/metric `result` values are the port's PascalCase status
+  strings (`NotFound`, not .NET's `not-found`). `Benzene.OpenTelemetry` has no counterpart — OpenTelemetry
+  JS exports every API tracer/meter once an SDK is registered, so there's no per-source `AddSource`/
+  `AddMeter` step to port.
 - HTTP routing (`@benzene/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
   + `RouteFinder`/`UrlMatcher`, and the Benzene-status → HTTP-status-code mapping.
 - Transport adapters (entry points) — the **complete event-source matrix for both clouds**, each
@@ -431,16 +445,19 @@ Ported (with tests):
 
 Next, in dependency order, following the .NET repository:
 
-0. A shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication — the
-   idempotency analogue of the `@benzene/cache-redis` split, since `InMemoryIdempotencyStore` is
-   single-instance only. (The outbound-routing surface — `IBenzeneMessageSender` + `addOutboundRouting` +
-   `useParallel` — is now ported; only `validateOutboundRouting`, which needs `Benzene.CodeGen.Client` and
-   assembly reflection, remains deferred from it.)
+0. The `Benzene.Clients` trace wrapper (`TraceContextBenzeneMessageClient` / `withW3CTraceContext`) —
+   stamps the current span's W3C `traceparent`/`tracestate` onto outgoing client headers. Now unblocked
+   by the distributed-tracing surface above (`@opentelemetry/api` + `BenzeneDiagnostics`); it was the one
+   `Benzene.Clients` piece still deferred pending that abstraction.
 
-1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
-   trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
-   the deferred `Benzene.Clients` trace wrapper depends on it. Held for a design decision on the
-   tracing abstraction.
+1. `validateOutboundRouting` — startup validation of a generated client's required topics; needs
+   `Benzene.CodeGen.Client` and assembly reflection, neither ported. (The rest of the outbound-routing
+   surface — `IBenzeneMessageSender` + `addOutboundRouting` + `useParallel` — is ported.)
+
+   Note: a shared `IIdempotencyStore` adapter (Redis/DynamoDB) is intentionally **not** on this list —
+   the .NET repo ships no such package (it's a copy-paste example in `docs/cookbooks/idempotency.md`), so
+   porting one would invent a package with no C# counterpart. `InMemoryIdempotencyStore` remains the only
+   shipped store, matching the original.
 2. Mesh/schema tooling — the sender-definition building blocks (`IMessageSenderDefinition` /
    `MessageSenderDefinition`, the `IMessageDefinitionFinder` token) are ported; the remaining
    `Benzene.Mesh.*` catalog/topology/contract-drift surface and schema generation

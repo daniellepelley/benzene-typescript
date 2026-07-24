@@ -3,6 +3,16 @@ export * from './DebugMiddlewareDecorator';
 export * from './DebugMiddlewareWrapper';
 export * from './Extensions';
 
+// Distributed tracing / metrics (over @opentelemetry/api): the span-per-middleware surface, W3C trace
+// context, once-per-message metrics, and log/trace enrichment.
+export * from './BenzeneDiagnostics';
+export * from './ActivityMiddlewareDecorator';
+export * from './ActivityMiddlewareWrapper';
+export * from './W3CTraceContextExtensions';
+export * from './MetricsExtensions';
+export * from './EnrichmentExtensions';
+export * from './DependencyInjectionExtensions';
+
 // Correlation
 export * from './Correlation/CorrelationId';
 export * as CorrelationExtensions from './Correlation/Extensions';
@@ -17,9 +27,8 @@ export * from './Timers/DebugTimerFactory';
 export * from './Timers/CompositeProcessTimer';
 export * from './Timers/CompositeProcessTimerFactory';
 export * as ProcessTimerExtensions from './Timers/ProcessTimerExtensions';
+export * from './Timers/ActivityProcessTimer';
 
-// Deferred: ActivityProcessTimer / ActivityProcessTimerFactory (Benzene.Diagnostics.Timers.ActivityProcessTimer)
-// are built on System.Diagnostics.Activity distributed tracing — part of the OpenTelemetry-flavored
-// tracing surface (BenzeneDiagnostics.ActivitySource, ActivityMiddleware, UseW3CTraceContext) deferred
-// elsewhere in the port until a Node tracing abstraction exists. See Correlation/Extensions.ts
-// (parseTraceparent) for the portable slice of the W3C trace-context handling.
+// Benzene.OpenTelemetry has no counterpart package: unlike .NET (where a TracerProviderBuilder must
+// AddSource/AddMeter by name), OpenTelemetry JS exports spans/instruments from every API tracer/meter
+// once an SDK is registered, so there is no per-source registration step to port.
