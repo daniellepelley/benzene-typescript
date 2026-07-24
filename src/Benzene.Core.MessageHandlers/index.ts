@@ -4,6 +4,8 @@ export * from './DependencyMessageHandlersFinder';
 export * from './ImportMessageHandlers';
 export * from './MessageAttribute';
 export * from './MessageHandlerDefinition';
+export * from './HeaderMessageVersionGetter';
+export * from './MessageVersionHeaderNames';
 export * from './MessageHandlerDefinitionIndex';
 export * from './MessageHandlerDefinitionLookUp';
 export * from './MessageHandlersList';

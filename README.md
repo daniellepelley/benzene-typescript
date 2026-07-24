@@ -65,6 +65,7 @@ Mirrors the .NET repository:
 | `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
+| `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
@@ -450,6 +451,24 @@ Ported (with tests):
   the deserialize path threads an optional `targetType` to the inner serializer; the `IBufferWriter`
   `Encode` overload isn't ported (the port's `IPayloadSerializer` models `Uint8Array` directly), and the
   in-memory client's `lock` is dropped (single-threaded event loop makes check-and-insert atomic).
+- Payload version-casting (`@benzene/core-versioning`): transparent request-upcast / response-downcast so
+  one handler on the canonical schema serves older-version producers — the `ICaster`/`FuncCaster`/
+  `CompositeCaster` core, the schema layer (`ISchemaCaster`/`SchemaCaster`/`SchemaCasters` + builders),
+  `SchemaCastDefinitionsExpander` (BFS shortest-path chain composition, preferring a registered shortcut),
+  the `CastingRequestMapper`/`CastingResponsePayloadMapper` decorators, and `usePayloadVersionCasting` +
+  `registerSchemaCastDefinitions`/`registerPayloadSchemaVersions`. Also ported the version-getter
+  infrastructure it needs: `IMessageVersionGetter`, `MessageVersionHeaders` (`benzene-version`),
+  `HeaderMessageVersionGetter` + `addHeaderMessageVersionGetter` (wired into `addBenzeneMessage`).
+  **Major divergence:** C#'s default caster is a reflection + `System.Linq.Expressions` auto-mapper
+  (`CasterFactory`/`CasterFuncBuilder`/`SchemaTypeMatcher`) that maps properties by name at runtime — it
+  has no faithful TS equivalent (no runtime property reflection, no IL compilation, no assembly scanning),
+  so it is **not ported**; casters are explicit `(from) => to` functions (idiomatic TS anyway), so the C#
+  `CasterFactoryTest` is not ported either. Runtime `Type` keys → `Constructor` keys throughout; the
+  request path needs the target type `getBody<TRequest>` can't convey under erasure, so an optional
+  `targetType` was threaded through `IRequestMapper.getBody`/`RequestMapperThunk`/`MessageRouter` (the
+  same optional-`targetType` erasure pattern `@benzene/avro` uses; existing mappers ignore it). A
+  failure/no-payload result carries the `VoidResult` sentinel, so the response mapper treats that (and a
+  raw-string payload) as "no downcast", matching the C# `payload == null` guard.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

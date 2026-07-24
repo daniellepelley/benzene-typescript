@@ -25,6 +25,7 @@ export * from './IHandlerMiddlewareBuilder';
 export * from './IHandlerPipelineBuilder';
 export * from './IMessageRouterBuilder';
 export * from './Mappers/IMessageTopicGetter';
+export * from './Mappers/IMessageVersionGetter';
 export * from './Mappers/IMessageGetter';
 export * from './Mappers/IMessageHandlerResultSetter';
 export * from './Info/IApplicationInfo';

@@ -92,7 +92,7 @@ export class MessageRouter<TContext> implements IMiddleware<TContext> {
     this.logger.logDebug('Handler mapped to topic');
 
     const result: IBenzeneResult = await handler.handlerAsync(
-      new RequestMapperThunk<TContext>(this.requestMapper, context),
+      new RequestMapperThunk<TContext>(this.requestMapper, context, messageHandlerDefinition.requestType),
     );
     await this.messageHandlerResultSetter.setResultAsync(
       context,

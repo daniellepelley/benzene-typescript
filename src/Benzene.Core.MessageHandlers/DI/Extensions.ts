@@ -46,6 +46,7 @@ import { BenzeneMessageMessageHandlerResultSetter } from '../BenzeneMessage/Benz
 import { BenzeneMessageResponseAdapter } from '../BenzeneMessage/BenzeneMessageResponseAdapter';
 import { DefaultResponseStatusHandler } from '../BenzeneMessage/DefaultResponseStatusHandler';
 import { CacheMessageHandlersFinder } from '../CacheMessageHandlersFinder';
+import { tryAddHeaderMessageVersionGetter } from '../MessageVersionHeaderNames';
 import { CompositeMessageHandlersFinder } from '../CompositeMessageHandlersFinder';
 import { DefaultStatuses } from '../DefaultStatuses';
 import { DependencyMessageHandlersFinder } from '../DependencyMessageHandlersFinder';
@@ -105,6 +106,7 @@ import { VersionSelector } from '../VersionSelector';
  * `new`-ing registrations).
  */
 export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  tryAddHeaderMessageVersionGetter<BenzeneMessageContext>(services);
   tryAddScoped(services, BenzeneMessageGetter);
   tryAddScopedFactory(services, IMessageGetter, (r) =>
     r.getService(BenzeneMessageGetter) as unknown as IMessageGetter<unknown>,

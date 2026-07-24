@@ -1,4 +1,5 @@
 export * from './ITopic';
+export * from './MessageVersionHeaders';
 export * from './IMessageDefinition';
 export * from './IMessageDefinitionFinder';
 export * from './IRequestResponseMessageDefinition';
