@@ -61,6 +61,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Auth.Basic` | `@benzene/auth-basic` | `Benzene.Auth.Basic` |
 | `src/Benzene.Auth.OAuth2` | `@benzene/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
+| `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
@@ -398,6 +399,18 @@ Ported (with tests):
   store's `lock` is dropped (Node runs each method's synchronous body to completion, so the
   check-and-insert is already atomic). The `is IHasMessageResult` interface check → a `messageResult`
   duck-typing guard.
+- Rate limiting (`@benzene/rate-limiting`): best-effort, per-instance protection — `useRateLimiting`
+  (bring-your-own limiter + optional per-message permit cost), `useFixedWindowRateLimiting`,
+  `useTokenBucketRateLimiting`, and `usePayloadSizeRateLimiting` (cost = the body's UTF-8 byte length
+  via `Buffer.byteLength`), over `RateLimitingMiddleware` which acquires without queuing, short-circuits
+  a rejected message with `TooManyRequests` (HTTP 429, attaching the looked-up handler definition so the
+  error body is written), and holds the lease across `next()` so concurrency limiters release. Because
+  Node has no `System.Threading.RateLimiting`, the used subset is re-created inside the package
+  (`RateLimiter`/`RateLimitLease` + `FixedWindowRateLimiter`/`TokenBucketRateLimiter`/`ConcurrencyLimiter`):
+  .NET's timer-driven `AutoReplenishment` becomes lazy, clock-driven replenishment over an injectable
+  `now` (`TimeSpan` windows/periods → millisecond `number`s), and `AttemptAcquire`'s over-capacity
+  `ArgumentOutOfRangeException` → a `RangeError` the middleware catches as a rejection. This is the first
+  package to need `BenzeneResult.tooManyRequests`, added to `@benzene/results` to match the C# factory.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

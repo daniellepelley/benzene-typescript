@@ -92,6 +92,10 @@ export const BenzeneResult = {
     return BenzeneResult.setErrors(BenzeneResultStatus.serviceUnavailable, ...errors);
   },
 
+  tooManyRequests<T = VoidResult>(...errors: string[]): IBenzeneResultOf<T> {
+    return BenzeneResult.setErrors(BenzeneResultStatus.tooManyRequests, ...errors);
+  },
+
   unexpectedError<T = VoidResult>(...errors: string[]): IBenzeneResultOf<T> {
     return BenzeneResult.setErrors(BenzeneResultStatus.unexpectedError, ...errors);
   },
