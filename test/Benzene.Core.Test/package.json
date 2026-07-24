@@ -47,6 +47,7 @@
     "@benzene/diagnostics": "0.1.0",
     "@benzene/extras": "0.1.0",
     "@benzene/resilience": "0.1.0",
+    "@benzene/response-events": "0.1.0",
     "@benzene/results": "0.1.0",
     "@benzene/saga": "0.1.0",
     "@benzene/joi": "0.1.0",

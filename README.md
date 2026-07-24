@@ -61,6 +61,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
+| `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` (default publisher deferred) |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -400,13 +401,31 @@ Ported (with tests):
   optional string override; TypeScript erases generics and `get<T>()` has no instance to fall back to, so
   the type-as-default-key can't be ported. A step publishes only when it declares a key
   (`StepBuilder.key`), and a later stage reads it by that same key (`ctx.get<T>(key)`).
+- Response events (`@benzene/response-events`): republishing a handler's response as a follow-up event
+  — the mapping rules (`ExplicitResponseEventMapping` with `when`/projector, `CrudConventionResponseEventMapping`
+  for `X:create` → `X:created`), `ResponseEventMappings` (fan-out; every matching mapping publishes),
+  the `ResponseEventsMiddleware` handler-middleware (publish-on-success via `IResponseEventPublisher`,
+  with `FailMessage` vs `LogAndContinue` failure modes) + its `useResponseEvents` router registration,
+  the introspection surface (`IResponseEventCatalog` aggregating every pipeline's mappings, an
+  `IMessageDefinitionFinder` for spec generation, `ResponseEventDefinition`/`ResponseEventDeclarations`),
+  and the `findUnmappedResponseHandlers`/`logUnmappedResponseHandlers` startup diagnostic. Divergences:
+  C#'s `Map<TPayload>` (which reads `typeof(TPayload)`) becomes `mapWithPayload(payloadType, …)` with an
+  explicit constructor, since generics erase; the "no payload" check also treats the `VoidResult`
+  sentinel as empty (what `BenzeneResult.accepted<T>()` carries in the port). **Deferred:** the default
+  publisher `BenzeneMessageSenderResponseEventPublisher` wraps the topic-addressed `IBenzeneMessageSender`
+  / `AddOutboundRouting` surface, which isn't ported yet — so `useResponseEvents` registers no default
+  publisher (the caller registers an `IResponseEventPublisher`), and the C# end-to-end pipeline test is
+  ported as a middleware-level test driving a capturing publisher directly.
 
 Next, in dependency order, following the .NET repository:
 
-0. A shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication — the
+0. The topic-addressed outbound-routing surface (`IBenzeneMessageSender` + `AddOutboundRouting`/`Route`
+   / `OutboundContext`), and on top of it the default response-event publisher
+   `BenzeneMessageSenderResponseEventPublisher` — the one `Benzene.ResponseEvents` piece deferred (the
+   rest is ported; `useResponseEvents` currently expects a caller-registered `IResponseEventPublisher`).
+   Plus a shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication — the
    idempotency analogue of the `@benzene/cache-redis` split, since `InMemoryIdempotencyStore` is
-   single-instance only. (The other dependency-gated auth item, `Benzene.Auth.OAuth2`, is now ported
-   over `jose` — see the "Ported" list above.)
+   single-instance only.
 
 1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
