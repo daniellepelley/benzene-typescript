@@ -66,6 +66,7 @@ Mirrors the .NET repository:
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
+| `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
@@ -469,6 +470,16 @@ Ported (with tests):
   same optional-`targetType` erasure pattern `@benzene/avro` uses; existing mappers ignore it). A
   failure/no-payload result carries the `VoidResult` sentinel, so the response mapper treats that (and a
   raw-string payload) as "no downcast", matching the C# `payload == null` guard.
+- Cloud Service conformance probe (`@benzene/cloud-service-probe`): a self-contained (no Benzene package
+  deps) external, black-box HTTP probe of the Cloud Service Profile — `CloudServiceProbe.runAsync` hits a
+  live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and reserved `mesh` topic and returns
+  a tri-state (`Satisfied`/`NotSatisfied`/`Inconclusive`) assessment of R1–R8 built only from what it
+  observed, never trusting the service's own claims. `HttpClient` + `BaseAddress` → an injectable `fetch`
+  (`@benzene/health-checks-http`'s adaptation) + `baseUrl`; `System.Text.Json.Nodes` shape checks →
+  `JSON.parse` + type guards; `RandomNumberGenerator` → Web-Crypto `getRandomValues` for the synthetic
+  W3C `traceparent`. The 7-case unit test runs against a real `node:http` loopback server (mirroring the
+  C# `HttpListener` approach); the C# integration test isn't ported (it wires a full `Benzene.AspNet.Core`
+  + `Benzene.CloudService` host, neither of which is ported yet).
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

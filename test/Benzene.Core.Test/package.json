@@ -46,6 +46,7 @@
     "@benzene/clients-health-checks": "0.1.0",
     "@benzene/schema-registry-core": "0.1.0",
     "@benzene/core-versioning": "0.1.0",
+    "@benzene/cloud-service-probe": "0.1.0",
     "@benzene/core": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/core-messages": "0.1.0",

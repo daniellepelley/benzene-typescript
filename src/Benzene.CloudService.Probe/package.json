@@ -1,0 +1,10 @@
+{
+  "name": "@benzene/cloud-service-probe",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.CloudService.Probe",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {}
+}
