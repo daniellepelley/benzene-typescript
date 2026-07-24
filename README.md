@@ -71,6 +71,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
+| `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -565,6 +566,19 @@ Ported (with tests):
   drift/usage-attribution, AsyncAPI composition, artifact-store round-trip + traversal rejection,
   snapshot-report drift, annotations, and the two message handlers) — two topology tests use the port's
   PascalCase `BenzeneResultStatus` wire vocabulary where the C# original used lowercase-kebab.
+- Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
+  to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
+  metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
+  (`PrometheusQueryClient`) — request rate, failure rate, and p50/p95/p99 latency PromQL queries — and joins
+  them into a `MeshTopology` of `TopologyEdgeSource.tempo` edges, published as `topology.json` by
+  `TempoTopologyMessageHandler` (`POST /mesh/topology`, topic `mesh:topology`) into the same
+  `IMeshArtifactStore` `addMeshAggregator` registered. Adaptations: `HttpClient` → injectable `fetch` (body
+  read regardless of status, like `GetAsync`, so a Prometheus `"status":"error"`/non-2xx/malformed body
+  swallows to an empty result while a connection-level failure still throws); `System.Text.Json` →
+  `JSON.parse`; `TimeSpan` → ms `number` (the PromQL duration formatter's hour/minute/second cascade
+  preserved); `DateTimeOffset` clock → epoch-ms `() => number`; the `(client, server)` tuple dictionary key
+  → a collision-free JSON-encoded `Map` key; `[HttpEndpoint]`/`[Message]` → `addTempoTopology` registrations.
+  Both C# test classes ported (6 tests: full/partial/empty/multi-edge builder cases + the publish handler).
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

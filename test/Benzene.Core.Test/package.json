@@ -52,6 +52,7 @@
     "@benzene/mesh-dispatch": "0.1.0",
     "@benzene/mesh-reporting": "0.1.0",
     "@benzene/mesh-aggregator": "0.1.0",
+    "@benzene/mesh-tracing-tempo": "0.1.0",
     "@benzene/core": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/core-messages": "0.1.0",

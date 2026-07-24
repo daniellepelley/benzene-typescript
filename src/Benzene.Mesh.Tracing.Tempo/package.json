@@ -1,0 +1,18 @@
+{
+  "name": "@benzene/mesh-tracing-tempo",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Mesh.Tracing.Tempo",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/http": "0.1.0",
+    "@benzene/mesh-aggregator": "0.1.0",
+    "@benzene/mesh-contracts": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}
