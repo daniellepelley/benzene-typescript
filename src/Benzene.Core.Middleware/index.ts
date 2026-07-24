@@ -19,6 +19,7 @@ export * from './RegisterDependency';
 export * from './BenzeneApplicationBuilder';
 export * from './BenzeneInvocation';
 export * from './BenzeneInvocationExtensions';
+export * from './BoundedFanOut';
 
 // Streaming
 export * from './Streaming/IStreamCheckpointer';

@@ -423,19 +423,19 @@ Ported (with tests):
   `OutboundResponseTypeMismatchException`. Erasure divergence: `sendAsync<TRequest, TResponse>` can't
   compare the produced payload type against the erased `TResponse` (the .NET `is IBenzeneResult<TResponse>`
   check), so it returns the route's result cast to `TResponse` and only throws the mismatch exception for
-  the coarser case it *can* detect — a route that produced no `IBenzeneResult` at all. Deferred within this
-  surface: `useParallel` (needs a bounded-fan-out helper not yet ported) and `validateOutboundRouting`
-  (assembly reflection over `Benzene.CodeGen.Client` generated-client contracts).
+  the coarser case it *can* detect — a route that produced no `IBenzeneResult` at all. `useParallel` fans a
+  single topic out to several transports concurrently (all-must-succeed aggregate), over the new
+  `BoundedFanOut` primitive in `@benzene/core-middleware` (`Task.WhenAll` + `SemaphoreSlim` → `Promise.all`
+  + an async semaphore, results in source order). Still deferred: `validateOutboundRouting` (assembly
+  reflection over `Benzene.CodeGen.Client` generated-client contracts).
 
 Next, in dependency order, following the .NET repository:
 
-0. The rest of the outbound-routing surface: `useParallel` (concurrent multi-transport fan-out — needs a
-   bounded-fan-out helper ported first) and `validateOutboundRouting` (startup validation of a generated
-   client's required topics — depends on `Benzene.CodeGen.Client` and assembly reflection). The core
-   `IBenzeneMessageSender` + `addOutboundRouting` and the response-event default publisher over it are
-   now ported. Plus a shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance
-   de-duplication — the idempotency analogue of the `@benzene/cache-redis` split, since
-   `InMemoryIdempotencyStore` is single-instance only.
+0. A shared `IIdempotencyStore` adapter (Redis/DynamoDB) for multi-instance de-duplication — the
+   idempotency analogue of the `@benzene/cache-redis` split, since `InMemoryIdempotencyStore` is
+   single-instance only. (The outbound-routing surface — `IBenzeneMessageSender` + `addOutboundRouting` +
+   `useParallel` — is now ported; only `validateOutboundRouting`, which needs `Benzene.CodeGen.Client` and
+   assembly reflection, remains deferred from it.)
 
 1. The distributed-tracing / metrics surface deferred from Diagnostics (`ActivityMiddleware`, W3C
    trace context, metrics) — needs a Node tracing abstraction (OpenTelemetry JS is the likely target);
