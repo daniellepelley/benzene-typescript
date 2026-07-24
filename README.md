@@ -62,6 +62,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Auth.OAuth2` | `@benzene/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
+| `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
@@ -411,6 +412,19 @@ Ported (with tests):
   `now` (`TimeSpan` windows/periods → millisecond `number`s), and `AttemptAcquire`'s over-capacity
   `ArgumentOutOfRangeException` → a `RangeError` the middleware catches as a rejection. This is the first
   package to need `BenzeneResult.tooManyRequests`, added to `@benzene/results` to match the C# factory.
+- Self-hosted workers (`@benzene/self-host`): the platform-neutral worker model — `WorkerApplicationBuilder`
+  + `useWorker`, `BenzeneWorkerBuilder`/`IBenzeneWorkerStartup`, `CompositeBenzeneWorker` (materializes its
+  deferred worker sequence exactly once, so stop targets the started instances), `InlineSelfHostedStartUp`,
+  and `BoundedConcurrentDispatcher` — a per-lane, key-ordered, backpressured fan-out for a poll loop.
+  Because Node has no `System.Threading.Channels`, the used subset is re-created in-package as a
+  capacity-1 single-reader `BoundedChannel`; `Interlocked`/`Volatile` on the outstanding-count array
+  become plain reads/writes (single-threaded event loop), `CancellationToken` → optional `AbortSignal`,
+  `TimeSpan` timeouts → millisecond `number`s, and `ILogger` → `@benzene/abstractions`' `ILogger`.
+  `IBenzeneWorkerStartup.Create(resolver)` is named `createWorker` to disambiguate from the generic
+  pipeline-builder `create`. The 8 `Benzene.Abstractions.Pipelines` interfaces this package builds on were
+  already ported (merged into `@benzene/abstractions`/`@benzene/abstractions-middleware`/`@benzene/clients`),
+  and `Benzene.HostedService` (the .NET generic-host `IHostedService` adapter) has no JS counterpart — see
+  the roadmap.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
@@ -481,10 +495,12 @@ Next, in dependency order, following the .NET repository:
    `MessageSenderDefinition`, the `IMessageDefinitionFinder` token) are ported; the remaining
    `Benzene.Mesh.*` catalog/topology/contract-drift surface and schema generation
    (`Benzene.JsonSchema` / `Benzene.Schema.OpenApi`) build on them.
-3. Host / self-host runners (`Benzene.HostedService`, `Benzene.SelfHost.Http`) and the
-   `Microsoft.Extensions.Hosting` generic-host layer — held for a design decision on the Node HTTP
-   host and long-running-worker shape. Third cloud (`Benzene.GoogleCloud.Functions`) is a
-   straightforward extension of the Azure Functions port when the two-cloud scope widens.
+3. Host runners — the platform-neutral worker model (`Benzene.SelfHost`: worker builder + composite +
+   `BoundedConcurrentDispatcher`) is ported as `@benzene/self-host`; the remaining `Microsoft.Extensions
+   .Hosting` generic-host adapter (`Benzene.HostedService`) has no JS counterpart, and an HTTP host
+   entrypoint is held for a design decision on the Node HTTP host shape. Third cloud
+   (`Benzene.GoogleCloud.Functions`) is a straightforward extension of the Azure Functions port when the
+   two-cloud scope widens.
 
 ## License
 
