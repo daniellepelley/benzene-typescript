@@ -67,6 +67,7 @@ Mirrors the .NET repository:
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
+| `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -499,6 +500,19 @@ Ported (with tests):
   (GET) yields `{} as TRequest`, and `enrich` only fills properties the object already has, so path/query
   params can't populate a field the empty body lacks — TypeScript has no `Activator.CreateInstance<T>()`
   to default-construct the erased DTO.
+- Mesh contracts (`@benzene/mesh-contracts`): the shared data shapes and zero-I/O port interfaces of the
+  Benzene mesh — the artifacts an aggregator publishes (`MeshManifest`, `MeshTopicCatalog` + `MeshTopicEntry`,
+  `MeshUsage`, `MeshTopology` + `TopologyEdge`, `MeshAnnotationLog`, per-service `MeshServiceSnapshot`), the
+  `mesh.json` registry with its `MeshRegistryJson` (de)serializer and `MeshDiscoveryRunner`/
+  `MeshDiscoveryFilter`, the `MeshHashing` contract-drift hash, and the adapter seams
+  (`IMeshDiscoveryProvider`/`IMeshUsageSource`/`IMeshReportPublisher`). Depends only on
+  `@benzene/health-checks-core`, so it's the foundation the rest of the mesh (aggregator, wire, collector,
+  discovery/usage adapters) builds on. Conventions applied throughout: `DateTimeOffset` → epoch-millisecond
+  `number`, `System.Text.Json.Nodes.JsonObject` (inlined schemas) → arbitrary `Record<string, unknown>`,
+  `CancellationToken` → optional `AbortSignal`, `HMACSHA256` (empty key) → `node:crypto`, and the static
+  const-string classes → frozen objects. Two Mesh.Contracts-scoped test files ported (discovery runner +
+  registry JSON round-trip + filter matching, and the hashing test — its cross-check against the unported
+  `Benzene.CodeGen.Core` replaced by pinned known-answer HMAC digests).
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
