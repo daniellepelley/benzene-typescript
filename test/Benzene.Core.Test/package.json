@@ -31,6 +31,7 @@
     "@benzene/azure-function-kafka": "0.1.0",
     "@benzene/cache-core": "0.1.0",
     "@benzene/cache-redis": "0.1.0",
+    "@benzene/configuration-core": "0.1.0",
     "@benzene/client-http": "0.1.0",
     "@benzene/clients": "0.1.0",
     "@benzene/health-checks-core": "0.1.0",

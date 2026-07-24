@@ -59,6 +59,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Auth.Basic` | `@benzene/auth-basic` | `Benzene.Auth.Basic` |
 | `src/Benzene.Auth.OAuth2` | `@benzene/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
+| `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
 | `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
 
@@ -374,6 +375,17 @@ Ported (with tests):
   store's `lock` is dropped (Node runs each method's synchronous body to completion, so the
   check-and-insert is already atomic). The `is IHasMessageResult` interface check → a `messageResult`
   duck-typing guard.
+- Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
+  seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
+  (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
+  convention), `CompositeSecretStore` (first-non-undefined layering) and `CachingSecretStore` (TTL cache
+  with `invalidate`/`invalidateAll`) — plus `SecretResolver` (typed, fail-fast `requireAsync`/`getAsync`/
+  `requireInt`/`requireBool`/`requireUri`), `SecretValidation.ensureRequiredAsync` (startup completeness
+  check listing every missing name at once), and the `addSecretStore(s)` registration functions.
+  Divergences: `CancellationToken` → optional `AbortSignal`, `TimeSpan`/`DateTimeOffset` → millisecond
+  `number`s with an injectable clock, `System.IO.File` → `node:fs/promises` (missing file → the caught
+  `ENOENT`), `Environment.GetEnvironmentVariable` → `process.env`, `FormatException` → `Error`, and `Uri`
+  → the WHATWG `URL`.
 
 Next, in dependency order, following the .NET repository:
 
