@@ -44,6 +44,7 @@
     "@benzene/rate-limiting": "0.1.0",
     "@benzene/self-host": "0.1.0",
     "@benzene/clients-health-checks": "0.1.0",
+    "@benzene/schema-registry-core": "0.1.0",
     "@benzene/core": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/core-messages": "0.1.0",

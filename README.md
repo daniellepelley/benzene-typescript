@@ -64,6 +64,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
 | `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
+| `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
@@ -438,6 +439,17 @@ Ported (with tests):
   already ported (merged into `@benzene/abstractions`/`@benzene/abstractions-middleware`/`@benzene/clients`),
   and `Benzene.HostedService` (the .NET generic-host `IHostedService` adapter) has no JS counterpart — see
   the roadmap.
+- Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
+  `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
+  idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable
+  `ISchemaCompatibilityChecker` (`TextualSchemaCompatibilityChecker` default), `ConfluentWireFormat` (the
+  `0x00` magic byte + big-endian schema-id framing, over `Uint8Array`/`DataView`), and
+  `SchemaRegistrySerializer` + `SchemaRegistrar` that frame any inner `IPayloadSerializer`'s output with
+  the registered id (wired up at startup). Erasure: C#'s runtime `Type` keys become `Constructor` keys
+  (same as `@benzene/avro`) — the serialize path recovers the class from the payload's `constructor`, and
+  the deserialize path threads an optional `targetType` to the inner serializer; the `IBufferWriter`
+  `Encode` overload isn't ported (the port's `IPayloadSerializer` models `Uint8Array` directly), and the
+  in-memory client's `lock` is dropped (single-threaded event loop makes check-and-insert atomic).
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
