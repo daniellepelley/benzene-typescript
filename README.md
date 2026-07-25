@@ -72,6 +72,9 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
 | `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
+| `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
+| `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
+| `src/Benzene.Mesh.Usage.ApplicationInsights` | `@benzene/mesh-usage-application-insights` | `Benzene.Mesh.Usage.ApplicationInsights` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -579,6 +582,28 @@ Ported (with tests):
   preserved); `DateTimeOffset` clock → epoch-ms `() => number`; the `(client, server)` tuple dictionary key
   → a collision-free JSON-encoded `Map` key; `[HttpEndpoint]`/`[Message]` → `addTempoTopology` registrations.
   Both C# test classes ported (6 tests: full/partial/empty/multi-edge builder cases + the publish handler).
+- Mesh Azure adapters — the three Azure cloud integrations, each adapting its .NET Azure SDK to the
+  official `@azure/*` JS-ecosystem package (the "third-party integrations are adapted, not reimplemented"
+  convention), all authenticating with `@azure/identity`'s `DefaultAzureCredential`:
+  - Azure Blob artifact store (`@benzene/mesh-azure-blob`): `BlobMeshArtifactStore` — an `IMeshArtifactStore`
+    over an Azure Blob container, so an Azure-hosted mesh persists its aggregator artifacts + discovered
+    registry centrally; wired via `addMeshAggregatorWithBlob`. `Azure.Storage.Blobs` → `@azure/storage-blob`
+    (`MemoryStream` upload → `uploadData(Buffer)`, `DownloadContentAsync` → `downloadToBuffer()`,
+    `RequestFailedException`/404 → a `RestError` with `statusCode 404`). No C# unit test (SDK-only).
+  - Azure discovery (`@benzene/mesh-discovery-azure`): `AzureAppServiceDiscoveryProvider` discovers Benzene
+    services from `Microsoft.Web/sites` resources — pure tag/region filtering + SSRF-safe host/path
+    sanitisation over the `IAzureResourceLister` seam, whose real implementation (`AzureArmResourceLister`)
+    adapts `Azure.ResourceManager` → `@azure/arm-resources`; wired via `addMeshAzureDiscovery`. Divergence:
+    JS's `ResourceManagementClient` is subscription-scoped at construction (no `GetDefaultSubscriptionAsync`),
+    so a subscription id is required (passed or from `AZURE_SUBSCRIPTION_ID`), and the resource group is
+    parsed from the ARM id. Provider test class ported (6 tests).
+  - Application Insights usage (`@benzene/mesh-usage-application-insights`): `ApplicationInsightsUsageSource`
+    reads the `benzene.messages.processed` counter back as an `IMeshUsageSource` — pure mapping over the
+    `IApplicationInsightsUsageQuery` seam, whose default (`LogsQueryUsageQuery`) issues KQL over the Log
+    Analytics `customMetrics` table, adapting `Azure.Monitor.Query` → `@azure/monitor-query`
+    (`QueryTimeRange` → a `{ startTime, endTime }` interval, non-`Success` result throws); wired via
+    `addApplicationInsightsUsage`. The Azure sibling of the CloudWatch adapter. Source test class ported
+    (4 tests). `TimeSpan` → ms `number` and `DateTimeOffset` → epoch ms throughout these three.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
