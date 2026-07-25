@@ -88,6 +88,7 @@ Mirrors the .NET repository:
 | `src/Benzene.CodeGen.Client` | `@benzene/codegen-client` | `Benzene.CodeGen.Client`§§ |
 | `src/Benzene.Testing` | `@benzene/testing` | `Benzene.Testing`¶ |
 | `src/Benzene.Aws.Lambda.TestHelpers` | `@benzene/aws-lambda-testing` | `Benzene.Aws.Lambda.*.TestHelpers`¶ |
+| `src/Benzene.Azure.Function.TestHelpers` | `@benzene/azure-function-testing` | `Benzene.Azure.Function.*.TestHelpers`¶ |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -127,18 +128,22 @@ depends on the Node global `fetch` rather than .NET's `HttpClient`.)
 ¶ **Testing helpers.** `@benzene/testing` ports `Benzene.Testing`'s platform-neutral request builders
 (`messageBuilder`/`httpBuilder` + `asBenzeneMessage`/`asRawHttpRequest`); the C# static `MessageBuilder.
 Create`/`HttpBuilder.Create` factories become free functions, and the required `ISerializer` becomes an
-optional argument defaulting to JSON. `@benzene/aws-lambda-testing` provides the transport test-event
-builders (`asApiGatewayRequest`, `asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`) that turn one
-builder into a native cloud event routable by the matching adapter. **Two deliberate TS-DX bends,** both
+optional argument defaulting to JSON. `@benzene/aws-lambda-testing` and
+`@benzene/azure-function-testing` provide the transport test-event builders (`asApiGatewayRequest`,
+`asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`; `asAzureHttpRequest`, `asAzureServiceBusMessage`,
+`asEventHubBenzeneMessage`) that turn one builder into a native cloud event routable by the matching
+adapter. **Two deliberate TS-DX bends,** both
 from the TypeScript-DX-champion lens (see `.claude/agents/typescript-dx-champion.md`): (1) the C# ships one
-`*.TestHelpers` project per transport to isolate each `Amazon.Lambda.*Events` NuGet, but in Node every
-Lambda event type comes from the single `@types/aws-lambda`, so there is no dependency to isolate — the
-idiomatic shape is one `@benzene/aws-lambda-testing` package with a builder per transport; (2) C#'s
-positional/overloaded `As*(serializer, numberOfMessages)` parameters become a single trailing **options
-object** (`{ serializer?, numberOfMessages? }`), consistent across every builder. Not ported yet: the
+`*.TestHelpers` project per transport to isolate each `Amazon.Lambda.*Events` NuGet, but in Node the event
+types come from a few shared packages (`@types/aws-lambda`; `@azure/functions`/`service-bus`/`event-hubs`),
+so there is no dependency to isolate — the idiomatic shape is one `@benzene/aws-lambda-testing` and one
+`@benzene/azure-function-testing` package, each with a builder per transport; (2) C#'s positional/overloaded
+`As*(serializer, numberOfMessages)` parameters become a single trailing **options object**
+(`{ serializer?, numberOfMessages? }`), consistent across every builder. Not ported yet: the
 `BenzeneTestHost`/`BenzeneTestHostBuilder` startup-host (the TS transports are driven directly via their
-`*Application`/`InlineAwsLambdaStartUp` entry points, which the ported tests already use), and the DynamoDB
-Streams (needs AttributeValue marshalling), Kinesis, and S3 builders — see the package `index.ts` notes.
+`*Application`/`Inline*StartUp` entry points, which the ported tests already use), and the AWS DynamoDB
+Streams (needs AttributeValue marshalling), Kinesis, and S3 builders, plus the Azure Kafka/Queue Storage
+builders — see the package `index.ts` notes.
 
 §§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
