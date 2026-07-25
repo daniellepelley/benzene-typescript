@@ -110,6 +110,20 @@ describe('AzureHttpPipeline (via AzureFunctionApp entry point)', () => {
   });
 });
 
+describe('AzureFunctionApp missing-entry-point diagnostic', () => {
+  it('names what is registered and the fix when no matching entry point is wired', () => {
+    // A StartUp that forgot to wire useAzureHttp/useServiceBus/... - the single most common Azure mistake.
+    const app = new InlineAzureFunctionStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure(() => {})
+      .build();
+
+    expect(() => app.handleAsyncWithResult({ orderId: '42' })).toThrow(
+      /No entry point is registered.*use\*\(\).*configure/s,
+    );
+  });
+});
+
 describe('AzureHttpApplication (direct)', () => {
   it('maps a request through the pipeline into an HttpResponseInit', async () => {
     const container = new DefaultBenzeneServiceContainer();

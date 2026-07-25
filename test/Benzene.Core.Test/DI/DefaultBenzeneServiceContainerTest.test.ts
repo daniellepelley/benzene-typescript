@@ -84,6 +84,23 @@ describe('DefaultBenzeneServiceContainer', () => {
     expect(consumer.greeter.greet()).toBe('hello');
   });
 
+  it('ConstructorInjection_MissingInjectArray_ThrowsATeachingError', () => {
+    // Type erasure means the container can only pass what `static inject` lists; a class that declares
+    // constructor parameters but forgets the array must fail loudly at resolution, not silently build
+    // with zero args and blow up later as an `undefined` dependency.
+    class ForgotInject {
+      constructor(public readonly greeter: IGreeter) {}
+    }
+
+    const container = new DefaultBenzeneServiceContainer();
+    container.addSingleton(IGreeter, Greeter);
+    container.addSingleton(ForgotInject);
+
+    const scope = container.createServiceResolverFactory().createScope();
+    expect(() => scope.getService(ForgotInject)).toThrow(BenzeneException);
+    expect(() => scope.getService(ForgotInject)).toThrow(/static `inject`/);
+  });
+
   it('GetService_Unregistered_ThrowsBenzeneException', () => {
     const container = new DefaultBenzeneServiceContainer();
     const scope = container.createServiceResolverFactory().createScope();

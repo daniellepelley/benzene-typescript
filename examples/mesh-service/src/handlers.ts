@@ -15,20 +15,24 @@ import { BenzeneResult } from '@benzene/results';
 /** The handler registry this service self-describes from. */
 export const registry = new MessageHandlersRegistry();
 
+// Payloads are classes, not interfaces: the runtime recovers the erased request type from its
+// constructor (topic/schema/validation keying), which an interface can't provide. Fields use the
+// idiomatic optional `?:` form.
+
 /** `order:create` request payload. */
 export class CreateOrder {
-  customerId: string | undefined;
+  customerId?: string;
 }
 
 /** `order:create` response payload. */
 export class OrderCreated {
-  orderId: string | undefined;
+  orderId?: string;
 }
 
 /** `order:get` request/response payload. */
 export class Order {
-  orderId: string | undefined;
-  status: string | undefined;
+  orderId?: string;
+  status?: string;
 }
 
 @httpEndpoint('POST', '/orders')

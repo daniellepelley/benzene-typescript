@@ -22,9 +22,9 @@ export interface IMessageHandlerNoResponse<TRequest> {
  * A fully-bound handler ready to execute against a request thunk — the shape the
  * pipeline invokes after routing.
  * Port of the non-generic C# `IMessageHandler` (renamed `IExecutableMessageHandler`
- * since TypeScript cannot overload a type name on arity); the C# `HandlerAsync`
- * spelling is preserved.
+ * since TypeScript cannot overload a type name on arity); the method keeps the C#
+ * `HandleAsync` spelling, camelCased like every other method in the port.
  */
 export interface IExecutableMessageHandler {
-  handlerAsync(requestMapperThunk: IRequestMapperThunk): Promise<IBenzeneResult>;
+  handleAsync(requestMapperThunk: IRequestMapperThunk): Promise<IBenzeneResult>;
 }

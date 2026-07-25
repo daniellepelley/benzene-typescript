@@ -27,7 +27,7 @@ export class MessageHandler<TRequest, TResponse> implements IExecutableMessageHa
     private readonly defaultStatuses: IDefaultStatuses,
   ) {}
 
-  async handlerAsync(requestMapperThunk: IRequestMapperThunk): Promise<IBenzeneResult> {
+  async handleAsync(requestMapperThunk: IRequestMapperThunk): Promise<IBenzeneResult> {
     let messageObject: TRequest;
     try {
       messageObject = requestMapperThunk.getRequest<TRequest>() as TRequest;

@@ -6,6 +6,7 @@ import {
   ServiceFactory,
   ServiceIdentifier,
 } from '@benzene/abstractions';
+import { BenzeneException } from '@benzene/core';
 import { DefaultServiceResolverFactory } from './DefaultServiceResolverFactory';
 import { ServiceCollection, ServiceLifetime } from './ServiceCollection';
 
@@ -115,7 +116,21 @@ export class DefaultBenzeneServiceContainer implements IBenzeneServiceContainer 
 
 function createClassFactory<T>(ctor: InjectableConstructor<T>): ServiceFactory<T> {
   return (resolver) => {
-    const args = (ctor.inject ?? []).map((identifier) => resolver.getService(identifier));
+    const inject = ctor.inject ?? [];
+    // TypeScript erases constructor parameter types, so — unlike .NET's reflective constructor
+    // injection — the container can only pass what `static inject` lists. A class that declares
+    // constructor parameters but forgets the `inject` array would otherwise be silently constructed
+    // with zero args, failing far downstream as an `undefined` dependency. `Function.length` (the count
+    // of leading non-defaulted parameters) lets us catch that here with an actionable message.
+    if (inject.length === 0 && ctor.length > 0) {
+      throw new BenzeneException(
+        `${ctor.name || 'A registered class'} declares ${ctor.length} constructor parameter(s) but no ` +
+          `static \`inject\` array, so the container cannot resolve them. Add ` +
+          `\`static inject = [/* service identifiers */]\` to ${ctor.name || 'the class'} listing the ` +
+          `dependencies to pass to its constructor.`,
+      );
+    }
+    const args = inject.map((identifier) => resolver.getService(identifier));
     return new ctor(...(args as never[]));
   };
 }

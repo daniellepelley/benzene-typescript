@@ -22,6 +22,20 @@ describe('ZodSchemaRegistry', () => {
     expect(getZodSchema(Unregistered)).toBeUndefined();
   });
 
+  it('binds the schema type to the request class (a mismatched schema is a compile error)', () => {
+    class TypedRequest {
+      name?: string;
+    }
+
+    // A matching schema is accepted...
+    registerZodSchema(TypedRequest, z.object({ name: z.string() }));
+
+    // ...and a schema for an unrelated shape is rejected at compile time (the `@ts-expect-error` fails
+    // the build if this ever becomes assignable), which is the whole point of the typed binding.
+    // @ts-expect-error - number is not assignable to the TypedRequest shape
+    registerZodSchema(TypedRequest, z.object({ name: z.number() }));
+  });
+
   it('supports isolated instances', () => {
     class InstanceRequest {}
     const schema = z.number();

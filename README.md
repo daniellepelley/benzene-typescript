@@ -168,30 +168,82 @@ npm run build   # typecheck all packages (tsc --noEmit)
 npm test        # run the test suite (vitest)
 ```
 
+You write a **message handler once** and host it anywhere. A handler declares its topic with
+`@message` (and, for HTTP, its route with `@httpEndpoint`):
+
+```ts
+import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { message } from '@benzene/core-message-handlers';
+import { httpEndpoint } from '@benzene/http';
+import { BenzeneResult } from '@benzene/results';
+
+class CreateOrder { customerId?: string; }
+class OrderCreated { orderId?: string; }
+
+@httpEndpoint('POST', '/orders')
+@message('order:create', { requestType: CreateOrder, responseType: OrderCreated })
+export class CreateOrderHandler implements IMessageHandler<CreateOrder, OrderCreated> {
+  handleAsync(request: CreateOrder): Promise<IBenzeneResultOf<OrderCreated>> {
+    const payload = new OrderCreated();
+    payload.orderId = `order-${request.customerId ?? 'anon'}`;
+    return Promise.resolve(BenzeneResult.created(payload));
+  }
+}
+```
+
+Host it **in-process** (Express — the runnable [`examples/mesh-service`](examples/mesh-service) is
+exactly this shape; start it with `npm start -w @benzene-example/mesh-service`):
+
+```ts
+import express from 'express';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { benzene } from '@benzene/express';
+
+const app = express();
+app.use(benzene((pipeline) => useMessageHandlers(pipeline, CreateOrderHandler)));
+app.listen(3000);
+```
+
+…or host the **same handler** on **AWS Lambda** — `toLambdaHandler` returns the `handler` AWS
+invokes (use it rather than assigning the method, which would detach `this`):
+
+```ts
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+
+const entryPoint = new InlineAwsLambdaStartUp()
+  .configureServices((services) => addBenzene(services))
+  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
+  .build();
+
+export const handler = toLambdaHandler(entryPoint);
+```
+
+<details><summary>Under the hood: driving a pipeline directly (what the hosts build on)</summary>
+
 ```ts
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer, ServiceCollection } from '@benzene/dependencies';
+import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 
-const services = new ServiceCollection();
-const container = new DefaultBenzeneServiceContainer(services);
-
-const builder = new MiddlewarePipelineBuilder<MyContext>(container);
+const container = new DefaultBenzeneServiceContainer();
+const builder = new MiddlewarePipelineBuilder<MyContext>(container); // MyContext = your transport context
 builder
   .useExceptionHandler((context, error) => { /* map error onto context */ })
-  .useFn('Auth', async (context, next) => {
-    // before
-    await next();
-    // after
-  })
+  .useFn('Auth', async (context, next) => { /* before */ await next(); /* after */ })
   .onResponse((context) => { /* inspect result */ });
 
 const pipeline = builder.build();
-
-const factory = container.createServiceResolverFactory();
-const resolver = factory.createScope();
-await pipeline.handleAsync(new MyContext(), resolver);
-resolver.dispose();
+const resolver = container.createServiceResolverFactory().createScope();
+try {
+  await pipeline.handleAsync(myContext, resolver);
+} finally {
+  resolver.dispose();
+}
 ```
+
+</details>
 
 ## Porting conventions
 
@@ -200,7 +252,9 @@ next to its C# counterpart:
 
 - **Names.** Type and file names are identical to C# (including the `I` interface prefix);
   methods and properties become camelCase (`HandleAsync` → `handleAsync`). The `Async` suffix
-  is kept.
+  is kept. One deliberate rename: `IDeferredRequestMapper`/`DeferredRequestMapper` →
+  `IRequestMapperThunk`/`RequestMapperThunk` — a zero-arg deferred producer is idiomatically a
+  "thunk" in TypeScript; same shape, TS-native spelling.
 - **Types.** `Task`/`Task<T>` → `Promise<void>`/`Promise<T>`; C# `null` → `undefined`;
   `IDictionary<string, T>` → `Record<string, T>`; `Exception` → `Error`
   (`InnerException` → `Error.cause`); `IDisposable.Dispose()` → a `dispose()` method,
@@ -212,13 +266,22 @@ next to its C# counterpart:
 - **Constructor injection.** Implementation classes declare a static
   `inject: readonly ServiceIdentifier[]` array; the container resolves the identifiers and
   passes them as constructor arguments. `IEnumerable<T>` injection becomes
-  `resolver.getServices(token)`.
+  `resolver.getServices(token)`. Because TypeScript erases parameter types (there is no reflective
+  constructor injection), a class registered with constructor parameters but no `inject` array can't
+  be resolved — the container detects this via `Function.length` and throws a teaching error naming
+  the fix, rather than silently constructing with zero arguments.
 - **Extension methods.** TypeScript has none. Fluent pipeline-builder extensions
   (`Use`, `OnRequest`, `OnResponse`, `Split`, `Convert`, `UseExceptionHandler`,
   `UseLogResult`, ...) become interface members implemented once in
   `MiddlewarePipelineBuilderBase`; non-fluent extensions (`TryAddSingleton`,
   `AddBenzeneMiddleware`, ...) become free functions in a file named after the C# extensions
-  class.
+  class. A fluent extension can only become a builder *member* when it lives in the builder's own
+  package: fluent extensions defined **downstream** (e.g. `@benzene/core-message-handlers`'s
+  `useMessageHandlers`/`usePresetTopic`, which would create a layering cycle if added to
+  `IMiddlewarePipelineBuilder` upstream) instead become **free functions taking the builder as their
+  first argument** (`useMessageHandlers(app, …)`) and return it, so they still chain at their own call
+  site — hence `benzene((pipeline) => useMessageHandlers(pipeline, …))` rather than a `.useMessageHandlers`
+  method.
 - **Overloads.** Where C# overloads on delegate types that are indistinguishable at JavaScript
   runtime, methods split by name: `use(factoryOrMiddleware)` vs `useFn([name,] fn)`. Handler
   functions take `(context, next, serviceResolver)` — context-first, with the resolver as a
@@ -414,9 +477,12 @@ Ported (with tests):
   builders, a schema registry keyed by request class, and a `use<Lib>Validation` router helper). The
   schema plays the role of FluentValidation's `IValidator<TRequest>`; the erased request type is
   recovered from the handler's `@message` metadata (handler side) or the message's constructor
-  (client side). This is the "third-party integrations are adapted, not reimplemented" convention in
-  action — .NET's `Benzene.DataAnnotations` / `Benzene.FluentValidation` (both wrapping .NET-only
-  libraries) become adapters over the popular JS validation libraries instead.
+  (client side). The registries bind the schema's static type to the request class
+  (`register<T>(requestType: Constructor<T>, schema: ZodType<T>/Schema<T>)`), so registering a schema
+  for an unrelated shape is a compile error — recovering the compile-time link FluentValidation's
+  `IValidator<TRequest>` gave for free. This is the "third-party integrations are adapted, not
+  reimplemented" convention in action — .NET's `Benzene.DataAnnotations` / `Benzene.FluentValidation`
+  (both wrapping .NET-only libraries) become adapters over the popular JS validation libraries instead.
 - Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
 - Diagnostics: `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`, plus the
   correlation-id middleware and the process-timer surface. C# `Stopwatch` → `Date.now()` deltas;
@@ -445,10 +511,19 @@ Ported (with tests):
   real cloud event/request routes by topic through mapping → dispatch → response):
   - **AWS Lambda** (`@types/aws-lambda`): `aws-lambda-core` (unified entry point with the parsed-event
     router) + `sqs`, `sns`, `dynamodb`, `kinesis`, `s3`, `eventbridge`, `kafka` (queue/stream/
-    notification sources) and `api-gateway` (HTTP request/response).
+    notification sources) and `api-gateway` (HTTP request/response). AWS invokes an exported `handler`
+    function, so `toLambdaHandler(entryPoint)` returns the correctly-bound handler for
+    `export const handler = toLambdaHandler(entryPoint)` — the shape a TS Lambda developer expects (the
+    naive `= entryPoint.functionHandlerAsync` compiles but detaches `this`). `api-gateway` ports the v1
+    (REST API, payload format 1.0) adapter; the v2 (HTTP API, payload format 2.0) and Custom Authorizer
+    sub-applications are **not yet ported**.
   - **Azure Functions** (`@azure/functions` + `@azure/service-bus` + `@azure/event-hubs`):
     `azure-function-core` (isolated-worker entry point) + `service-bus`, `event-hub`, `kafka` and
-    `http` (the retargeted `AspNet` adapter — see ‡).
+    `http` (the retargeted `AspNet` adapter — see ‡). Dispatch to an entry point is **arity-only**
+    (response vs fire-and-forget) rather than C#'s runtime type match: erasure removes `TRequest`/
+    `TResponse`, and the optional `name` discriminator is dropped, so a host registers at most one
+    response and one fire-and-forget entry point (the normal case). A missing entry point throws a
+    self-diagnosing error naming what is registered and the `use*()` to wire.
 - Host/invocation layer: `IBenzeneApplicationBuilder`/`BenzeneApplicationBuilder`, `BenzeneInvocation`
   + `useBenzeneInvocation` (per-invocation correlation context). The `Microsoft.Extensions.Hosting`
   generic-host runners (`AwsLambdaHost`, host-builder extensions) and the registration-diagnostics

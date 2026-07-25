@@ -58,7 +58,7 @@ export class AzureFunctionApp implements IAzureFunctionApp {
       }
     }
 
-    throw new BenzeneException('Cannot handle this kind of request');
+    throw this.noEntryPointException('a request that expects a response');
   }
 
   handleAsync<TRequest>(request: TRequest): Promise<void> {
@@ -68,6 +68,27 @@ export class AzureFunctionApp implements IAzureFunctionApp {
       }
     }
 
-    throw new BenzeneException('Cannot handle this kind of request');
+    throw this.noEntryPointException('a fire-and-forget request');
+  }
+
+  /**
+   * The self-diagnosing "no matching entry point" error (C#'s `CreateNoEntryPointException`). Type
+   * erasure means we cannot name the requested CLR request/response types the way .NET does, but the
+   * actionable part survives: report what *is* registered and name the fix - wire the matching `use*()`
+   * (useHttp, useServiceBus, useEventHub, …) in the StartUp's `configure` for this trigger's request type.
+   */
+  private noEntryPointException(requested: string): BenzeneException {
+    const withResult = this.apps.filter(
+      (app) => app instanceof EntryPointMiddlewareApplicationWithResult,
+    ).length;
+    const fireAndForget = this.apps.length - withResult;
+
+    return new BenzeneException(
+      `No entry point is registered that can handle ${requested}. ` +
+        `${this.apps.length} entry point(s) are registered ` +
+        `(${withResult} with a response, ${fireAndForget} fire-and-forget). ` +
+        `Wire the matching use*() extension (useHttp, useServiceBus, useEventHub, …) for this ` +
+        `trigger's request type in your StartUp's configure(...).`,
+    );
   }
 }

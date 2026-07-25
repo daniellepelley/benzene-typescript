@@ -27,20 +27,20 @@ export const BenzeneResultStatus = {
   tooManyRequests: 'too-many-requests',
   timeout: 'timeout',
 
-  isSuccess(status: string | undefined | null): boolean {
-    return status != null && successStatuses.has(status);
+  isSuccess(status: string | undefined): boolean {
+    return status !== undefined && successStatuses.has(status);
   },
 
-  isFailure(status: string | undefined | null): boolean {
-    return status != null && failureStatuses.has(status);
+  isFailure(status: string | undefined): boolean {
+    return status !== undefined && failureStatuses.has(status);
   },
 
-  isKnown(status: string | undefined | null): boolean {
+  isKnown(status: string | undefined): boolean {
     return BenzeneResultStatus.isSuccess(status) || BenzeneResultStatus.isFailure(status);
   },
 
-  isTransient(status: string | undefined | null): boolean {
-    return status != null && transientStatuses.has(status);
+  isTransient(status: string | undefined): boolean {
+    return status !== undefined && transientStatuses.has(status);
   },
 } as const;
 

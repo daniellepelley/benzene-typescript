@@ -18,8 +18,12 @@ export class ZodSchemaRegistry {
 
   private readonly schemas = new WeakMap<Constructor<unknown>, ZodType>();
 
-  /** Associates a request class with the Zod schema that validates its instances. */
-  register(requestType: Constructor<unknown>, schema: ZodType): void {
+  /**
+   * Associates a request class with the Zod schema that validates its instances. The schema's inferred
+   * output type is bound to the request class (`ZodType<T>`), so a schema for an unrelated shape is a
+   * compile error - recovering the compile-time link FluentValidation's `IValidator<TRequest>` gave for free.
+   */
+  register<T>(requestType: Constructor<T>, schema: ZodType<T>): void {
     this.schemas.set(requestType, schema);
   }
 
@@ -33,7 +37,7 @@ export class ZodSchemaRegistry {
  * Registers a Zod schema for a request class on the global registry — the adapter counterpart of
  * FluentValidation's `services.AddSingleton<IValidator<TRequest>, ...>()`. Any Zod schema is accepted.
  */
-export function registerZodSchema(requestType: Constructor<unknown>, schema: ZodType): void {
+export function registerZodSchema<T>(requestType: Constructor<T>, schema: ZodType<T>): void {
   ZodSchemaRegistry.global.register(requestType, schema);
 }
 

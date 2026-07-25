@@ -51,7 +51,7 @@ describe('MessageHandlerFactoryTest', () => {
     const order = new Order();
     order.orderId = '42';
 
-    const result = await handler.handlerAsync(new InlineRequestMapperThunk(order));
+    const result = await handler.handleAsync(new InlineRequestMapperThunk(order));
 
     expect(result.status).toBe(BenzeneResultStatus.ok);
     expect(result.isSuccessful).toBe(true);
@@ -73,7 +73,7 @@ describe('MessageHandlerFactoryTest', () => {
       message('fire-and-forget', { registry: new MessageHandlersRegistry() })(FireAndForgetHandler),
     ).findDefinitions()[0];
 
-    const result = await factory.create(definition).handlerAsync(new InlineRequestMapperThunk({}));
+    const result = await factory.create(definition).handleAsync(new InlineRequestMapperThunk({}));
 
     expect(result.status).toBe(BenzeneResultStatus.accepted);
     expect(result.isSuccessful).toBe(true);
@@ -94,7 +94,7 @@ describe('MessageHandlerFactoryTest', () => {
       message('failing', { registry: new MessageHandlersRegistry() })(FailingHandler),
     ).findDefinitions()[0];
 
-    const result = await factory.create(definition).handlerAsync(new InlineRequestMapperThunk({}));
+    const result = await factory.create(definition).handleAsync(new InlineRequestMapperThunk({}));
 
     expect(result.status).toBe(BenzeneResultStatus.serviceUnavailable);
     expect(result.isSuccessful).toBe(false);
@@ -116,7 +116,7 @@ describe('MessageHandlerFactoryTest', () => {
       message('picky', { registry: new MessageHandlersRegistry() })(PickyHandler),
     ).findDefinitions()[0];
 
-    const result = await factory.create(definition).handlerAsync(new InlineRequestMapperThunk({}));
+    const result = await factory.create(definition).handleAsync(new InlineRequestMapperThunk({}));
 
     expect(result.status).toBe(BenzeneResultStatus.validationError);
     expect(result.errors).toEqual(['orderId is required']);
@@ -132,7 +132,7 @@ describe('MessageHandlerFactoryTest', () => {
       },
     };
 
-    const result = await factory.create(definition).handlerAsync(throwingThunk);
+    const result = await factory.create(definition).handleAsync(throwingThunk);
 
     expect(result.status).toBe(BenzeneResultStatus.badRequest);
     expect(result.errors).toEqual(['Message is not valid', 'malformed body']);

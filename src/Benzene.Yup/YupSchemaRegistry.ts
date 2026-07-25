@@ -18,8 +18,12 @@ export class YupSchemaRegistry {
 
   private readonly schemas = new WeakMap<Constructor<unknown>, Schema>();
 
-  /** Associates a request class with the Yup schema that validates its instances. */
-  register(requestType: Constructor<unknown>, schema: Schema): void {
+  /**
+   * Associates a request class with the Yup schema that validates its instances. The schema's type is
+   * bound to the request class (`Schema<T>`), so a schema for an unrelated shape is a compile error -
+   * recovering the compile-time link FluentValidation's `IValidator<TRequest>` gave for free.
+   */
+  register<T>(requestType: Constructor<T>, schema: Schema<T>): void {
     this.schemas.set(requestType, schema);
   }
 
@@ -33,7 +37,7 @@ export class YupSchemaRegistry {
  * Registers a Yup schema for a request class on the global registry — the adapter counterpart of
  * FluentValidation's `services.AddSingleton<IValidator<TRequest>, ...>()`. Any Yup schema is accepted.
  */
-export function registerYupSchema(requestType: Constructor<unknown>, schema: Schema): void {
+export function registerYupSchema<T>(requestType: Constructor<T>, schema: Schema<T>): void {
   YupSchemaRegistry.global.register(requestType, schema);
 }
 
