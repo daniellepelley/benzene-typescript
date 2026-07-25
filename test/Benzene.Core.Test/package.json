@@ -61,6 +61,7 @@
     "@benzene/mesh-usage-cloudwatch": "0.1.0",
     "@benzene/mesh-discovery-kubernetes": "0.1.0",
     "@benzene/mesh-wire": "0.1.0",
+    "@benzene/codegen-client": "0.1.0",
     "@benzene/clients-aws-lambda": "0.1.0",
     "@benzene/mesh-aws-lambda": "0.1.0",
     "@benzene-example/mesh-service": "0.1.0",

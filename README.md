@@ -83,6 +83,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Usage.CloudWatch` | `@benzene/mesh-usage-cloudwatch` | `Benzene.Mesh.Usage.CloudWatch` |
 | `src/Benzene.Mesh.Discovery.Kubernetes` | `@benzene/mesh-discovery-kubernetes` | `Benzene.Mesh.Discovery.Kubernetes` |
 | `src/Benzene.Mesh.Wire` | `@benzene/mesh-wire` | `Benzene.Mesh.Wire`† |
+| `src/Benzene.CodeGen.Client` | `@benzene/codegen-client` | `Benzene.CodeGen.Client`§§ |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -118,6 +119,17 @@ discriminates on its shape rather than deserializing a stream.
 § `Benzene.Cache.Redis` wraps the .NET-only `StackExchange.Redis`; per the same convention it is
 re-created as an adapter over `ioredis`, the popular Node Redis client. (`@benzene/clients` also
 depends on the Node global `fetch` rather than .NET's `HttpClient`.)
+
+§§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
+from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
+types by reflecting over the service's CLR request/response types, which cannot cross a language
+boundary; this port generates the client from the service's mesh **ServiceDescriptor** (`mesh.md` §2),
+whose per-topic schemas are language-neutral JSON Schema (§2.1). So a C# service's descriptor and a
+TypeScript service's descriptor generate an identical, fully typed client. A bespoke emitter covers the
+§2.1 subset (keeping the zero-runtime-deps rule; `json-schema-to-typescript` is the drop-in for arbitrary
+schemas). Not ported: the reflection/OpenAPI-document plumbing (`Benzene.CodeGen.Core`,
+`Benzene.Schema.OpenApi`, `Microsoft.OpenApi`), the C#-target type builder, and the generated health-check/
+hash/outbound-routing-contract extras, which are .NET-client-infrastructure specific.
 
 † Marks a third-party-library integration re-created against the JavaScript ecosystem rather than
 ported literally, per the "Third-party library integrations" convention. **Validation:** .NET's
@@ -291,6 +303,17 @@ byte-identical to .NET so the two interoperate:
   traceparent rules and the invocation → semantic-status mapping (including a handler exception traced as
   `service-unavailable`). Not yet ported from `Benzene.Mesh.Wire`: nothing — but the collector side that
   consumes these feeds (`Benzene.Mesh.Collector`) is a separate package, not yet ported.
+- **Code generation from JSON Schema.** `@benzene/codegen-client` closes the loop: it turns a service's
+  ServiceDescriptor — whose per-topic `requestSchema`/`responseSchema` are language-neutral JSON Schema
+  (§2.1) — into a fully typed TypeScript client (a payload interface per request/response, plus a
+  `<Service>ServiceClient` calling `IBenzeneMessageSender.sendAsync`). Because the input is the JSON
+  schemas rather than any runtime's types, a **C# service's descriptor generates the same client a
+  TypeScript service's does** — a client for a service in any language, derived purely from the contract.
+  This is the deliberate answer to porting `Benzene.CodeGen.*` (which generates by CLR reflection): route
+  everything through JSON Schema and the type-building becomes multi-language by construction.
+  `test/Benzene.Core.Test/CodeGen/GeneratedClientRoundTripTest.test.ts` regenerates the committed client
+  from `examples/mesh-service`'s live descriptor (asserting byte-for-byte match, so the checked-in client
+  `tsc` compiles is exactly what the generator emits) and exercises it over a fake sender.
 
 ## Porting status and roadmap
 
@@ -791,8 +814,9 @@ Ported (with tests):
   + an async semaphore, results in source order). The outbound `useW3CTraceContext`
   (`Benzene.Clients.TraceContext`) stamps the active span's `traceparent`/`tracestate` onto an outbound
   route's headers (built from `trace.getActiveSpan()`'s span context — the outbound counterpart of
-  `@benzene/diagnostics`' inbound `useW3CTraceContext`). Still deferred: `validateOutboundRouting` (assembly
-  reflection over `Benzene.CodeGen.Client` generated-client contracts).
+  `@benzene/diagnostics`' inbound `useW3CTraceContext`). Still deferred: `validateOutboundRouting` (in .NET,
+  assembly reflection over `Benzene.CodeGen.Client` generated-client routing contracts; the generator itself
+  is now ported as `@benzene/codegen-client`, but the reflective startup-validation surface is not).
 
 Next, in dependency order, following the .NET repository:
 
