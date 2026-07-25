@@ -11,12 +11,18 @@ import { IAwsLambdaEntryPoint } from './IAwsLambdaEntryPoint';
  * The default `IAwsLambdaEntryPoint`: runs a middleware pipeline over an `AwsEventStreamContext` for
  * each Lambda invocation, then returns the context's `response`.
  *
- * STREAM -> PARSED-EVENT ADAPTATION: the .NET original reads/writes payload streams and, since its
- * `AwsEventStreamContext.Response` is initialized to a `MemoryStream`, checks `Response != null`.
- * Node hands the handler an already-parsed event and expects a return value, so this port takes
- * `event: unknown`, returns `Promise<unknown>`, and — because `response` starts `undefined` — throws
- * when it is still `undefined` after the pipeline runs (no router recognized the event). The thrown
- * `BenzeneException` carries the SAME message as C#. C# `using var scope` maps to try/finally dispose.
+ * STREAM -> PARSED-EVENT ADAPTATION: the .NET original registers a `Stream FunctionHandlerAsync(Stream,
+ * ILambdaContext)` handler — the .NET Lambda runtime hands it the raw payload bytes and Benzene
+ * deserializes/sniffs the stream per transport. The AWS **Node.js** runtime has no such stream mode: it
+ * ALWAYS parses the invocation payload and passes the handler the already-parsed event
+ * (`@types/aws-lambda`'s `Handler`: *"event = Parsed JSON data in the lambda request payload"*), and an
+ * async handler *"return[s] a promise that resolves with the result payload"*. So this port takes
+ * `event: unknown` (the parsed event), returns `Promise<unknown>` (the value the runtime serializes back),
+ * and — because `response` starts `undefined` — throws when no router recognized the event. Each
+ * transport router's `canHandle` does the sniffing the C# stream-deserialize did, on the parsed event's
+ * shape (`eventSource`/`httpMethod`/`requestContext.http`/…). This is the only AWS-correct shape in Node;
+ * see `AwsLambdaEntryPointContractTest`. The thrown `BenzeneException` carries the SAME message as C#.
+ * C# `using var scope` maps to try/finally dispose. Wrap with `toLambdaHandler` for `export const handler`.
  */
 export class AwsLambdaEntryPoint implements IAwsLambdaEntryPoint {
   constructor(
