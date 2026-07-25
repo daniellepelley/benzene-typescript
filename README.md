@@ -237,6 +237,44 @@ The same handler runs on every transport of both clouds — see
 EventBridge, and Kafka) and [`examples/azure-functions`](examples/azure-functions) (the same domain on
 HTTP, Service Bus, and Event Hub).
 
+#### One Lambda, several triggers: `compositeAwsLambda`
+
+The example above wires **one transport per entry point** — the port's default, because under type
+erasure two transports can't share a single DI container (their message getters register under the same
+erased token and overwrite each other). That maps to the AWS deployment where each trigger points at its
+own Lambda function.
+
+When you'd rather have **one Lambda function fronting several triggers** — the "one function, N triggers,
+one warm pool" model, and the AWS analog of .NET's single stream-sniffing entry point — use
+`compositeAwsLambda`. It keeps each transport in its own isolated container/pipeline (so no erasure
+collision) but exposes them behind one exported `handler`. AWS delivers each trigger's event to that
+handler; the composite picks the first route whose event-shape predicate matches and delegates:
+
+```ts
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { useSqs } from '@benzene/aws-lambda-sqs';
+
+const entryPoint = compositeAwsLambda((c) => {
+  c.configureServices((services) => addBenzene(services)); // runs against every route's container
+  c.route(isApiGatewayEvent, (app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)));
+  c.route(isSqsEvent,        (app) => useSqs(app, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler)));
+});
+
+export const handler = toLambdaHandler(entryPoint);
+```
+
+`configureServices` registrations apply to every route, and a registered **instance**
+(`addSingletonInstance`) is the *same object* across all routes — a genuinely shared singleton — whereas
+a factory singleton is built once per route. The event-shape predicates
+(`isApiGatewayEvent`, `isApiGatewayV2Event`, `isSqsEvent`, `isSnsEvent`, `isKinesisEvent`,
+`isDynamoDbEvent`, `isS3Event`, `isEventBridgeEvent`, `isKafkaEvent`) live in `AwsEventPredicates` and are
+the single source of truth each transport's own `canHandle` delegates to. Splitting into per-function
+Lambdas or consolidating into one composite is a deployment choice, not a rewrite — the transport wiring
+is identical either way, and neither multiplies total cold starts (those scale with concurrency, not
+function count).
+
 <details><summary>Under the hood: driving a pipeline directly (what the hosts build on)</summary>
 
 ```ts
@@ -536,8 +574,11 @@ Ported (with tests):
     base64 body decode, the structured v2 response with a `set-cookie`→`cookies` array). v1/v2 events are
     unambiguously distinguishable, but under type erasure the two adapters' getters share one DI token per
     container, so — like any two transports in this port — each is wired in its own entry point (point a
-    REST API at the v1 handler and an HTTP API at the v2 handler). The Custom Authorizer sub-application is
-    **not yet ported**.
+    REST API at the v1 handler and an HTTP API at the v2 handler). To front several triggers with **one**
+    Lambda function (the AWS analog of .NET's single stream-sniffing entry point), `compositeAwsLambda`
+    keeps each transport in its own isolated container/pipeline yet dispatches them behind one exported
+    `handler`, using the shared `AwsEventPredicates` (`isSqsEvent`, `isApiGatewayEvent`, …) each transport's
+    own `canHandle` already delegates to. The Custom Authorizer sub-application is **not yet ported**.
   - **Azure Functions** (`@azure/functions` + `@azure/service-bus` + `@azure/event-hubs`):
     `azure-function-core` (isolated-worker entry point) + `service-bus`, `event-hub`, `kafka` and
     `http` (the retargeted `AspNet` adapter — see ‡). Dispatch to an entry point is **arity-only**

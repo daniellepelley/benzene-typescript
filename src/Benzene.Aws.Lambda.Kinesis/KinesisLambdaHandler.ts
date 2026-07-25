@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kinesis.KinesisLambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isKinesisEvent } from '@benzene/aws-lambda-core';
 import { KinesisStreamEvent } from 'aws-lambda';
 
 /**
@@ -29,11 +29,7 @@ export class KinesisLambdaHandler extends AwsLambdaMiddlewareRouter<KinesisStrea
 
   /** True if the event has at least one record sourced from Kinesis. */
   protected canHandle(request: KinesisStreamEvent): boolean {
-    return (
-      request?.Records !== undefined &&
-      request.Records.length > 0 &&
-      request.Records[0].eventSource === 'aws:kinesis'
-    );
+    return isKinesisEvent(request);
   }
 
   /** Runs the Kinesis application (no response) and marks the event as handled via the null sentinel. */

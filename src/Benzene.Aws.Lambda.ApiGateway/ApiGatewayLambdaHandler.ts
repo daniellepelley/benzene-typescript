@@ -1,6 +1,6 @@
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isApiGatewayEvent } from '@benzene/aws-lambda-core';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { ApiGatewayApplication } from './ApiGatewayApplication';
 import { ApiGatewayContext } from './ApiGatewayContext';
@@ -27,7 +27,7 @@ export class ApiGatewayLambdaHandler extends AwsLambdaMiddlewareRouter<APIGatewa
 
   /** True if the event looks like an API Gateway request (it has an HTTP method). */
   protected canHandle(request: APIGatewayProxyEvent): boolean {
-    return request?.httpMethod !== undefined && request?.httpMethod !== null;
+    return isApiGatewayEvent(request);
   }
 
   /** Runs the API Gateway application and writes the HTTP response onto the outer context. */

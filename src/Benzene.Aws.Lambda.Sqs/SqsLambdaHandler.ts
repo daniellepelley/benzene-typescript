@@ -1,6 +1,6 @@
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplicationWithResult } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isSqsEvent } from '@benzene/aws-lambda-core';
 import { SQSBatchResponse, SQSEvent } from 'aws-lambda';
 
 /**
@@ -28,11 +28,7 @@ export class SqsLambdaHandler extends AwsLambdaMiddlewareRouter<SQSEvent> {
 
   /** True if the event has at least one record sourced from SQS. */
   protected canHandle(request: SQSEvent): boolean {
-    return (
-      request?.Records !== undefined &&
-      request.Records.length > 0 &&
-      request.Records[0].eventSource === 'aws:sqs'
-    );
+    return isSqsEvent(request);
   }
 
   /** Runs the SQS application and writes the batch response onto the outer context. */

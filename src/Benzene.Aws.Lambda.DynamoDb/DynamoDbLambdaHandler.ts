@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.DynamoDbLambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplicationWithResult } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isDynamoDbEvent } from '@benzene/aws-lambda-core';
 import { DynamoDBBatchResponse, DynamoDBStreamEvent } from 'aws-lambda';
 
 /**
@@ -31,11 +31,7 @@ export class DynamoDbLambdaHandler extends AwsLambdaMiddlewareRouter<DynamoDBStr
 
   /** True if the event has at least one record sourced from DynamoDB. */
   protected canHandle(request: DynamoDBStreamEvent): boolean {
-    return (
-      request?.Records !== undefined &&
-      request.Records.length > 0 &&
-      request.Records[0].eventSource === 'aws:dynamodb'
-    );
+    return isDynamoDbEvent(request);
   }
 
   /** Runs the DynamoDB application and writes the batch response onto the outer context. */

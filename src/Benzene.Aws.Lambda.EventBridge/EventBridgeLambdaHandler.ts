@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.EventBridge.EventBridgeLambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isEventBridgeEvent } from '@benzene/aws-lambda-core';
 import { EventBridgeEvent } from 'aws-lambda';
 
 /**
@@ -29,7 +29,7 @@ export class EventBridgeLambdaHandler extends AwsLambdaMiddlewareRouter<EventBri
 
   /** True if the event carries both `detail-type` and `source` (the EventBridge envelope discriminator). */
   protected canHandle(request: EventBridgeEvent<string, unknown>): boolean {
-    return request?.['detail-type'] != null && request.source != null;
+    return isEventBridgeEvent(request);
   }
 
   /** Runs the EventBridge application (no response) and marks the event as handled via the null sentinel. */

@@ -2,6 +2,8 @@ export * from './AwsEventStream/AwsEventStreamContext';
 export * from './IAwsLambdaEntryPoint';
 export * from './AwsLambdaEntryPoint';
 export * from './toLambdaHandler';
+export * from './AwsEventPredicates';
+export * from './CompositeAwsLambdaEntryPoint';
 export * from './AwsLambdaMiddlewareRouter';
 export * from './IAwsEntryPointBuilder';
 export * from './InlineAwsLambdaStartUp';

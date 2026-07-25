@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.S3.S3LambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isS3Event } from '@benzene/aws-lambda-core';
 import { S3Event } from 'aws-lambda';
 
 /**
@@ -31,11 +31,7 @@ export class S3LambdaHandler extends AwsLambdaMiddlewareRouter<S3Event> {
 
   /** True if the event has at least one record sourced from S3. */
   protected canHandle(request: S3Event): boolean {
-    return (
-      request?.Records !== undefined &&
-      request.Records.length > 0 &&
-      request.Records[0].eventSource === 'aws:s3'
-    );
+    return isS3Event(request);
   }
 
   /** Runs the S3 application (no response) and marks the event as handled via the null sentinel. */

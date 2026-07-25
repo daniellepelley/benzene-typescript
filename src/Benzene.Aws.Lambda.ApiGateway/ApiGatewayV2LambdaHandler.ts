@@ -1,6 +1,6 @@
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isApiGatewayV2Event } from '@benzene/aws-lambda-core';
 import { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { ApiGatewayV2Application } from './ApiGatewayV2Application';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';
@@ -34,7 +34,7 @@ export class ApiGatewayV2LambdaHandler extends AwsLambdaMiddlewareRouter<APIGate
 
   /** True if the event looks like an API Gateway HTTP API v2 request. */
   protected canHandle(request: APIGatewayProxyEventV2): boolean {
-    return request?.version === '2.0' || request?.requestContext?.http?.method !== undefined;
+    return isApiGatewayV2Event(request);
   }
 
   /** Runs the v2 application and writes the HTTP response onto the outer context. */

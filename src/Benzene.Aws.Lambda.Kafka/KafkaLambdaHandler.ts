@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaLambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isKafkaEvent } from '@benzene/aws-lambda-core';
 import { MSKEvent } from 'aws-lambda';
 
 /**
@@ -29,7 +29,7 @@ export class KafkaLambdaHandler extends AwsLambdaMiddlewareRouter<MSKEvent> {
 
   /** True if the event's source is `aws:kafka`. */
   protected canHandle(request: MSKEvent): boolean {
-    return request?.eventSource === 'aws:kafka';
+    return isKafkaEvent(request);
   }
 
   /** Runs the Kafka application (no response) and marks the event as handled via the null sentinel. */

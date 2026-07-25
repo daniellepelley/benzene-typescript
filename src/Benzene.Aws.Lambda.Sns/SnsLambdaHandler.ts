@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsLambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter } from '@benzene/aws-lambda-core';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isSnsEvent } from '@benzene/aws-lambda-core';
 import { SNSEvent } from 'aws-lambda';
 
 /**
@@ -32,11 +32,7 @@ export class SnsLambdaHandler extends AwsLambdaMiddlewareRouter<SNSEvent> {
 
   /** True if the event has at least one record sourced from SNS. */
   protected canHandle(request: SNSEvent): boolean {
-    return (
-      request?.Records !== undefined &&
-      request.Records.length > 0 &&
-      request.Records[0].EventSource === 'aws:sns'
-    );
+    return isSnsEvent(request);
   }
 
   /** Runs the SNS application (no response) and marks the event as handled via the null sentinel. */
