@@ -16,6 +16,7 @@ Mirrors the .NET repository:
 
 - `src/` — library source, one directory per C# project
 - `test/` — tests, mirroring `test/` in the .NET repository
+- `examples/` — runnable example apps (e.g. `examples/mesh-service`, a live mesh-discoverable service)
 - `.github/workflows/` — CI
 
 | Package | npm name | .NET counterpart |
@@ -235,6 +236,13 @@ byte-identical to .NET so the two interoperate:
   fixtures are exactly what each language's Benzene runtime serves) are polled by the real aggregator over the
   real global `fetch`, and it derives a cross-language topology edge from the .NET producer to the TypeScript
   consumer.
+- **A live, mesh-discoverable TypeScript service.** `examples/mesh-service` is a runnable Benzene HTTP service
+  (Express-hosted handlers) that serves `/benzene/spec` (a descriptor derived from its handler registry) and
+  `/benzene/health` — the language-neutral endpoints a mesh aggregator interrogates. Start it
+  (`npm start -w @benzene-example/mesh-service`) and point either the TypeScript `MeshAggregator` or the .NET
+  `Benzene.Mesh.Aggregator` at it; both catalog it with no knowledge that it's TypeScript.
+  `test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` starts this very service and drives
+  the real aggregator against it in CI.
 - **The normative descriptor path** (the reserved `mesh` topic → `ServiceDescriptor`, used by
   `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` for the live .NET↔Go cross-language fleets) is not yet ported:
   its descriptor generation derives each topic's request/response JSON Schema by reflecting over the handler's
