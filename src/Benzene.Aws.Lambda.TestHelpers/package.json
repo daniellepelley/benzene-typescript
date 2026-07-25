@@ -1,0 +1,14 @@
+{
+  "name": "@benzene/aws-lambda-testing",
+  "version": "0.1.0",
+  "description": "Test-event builders for the AWS Lambda Benzene transports (ports the Benzene.Aws.Lambda.*.TestHelpers projects)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/testing": "0.1.0"
+  }
+}

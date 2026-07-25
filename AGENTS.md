@@ -11,6 +11,12 @@ When adding or changing anything, read the corresponding C# code in the .NET rep
 and port it, rather than designing from scratch. Apply the mapping rules in the README's
 "Porting conventions" section exactly; if a new rule is needed, add it there in the same style.
 
+The balance between porting .NET faithfully and landing on an idiomatic TypeScript shape is owned by
+the **`typescript-dx-champion`** agent (`.claude/agents/typescript-dx-champion.md`) — invoke it to
+review a newly ported package for TS-naturalness, or to decide when a literal port should bend toward a
+TS idiom (and how to document the bend). Faithful by default; bend when fidelity would produce something
+a TS developer would never write; record every bend in the README "Porting conventions" table.
+
 ## Structure
 - `src/<Benzene.PackageName>/` — one npm workspace package per C# project, files named after
   their `.cs` counterparts
