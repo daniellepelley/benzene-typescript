@@ -13,8 +13,9 @@
  * `runtime` defaults to `"node"`; the §2.2 `descriptorHash` uses `node:crypto` SHA-256 over the
  * spec's canonical JSON (fixed descriptor field order, lexicographic schema-map keys).
  *
- * The trace/heartbeat feeds of the C# package (`UseMeshTrace`, `MeshTraceEvent`, `MeshHeartbeat`,
- * `IMeshStatusReader`, `IMeshTraceExporter`) are not yet ported - see README.
+ * The trace feed (§3) is also here: `MeshTraceEvent`/`MeshTraceBatch`/`MeshHeartbeat`, the ambient
+ * `MeshSpan` (W3C trace-context propagation over `AsyncLocalStorage`), the per-transport
+ * `IMeshStatusReader`, the lossy batching `HttpMeshTraceExporter`, and the `useMeshTrace` middleware.
  */
 export * from './MeshTopics';
 export * from './MeshJson';
@@ -22,4 +23,8 @@ export * from './MeshServiceDescriptor';
 export * from './MeshServiceInfo';
 export * from './MeshSchemaProvider';
 export * from './MeshDescriptorFactory';
+export * from './MeshTraceEvent';
+export * from './MeshSpan';
+export * from './IMeshStatusReader';
+export * from './IMeshTraceExporter';
 export * from './Extensions';

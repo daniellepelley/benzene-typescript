@@ -1,20 +1,17 @@
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
 import { conformanceRegistry } from './GreetConformanceHandler';
 
-export class PanicRequest {
-  reason = '';
-}
+export class PanicRequest {}
 
-export class PanicReply {
-  handled = false;
-}
+export class PanicReply {}
 
 /**
- * Canonical conformance handler (see docs/specification/conformance/README.md). Used here only to grow
- * the topic set, so the descriptorHash's sensitivity to topics can be asserted.
+ * Canonical mesh conformance handler (see docs/specification/conformance/README.md): throws
+ * unconditionally, pinning the rule that an unhandled handler exception is traced as
+ * `service-unavailable` rather than lost (mesh.md §3's structural coverage). Also used by the
+ * descriptor cases purely to grow the topic set (the descriptor factory never invokes it).
  */
 @message('conformance:panic', {
   registry: conformanceRegistry,
@@ -23,8 +20,6 @@ export class PanicReply {
 })
 export class PanicConformanceHandler implements IMessageHandler<PanicRequest, PanicReply> {
   handleAsync(): Promise<IBenzeneResultOf<PanicReply>> {
-    const reply = new PanicReply();
-    reply.handled = true;
-    return Promise.resolve(BenzeneResult.ok(reply));
+    throw new Error('conformance:panic always throws');
   }
 }

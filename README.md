@@ -95,12 +95,15 @@ so `@benzene/dependencies` ships a first-party `ServiceCollection` /
 `DefaultBenzeneServiceContainer` / `DefaultServiceResolverFactory` with the same
 singleton/scoped/transient semantics.
 
-† `@benzene/mesh-wire` ports the **ServiceDescriptor path** of `Benzene.Mesh.Wire` (`mesh.md` §2):
-the descriptor types, `MeshDescriptorFactory` + §2.2 `descriptorHash`, the pluggable
+† `@benzene/mesh-wire` ports both wire feeds of `Benzene.Mesh.Wire`. The **ServiceDescriptor path**
+(`mesh.md` §2): the descriptor types, `MeshDescriptorFactory` + §2.2 `descriptorHash`, the pluggable
 `IMeshSchemaProvider` (replacing C#'s CLR-reflection schema generator — TypeScript erases the
-request/response types), and `useMeshDescriptor`. `runtime` is `"node"`. The package's trace/heartbeat
-feeds (`UseMeshTrace`, `MeshTraceEvent`, `MeshHeartbeat`, `IMeshStatusReader`, `IMeshTraceExporter`)
-are not yet ported — see "Multi-language interoperability".
+request/response types), and `useMeshDescriptor`; `runtime` is `"node"`. And the **trace feed** (§3):
+`MeshTraceEvent` / `MeshTraceBatch` / `MeshHeartbeat`, the ambient `MeshSpan` (over `AsyncLocalStorage`),
+the `Traceparent` parser, `IMeshStatusReader`, the lossy `HttpMeshTraceExporter`, and `useMeshTrace`. Two
+adaptations are documented in "Multi-language interoperability": C#'s reflection schema generator →
+injected schema provider, and C#'s `System.Threading.Channels` exporter pump → a bounded buffer + timer
+loop with a fire-and-forget sync `dispose()`.
 
 ‡ `Benzene.Azure.Function.AspNet` routes Azure Functions HTTP through the .NET-only ASP.NET Core
 stack (`HttpRequest`/`IActionResult`). Per the "Third-party library integrations" convention it is
@@ -197,6 +200,15 @@ next to its C# counterpart:
 - **Logging.** `Microsoft.Extensions.Logging` has no Node equivalent; `@benzene/abstractions`
   ships a minimal `ILogger`/`ILoggerFactory`/`LogLevel` with structured scopes, which adapters
   for concrete loggers can implement.
+- **Ambient state & concurrency primitives.** `AsyncLocal<T>` → Node's `AsyncLocalStorage` (a C#
+  settable `Current` with a `finally` restore becomes `als.run(value, () => next())`, whose scope
+  reverts automatically). `CancellationToken` → an optional `AbortSignal`. `SemaphoreSlim` → a
+  promise-chain mutex, and `Task.WhenAll` → `Promise.all` (bounded fan-out via `@benzene/core-middleware`'s
+  `BoundedFanOut`). `System.Threading.Channels` has no Node built-in: the used subset is re-created
+  in-package — a capacity-bounded buffer drained by a single re-entrancy-guarded loop (kicked by size and
+  by an `unref`'d `setInterval`). Because JavaScript can't block a thread on a promise, a C# synchronous
+  `Dispose` that bridges to async work becomes a fire-and-forget `dispose()` alongside a `disposeAsync()`
+  that callers `await` when they need the work to complete.
 - **Handler discovery.** `IMessageHandlersFinder` remains the extension point, exactly as in
   .NET — only the default implementation differs. The C# `[Message("topic")]` attribute becomes
   the `@message('topic')` class decorator, which self-registers the class with a
@@ -267,9 +279,18 @@ byte-identical to .NET so the two interoperate:
   mapping table itself is normative and unchanged. `docs/specification/conformance/mesh-descriptor-cases.json`
   is ported to `test/Benzene.Core.Test/Conformance/` and pins the derived descriptor + hash properties;
   `examples/mesh-service` serves its normative descriptor at `/benzene/descriptor`
-  (`test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` reads it live). Not yet ported
-  from `Benzene.Mesh.Wire`: the trace/heartbeat feeds (`UseMeshTrace`, `MeshTraceEvent`, `MeshHeartbeat`,
-  `IMeshStatusReader`, `IMeshTraceExporter` — `mesh.md` §3/§5) and the collector side (`Benzene.Mesh.Collector`).
+  (`test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` reads it live).
+- **The mesh trace feed** (`mesh.md` §3) is also ported in `@benzene/mesh-wire`: `MeshTraceEvent` /
+  `MeshTraceBatch` / `MeshHeartbeat`, the ambient `MeshSpan` (W3C trace-context propagation over Node's
+  `AsyncLocalStorage`, the port of C#'s `AsyncLocal`), the package-local `Traceparent` parser (join/reject
+  per §3), the per-transport `IMeshStatusReader` (+ `BenzeneMessageMeshStatusReader`), the lossy batching
+  `HttpMeshTraceExporter` (C#'s `System.Threading.Channels` pump → a bounded buffer drained by an
+  `unref`'d timer loop; JS can't block a thread on a promise, so the C# synchronous `Dispose` bridge
+  becomes a fire-and-forget `dispose()`, with `disposeAsync()` for a guaranteed tail flush), and the
+  `useMeshTrace` middleware. `docs/specification/conformance/mesh-trace-cases.json` is ported and pins the
+  traceparent rules and the invocation → semantic-status mapping (including a handler exception traced as
+  `service-unavailable`). Not yet ported from `Benzene.Mesh.Wire`: nothing — but the collector side that
+  consumes these feeds (`Benzene.Mesh.Collector`) is a separate package, not yet ported.
 
 ## Porting status and roadmap
 
