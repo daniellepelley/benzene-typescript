@@ -18,6 +18,7 @@ import {
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
+  usePresetTopic,
 } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
@@ -26,11 +27,17 @@ import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useSns } from '@benzene/aws-lambda-sns';
 import { useEventBridge } from '@benzene/aws-lambda-eventbridge';
 import { useKafka } from '@benzene/aws-lambda-kafka';
+import { useDynamoDb } from '@benzene/aws-lambda-dynamodb';
+import { useKinesis } from '@benzene/aws-lambda-kinesis';
+import { useS3 } from '@benzene/aws-lambda-s3';
 import { httpBuilder, messageBuilder } from '@benzene/testing';
 import {
   asApiGatewayRequest,
   asAwsKafkaEvent,
+  asDynamoDb,
   asEventBridge,
+  asKinesis,
+  asS3,
   asSns,
   asSqs,
 } from '@benzene/aws-lambda-testing';
@@ -70,6 +77,29 @@ class KafkaOrderHandler implements IMessageHandler<Order, OrderResult> {
 class EventBridgeOrderHandler implements IMessageHandler<Order, OrderResult> {
   handleAsync(request: Order): Promise<IBenzeneResultOf<OrderResult>> {
     handled.push(request.orderId ?? '<none>');
+    return Promise.resolve(BenzeneResult.ok(new OrderResult()));
+  }
+}
+
+// DynamoDB routes on `{table}:{eventName}`; the AttributeValue image unmarshals to the request.
+@message('orders:INSERT', { registry, requestType: Order, responseType: OrderResult })
+class DynamoOrderHandler implements IMessageHandler<Order, OrderResult> {
+  handleAsync(request: Order): Promise<IBenzeneResultOf<OrderResult>> {
+    handled.push(request.orderId ?? '<none>');
+    return Promise.resolve(BenzeneResult.ok(new OrderResult()));
+  }
+}
+
+// S3 has no JSON body: the request is the object reference (bucket + key), routed by the S3 event name.
+class FileUploaded {
+  bucketName?: string;
+  key?: string;
+}
+
+@message('ObjectCreated:Put', { registry, requestType: FileUploaded, responseType: OrderResult })
+class S3FileHandler implements IMessageHandler<FileUploaded, OrderResult> {
+  handleAsync(request: FileUploaded): Promise<IBenzeneResultOf<OrderResult>> {
+    handled.push(`${request.bucketName}/${request.key}`);
     return Promise.resolve(BenzeneResult.ok(new OrderResult()));
   }
 }
@@ -154,6 +184,59 @@ describe('AWS Lambda test-event builders drive the real pipeline', () => {
     );
 
     expect(handled).toEqual(['42']);
+  });
+
+  it('asDynamoDb marshals the image and routes on {table}:{eventName}', async () => {
+    handled.length = 0;
+    const entryPoint = new InlineAwsLambdaStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure((app) => useDynamoDb(app, (dynamo) => useMessageHandlers(dynamo, DynamoOrderHandler)))
+      .build();
+
+    const response = (await entryPoint.functionHandlerAsync(
+      asDynamoDb(messageBuilder('orders:INSERT', { orderId: '42' })),
+      fakeLambdaContext,
+    )) as { batchItemFailures: unknown[] };
+
+    // The AttributeValue image ({ orderId: { S: '42' } }) unmarshalled back to { orderId: '42' }.
+    expect(handled).toEqual(['42']);
+    expect(response.batchItemFailures).toEqual([]);
+  });
+
+  it('asKinesis base64-encodes the record and routes via the preset topic', async () => {
+    handled.length = 0;
+    const entryPoint = new InlineAwsLambdaStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure((app) =>
+        useKinesis(app, (kinesis) => {
+          usePresetTopic(kinesis, 'create-order');
+          useMessageHandlers(kinesis, CreateOrderHandler);
+        }),
+      )
+      .build();
+
+    // Kinesis carries no topic, so the builder's topic is a placeholder; routing is the preset.
+    await entryPoint.functionHandlerAsync(
+      asKinesis(messageBuilder('n/a', { orderId: '42' })),
+      fakeLambdaContext,
+    );
+
+    expect(handled).toEqual(['42']);
+  });
+
+  it('asS3 routes the object notification by event name to the handler', async () => {
+    handled.length = 0;
+    const entryPoint = new InlineAwsLambdaStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure((app) => useS3(app, (s3) => useMessageHandlers(s3, S3FileHandler)))
+      .build();
+
+    await entryPoint.functionHandlerAsync(
+      asS3('my-bucket', 'photos/cat.png', { eventName: 'ObjectCreated:Put' }),
+      fakeLambdaContext,
+    );
+
+    expect(handled).toEqual(['my-bucket/photos/cat.png']);
   });
 });
 

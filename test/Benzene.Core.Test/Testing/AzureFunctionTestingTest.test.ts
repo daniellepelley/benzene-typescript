@@ -14,9 +14,11 @@ import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
 import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
 import { handleServiceBusMessages, useServiceBus } from '@benzene/azure-function-service-bus';
 import { handleEventHub, useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
+import { handleKafkaEvents, useKafka } from '@benzene/azure-function-kafka';
 import { httpBuilder, messageBuilder } from '@benzene/testing';
 import {
   asAzureHttpRequest,
+  asAzureKafkaEvent,
   asAzureServiceBusMessage,
   asEventHubBenzeneMessage,
 } from '@benzene/azure-function-testing';
@@ -93,5 +95,16 @@ describe('Azure Functions trigger builders drive the real pipeline', () => {
     await handleEventHub(app, asEventHubBenzeneMessage(messageBuilder('order:placed', { orderId: '9' })));
 
     expect(handled).toEqual(['9']);
+  });
+
+  it('asAzureKafkaEvent routes on the record topic', async () => {
+    const app = new InlineAzureFunctionStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure((builder) => useKafka(builder, (k) => useMessageHandlers(k, CreateOrderHandler)))
+      .build();
+
+    await handleKafkaEvents(app, asAzureKafkaEvent(messageBuilder('create-order', { orderId: '11' })));
+
+    expect(handled).toEqual(['11']);
   });
 });

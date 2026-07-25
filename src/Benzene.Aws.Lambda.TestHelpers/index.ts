@@ -8,11 +8,12 @@
  * (each isolating a specific `Amazon.Lambda.*Events` NuGet). In the Node ecosystem every Lambda event
  * type comes from the single `@types/aws-lambda` package, so there is no dependency to isolate - the
  * TypeScript-idiomatic shape is one `@benzene/aws-lambda-testing` package with a builder per transport.
- * (DynamoDB Streams - which needs AttributeValue marshalling - and Kinesis/S3, which have no C# test
- * helper, are deferred; see the README.)
  */
 export * from './ApiGatewayMessageBuilderExtensions';
 export * from './SqsMessageBuilderExtensions';
 export * from './SnsMessageBuilderExtensions';
 export * from './EventBridgeMessageBuilderExtensions';
 export * from './KafkaMessageBuilderExtensions';
+export * from './DynamoDbMessageBuilderExtensions';
+export * from './KinesisMessageBuilderExtensions';
+export * from './S3MessageBuilderExtensions';

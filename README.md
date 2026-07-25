@@ -129,21 +129,25 @@ depends on the Node global `fetch` rather than .NET's `HttpClient`.)
 (`messageBuilder`/`httpBuilder` + `asBenzeneMessage`/`asRawHttpRequest`); the C# static `MessageBuilder.
 Create`/`HttpBuilder.Create` factories become free functions, and the required `ISerializer` becomes an
 optional argument defaulting to JSON. `@benzene/aws-lambda-testing` and
-`@benzene/azure-function-testing` provide the transport test-event builders (`asApiGatewayRequest`,
-`asApiGatewayV2Request`, `asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`; `asAzureHttpRequest`,
-`asAzureServiceBusMessage`, `asEventHubBenzeneMessage`) that turn one builder into a native cloud event
-routable by the matching adapter. **Two deliberate TS-DX bends,** both
+`@benzene/azure-function-testing` provide a transport test-event builder for **every** ported adapter —
+AWS: `asApiGatewayRequest`, `asApiGatewayV2Request`, `asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`,
+`asDynamoDb`, `asKinesis`, `asS3`; Azure: `asAzureHttpRequest`, `asAzureServiceBusMessage`,
+`asEventHubBenzeneMessage`, `asAzureKafkaEvent` — each turning one `messageBuilder`/`httpBuilder` into a
+native cloud event routable by the matching adapter (`asS3` takes a bucket/key directly, since an S3
+notification carries no JSON body). Every one is exercised end-to-end in memory in
+`test/Benzene.Core.Test/Testing/`, driving the real transport pipeline via `Inline*StartUp`. **Two deliberate TS-DX bends,** both
 from the TypeScript-DX-champion lens (see `.claude/agents/typescript-dx-champion.md`): (1) the C# ships one
 `*.TestHelpers` project per transport to isolate each `Amazon.Lambda.*Events` NuGet, but in Node the event
 types come from a few shared packages (`@types/aws-lambda`; `@azure/functions`/`service-bus`/`event-hubs`),
 so there is no dependency to isolate — the idiomatic shape is one `@benzene/aws-lambda-testing` and one
 `@benzene/azure-function-testing` package, each with a builder per transport; (2) C#'s positional/overloaded
 `As*(serializer, numberOfMessages)` parameters become a single trailing **options object**
-(`{ serializer?, numberOfMessages? }`), consistent across every builder. Not ported yet: the
-`BenzeneTestHost`/`BenzeneTestHostBuilder` startup-host (the TS transports are driven directly via their
-`*Application`/`Inline*StartUp` entry points, which the ported tests already use), and the AWS DynamoDB
-Streams (needs AttributeValue marshalling), Kinesis, and S3 builders, plus the Azure Kafka/Queue Storage
-builders — see the package `index.ts` notes.
+(`{ serializer?, numberOfMessages? }`), consistent across every builder. There is a builder for every
+ported transport; the DynamoDB one ships a small AttributeValue marshaller (the inverse of the adapter's
+`DynamoDbAttributeValueConverter`). Not ported: the `BenzeneTestHost`/`BenzeneTestHostBuilder`
+startup-host (the TS transports are driven directly via their `*Application`/`Inline*StartUp` entry
+points, which the tests already use), and an Azure Queue Storage builder (that transport itself isn't
+ported).
 
 §§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
