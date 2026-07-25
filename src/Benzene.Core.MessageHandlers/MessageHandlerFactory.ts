@@ -26,10 +26,12 @@ export class MessageHandlerFactory implements IMessageHandlerFactory {
     private readonly serviceResolver: IServiceResolver,
     private readonly messageHandlerWrapper: IMessageHandlerWrapper,
     private readonly loggerFactory: ILoggerFactory = NullLoggerFactory.instance,
+    // Wire-contract status values (lowercase-kebab-case, per wire-contracts.md §3 / BenzeneResultStatus) -
+    // kept as literals here to avoid a dependency on @benzene/results from this package.
     private readonly defaultStatuses: IDefaultStatuses = {
-      validationError: 'ValidationError',
-      notFound: 'NotFound',
-      badRequest: 'BadRequest',
+      validationError: 'validation-error',
+      notFound: 'not-found',
+      badRequest: 'bad-request',
     },
   ) {}
 

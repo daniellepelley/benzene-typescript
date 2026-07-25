@@ -1,25 +1,31 @@
 /**
  * Well-known result statuses and their success/failure classification.
  * Port of Benzene.Results.BenzeneResultStatus.
+ *
+ * The string VALUES are the normative **wire** status vocabulary from `docs/specification/wire-contracts.md`
+ * §3 - lowercase-kebab-case and case-sensitive (`ok`, `not-found`, `validation-error`), identical to the
+ * .NET constants. This is a cross-language contract: a Benzene service in any language writes these exact
+ * strings as the response envelope's `statusCode`, so a TypeScript service and a .NET service (or mesh
+ * aggregator) reading each other's responses classify statuses identically.
  */
 export const BenzeneResultStatus = {
-  accepted: 'Accepted',
-  ok: 'Ok',
-  created: 'Created',
-  updated: 'Updated',
-  deleted: 'Deleted',
-  ignored: 'Ignored',
-  notFound: 'NotFound',
-  badRequest: 'BadRequest',
-  validationError: 'ValidationError',
-  serviceUnavailable: 'ServiceUnavailable',
-  notImplemented: 'NotImplemented',
-  unexpectedError: 'UnexpectedError',
-  conflict: 'Conflict',
-  forbidden: 'Forbidden',
-  unauthorized: 'Unauthorized',
-  tooManyRequests: 'TooManyRequests',
-  timeout: 'Timeout',
+  accepted: 'accepted',
+  ok: 'ok',
+  created: 'created',
+  updated: 'updated',
+  deleted: 'deleted',
+  ignored: 'ignored',
+  notFound: 'not-found',
+  badRequest: 'bad-request',
+  validationError: 'validation-error',
+  serviceUnavailable: 'service-unavailable',
+  notImplemented: 'not-implemented',
+  unexpectedError: 'unexpected-error',
+  conflict: 'conflict',
+  forbidden: 'forbidden',
+  unauthorized: 'unauthorized',
+  tooManyRequests: 'too-many-requests',
+  timeout: 'timeout',
 
   isSuccess(status: string | undefined | null): boolean {
     return status != null && successStatuses.has(status);
@@ -38,20 +44,20 @@ export const BenzeneResultStatus = {
   },
 } as const;
 
-const successStatuses = new Set(['Ok', 'Created', 'Accepted', 'Updated', 'Deleted', 'Ignored']);
+const successStatuses = new Set(['ok', 'created', 'accepted', 'updated', 'deleted', 'ignored']);
 
 const failureStatuses = new Set([
-  'BadRequest',
-  'ValidationError',
-  'Unauthorized',
-  'Forbidden',
-  'NotFound',
-  'Conflict',
-  'TooManyRequests',
-  'Timeout',
-  'NotImplemented',
-  'ServiceUnavailable',
-  'UnexpectedError',
+  'bad-request',
+  'validation-error',
+  'unauthorized',
+  'forbidden',
+  'not-found',
+  'conflict',
+  'too-many-requests',
+  'timeout',
+  'not-implemented',
+  'service-unavailable',
+  'unexpected-error',
 ]);
 
-const transientStatuses = new Set(['ServiceUnavailable', 'TooManyRequests', 'Timeout']);
+const transientStatuses = new Set(['service-unavailable', 'too-many-requests', 'timeout']);

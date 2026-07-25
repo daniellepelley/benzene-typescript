@@ -28,7 +28,7 @@ describe('LoggerExtensionsTest', () => {
         log.onResponse((_, context) => ({ status: context.status ?? '' }));
       })
       .onRequest((context) => {
-        context.status = 'Ok';
+        context.status = 'ok';
       });
 
     const factory = new DefaultServiceResolverFactory(services);
@@ -47,7 +47,7 @@ describe('LoggerExtensionsTest', () => {
 
     const scopes = entries[0].scopes;
     expect(scopes[0]).toEqual({ topic: 'test-topic' });
-    expect(scopes[1]).toEqual({ status: 'Ok' });
+    expect(scopes[1]).toEqual({ status: 'ok' });
     expect(scopes[2]).toHaveProperty('processTime');
   });
 

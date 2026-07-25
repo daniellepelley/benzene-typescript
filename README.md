@@ -213,6 +213,36 @@ next to its C# counterpart:
   "no runtime dependencies outside the workspace" rule applies to the core port, not to these
   deliberately library-specific adapters.
 
+## Multi-language interoperability
+
+The point of the port is that a TypeScript Benzene service and a .NET Benzene service can run in **one
+mesh** and call each other — the runtime language is invisible on the wire. Everything that crosses a
+process boundary is a language-neutral contract (`docs/specification/wire-contracts.md` and `mesh.md` in the
+.NET repo): the message envelope (`{ topic, headers, body }`), the response envelope + error payload, the
+**status vocabulary**, the health document, and the mesh `spec` descriptor. The port holds these
+byte-identical to .NET so the two interoperate:
+
+- **Status vocabulary.** `BenzeneResultStatus`'s string values are the normative lowercase-kebab wire
+  statuses (`ok`, `not-found`, `validation-error`), case-sensitive, identical to the .NET constants — so a
+  status a TypeScript service writes as the response `statusCode` classifies identically in a .NET peer (and
+  vice versa), and a metrics-derived mesh usage feed itemizes failures the same across languages. (Everything
+  in the port refers to these via the `BenzeneResultStatus` constants, so the wire values are defined once.)
+- **Mesh aggregation across languages.** The ported `MeshAggregator` interrogates any service's `spec`/`health`
+  endpoints over HTTP regardless of the implementing language, builds the cross-service topic catalog and
+  structural topology from what each service self-describes, and so links a producer in one language to a
+  consumer in another. `test/Benzene.Core.Test/MultiLanguage/CrossLanguageMeshTest.test.ts` demonstrates this
+  end-to-end: two real `node:http` services (one standing in for a .NET runtime, one for TypeScript — the
+  fixtures are exactly what each language's Benzene runtime serves) are polled by the real aggregator over the
+  real global `fetch`, and it derives a cross-language topology edge from the .NET producer to the TypeScript
+  consumer.
+- **The normative descriptor path** (the reserved `mesh` topic → `ServiceDescriptor`, used by
+  `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` for the live .NET↔Go cross-language fleets) is not yet ported:
+  its descriptor generation derives each topic's request/response JSON Schema by reflecting over the handler's
+  CLR types, which TypeScript's erased types can't do. A TS-idiomatic version would derive the schemas from an
+  explicitly-registered schema registry (`@benzene/zod`/`joi`/`yup`) instead — the natural next step for full
+  descriptor-level parity. The aggregator's HTTP `spec`-endpoint path above is the collector-side idiom that
+  works today.
+
 ## Porting status and roadmap
 
 Ported (with tests):
@@ -313,8 +343,9 @@ Ported (with tests):
   before a provider is registered stay no-op, unlike .NET's `MeterListener`); `ActivityContext.TryParse`
   → a `SpanContext` built from the ported `parseTraceparent` (self-contained, no globally-set propagator
   needed; `tracestate` isn't threaded through); `Counter.Enabled` gating is dropped (OTel JS's no-op
-  meter is already cheap); `benzene.status`/metric `result` values are the port's PascalCase status
-  strings (`NotFound`, not .NET's `not-found`). `Benzene.OpenTelemetry` has no counterpart — OpenTelemetry
+  meter is already cheap); `benzene.status`/metric `result` values are the framework status strings from
+  `BenzeneResultStatus` — the normative lowercase-kebab wire vocabulary (`not-found`), identical to .NET, so
+  a metrics-derived mesh usage feed classifies the same across languages. `Benzene.OpenTelemetry` has no counterpart — OpenTelemetry
   JS exports every API tracer/meter once an SDK is registered, so there's no per-source `AddSource`/
   `AddMeter` step to port.
 - HTTP routing (`@benzene/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
@@ -573,8 +604,8 @@ Ported (with tests):
   `addMeshAggregator` (the port's Extensions-registration convention, since JS has no assembly scan or
   constructor-parameter reflection). All six aggregator test classes ported (78 tests: catalog/topology/
   drift/usage-attribution, AsyncAPI composition, artifact-store round-trip + traversal rejection,
-  snapshot-report drift, annotations, and the two message handlers) — two topology tests use the port's
-  PascalCase `BenzeneResultStatus` wire vocabulary where the C# original used lowercase-kebab.
+  snapshot-report drift, annotations, and the two message handlers) — the usage-attribution topology tests
+  feed the framework wire statuses (`BenzeneResultStatus.notFound` = `not-found`, matching .NET).
 - Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
   to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint

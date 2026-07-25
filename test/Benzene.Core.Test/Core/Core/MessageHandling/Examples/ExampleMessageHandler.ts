@@ -16,7 +16,7 @@ export class ExampleMessageHandler
     const payload = new ExampleResponsePayload();
     payload.greeting = `hello ${request.name}`;
     return Promise.resolve({
-      status: 'Ok',
+      status: 'ok',
       isSuccessful: true,
       payloadAsObject: payload,
       errors: [],
