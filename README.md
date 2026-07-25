@@ -75,6 +75,10 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
 | `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
 | `src/Benzene.Mesh.Usage.ApplicationInsights` | `@benzene/mesh-usage-application-insights` | `Benzene.Mesh.Usage.ApplicationInsights` |
+| `src/Benzene.Mesh.Aws.S3` | `@benzene/mesh-aws-s3` | `Benzene.Mesh.Aws.S3` |
+| `src/Benzene.Mesh.Discovery.Aws` | `@benzene/mesh-discovery-aws` | `Benzene.Mesh.Discovery.Aws` |
+| `src/Benzene.Mesh.Usage.CloudWatch` | `@benzene/mesh-usage-cloudwatch` | `Benzene.Mesh.Usage.CloudWatch` |
+| `src/Benzene.Mesh.Discovery.Kubernetes` | `@benzene/mesh-discovery-kubernetes` | `Benzene.Mesh.Discovery.Kubernetes` |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -604,6 +608,34 @@ Ported (with tests):
     (`QueryTimeRange` → a `{ startTime, endTime }` interval, non-`Success` result throws); wired via
     `addApplicationInsightsUsage`. The Azure sibling of the CloudWatch adapter. Source test class ported
     (4 tests). `TimeSpan` → ms `number` and `DateTimeOffset` → epoch ms throughout these three.
+- Mesh AWS + Kubernetes adapters — the AWS and Kubernetes cloud integrations, each adapting its .NET SDK to
+  the official ecosystem JS package (`@aws-sdk/client-*` v3, `@kubernetes/client-node`) under the same
+  "adapted, not reimplemented" convention; the AWS SDK's v3 command pattern (`client.send(new XCommand(...))`)
+  replaces the .NET `IAmazonX` interface methods, and — because the C# tests mocked those SDK interfaces
+  directly — the SDK-coupled classes take the client directly (the test passes a stubbed `send`) rather than
+  adding a seam:
+  - S3 artifact store (`@benzene/mesh-aws-s3`): `S3MeshArtifactStore` — an `IMeshArtifactStore` over an S3
+    bucket, so a Lambda-hosted mesh persists its artifacts centrally; wired via `addMeshAggregatorWithS3`.
+    `AWSSDK.S3` → `@aws-sdk/client-s3` (`GetObject` response stream → `Body.transformToString`,
+    `AmazonS3Exception`/404 → a `NoSuchKey`/`$metadata.httpStatusCode === 404` check). No C# unit test (SDK-only).
+  - AWS Lambda discovery (`@benzene/mesh-discovery-aws`): `AwsLambdaDiscoveryProvider` discovers services from
+    tagged Lambda functions (paginated `ListFunctions` + bounded-concurrency `ListTags`) as `AwsLambdaInvoke`
+    entries; `AWSSDK.Lambda` → `@aws-sdk/client-lambda`, the `SemaphoreSlim`+ordered-`WhenAll` tag reads → an
+    order-preserving bounded-concurrency map. Provider test class ported (4 tests).
+  - CloudWatch usage (`@benzene/mesh-usage-cloudwatch`): `CloudWatchUsageSource` reads the
+    `benzene.messages.processed` counter back (`ListMetrics` to enumerate live dimension combinations, one
+    `GetMetricData` `Sum` query each, 500-query chunked) as an `IMeshUsageSource`; `AWSSDK.CloudWatch` →
+    `@aws-sdk/client-cloudwatch`. The AWS sibling of the Application Insights adapter. Source test class
+    ported (3 tests).
+  - Kubernetes discovery (`@benzene/mesh-discovery-kubernetes`): `KubernetesServiceDiscoveryProvider`
+    discovers services from Kubernetes Services — pure label-selector construction + in-cluster-DNS URL
+    building (`{name}.{namespace}.svc.cluster.local`) + SSRF-safe scheme/path sanitisation over the
+    `IKubernetesServiceLister` seam, whose real implementation (`KubernetesApiServiceLister`) adapts the
+    Kubernetes SDK to `@kubernetes/client-node`'s `CoreV1Api` (v1's single-param list methods); wired via
+    `addMeshKubernetesDiscovery` (`KubeConfig.loadFromCluster`). Provider test class ported (8 tests).
+  Deferred: `Mesh.Aws.Lambda` (the invoke source/dispatcher) needs the unported `Benzene.Clients.Aws.Lambda`
+  client stack, and `Mesh.Fleet.Aws.XRay` needs `Mesh.Collector`, which is blocked on the reflection-bound
+  `Mesh.Wire`.
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount

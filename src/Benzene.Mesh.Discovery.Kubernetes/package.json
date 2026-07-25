@@ -1,0 +1,14 @@
+{
+  "name": "@benzene/mesh-discovery-kubernetes",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Mesh.Discovery.Kubernetes",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/mesh-contracts": "0.1.0",
+    "@kubernetes/client-node": "^1.4.0"
+  }
+}
