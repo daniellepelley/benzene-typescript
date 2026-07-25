@@ -5,5 +5,6 @@
  */
 export * from './handlers';
 export * from './benzeneSpec';
+export * from './benzeneDescriptor';
 export * from './health';
 export * from './orderService';

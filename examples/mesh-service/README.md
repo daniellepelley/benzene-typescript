@@ -14,9 +14,10 @@ aggregator interrogates, so a mesh aggregator **written in any language** — th
 | `GET /orders/{id}` | The `order:get` handler. |
 | `GET /benzene/spec?type=benzene` | The service's **spec descriptor** (`{ requests, events, transports }`), derived from the handler registry — the same JSON a .NET Benzene service serves. |
 | `GET /benzene/health` | The **health document** (`{ isHealthy, healthChecks }`), the same shape .NET serves. |
+| `GET /benzene/descriptor` | The normative mesh **ServiceDescriptor** (`mesh.md` §2): identity, placement, the topic list with §2.1 request/response JSON schemas, and a per-port `descriptorHash` — the same shape a .NET or Go service emits. |
 
-The descriptor is a projection of the running code (topics + HTTP mappings come straight from the
-handlers' `@message`/`@httpEndpoint` metadata), never hand-maintained.
+Every endpoint is a projection of the running code (topics + HTTP mappings + schemas come straight from
+the handlers' `@message`/`@httpEndpoint` metadata and the registered schema provider), never hand-maintained.
 
 ## Run it
 
@@ -30,6 +31,7 @@ Then interrogate it exactly as a mesh aggregator would:
 ```bash
 curl 'http://127.0.0.1:5100/benzene/spec?type=benzene'
 curl  'http://127.0.0.1:5100/benzene/health'
+curl  'http://127.0.0.1:5100/benzene/descriptor'
 curl -X POST 'http://127.0.0.1:5100/orders' -H 'content-type: application/json' -d '{"customerId":"acme"}'
 ```
 
@@ -47,7 +49,10 @@ catalogs this TypeScript service with no knowledge that it's TypeScript:
 
 ## Scope
 
-The descriptor lists topics + HTTP mappings but not per-topic request/response **JSON schemas** — deriving
-those needs the normative `ServiceDescriptor` path (schemas from a `@benzene/zod`/`joi`/`yup` registry rather
-than CLR-type reflection). The aggregator handles a schema-less descriptor fine. See the root README's
-"Multi-language interoperability" section.
+Two self-description shapes are served here: the aggregator-polled **spec descriptor** (`/benzene/spec`,
+topics + HTTP mappings, no per-topic schemas — the aggregator handles a schema-less descriptor fine) and
+the normative **ServiceDescriptor** (`/benzene/descriptor`, `mesh.md` §2), which *does* carry per-topic
+request/response JSON schemas and a `descriptorHash`. Because TypeScript erases the request/response types,
+`@benzene/mesh-wire` derives those schemas from a pluggable `IMeshSchemaProvider` (here a hand-written
+`MapMeshSchemaProvider`; in a real service a `@benzene/zod`/`joi`/`yup` registry) rather than CLR-type
+reflection. See the root README's "Multi-language interoperability" section.

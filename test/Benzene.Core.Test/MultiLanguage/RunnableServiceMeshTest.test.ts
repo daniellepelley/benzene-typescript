@@ -55,6 +55,33 @@ describe('runnable TypeScript service in a mesh', () => {
     expect(create.consumers[0]!.httpMappings).toContainEqual({ method: 'post', path: '/orders' });
   });
 
+  it('the live service serves its normative ServiceDescriptor (mesh.md §2) with a per-port hash', async () => {
+    // The reserved descriptor path (mesh.md §2): the same self-derived, cross-language shape a .NET or Go
+    // service emits, here exposed over HTTP so it can be read live. Derived from the running registry.
+    const response = await fetch(`${service.url}/benzene/descriptor`);
+    expect(response.status).toBe(200);
+
+    const descriptor = (await response.json()) as {
+      service: string;
+      runtime: string;
+      placement: { cloud: string };
+      topics: { id: string; requestSchema?: unknown; responseSchema?: unknown }[];
+      descriptorHash: string;
+    };
+
+    expect(descriptor.service).toBe('orders');
+    expect(descriptor.runtime).toBe('node'); // this port's runtime identifier (mesh.md §2)
+    expect(descriptor.placement.cloud).toBe('self-hosted');
+
+    // Topics are the running handlers' topics, sorted by id, each carrying its §2.1 payload schemas.
+    expect(descriptor.topics.map((t) => t.id)).toEqual(['order:create', 'order:get']);
+    const create = descriptor.topics.find((t) => t.id === 'order:create')!;
+    expect(create.requestSchema).toEqual({ type: 'object', properties: { customerId: { type: 'string' } } });
+
+    // The §2.2 contract hash: "sha256:" + 64 lowercase hex chars.
+    expect(descriptor.descriptorHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+
   it('the live service actually handles a message (it is a real Benzene service, not a stub)', async () => {
     const response = await fetch(`${service.url}/orders`, {
       method: 'POST',

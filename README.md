@@ -82,6 +82,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Discovery.Aws` | `@benzene/mesh-discovery-aws` | `Benzene.Mesh.Discovery.Aws` |
 | `src/Benzene.Mesh.Usage.CloudWatch` | `@benzene/mesh-usage-cloudwatch` | `Benzene.Mesh.Usage.CloudWatch` |
 | `src/Benzene.Mesh.Discovery.Kubernetes` | `@benzene/mesh-discovery-kubernetes` | `Benzene.Mesh.Discovery.Kubernetes` |
+| `src/Benzene.Mesh.Wire` | `@benzene/mesh-wire` | `Benzene.Mesh.Wire`† |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -93,6 +94,13 @@ Mirrors the .NET repository:
 so `@benzene/dependencies` ships a first-party `ServiceCollection` /
 `DefaultBenzeneServiceContainer` / `DefaultServiceResolverFactory` with the same
 singleton/scoped/transient semantics.
+
+† `@benzene/mesh-wire` ports the **ServiceDescriptor path** of `Benzene.Mesh.Wire` (`mesh.md` §2):
+the descriptor types, `MeshDescriptorFactory` + §2.2 `descriptorHash`, the pluggable
+`IMeshSchemaProvider` (replacing C#'s CLR-reflection schema generator — TypeScript erases the
+request/response types), and `useMeshDescriptor`. `runtime` is `"node"`. The package's trace/heartbeat
+feeds (`UseMeshTrace`, `MeshTraceEvent`, `MeshHeartbeat`, `IMeshStatusReader`, `IMeshTraceExporter`)
+are not yet ported — see "Multi-language interoperability".
 
 ‡ `Benzene.Azure.Function.AspNet` routes Azure Functions HTTP through the .NET-only ASP.NET Core
 stack (`HttpRequest`/`IActionResult`). Per the "Third-party library integrations" convention it is
@@ -243,13 +251,25 @@ byte-identical to .NET so the two interoperate:
   `Benzene.Mesh.Aggregator` at it; both catalog it with no knowledge that it's TypeScript.
   `test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` starts this very service and drives
   the real aggregator against it in CI.
-- **The normative descriptor path** (the reserved `mesh` topic → `ServiceDescriptor`, used by
-  `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` for the live .NET↔Go cross-language fleets) is not yet ported:
-  its descriptor generation derives each topic's request/response JSON Schema by reflecting over the handler's
-  CLR types, which TypeScript's erased types can't do. A TS-idiomatic version would derive the schemas from an
-  explicitly-registered schema registry (`@benzene/zod`/`joi`/`yup`) instead — the natural next step for full
-  descriptor-level parity. The aggregator's HTTP `spec`-endpoint path above is the collector-side idiom that
-  works today.
+- **The normative descriptor path.** The reserved `mesh` topic → `ServiceDescriptor` contract
+  (`mesh.md` §2, the shape `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` use for the live .NET↔Go
+  cross-language fleets) is ported as `@benzene/mesh-wire`: `MeshServiceDescriptor` and friends,
+  `MeshDescriptorFactory.create` (topic list derived from the running `IMessageHandlerDefinitionLookUp`,
+  sorted by id then version), the §2.2 `descriptorHash` (`node:crypto` SHA-256 over the spec's canonical
+  JSON — fixed descriptor field order, lexicographic schema-map keys, `instanceId`/`degraded`/`profile`
+  blanked), and `useMeshDescriptor`, which intercepts the reserved topic and short-circuits with the
+  descriptor. `runtime` is `"node"` (the C# original's `"dotnet"`); per §2.2 the hash is per-port by design
+  and never compared across ports, so this difference is expected. The one divergence: C# derives each
+  topic's request/response JSON Schema (§2.1) by *reflecting* over the handler's CLR types, which
+  TypeScript's erased types can't do, so the port injects a pluggable **`IMeshSchemaProvider`** keyed by
+  topic (`NoMeshSchemaProvider` / `MapMeshSchemaProvider`) — the schema moves from CLR reflection to an
+  explicit source (a schema registry, a `@benzene/zod`/`joi`/`yup` model, or a hand-written map); the §2.1
+  mapping table itself is normative and unchanged. `docs/specification/conformance/mesh-descriptor-cases.json`
+  is ported to `test/Benzene.Core.Test/Conformance/` and pins the derived descriptor + hash properties;
+  `examples/mesh-service` serves its normative descriptor at `/benzene/descriptor`
+  (`test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` reads it live). Not yet ported
+  from `Benzene.Mesh.Wire`: the trace/heartbeat feeds (`UseMeshTrace`, `MeshTraceEvent`, `MeshHeartbeat`,
+  `IMeshStatusReader`, `IMeshTraceExporter` — `mesh.md` §3/§5) and the collector side (`Benzene.Mesh.Collector`).
 
 ## Porting status and roadmap
 
@@ -674,7 +694,9 @@ Ported (with tests):
     `IKubernetesServiceLister` seam, whose real implementation (`KubernetesApiServiceLister`) adapts the
     Kubernetes SDK to `@kubernetes/client-node`'s `CoreV1Api` (v1's single-param list methods); wired via
     `addMeshKubernetesDiscovery` (`KubeConfig.loadFromCluster`). Provider test class ported (8 tests).
-  Deferred: `Mesh.Fleet.Aws.XRay` needs `Mesh.Collector`, which is blocked on the reflection-bound `Mesh.Wire`.
+  Deferred: `Mesh.Fleet.Aws.XRay` needs `Mesh.Collector`, not yet ported. (`Mesh.Wire`'s ServiceDescriptor
+  path is now ported as `@benzene/mesh-wire`, with a pluggable schema provider in place of CLR reflection;
+  the collector and the trace/heartbeat feeds remain.)
 - AWS Lambda outbound client + its mesh integration:
   - Low-level Lambda client (`@benzene/clients-aws-lambda`): `AwsLambdaClient` (an `IAwsLambdaClient`) invokes
     a function synchronously (`RequestResponse`) or fire-and-forget (`Event`) via `@aws-sdk/client-lambda`,

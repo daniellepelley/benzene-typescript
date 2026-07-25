@@ -9,7 +9,9 @@ import { type AddressInfo } from 'node:net';
 import express, { type Express } from 'express';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { benzene } from '@benzene/express';
+import { MeshJson } from '@benzene/mesh-wire';
 import { buildBenzeneSpec } from './benzeneSpec';
+import { buildDescriptor } from './benzeneDescriptor';
 import { buildHealth } from './health';
 import { CreateOrderHandler, GetOrderHandler, registry } from './handlers';
 
@@ -32,6 +34,15 @@ export function createOrderService(): Express {
   });
   app.get('/benzene/health', (_req, res) => {
     res.type('application/json').send(buildHealth());
+  });
+
+  // The normative mesh ServiceDescriptor (mesh.md §2), derived from the same running registry and carrying
+  // its per-port `descriptorHash`. In a message-transport deployment this is served over the reserved `mesh`
+  // topic via `useMeshDescriptor`; here it's exposed as an HTTP route so `curl` (and the demo test) can read
+  // the identical cross-language shape.
+  const descriptor = buildDescriptor(registry);
+  app.get('/benzene/descriptor', (_req, res) => {
+    res.type('application/json').send(MeshJson.serialize(descriptor));
   });
 
   return app;

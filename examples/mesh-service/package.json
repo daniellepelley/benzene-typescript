@@ -17,6 +17,7 @@
     "@benzene/express": "0.1.0",
     "@benzene/health-checks-core": "0.1.0",
     "@benzene/http": "0.1.0",
+    "@benzene/mesh-wire": "0.1.0",
     "@benzene/results": "0.1.0",
     "express": "^5.2.1"
   },
