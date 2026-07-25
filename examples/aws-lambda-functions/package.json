@@ -1,0 +1,25 @@
+{
+  "name": "@benzene-example/aws-lambda-functions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One Benzene order domain hosted on five AWS Lambda transports (API Gateway, SQS, SNS, EventBridge, Kafka)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/http": "0.1.0",
+    "@benzene/results": "0.1.0",
+    "@benzene/aws-lambda-core": "0.1.0",
+    "@benzene/aws-lambda-api-gateway": "0.1.0",
+    "@benzene/aws-lambda-sqs": "0.1.0",
+    "@benzene/aws-lambda-sns": "0.1.0",
+    "@benzene/aws-lambda-eventbridge": "0.1.0",
+    "@benzene/aws-lambda-kafka": "0.1.0"
+  }
+}

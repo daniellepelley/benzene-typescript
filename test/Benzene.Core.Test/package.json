@@ -67,6 +67,8 @@
     "@benzene/clients-aws-lambda": "0.1.0",
     "@benzene/mesh-aws-lambda": "0.1.0",
     "@benzene-example/mesh-service": "0.1.0",
+    "@benzene-example/aws-lambda-functions": "0.1.0",
+    "@benzene-example/azure-functions": "0.1.0",
     "@benzene/core": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/core-messages": "0.1.0",

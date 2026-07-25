@@ -16,7 +16,9 @@ Mirrors the .NET repository:
 
 - `src/` — library source, one directory per C# project
 - `test/` — tests, mirroring `test/` in the .NET repository
-- `examples/` — runnable example apps (e.g. `examples/mesh-service`, a live mesh-discoverable service)
+- `examples/` — runnable example apps: `mesh-service` (a live mesh-discoverable Express service),
+  `aws-lambda-functions` (one domain on five AWS Lambda transports), `azure-functions` (the same domain
+  on three Azure Functions triggers) — each driven end-to-end by a CI test
 - `.github/workflows/` — CI
 
 | Package | npm name | .NET counterpart |
@@ -220,6 +222,11 @@ const entryPoint = new InlineAwsLambdaStartUp()
 
 export const handler = toLambdaHandler(entryPoint);
 ```
+
+The same handler runs on every transport of both clouds — see
+[`examples/aws-lambda-functions`](examples/aws-lambda-functions) (one domain on API Gateway, SQS, SNS,
+EventBridge, and Kafka) and [`examples/azure-functions`](examples/azure-functions) (the same domain on
+HTTP, Service Bus, and Event Hub).
 
 <details><summary>Under the hood: driving a pipeline directly (what the hosts build on)</summary>
 
