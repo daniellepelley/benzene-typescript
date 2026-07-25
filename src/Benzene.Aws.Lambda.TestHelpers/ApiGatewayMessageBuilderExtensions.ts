@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.ApiGateway.TestHelpers.MessageBuilderExtensions. */
-import { APIGatewayProxyEvent } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { IHttpBuilder } from '@benzene/abstractions';
 import { MessageSerializer } from '@benzene/testing';
 import { jsonMessageSerializer } from './defaults';
@@ -38,6 +38,41 @@ export function asApiGatewayRequest<T>(
     isBase64Encoded: false,
     // requestContext is required by the type; only its presence matters for routing.
     requestContext: {} as APIGatewayProxyEvent['requestContext'],
+  };
+}
+
+/**
+ * Builds a realistic API Gateway **HTTP API v2** (`APIGatewayProxyEventV2`, payload format 2.0) event from
+ * an HTTP builder: the method/path live under `requestContext.http`, the body is the serialized message.
+ * The v2 counterpart of {@link asApiGatewayRequest}.
+ */
+export function asApiGatewayV2Request<T>(
+  source: IHttpBuilder<T>,
+  options: AsApiGatewayRequestOptions = {},
+): APIGatewayProxyEventV2 {
+  const { serializer = jsonMessageSerializer } = options;
+  const headers = { ...source.headers };
+  if (!hasHeader(headers, 'content-type')) {
+    headers['content-type'] = 'application/json';
+  }
+
+  return {
+    version: '2.0',
+    routeKey: `${source.method} ${source.path}`,
+    rawPath: source.path,
+    rawQueryString: '',
+    headers,
+    requestContext: {
+      http: {
+        method: source.method,
+        path: source.path,
+        protocol: 'HTTP/1.1',
+        sourceIp: '127.0.0.1',
+        userAgent: 'benzene-test',
+      },
+    } as APIGatewayProxyEventV2['requestContext'],
+    body: source.message === undefined ? undefined : serializer.serialize(source.message),
+    isBase64Encoded: false,
   };
 }
 

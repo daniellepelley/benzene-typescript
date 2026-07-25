@@ -130,9 +130,9 @@ depends on the Node global `fetch` rather than .NET's `HttpClient`.)
 Create`/`HttpBuilder.Create` factories become free functions, and the required `ISerializer` becomes an
 optional argument defaulting to JSON. `@benzene/aws-lambda-testing` and
 `@benzene/azure-function-testing` provide the transport test-event builders (`asApiGatewayRequest`,
-`asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`; `asAzureHttpRequest`, `asAzureServiceBusMessage`,
-`asEventHubBenzeneMessage`) that turn one builder into a native cloud event routable by the matching
-adapter. **Two deliberate TS-DX bends,** both
+`asApiGatewayV2Request`, `asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`; `asAzureHttpRequest`,
+`asAzureServiceBusMessage`, `asEventHubBenzeneMessage`) that turn one builder into a native cloud event
+routable by the matching adapter. **Two deliberate TS-DX bends,** both
 from the TypeScript-DX-champion lens (see `.claude/agents/typescript-dx-champion.md`): (1) the C# ships one
 `*.TestHelpers` project per transport to isolate each `Amazon.Lambda.*Events` NuGet, but in Node the event
 types come from a few shared packages (`@types/aws-lambda`; `@azure/functions`/`service-bus`/`event-hubs`),
@@ -526,9 +526,14 @@ Ported (with tests):
     notification sources) and `api-gateway` (HTTP request/response). AWS invokes an exported `handler`
     function, so `toLambdaHandler(entryPoint)` returns the correctly-bound handler for
     `export const handler = toLambdaHandler(entryPoint)` — the shape a TS Lambda developer expects (the
-    naive `= entryPoint.functionHandlerAsync` compiles but detaches `this`). `api-gateway` ports the v1
-    (REST API, payload format 1.0) adapter; the v2 (HTTP API, payload format 2.0) and Custom Authorizer
-    sub-applications are **not yet ported**.
+    naive `= entryPoint.functionHandlerAsync` compiles but detaches `this`). `api-gateway` ports both the
+    v1 (REST API, payload format 1.0) adapter (`useApiGateway`) and the v2 (HTTP API, payload format 2.0)
+    adapter (`useApiGatewayV2` — method/path from `requestContext.http`, cookies folded into headers,
+    base64 body decode, the structured v2 response with a `set-cookie`→`cookies` array). v1/v2 events are
+    unambiguously distinguishable, but under type erasure the two adapters' getters share one DI token per
+    container, so — like any two transports in this port — each is wired in its own entry point (point a
+    REST API at the v1 handler and an HTTP API at the v2 handler). The Custom Authorizer sub-application is
+    **not yet ported**.
   - **Azure Functions** (`@azure/functions` + `@azure/service-bus` + `@azure/event-hubs`):
     `azure-function-core` (isolated-worker entry point) + `service-bus`, `event-hub`, `kafka` and
     `http` (the retargeted `AspNet` adapter — see ‡). Dispatch to an entry point is **arity-only**

@@ -39,6 +39,14 @@ import { ApiGatewayMessageMessageHandlerResultSetter } from './ApiGatewayMessage
 import { ApiGatewayMessageTopicGetter } from './ApiGatewayMessageTopicGetter';
 import { ApiGatewayRequestEnricher } from './ApiGatewayRequestEnricher';
 import { ApiGatewayResponseAdapter } from './ApiGatewayResponseAdapter';
+import { ApiGatewayV2Context } from './ApiGatewayV2Context';
+import { ApiGatewayV2HttpRequestAdapter } from './ApiGatewayV2HttpRequestAdapter';
+import { ApiGatewayV2MessageBodyGetter } from './ApiGatewayV2MessageBodyGetter';
+import { ApiGatewayV2MessageHeadersGetter } from './ApiGatewayV2MessageHeadersGetter';
+import { ApiGatewayV2MessageMessageHandlerResultSetter } from './ApiGatewayV2MessageMessageHandlerResultSetter';
+import { ApiGatewayV2MessageTopicGetter } from './ApiGatewayV2MessageTopicGetter';
+import { ApiGatewayV2RequestEnricher } from './ApiGatewayV2RequestEnricher';
+import { ApiGatewayV2ResponseAdapter } from './ApiGatewayV2ResponseAdapter';
 
 /**
  * Port of Benzene.Aws.Lambda.ApiGateway.DependencyInjectionExtensions.AddApiGateway (C# extension
@@ -152,6 +160,111 @@ export function addApiGateway(services: IBenzeneServiceContainer): IBenzeneServi
   );
 
   addMediaFormatNegotiation<ApiGatewayContext>(services);
+
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('api-gateway'));
+  addHttpMessageHandlers(services);
+
+  return services;
+}
+
+/**
+ * Port of Benzene.Aws.Lambda.ApiGateway.DependencyInjectionExtensions.AddApiGatewayV2 (C# extension
+ * method -> free function). Called automatically by `useApiGatewayV2`.
+ *
+ * The v2 (HTTP API, payload format 2.0) counterpart of {@link addApiGateway}: identical wiring with the
+ * `ApiGatewayV2*` getters/adapters/enricher/result-setter swapped in (method/path from
+ * `requestContext.http`, cookies folded into headers, base64 body decode, the structured v2 response).
+ * The same DI-under-erasure pattern applies — each closed-generic `<ApiGatewayV2Context>` registration
+ * becomes a factory under the interface's shared `<unknown>` token.
+ */
+export function addApiGatewayV2(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  tryAddScoped(services, JsonSerializer);
+
+  tryAddScopedFactory(
+    services,
+    IMessageTopicGetter,
+    (r) =>
+      new ApiGatewayV2MessageTopicGetter(r.getService(IRouteFinder)) as IMessageTopicGetter<unknown>,
+  );
+  tryAddScopedFactory(
+    services,
+    IMessageHeadersGetter,
+    (r) =>
+      new ApiGatewayV2MessageHeadersGetter(
+        r.getService(IHttpHeaderMappings),
+      ) as IMessageHeadersGetter<unknown>,
+  );
+  tryAddScopedFactory(
+    services,
+    IMessageBodyGetter,
+    () => new ApiGatewayV2MessageBodyGetter() as IMessageBodyGetter<unknown>,
+  );
+  tryAddScopedFactory(
+    services,
+    IMessageHandlerResultSetter,
+    (r) =>
+      new ApiGatewayV2MessageMessageHandlerResultSetter(
+        r.getService(IResponseHandlerContainer) as IResponseHandlerContainer<ApiGatewayV2Context>,
+      ) as IMessageHandlerResultSetter<unknown>,
+  );
+
+  services.addScopedFactory(
+    IRequestMapper,
+    (r) =>
+      new MultiSerializerOptionsRequestMapper(
+        r.getService(IMediaFormatNegotiator),
+        r,
+        r.getService(IMessageBodyGetter),
+        r.getServices(IRequestEnricher),
+      ) as IRequestMapper<unknown>,
+  );
+  services.addScopedFactory(
+    IRequestEnricher,
+    (r) =>
+      new ApiGatewayV2RequestEnricher(
+        r.getService(IRouteFinder),
+        r.getService(IHttpHeaderMappings),
+      ) as IRequestEnricher<unknown>,
+  );
+  services.addScopedFactory(
+    IHttpRequestAdapter,
+    () => new ApiGatewayV2HttpRequestAdapter() as unknown as IHttpRequestAdapter<IHttpContext>,
+  );
+  services.addScopedFactory(
+    IBenzeneResponseAdapter,
+    () => new ApiGatewayV2ResponseAdapter() as IBenzeneResponseAdapter<unknown>,
+  );
+
+  tryAddScopedFactory(services, IHttpHeaderMappings, () => new DefaultHttpHeaderMappings());
+
+  services.addScopedFactory(
+    IResponseHandler,
+    (r) =>
+      new HttpStatusCodeResponseHandler<ApiGatewayV2Context>(
+        r.getService(IBenzeneResponseAdapter) as IBenzeneResponseAdapter<ApiGatewayV2Context>,
+        r.getService(IHttpStatusCodeMapper),
+      ) as IResponseHandler<unknown>,
+  );
+  services.addScopedFactory(
+    IResponseRenderer,
+    (r) =>
+      new SerializerResponseRenderer<ApiGatewayV2Context>(
+        r.getService(IResponsePayloadMapper) as IResponsePayloadMapper<ApiGatewayV2Context>,
+        r.getService(IMediaFormatNegotiator) as IMediaFormatNegotiator<ApiGatewayV2Context>,
+        r,
+      ) as IResponseRenderer<unknown>,
+  );
+  services.addScopedFactory(
+    IResponseHandler,
+    (r) =>
+      new RendererResponseHandler<ApiGatewayV2Context>(
+        r.getService(IBenzeneResponseAdapter) as IBenzeneResponseAdapter<ApiGatewayV2Context>,
+        r.getServices(IResponseRenderer) as IResponseRenderer<ApiGatewayV2Context>[],
+        r,
+      ) as IResponseHandler<unknown>,
+  );
+
+  addMediaFormatNegotiation<ApiGatewayV2Context>(services);
 
   services.addSingletonFactory(ITransportInfo, () => new TransportInfo('api-gateway'));
   addHttpMessageHandlers(services);
