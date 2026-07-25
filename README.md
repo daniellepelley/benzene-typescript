@@ -47,6 +47,8 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
+| `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; message-client/pipeline/health-check deferred) |
+| `src/Benzene.Mesh.Aws.Lambda` | `@benzene/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
 | `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
 | `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |
 | `src/Benzene.HealthChecks.Core` | `@benzene/health-checks-core` | `Benzene.HealthChecks.Core` |
@@ -633,9 +635,28 @@ Ported (with tests):
     `IKubernetesServiceLister` seam, whose real implementation (`KubernetesApiServiceLister`) adapts the
     Kubernetes SDK to `@kubernetes/client-node`'s `CoreV1Api` (v1's single-param list methods); wired via
     `addMeshKubernetesDiscovery` (`KubeConfig.loadFromCluster`). Provider test class ported (8 tests).
-  Deferred: `Mesh.Aws.Lambda` (the invoke source/dispatcher) needs the unported `Benzene.Clients.Aws.Lambda`
-  client stack, and `Mesh.Fleet.Aws.XRay` needs `Mesh.Collector`, which is blocked on the reflection-bound
-  `Mesh.Wire`.
+  Deferred: `Mesh.Fleet.Aws.XRay` needs `Mesh.Collector`, which is blocked on the reflection-bound `Mesh.Wire`.
+- AWS Lambda outbound client + its mesh integration:
+  - Low-level Lambda client (`@benzene/clients-aws-lambda`): `AwsLambdaClient` (an `IAwsLambdaClient`) invokes
+    a function synchronously (`RequestResponse`) or fire-and-forget (`Event`) via `@aws-sdk/client-lambda`,
+    serializing the request / deserializing the response payload as JSON and surfacing a `FunctionError` as
+    an `AwsLambdaFunctionErrorException`; `LocalAwsLambdaClientFactory` builds a profile-authenticated client
+    (`CredentialProfileStoreChain` → `@aws-sdk/credential-providers`' `fromIni`, async because JS credential
+    resolution is lazy). `IAmazonLambda.InvokeAsync` → the v3 command pattern; the request/response `Stream`
+    payloads → `Uint8Array`. Two C# test classes ported (4 tests). **Deferred** (documented in the package's
+    `index.ts`): the high-level `AwsLambdaBenzeneMessageClient` — its `typeof(TResponse) == typeof(Void)`
+    fire-and-forget branch has no runtime equivalent under TS generic erasure — plus the outbound
+    middleware-pipeline converter and the `AwsLambdaHealthCheck` (which needs the not-yet-ported
+    `HealthCheckMode`/`HealthCheckError`/persistent-failure health-check infra).
+  - AWS Lambda mesh integration (`@benzene/mesh-aws-lambda`, now unblocked): `LambdaMeshServiceSource`
+    interrogates a Lambda-hosted service's spec/health via a synchronous invoke (for services with no HTTP
+    surface), and `AwsLambdaMeshServiceDispatcher` dispatches `mesh:dispatch` messages to one — both over
+    `@benzene/clients-aws-lambda`'s `IAwsLambdaClient` (taken lazily so a pure-HTTP mesh never builds a Lambda
+    client), wired via `addMeshLambdaSource`/`addMeshLambdaDispatcher`. Adaptations: C#'s `Activity.Current`
+    W3C trace propagation → the active OpenTelemetry span context (`@opentelemetry/api`), emitted as a
+    `traceparent` header; `Task.WaitAsync(cancellationToken)` → an `AbortSignal` raced against the invoke (the
+    underlying client has no cancellation parameter). Service-source test class ported (7 tests, including the
+    W3C-propagation test via the shared OpenTelemetry harness).
 - Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
