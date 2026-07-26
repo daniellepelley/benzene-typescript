@@ -426,5 +426,3 @@ full guide.
   sends events.
 - [Message Handlers](../message-handlers.md) — the request/response handler this republishes.
 - [Message Results](../message-result.md) — the `BenzeneResult` factory and statuses mappings key off.
-</content>
-</invoke>

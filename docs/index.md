@@ -27,10 +27,14 @@ unchanged on Express, AWS Lambda, or Azure Functions.
   - [Common Middleware](common-middleware.md) — the ready-made middleware Benzene ships
   - [Correlation IDs](correlation-ids.md) — trace a request end-to-end across services
   - [Monitoring & Diagnostics](monitoring.md) — tracing, metrics, and logging via OpenTelemetry
+  - [Sampling Strategies](sampling-strategies.md) — control how much tracing you keep in production
+  - [Diagnosing Failures](diagnosing-failures.md) — a message failed in production; find out why across
+    results, logs, traces, and metrics
   - [Health Checks](health-checks.md) — liveness/readiness checks and the built-in disk/HTTP/TCP checks
   - [Kubernetes Health Checks](kubernetes-health-checks.md) — wiring liveness/readiness probes for K8s
   - [Testing Benzene](testing-benzene.md) — test handlers in isolation and drive whole transport pipelines
     in-memory with vitest
+  - [Payload Testing](payload-testing.md) — build demo payloads and send them into a service by topic
 
 - **Cloud Providers**
   - **AWS**
@@ -43,6 +47,9 @@ unchanged on Express, AWS Lambda, or Azure Functions.
 - **Integrations**
   - [Validation](validation.md) — reject bad requests before they reach your handler, via the Zod, Joi, and
     Yup adapters
+  - [Serialization & Media Formats](serialization.md) — JSON by default, plus the XML, MessagePack, and Avro
+    adapters
+  - [Schema Registry](schema-registry.md) — register and evolve message schemas across services
   - [Rate Limiting](rate-limiting.md) — fixed-window, token-bucket, and payload-size limiting
 
 - **Clients & Resilience**

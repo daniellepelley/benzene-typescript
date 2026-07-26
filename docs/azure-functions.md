@@ -491,5 +491,3 @@ runnable example. See [Testing Benzene](testing-benzene.md) for the full picture
 - [Testing Benzene](testing-benzene.md) — test handlers in isolation and pipelines end-to-end
 - [Cookbooks](cookbooks/README.md) — real-world recipes
 - [`examples/azure-functions`](../examples/azure-functions) — a complete, runnable project: one order domain on HTTP, Service Bus, and Event Hub
-</content>
-</invoke>

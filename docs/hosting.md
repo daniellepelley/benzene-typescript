@@ -352,5 +352,3 @@ and `@benzene/aws-lambda-testing` / `@benzene/azure-function-testing` turn them 
 - [Correlation IDs](correlation-ids.md) — trace a request end-to-end across services
 - [Testing Benzene](testing-benzene.md) — testing handlers and pipelines end-to-end
 - [Cookbooks](cookbooks/README.md) — recipes for real-world scenarios
-</content>
-</invoke>

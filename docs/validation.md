@@ -297,5 +297,3 @@ registry.
 - [Getting Started](getting-started.md) — build and run a first Benzene service end to end.
 - README [Porting conventions](../README.md#porting-conventions) — the "third-party integrations are
   adapted, not reimplemented" rule these adapters follow.
-</content>
-</invoke>

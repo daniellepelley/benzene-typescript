@@ -43,6 +43,8 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
 
 ### Architecture & Testing
 
+- [Secrets & Configuration](secrets-configuration.md) — resolve secrets through composable stores (env var,
+  file, in-memory, cached), and adapt a cloud secret manager against the `ISecretStore` seam.
 - [Bring Your Own DI Container](bring-your-own-di-container.md) — the default container, the `static inject`
   convention, and adapting an external container against Benzene's DI contracts.
 - [Mocking External Dependencies](mocking-dependencies.md) — test a handler in isolation by swapping its

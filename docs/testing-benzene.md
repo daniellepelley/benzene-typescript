@@ -348,5 +348,3 @@ trailing options object.
   production wiring these tests build from.
 - [Cookbooks](cookbooks/README.md) — end-to-end recipes.
 - Runnable projects: [`examples/`](../examples).
-</content>
-</invoke>
