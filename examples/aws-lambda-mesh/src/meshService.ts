@@ -45,10 +45,24 @@ import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useSns } from '@benzene/aws-lambda-sns';
 import { useEventBridge } from '@benzene/aws-lambda-eventbridge';
-import type { MeshBus } from './bus';
 
 /** A transport a service listens on. */
 export type Transport = 'http' | 'sqs' | 'sns' | 'eventbridge';
+
+/**
+ * How a service's runtime outbound sends reach the wire: the AWS SDK clients to publish with, and how to
+ * resolve a produced topic's transport target (queue URL / topic ARN / event-bus name). The in-memory bus
+ * supplies fake clients + a nominal target; a real deployment supplies `new SQSClient({})` etc. + env-derived
+ * targets. `sqs`/`sns`/`eventBridge` are typed `unknown` so the in-memory fakes fit without pulling the SDK
+ * types into the shared shape; each `useX` cast happens at the call site.
+ */
+export interface OutboundWiring {
+  readonly sqs?: unknown;
+  readonly sns?: unknown;
+  readonly eventBridge?: unknown;
+  /** Resolves the target for a produced topic: an SQS queue URL, an SNS topic ARN, or an EventBridge bus name. */
+  target(topic: string, transport: Transport): string;
+}
 
 /** One consumed-topic entry in a service's self-derived spec (`requests`). */
 export interface SpecRequest {
@@ -81,10 +95,12 @@ export interface MeshServiceDefinition {
    * Runtime outbound sends: the topics this service actually publishes and over which transport. Wires
    * `addOutboundRouting` so a handler's `IBenzeneMessageSender.sendAsync(topic, …)` reaches the bus. The
    * topics should match `produces` (produces drives the structural topology; sends drive the live cascade).
+   * `targetEnvVar` names the environment variable holding the transport's target on a real deploy (an SQS
+   * queue URL, an SNS topic ARN, or an EventBridge bus name) — the in-memory bus ignores it; the
+   * `functions/` production entry points read it via {@link OutboundWiring.target}. Mirrors .NET's
+   * `OutboundSend.TargetEnvVar`.
    */
-  readonly sends?: { topic: string; transport: Transport }[];
-  /** The in-memory bus the outbound sends publish to (delivers to the consuming services). */
-  readonly bus?: MeshBus;
+  readonly sends?: { topic: string; transport: Transport; targetEnvVar?: string }[];
 }
 
 /** Builds the self-derived benzene spec object for a service definition. */
@@ -115,7 +131,7 @@ function buildHealth(name: string): { isHealthy: boolean; checks: { name: string
  * each service closes over its OWN spec/health (a fresh handler class per service, registered in the
  * service's own registry — no cross-service topic collision).
  */
-export function buildMeshServiceLambda(definition: MeshServiceDefinition): Handler {
+export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbound?: OutboundWiring): Handler {
   const { name, registry, domainHandlers } = definition;
   const spec = buildServiceSpec(definition);
   const health = buildHealth(name);
@@ -148,24 +164,24 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition): Handl
 
   const transports = new Set(spec.transports);
 
-  const { bus, sends } = definition;
+  const { sends } = definition;
 
   const entryPoint = compositeAwsLambda((c) => {
     c.configureServices((s) => {
       addBenzene(s);
-      // Wire the runtime outbound routes: each sent topic converts to the right transport and publishes to
-      // the bus, which delivers to the consuming services. `useX(app, target, client)` — the target string
-      // is nominal here (the bus routes by topic), matching how a real deployment names a queue/topic/bus.
-      if (bus !== undefined && sends !== undefined && sends.length > 0) {
+      // Wire the runtime outbound routes: each sent topic converts to the right transport and publishes via
+      // the supplied AWS SDK client to the topic's target (the in-memory bus, or a real queue/topic/bus).
+      // `useX(app, target, client [, source])` — same code for the fake and the real client.
+      if (outbound !== undefined && sends !== undefined && sends.length > 0) {
         addOutboundRouting(s, (routing) => {
           for (const send of sends) {
             routing.route(send.topic, (p) => {
               if (send.transport === 'sqs') {
-                useSqsClient(p, `queue:${send.topic}`, bus.sqsClient as SQSClient);
+                useSqsClient(p, outbound.target(send.topic, 'sqs'), outbound.sqs as SQSClient);
               } else if (send.transport === 'sns') {
-                useSnsClient(p, `arn:${send.topic}`, bus.snsClient as SNSClient);
+                useSnsClient(p, outbound.target(send.topic, 'sns'), outbound.sns as SNSClient);
               } else {
-                useEventBridgeClient(p, name, bus.eventBridgeClient as EventBridgeClient, `bus:${send.topic}`);
+                useEventBridgeClient(p, name, outbound.eventBridge as EventBridgeClient, outbound.target(send.topic, 'eventbridge'));
               }
             });
           }

@@ -113,78 +113,84 @@ eventConsumer('analytics', analyticsRegistry, 'payment:captured');
 eventConsumer('analytics', analyticsRegistry, 'shipment:dispatched');
 
 // --- the estate: each service's definition (topology + which topics it sends, and over what transport) --
-function definitions(bus: MeshBus): MeshServiceDefinition[] {
-  return [
-    {
-      name: 'orders-api',
-      registry: ordersRegistry,
-      domainHandlers: [CreateOrderHandler],
-      consumes: [{ topic: 'orders:create', transport: 'http', httpMappings: [{ method: 'post', path: '/orders' }] }],
-      produces: ['payments:capture', 'order:placed'],
-      sends: [
-        { topic: 'payments:capture', transport: 'sqs' },
-        { topic: 'order:placed', transport: 'sns' },
-      ],
-      bus,
-    },
-    {
-      name: 'payments-api',
-      registry: paymentsRegistry,
-      domainHandlers: paymentsRegistry.getAll(),
-      consumes: [{ topic: 'payments:capture', transport: 'sqs' }],
-      produces: ['shipping:book', 'payment:captured'],
-      sends: [
-        { topic: 'shipping:book', transport: 'sqs' },
-        { topic: 'payment:captured', transport: 'eventbridge' },
-      ],
-      extraTransports: ['http'],
-      bus,
-    },
-    {
-      name: 'shipping-api',
-      registry: shippingRegistry,
-      domainHandlers: shippingRegistry.getAll(),
-      consumes: [{ topic: 'shipping:book', transport: 'sqs' }],
-      produces: ['shipment:dispatched'],
-      sends: [{ topic: 'shipment:dispatched', transport: 'eventbridge' }],
-      extraTransports: ['http'],
-      bus,
-    },
-    {
-      name: 'inventory-api',
-      registry: inventoryRegistry,
-      domainHandlers: inventoryRegistry.getAll(),
-      consumes: [
-        { topic: 'order:placed', transport: 'sns' },
-        { topic: 'shipment:dispatched', transport: 'eventbridge' },
-      ],
-      produces: [],
-      extraTransports: ['http'],
-    },
-    {
-      name: 'notifications-api',
-      registry: notificationsRegistry,
-      domainHandlers: notificationsRegistry.getAll(),
-      consumes: [
-        { topic: 'order:placed', transport: 'sns' },
-        { topic: 'payment:captured', transport: 'eventbridge' },
-        { topic: 'shipment:dispatched', transport: 'eventbridge' },
-      ],
-      produces: [],
-      extraTransports: ['http'],
-    },
-    {
-      name: 'analytics-api',
-      registry: analyticsRegistry,
-      domainHandlers: analyticsRegistry.getAll(),
-      consumes: [
-        { topic: 'payment:captured', transport: 'eventbridge' },
-        { topic: 'shipment:dispatched', transport: 'eventbridge' },
-      ],
-      produces: [],
-      extraTransports: ['http'],
-    },
-  ];
+// Bus-free and reusable: the in-memory `buildServiceLambdas` and the real per-Lambda deploy entry points
+// (`functions/`) both build from these same definitions — only the outbound wiring differs.
+export const serviceDefinitions: MeshServiceDefinition[] = [
+  {
+    name: 'orders-api',
+    registry: ordersRegistry,
+    domainHandlers: [CreateOrderHandler],
+    consumes: [{ topic: 'orders:create', transport: 'http', httpMappings: [{ method: 'post', path: '/orders' }] }],
+    produces: ['payments:capture', 'order:placed'],
+    sends: [
+      { topic: 'payments:capture', transport: 'sqs', targetEnvVar: 'PAYMENTS_QUEUE_URL' },
+      { topic: 'order:placed', transport: 'sns', targetEnvVar: 'ORDER_PLACED_TOPIC_ARN' },
+    ],
+  },
+  {
+    name: 'payments-api',
+    registry: paymentsRegistry,
+    domainHandlers: paymentsRegistry.getAll(),
+    consumes: [{ topic: 'payments:capture', transport: 'sqs' }],
+    produces: ['shipping:book', 'payment:captured'],
+    sends: [
+      { topic: 'shipping:book', transport: 'sqs', targetEnvVar: 'SHIPPING_QUEUE_URL' },
+      { topic: 'payment:captured', transport: 'eventbridge', targetEnvVar: 'EVENT_BUS_NAME' },
+    ],
+    extraTransports: ['http'],
+  },
+  {
+    name: 'shipping-api',
+    registry: shippingRegistry,
+    domainHandlers: shippingRegistry.getAll(),
+    consumes: [{ topic: 'shipping:book', transport: 'sqs' }],
+    produces: ['shipment:dispatched'],
+    sends: [{ topic: 'shipment:dispatched', transport: 'eventbridge', targetEnvVar: 'EVENT_BUS_NAME' }],
+    extraTransports: ['http'],
+  },
+  {
+    name: 'inventory-api',
+    registry: inventoryRegistry,
+    domainHandlers: inventoryRegistry.getAll(),
+    consumes: [
+      { topic: 'order:placed', transport: 'sns' },
+      { topic: 'shipment:dispatched', transport: 'eventbridge' },
+    ],
+    produces: [],
+    extraTransports: ['http'],
+  },
+  {
+    name: 'notifications-api',
+    registry: notificationsRegistry,
+    domainHandlers: notificationsRegistry.getAll(),
+    consumes: [
+      { topic: 'order:placed', transport: 'sns' },
+      { topic: 'payment:captured', transport: 'eventbridge' },
+      { topic: 'shipment:dispatched', transport: 'eventbridge' },
+    ],
+    produces: [],
+    extraTransports: ['http'],
+  },
+  {
+    name: 'analytics-api',
+    registry: analyticsRegistry,
+    domainHandlers: analyticsRegistry.getAll(),
+    consumes: [
+      { topic: 'payment:captured', transport: 'eventbridge' },
+      { topic: 'shipment:dispatched', transport: 'eventbridge' },
+    ],
+    produces: [],
+    extraTransports: ['http'],
+  },
+];
+
+/** Looks up a service definition by function name (used by the per-Lambda deploy entry points). */
+export function serviceDefinition(name: string): MeshServiceDefinition {
+  const def = serviceDefinitions.find((d) => d.name === name);
+  if (def === undefined) {
+    throw new Error(`Unknown mesh service '${name}'`);
+  }
+  return def;
 }
 
 /**
@@ -193,10 +199,9 @@ function definitions(bus: MeshBus): MeshServiceDefinition[] {
  */
 export function buildServiceLambdas(): Record<string, Handler> {
   const bus = new MeshBus();
-  const defs = definitions(bus);
 
   // Register every consumed (topic, transport) so the bus can deliver a send to the right services.
-  for (const def of defs) {
+  for (const def of serviceDefinitions) {
     for (const consume of def.consumes) {
       if (consume.transport !== 'http') {
         bus.registerConsumer(def.name, consume.topic, consume.transport as Transport);
@@ -205,8 +210,8 @@ export function buildServiceLambdas(): Record<string, Handler> {
   }
 
   const services: Record<string, Handler> = {};
-  for (const def of defs) {
-    services[def.name] = buildMeshServiceLambda(def);
+  for (const def of serviceDefinitions) {
+    services[def.name] = buildMeshServiceLambda(def, bus.outbound());
   }
   // Late-bind the built handlers so the bus's fake clients can deliver to them.
   Object.assign(bus.services, services);

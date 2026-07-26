@@ -70,6 +70,23 @@ services registered as consumers of that topic (as a real inbound event), so the
 cloud account. Swap the bus's fake clients for real `@aws-sdk/client-*` clients and the same code sends to
 real queues/topics/buses.
 
+## Deploying to a real AWS account
+
+The same seven functions run unchanged on real infrastructure. `functions/` holds the production Lambda
+entry points — each one binds a shared, transport-agnostic service definition (`src/services.ts`) to
+**real** `@aws-sdk/client-{sqs,sns,eventbridge}` clients whose targets come from environment variables
+(`functions/shared.ts`, the real-AWS counterpart of the in-memory `MeshBus`). `deploy/` is a Terraform
+stack that provisions the whole estate — six tagged service Lambdas, the mesh Lambda, the SQS/SNS/EventBridge
+wiring, the HTTP APIs, and the S3 catalog bucket — mirroring .NET's `examples/AwsMesh/deploy`.
+
+```bash
+npm run bundle          # esbuild → artifacts/*.zip (one tiny zip per function)
+cd deploy && ./deploy.sh   # terraform init + apply (needs AWS creds + terraform)
+```
+
+See [`deploy/README.md`](./deploy/README.md) for the full resource list, how to trigger the cascade against
+the live estate, and the (documented) divergences from the .NET stack.
+
 ## Notes on the port
 
 - The load-bearing new library piece this example needed is `useBenzeneMessage` /

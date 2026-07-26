@@ -11,7 +11,7 @@
 import { Context, Handler } from 'aws-lambda';
 import { messageBuilder } from '@benzene/testing';
 import { asEventBridge, asSns, asSqs } from '@benzene/aws-lambda-testing';
-import type { Transport } from './meshService';
+import type { OutboundWiring, Transport } from './meshService';
 
 const fakeContext = {} as Context;
 
@@ -36,6 +36,18 @@ export class MeshBus {
     const list = this.consumersByTopic.get(topic) ?? [];
     list.push({ service, transport });
     this.consumersByTopic.set(topic, list);
+  }
+
+  /** The {@link OutboundWiring} that publishes onto this bus — the in-memory counterpart of real SDK clients. */
+  outbound(): OutboundWiring {
+    return {
+      sqs: this.sqsClient,
+      sns: this.snsClient,
+      eventBridge: this.eventBridgeClient,
+      // The bus routes by the topic attribute, so the target string is nominal (a real deploy passes the
+      // actual queue URL / topic ARN / bus name here).
+      target: (topic, transport) => `${transport}:${topic}`,
+    };
   }
 
   /** A fake `@aws-sdk/client-sqs` `SQSClient`: routes a `SendMessageCommand` to the topic's SQS consumers. */
