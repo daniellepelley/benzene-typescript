@@ -24,3 +24,10 @@ export * from './ApiGatewayV2ResponseAdapter';
 export * from './ApiGatewayV2MessageMessageHandlerResultSetter';
 export * from './ApiGatewayV2Application';
 export * from './ApiGatewayV2LambdaHandler';
+
+// API Gateway custom (Lambda) authorizer
+export * from './ApiGatewayCustomAuthorizerContext';
+export * from './ApiGatewayCustomAuthorizerApplication';
+export * from './ApiGatewayCustomAuthorizerLambdaHandler';
+export * from './AuthorizerExtensions';
+export * from './ApiGatewayCustomAuthorizerExtensions';

@@ -336,6 +336,19 @@ next to its C# counterpart:
   first argument** (`useMessageHandlers(app, …)`) and return it, so they still chain at their own call
   site — hence `benzene((pipeline) => useMessageHandlers(pipeline, …))` rather than a `.useMessageHandlers`
   method.
+- **Flattened sub-namespaces.** A C# project's nested namespace folder (e.g.
+  `Benzene.Aws.Lambda.ApiGateway/ApiGatewayCustomAuthorizer/`) collapses into the one package barrel, so
+  two `Extensions`/`LogContextBuilderExtensions`/`WithHttp` that coexisted under distinct namespaces would
+  now clash. The file is prefixed with the sub-namespace name (`ApiGatewayCustomAuthorizerExtensions.ts`)
+  and the *exported* symbol keeps its C# name where it is still unique; where even the symbol would clash
+  (the authorizer's context-specific `WithHttp` log-context helper), the minor helper is dropped, matching
+  the v2 adapter, which likewise ships no per-context `withHttp`.
+- **Event discrimination under erasure.** A `*LambdaHandler.canHandle` that C# can implement with a loose
+  check — because the payload was already deserialized into the distinct event type — sometimes needs a
+  tighter discriminant in the port, which sniffs the *raw* parsed event. The custom authorizer is the
+  example: C# checks only a non-empty `requestContext.apiId`, but a v1 proxy event carries that too, so
+  `isApiGatewayCustomAuthorizerEvent` additionally requires `type === "REQUEST"` (present only on authorizer
+  events). Same intent, extra field the erased shape needs to stay unambiguous.
 - **Overloads.** Where C# overloads on delegate types that are indistinguishable at JavaScript
   runtime, methods split by name: `use(factoryOrMiddleware)` vs `useFn([name,] fn)`. Handler
   functions take `(context, next, serviceResolver)` — context-first, with the resolver as a
@@ -578,7 +591,10 @@ Ported (with tests):
     Lambda function (the AWS analog of .NET's single stream-sniffing entry point), `compositeAwsLambda`
     keeps each transport in its own isolated container/pipeline yet dispatches them behind one exported
     `handler`, using the shared `AwsEventPredicates` (`isSqsEvent`, `isApiGatewayEvent`, …) each transport's
-    own `canHandle` already delegates to. The Custom Authorizer sub-application is **not yet ported**.
+    own `canHandle` already delegates to. `api-gateway` also ports the **custom (Lambda) authorizer**
+    sub-application: `useApiGatewayCustomAuthorizer` wires an `AwsEventStreamContext` route that runs a
+    `useCustomAuthorizer` step producing the IAM policy (`APIGatewayAuthorizerResult`) for a REQUEST-type
+    authorizer event (discriminated by `isApiGatewayCustomAuthorizerEvent`).
   - **Azure Functions** (`@azure/functions` + `@azure/service-bus` + `@azure/event-hubs`):
     `azure-function-core` (isolated-worker entry point) + `service-bus`, `event-hub`, `kafka` and
     `http` (the retargeted `AspNet` adapter — see ‡). Dispatch to an entry point is **arity-only**

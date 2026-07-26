@@ -1,11 +1,20 @@
 /** Port of Benzene.Aws.Lambda.ApiGateway.TestHelpers.MessageBuilderExtensions. */
-import { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyEventV2,
+  APIGatewayRequestAuthorizerEvent,
+} from 'aws-lambda';
 import { IHttpBuilder } from '@benzene/abstractions';
 import { MessageSerializer } from '@benzene/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsApiGatewayRequestOptions {
   serializer?: MessageSerializer;
+}
+
+export interface AsApiGatewayCustomAuthorizerEventOptions {
+  /** The API Gateway API ID stamped onto `requestContext.apiId` (the field the handler discriminates on). */
+  apiId?: string;
 }
 
 /**
@@ -73,6 +82,35 @@ export function asApiGatewayV2Request<T>(
     } as APIGatewayProxyEventV2['requestContext'],
     body: source.message === undefined ? undefined : serializer.serialize(source.message),
     isBase64Encoded: false,
+  };
+}
+
+/**
+ * Builds an `APIGatewayRequestAuthorizerEvent` (a REQUEST-type custom authorizer request) from an HTTP
+ * builder: method/path/headers come from the builder, `requestContext.apiId` from `options.apiId`
+ * (default `"some-id"`). Port of C# `AsApiGatewayCustomAuthorizerEvent`. A custom authorizer request has
+ * no body, so the message payload is not serialized onto the event.
+ */
+export function asApiGatewayCustomAuthorizerEvent<T>(
+  source: IHttpBuilder<T>,
+  options: AsApiGatewayCustomAuthorizerEventOptions = {},
+): APIGatewayRequestAuthorizerEvent {
+  const { apiId = 'some-id' } = options;
+
+  return {
+    type: 'REQUEST',
+    methodArn: `arn:aws:execute-api:us-east-1:000000000000:${apiId}/test/${source.method}${source.path}`,
+    resource: source.path,
+    path: source.path,
+    httpMethod: source.method,
+    headers: { ...source.headers },
+    multiValueHeaders: null,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    // requestContext is required by the type; only its apiId matters for routing.
+    requestContext: { apiId } as APIGatewayRequestAuthorizerEvent['requestContext'],
   };
 }
 

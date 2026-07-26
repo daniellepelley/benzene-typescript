@@ -54,4 +54,20 @@ export const isEventBridgeEvent: AwsEventPredicate = (event) => {
   return e?.['detail-type'] != null && e?.['source'] != null;
 };
 
+/**
+ * API Gateway REQUEST-type custom (Lambda) authorizer: `type === "REQUEST"` with a non-empty
+ * `requestContext.apiId`. The `type` discriminant is what separates it from a v1 proxy event, which also
+ * carries `requestContext.apiId` but no `type` (in .NET the payload is deserialized into the distinct
+ * authorizer type first, so an API-ID check alone suffices; the erased port sniffs the raw event and needs
+ * the extra discriminant). A TOKEN authorizer has no `requestContext`, so — as in .NET — it never matches.
+ */
+export const isApiGatewayCustomAuthorizerEvent: AwsEventPredicate = (event) => {
+  const e = asRecord(event);
+  if (e?.['type'] !== 'REQUEST') {
+    return false;
+  }
+  const apiId = asRecord(e?.['requestContext'])?.['apiId'];
+  return typeof apiId === 'string' && apiId.length > 0;
+};
+
 export const isKafkaEvent: AwsEventPredicate = (event) => asRecord(event)?.['eventSource'] === 'aws:kafka';
