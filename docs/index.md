@@ -6,17 +6,19 @@ message-based architectures. This is the **TypeScript port** of
 [Benzene](https://github.com/daniellepelley/benzene-dotnet) — you write a message handler once and host it
 unchanged on Express, AWS Lambda, or Azure Functions.
 
-> **Documentation in progress.** This is the initial TypeScript documentation set, ported from the .NET
-> docs. The core guides below are complete; more (unified hosting, clients, caching, resilience, health
-> checks, the service mesh, and the full cookbook collection) are being ported. For the complete API
-> surface today, see the [repository README](https://github.com/daniellepelley/benzene-typescript#readme),
-> and for runnable projects covering every transport, the
+> **Documentation in progress.** This is the growing TypeScript documentation set, ported from the .NET
+> docs. The guides below are complete; more (the service mesh, schema/spec generation, and the rest of the
+> cookbook collection) are still being ported. For the complete API surface today, see the
+> [repository README](https://github.com/daniellepelley/benzene-typescript#readme), and for runnable
+> projects covering every transport, the
 > [`examples/`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples) folder.
 
 ### Main Themes
 
 - **General**
   - [Getting Started](getting-started.md) — build and run your first Benzene service in about five minutes
+  - [Unified Hosting Model](hosting.md) — the same handler on Express, AWS Lambda, Azure Functions, or a
+    self-hosted worker
   - [Message Handlers](message-handlers.md) — the components that process a message, and how they're
     discovered and routed
   - [Message Results](message-result.md) — `IBenzeneResultOf<T>`, the `BenzeneResult` factory, and how
@@ -24,6 +26,9 @@ unchanged on Express, AWS Lambda, or Azure Functions.
   - [Middleware](middleware.md) — the pipeline mechanism every request flows through
   - [Common Middleware](common-middleware.md) — the ready-made middleware Benzene ships
   - [Correlation IDs](correlation-ids.md) — trace a request end-to-end across services
+  - [Monitoring & Diagnostics](monitoring.md) — tracing, metrics, and logging via OpenTelemetry
+  - [Health Checks](health-checks.md) — liveness/readiness checks and the built-in disk/HTTP/TCP checks
+  - [Kubernetes Health Checks](kubernetes-health-checks.md) — wiring liveness/readiness probes for K8s
   - [Testing Benzene](testing-benzene.md) — test handlers in isolation and drive whole transport pipelines
     in-memory with vitest
 
@@ -38,6 +43,12 @@ unchanged on Express, AWS Lambda, or Azure Functions.
 - **Integrations**
   - [Validation](validation.md) — reject bad requests before they reach your handler, via the Zod, Joi, and
     Yup adapters
+  - [Rate Limiting](rate-limiting.md) — fixed-window, token-bucket, and payload-size limiting
+
+- **Clients & Resilience**
+  - [Clients](clients.md) — call other Benzene services with outbound routing, retries, and parallel fan-out
+  - [Caching](caching.md) — the cache abstraction and the Redis-backed adapter
+  - [Resilience](resilience.md) — retry-with-backoff around a pipeline stage
 
 - **Cookbooks**
   - [Cookbooks](cookbooks/README.md) — practical recipes for real-world scenarios
