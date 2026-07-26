@@ -7,12 +7,19 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { BenzeneResult } from '@benzene/results';
 import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { httpEndpoint } from '@benzene/http';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useApiGatewayV2 } from '@benzene/aws-lambda-api-gateway';
+import {
+  addApiGatewayV2,
+  ApiGatewayV2Application,
+  ApiGatewayV2Context,
+  useApiGatewayV2,
+} from '@benzene/aws-lambda-api-gateway';
 import { httpBuilder } from '@benzene/testing';
 import { asApiGatewayV2Request } from '@benzene/aws-lambda-testing';
 
@@ -101,5 +108,29 @@ describe('ApiGatewayV2Pipeline', () => {
 
     expect(handled).toEqual(['1']);
     expect(response.statusCode).toBe(200);
+  });
+});
+
+describe('ApiGatewayV2Application (direct)', () => {
+  it('reports the api-gateway transport for the duration of the request', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addApiGatewayV2(container);
+
+    let seenTransport: string | undefined;
+    const builder = new MiddlewarePipelineBuilder<ApiGatewayV2Context>(container);
+    builder.useFn((_context, next, resolver) => {
+      seenTransport = resolver.getService(ICurrentTransport).name;
+      return next();
+    });
+
+    const application = new ApiGatewayV2Application(builder.build());
+    await application.handleAsync(
+      asApiGatewayV2Request(httpBuilder('GET', '/orders', undefined)),
+      container.createServiceResolverFactory(),
+    );
+
+    // The TransportMiddlewarePipeline wrap tags the transport as api-gateway (faithful to .NET).
+    expect(seenTransport).toBe('api-gateway');
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
 import {
@@ -140,5 +140,27 @@ describe('ApiGatewayApplication (direct)', () => {
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({ reference: 'ref-7' });
+  });
+
+  it('reports the api-gateway transport for the duration of the request', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addApiGateway(container);
+
+    let seenTransport: string | undefined;
+    const builder = new MiddlewarePipelineBuilder<ApiGatewayContext>(container);
+    builder.useFn((_context, next, resolver) => {
+      seenTransport = resolver.getService(ICurrentTransport).name;
+      return next();
+    });
+
+    const application = new ApiGatewayApplication(builder.build());
+    await application.handleAsync(
+      createApiGatewayEvent('GET', '/orders', undefined),
+      container.createServiceResolverFactory(),
+    );
+
+    // The TransportMiddlewarePipeline wrap tags the transport as api-gateway (faithful to .NET).
+    expect(seenTransport).toBe('api-gateway');
   });
 });
