@@ -31,10 +31,30 @@ the code **inline** (`filename`), unlike the .NET stack which must stage tens-of
 
 ## Deploy
 
+### From GitHub Actions (recommended)
+
+The **Deploy AWS Lambda Mesh Example** workflow
+(`.github/workflows/deploy-aws-lambda-mesh-example.yml`) does the whole thing on a manual trigger,
+mirroring .NET's *Deploy AWS Mesh Example*. It bundles the seven functions, keeps Terraform state in a
+per-account S3 bucket (so it survives between runs), and applies the stack.
+
+1. On the repo's **`test`** GitHub Environment (Settings → Environments → test), set
+   `AWS_ACCESS_KEY_ID` (a Variable or Secret) and `AWS_SECRET_ACCESS_KEY` (a Secret) for an IAM
+   principal that can manage Lambda, IAM, S3, SQS, SNS, API Gateway, and EventBridge.
+2. Actions → **Deploy AWS Lambda Mesh Example** → *Run workflow*. Pick a `region`; leave `recreate`
+   off for a normal deploy (tick it once to clean-slate after a failed run left partial resources).
+
+The state bucket (`benzene-ts-mesh-tfstate-<account>`) is created on first run. The committed
+`main.tf` carries **no** backend block, so local runs (below) use local state; CI drops in a
+`backend.tf` and inits against S3. `adopt-existing.sh` (normal path) and `cleanup-all.sh` (recreate
+path) make re-runs idempotent, exactly as the .NET workflow does.
+
+### From your machine
+
 ```bash
 # from examples/aws-lambda-mesh/deploy
 export AWS_PROFILE=…              # or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
-./deploy.sh                       # bundles + terraform init + apply
+./deploy.sh                       # bundles + terraform init + apply (local state)
 # AUTO_APPROVE=1 ./deploy.sh      # non-interactive
 ```
 

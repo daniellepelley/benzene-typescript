@@ -1,0 +1,152 @@
+name: Deploy AWS Lambda Mesh Example
+
+# Manual-only: deploys examples/aws-lambda-mesh (6 Cloud Service Lambdas + the mesh Lambda) to AWS via
+# Terraform. Set the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY credentials on the "test" GitHub
+# Environment (an IAM user/role that can manage Lambda, IAM, S3, SQS, SNS, API Gateway, and EventBridge).
+# Nothing here runs on push. Mirrors .NET's deploy-aws-mesh-example.yml, adapted for the Node toolchain.
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "AWS region"
+        required: true
+        default: "eu-west-1"
+      recreate:
+        description: "Clean slate: delete all app resources first, then recreate. Use once to recover from duplicate/partial resources left by a failed run."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22.x"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Install the whole workspace (the example depends on the @benzene/* workspace packages), then
+      # bundle every function. Unlike the .NET job (one self-contained publish per project), esbuild
+      # produces all seven tiny zips in a single `npm run bundle` — no per-function matrix needed.
+      - name: Install workspace
+        run: npm ci
+
+      - name: Bundle the seven Lambda functions (esbuild -> artifacts/*.zip)
+        working-directory: examples/aws-lambda-mesh
+        run: npm run bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lambda-zips
+          path: examples/aws-lambda-mesh/artifacts/*.zip
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # The AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY credentials live in the "test" GitHub Environment;
+    # a job must declare the environment for its secrets to be exposed.
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download built Lambda zips
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-zips
+          path: examples/aws-lambda-mesh/artifacts
+
+      - uses: hashicorp/setup-terraform@v3
+
+      # The access key ID is stored as a GitHub *variable* (vars.) and the secret access key as a
+      # *secret* (secrets.) in the "test" Environment, so read the key ID from either place (var first,
+      # falling back to a secret of the same name). Fail fast with a clear message if either is empty.
+      - name: Verify AWS credentials are available
+        env:
+          KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          missing=0
+          [ -z "$KEY_ID" ] && { echo "::error::AWS_ACCESS_KEY_ID is empty (checked both vars and secrets)."; missing=1; }
+          [ -z "$SECRET" ] && { echo "::error::AWS_SECRET_ACCESS_KEY is empty in this job."; missing=1; }
+          if [ "$missing" = "1" ]; then
+            echo "::error::In the 'test' GitHub Environment (Settings -> Environments -> test): set AWS_ACCESS_KEY_ID as a Variable (or Secret) and AWS_SECRET_ACCESS_KEY as a Secret, ensure the deployment-branch policy allows this branch, and that the names match exactly."
+            exit 1
+          fi
+          echo "Both AWS credentials are present."
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+
+      # Remote state lives in a per-account S3 bucket so it survives between (ephemeral) CI runs. The
+      # committed main.tf carries no backend (so local `deploy.sh` uses local state); CI drops in a
+      # backend.tf, creates the state bucket on first use (idempotent), and inits against it.
+      - name: Terraform init (remote S3 state)
+        working-directory: examples/aws-lambda-mesh/deploy
+        env:
+          REGION: ${{ inputs.region }}
+        run: |
+          printf 'terraform {\n  backend "s3" {}\n}\n' > backend.tf
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          STATE_BUCKET="benzene-ts-mesh-tfstate-${ACCOUNT}"
+          if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
+            echo "Creating state bucket $STATE_BUCKET"
+            if [ "$REGION" = "us-east-1" ]; then
+              aws s3api create-bucket --bucket "$STATE_BUCKET" --region "$REGION"
+            else
+              aws s3api create-bucket --bucket "$STATE_BUCKET" --region "$REGION" \
+                --create-bucket-configuration LocationConstraint="$REGION"
+            fi
+            aws s3api put-bucket-versioning --bucket "$STATE_BUCKET" \
+              --versioning-configuration Status=Enabled
+          fi
+          terraform init -input=false \
+            -backend-config="bucket=$STATE_BUCKET" \
+            -backend-config="key=aws-lambda-mesh/terraform.tfstate" \
+            -backend-config="region=$REGION"
+
+      # Clean-slate recovery (opt-in): delete every app resource, including duplicate/partial ones a
+      # failed run left behind, so the following apply recreates a consistent stack. Never touches the
+      # state bucket. Terraform's apply refresh then reconciles the (now-stale) state entries.
+      - name: Clean slate (delete all app resources)
+        if: ${{ inputs.recreate }}
+        working-directory: examples/aws-lambda-mesh/deploy
+        env:
+          REGION: ${{ inputs.region }}
+          PROJECT: benzene-ts-mesh
+        run: |
+          chmod +x cleanup-all.sh
+          ./cleanup-all.sh
+
+      # Normal path: adopt already-created resources into state so apply updates them in place instead
+      # of colliding (409 AlreadyExists). Idempotent — a no-op once state is populated. Skipped when
+      # recreating (nothing to adopt after a clean slate).
+      - name: Adopt any pre-existing resources into state
+        if: ${{ ! inputs.recreate }}
+        working-directory: examples/aws-lambda-mesh/deploy
+        env:
+          REGION: ${{ inputs.region }}
+          PROJECT: benzene-ts-mesh
+        run: |
+          chmod +x adopt-existing.sh
+          ./adopt-existing.sh
+
+      - name: Terraform apply
+        working-directory: examples/aws-lambda-mesh/deploy
+        run: |
+          terraform apply -input=false -auto-approve -var "region=${{ inputs.region }}"
+
+      - name: Show URLs
+        working-directory: examples/aws-lambda-mesh/deploy
+        run: terraform output
