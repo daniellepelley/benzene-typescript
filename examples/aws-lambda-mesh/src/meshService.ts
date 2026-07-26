@@ -24,6 +24,13 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { BenzeneResult } from '@benzene/results';
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { SNSClient } from '@aws-sdk/client-sns';
+import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
+import { addOutboundRouting } from '@benzene/clients';
+import { useSqs as useSqsClient } from '@benzene/clients-aws-sqs';
+import { useSns as useSnsClient } from '@benzene/clients-aws-sns';
+import { useEventBridge as useEventBridgeClient } from '@benzene/clients-aws-eventbridge';
 import {
   compositeAwsLambda,
   isApiGatewayEvent,
@@ -38,6 +45,7 @@ import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useSns } from '@benzene/aws-lambda-sns';
 import { useEventBridge } from '@benzene/aws-lambda-eventbridge';
+import type { MeshBus } from './bus';
 
 /** A transport a service listens on. */
 export type Transport = 'http' | 'sqs' | 'sns' | 'eventbridge';
@@ -69,6 +77,14 @@ export interface MeshServiceDefinition {
   readonly produces: string[];
   /** Extra transports the service listens on beyond those implied by `consumes` (e.g. `http` for orders). */
   readonly extraTransports?: Transport[];
+  /**
+   * Runtime outbound sends: the topics this service actually publishes and over which transport. Wires
+   * `addOutboundRouting` so a handler's `IBenzeneMessageSender.sendAsync(topic, …)` reaches the bus. The
+   * topics should match `produces` (produces drives the structural topology; sends drive the live cascade).
+   */
+  readonly sends?: { topic: string; transport: Transport }[];
+  /** The in-memory bus the outbound sends publish to (delivers to the consuming services). */
+  readonly bus?: MeshBus;
 }
 
 /** Builds the self-derived benzene spec object for a service definition. */
@@ -132,8 +148,30 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition): Handl
 
   const transports = new Set(spec.transports);
 
+  const { bus, sends } = definition;
+
   const entryPoint = compositeAwsLambda((c) => {
-    c.configureServices((s) => addBenzene(s));
+    c.configureServices((s) => {
+      addBenzene(s);
+      // Wire the runtime outbound routes: each sent topic converts to the right transport and publishes to
+      // the bus, which delivers to the consuming services. `useX(app, target, client)` — the target string
+      // is nominal here (the bus routes by topic), matching how a real deployment names a queue/topic/bus.
+      if (bus !== undefined && sends !== undefined && sends.length > 0) {
+        addOutboundRouting(s, (routing) => {
+          for (const send of sends) {
+            routing.route(send.topic, (p) => {
+              if (send.transport === 'sqs') {
+                useSqsClient(p, `queue:${send.topic}`, bus.sqsClient as SQSClient);
+              } else if (send.transport === 'sns') {
+                useSnsClient(p, `arn:${send.topic}`, bus.snsClient as SNSClient);
+              } else {
+                useEventBridgeClient(p, name, bus.eventBridgeClient as EventBridgeClient, `bus:${send.topic}`);
+              }
+            });
+          }
+        });
+      }
+    });
 
     // The direct-invoke surface the mesh interrogates: reserved spec/health + the domain handlers.
     c.route(isBenzeneMessageEvent, (app) =>

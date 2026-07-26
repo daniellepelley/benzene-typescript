@@ -55,17 +55,30 @@ Running the test asserts the full mesh story on a real, non-trivial graph:
 - a service genuinely answers a **direct Lambda invoke** on `spec` (the interrogation seam), and the same
   service handles its domain topic over a **real transport** (SQS).
 
+## Runtime cascade
+
+The services don't just *declare* their edges — they **send** them. `orders`, `payments`, and `shipping`
+inject `IBenzeneMessageSender` and publish their downstream topics through the real outbound clients
+(`@benzene/clients-aws-{sqs,sns,eventbridge}`, wired via `addOutboundRouting`). A single `POST /orders`
+therefore fans all the way through the estate — orders → payments → shipping over SQS, plus the SNS and
+EventBridge fan-outs to inventory / notifications / analytics — in one call. The
+`AwsLambdaMeshExampleTest` "runtime cascade" case asserts every service is reached.
+
+The sends land on an in-memory `MeshBus` (`src/bus.ts`), the SQS/SNS/EventBridge stand-in: each fake AWS SDK
+client reads the topic + body back off the command the outbound converter built and delivers it to the
+services registered as consumers of that topic (as a real inbound event), so the whole thing runs with no
+cloud account. Swap the bus's fake clients for real `@aws-sdk/client-*` clients and the same code sends to
+real queues/topics/buses.
+
 ## Notes on the port
 
 - The load-bearing new library piece this example needed is `useBenzeneMessage` /
   `BenzeneMessageLambdaHandler` (`@benzene/aws-lambda-core`) — the direct-invoke surface a service exposes
   so it can be interrogated with no HTTP. It is the port of .NET's
   `Benzene.Aws.Lambda.Core.BenzeneMessage.DirectMessageLambdaHandler`.
-- There are no runtime SQS/SNS/EventBridge **outbound** clients here (those adapter packages aren't ported
-  yet), so services **declare** their produced topics rather than sending at runtime — which is exactly what
-  the .NET example's *structural* topology is derived from too (an observed/usage-driven topology is a
-  separate, additive layer). The inbound transports are real: a service really does consume its topics over
-  SQS/SNS/EventBridge, as the transport assertion in the test shows.
+- The runtime sends use the ported outbound clients `@benzene/clients-aws-{sqs,sns,eventbridge}`; each
+  `useX(app, target, client)` takes the AWS SDK client explicitly (the port's documented divergence from
+  .NET's DI-resolved client).
 
 Run it with `npm test` (the whole suite) or target the file:
 

@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
 import { MeshServiceStatus } from '@benzene/mesh-contracts';
 import { MeshServiceSource } from '@benzene/mesh-contracts';
-import { messageBuilder } from '@benzene/testing';
-import { asSqs } from '@benzene/aws-lambda-testing';
+import { httpBuilder, messageBuilder } from '@benzene/testing';
+import { asApiGatewayRequest, asSqs } from '@benzene/aws-lambda-testing';
 import { buildServiceLambdas, receipts, runMeshAggregation } from '@benzene-example/aws-lambda-mesh';
 
 /**
@@ -126,5 +126,45 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
 
     // The SQS-delivered command reached the payments domain handler.
     expect(receipts).toContain('payments<-payments:capture:p-1');
+  });
+});
+
+describe('AWS Lambda mesh (runtime cascade via the outbound clients)', () => {
+  beforeEach(() => {
+    receipts.length = 0;
+  });
+
+  it('a single POST /orders fans through all six services over SQS, SNS, and EventBridge', async () => {
+    const services = buildServiceLambdas();
+
+    // One HTTP request into orders — everything else happens by real outbound sends onto the in-memory bus.
+    await services['orders-api']!(
+      asApiGatewayRequest(httpBuilder('POST', '/orders', { orderId: 'X' })),
+      {} as Context,
+      () => undefined,
+    );
+
+    // orders → payments (SQS) → shipping (SQS); orders → inventory/notifications (SNS fan-out);
+    // payments → analytics/notifications (EventBridge); shipping → inventory/notifications/analytics (EventBridge).
+    expect(receipts).toContain('orders<-orders:create:X');
+    expect(receipts).toContain('payments<-payments:capture:X'); // SQS command
+    expect(receipts).toContain('shipping<-shipping:book:X'); // SQS command (second hop)
+    expect(receipts).toContain('inventory<-order:placed:X'); // SNS fan-out
+    expect(receipts).toContain('notifications<-order:placed:X'); // SNS fan-out
+    expect(receipts).toContain('analytics<-payment:captured:X'); // EventBridge
+    expect(receipts).toContain('notifications<-payment:captured:X'); // EventBridge fan-out
+    expect(receipts).toContain('inventory<-shipment:dispatched:X'); // EventBridge (third hop)
+    expect(receipts).toContain('analytics<-shipment:dispatched:X'); // EventBridge (third hop)
+
+    // The full cascade: every service received at least one message.
+    const servicesTouched = new Set(receipts.map((r) => r.split('<-')[0]));
+    expect([...servicesTouched].sort()).toEqual([
+      'analytics',
+      'inventory',
+      'notifications',
+      'orders',
+      'payments',
+      'shipping',
+    ]);
   });
 });

@@ -4,21 +4,25 @@
  *   orders ──payments:capture (SQS)──▶ payments ──shipping:book (SQS)──▶ shipping
  *     │                                    │                                 │
  *     └─order:placed (SNS)─▶ inventory,    ├─payment:captured (EventBridge)─▶ analytics, notifications
- *                            notifications └─────────────────────────────────
- *                                          shipping ─shipment:dispatched (EventBridge)─▶ inventory, notifications, analytics
+ *                            notifications └─ shipping ─shipment:dispatched (EventBridge)─▶ inventory, notifications, analytics
  *
- * Each service consumes its inbound topics over the transport shown and DECLARES the topics it produces, so
- * the mesh's structural topology (producer of a topic → every consumer of it) renders the full graph.
+ * Each service consumes its inbound topics over the transport shown, DECLARES the topics it produces (spec
+ * `events` → the mesh's structural topology), and — for orders/payments/shipping — actually SENDS them at
+ * runtime through the outbound `@benzene/clients-aws-{sqs,sns,eventbridge}` clients onto the in-memory
+ * {@link MeshBus}, which delivers to the consuming services. So the same graph shows up both structurally
+ * (from the specs) and as a live cascade (a single POST to orders fans all the way through).
  */
 import { Handler } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler, IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
+import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
 import { BenzeneResult } from '@benzene/results';
-import { buildMeshServiceLambda } from './meshService';
+import { IBenzeneMessageSender } from '@benzene/clients';
+import { buildMeshServiceLambda, MeshServiceDefinition, Transport } from './meshService';
+import { MeshBus } from './bus';
 
-/** Cross-service delivery log, so a transport test can assert an event actually reached its consumer. */
+/** Cross-service delivery log, so a test can assert an event actually reached its consumer. */
 export const receipts: string[] = [];
 function record(service: string, topic: string, id: string | undefined): void {
   receipts.push(`${service}<-${topic}:${id ?? '?'}`);
@@ -35,23 +39,55 @@ class Message {
   orderId?: string;
 }
 
-// --- orders ------------------------------------------------------------------------------------------
+// --- orders: POST /orders → send payments:capture (SQS) + order:placed (SNS) --------------------------
 const ordersRegistry = new MessageHandlersRegistry();
 
 @httpEndpoint('POST', '/orders')
 @message('orders:create', { registry: ordersRegistry, requestType: CreateOrder, responseType: OrderConfirmation })
 class CreateOrderHandler implements IMessageHandler<CreateOrder, OrderConfirmation> {
-  handleAsync(request: CreateOrder): Promise<IBenzeneResultOf<OrderConfirmation>> {
+  static readonly inject = [IBenzeneMessageSender] as const;
+  constructor(private readonly sender: IBenzeneMessageSender) {}
+
+  async handleAsync(request: CreateOrder): Promise<IBenzeneResultOf<OrderConfirmation>> {
     record('orders', 'orders:create', request.orderId);
+    await this.sender.sendAsync('payments:capture', { orderId: request.orderId }); // SQS command
+    await this.sender.sendAsync('order:placed', { orderId: request.orderId }); // SNS fan-out
     const confirmation = new OrderConfirmation();
     confirmation.orderId = request.orderId ?? 'order-1';
-    // In the full deployment orders would now SEND payments:capture (SQS) + order:placed (SNS); those are
-    // declared as produced topics below, which is what drives the mesh topology.
-    return Promise.resolve(BenzeneResult.created(confirmation));
+    return BenzeneResult.created(confirmation);
   }
 }
 
-// --- a tiny event-consumer handler factory (one no-response handler per consumed topic) ---------------
+// --- payments: consume payments:capture → send shipping:book (SQS) + payment:captured (EventBridge) ---
+const paymentsRegistry = new MessageHandlersRegistry();
+
+@message('payments:capture', { registry: paymentsRegistry, requestType: Message })
+class CapturePaymentHandler implements IMessageHandlerNoResponse<Message> {
+  static readonly inject = [IBenzeneMessageSender] as const;
+  constructor(private readonly sender: IBenzeneMessageSender) {}
+
+  async handleAsync(request: Message): Promise<void> {
+    record('payments', 'payments:capture', request.orderId);
+    await this.sender.sendAsync('shipping:book', { orderId: request.orderId }); // SQS command
+    await this.sender.sendAsync('payment:captured', { orderId: request.orderId }); // EventBridge event
+  }
+}
+
+// --- shipping: consume shipping:book → send shipment:dispatched (EventBridge) --------------------------
+const shippingRegistry = new MessageHandlersRegistry();
+
+@message('shipping:book', { registry: shippingRegistry, requestType: Message })
+class BookShipmentHandler implements IMessageHandlerNoResponse<Message> {
+  static readonly inject = [IBenzeneMessageSender] as const;
+  constructor(private readonly sender: IBenzeneMessageSender) {}
+
+  async handleAsync(request: Message): Promise<void> {
+    record('shipping', 'shipping:book', request.orderId);
+    await this.sender.sendAsync('shipment:dispatched', { orderId: request.orderId }); // EventBridge event
+  }
+}
+
+// --- terminal consumers (record only) -----------------------------------------------------------------
 function eventConsumer(service: string, registry: MessageHandlersRegistry, topic: string): void {
   @message(topic, { registry, requestType: Message })
   class ConsumerHandler implements IMessageHandlerNoResponse<Message> {
@@ -60,65 +96,61 @@ function eventConsumer(service: string, registry: MessageHandlersRegistry, topic
       return Promise.resolve();
     }
   }
-  // Reference the class so it isn't tree-shaken; the decorator has already registered it.
-  void ConsumerHandler;
+  void ConsumerHandler; // the decorator has already registered it
 }
 
-// --- payments ----------------------------------------------------------------------------------------
-const paymentsRegistry = new MessageHandlersRegistry();
-eventConsumer('payments', paymentsRegistry, 'payments:capture');
-
-// --- shipping ----------------------------------------------------------------------------------------
-const shippingRegistry = new MessageHandlersRegistry();
-eventConsumer('shipping', shippingRegistry, 'shipping:book');
-
-// --- inventory ---------------------------------------------------------------------------------------
 const inventoryRegistry = new MessageHandlersRegistry();
 eventConsumer('inventory', inventoryRegistry, 'order:placed');
 eventConsumer('inventory', inventoryRegistry, 'shipment:dispatched');
 
-// --- notifications -----------------------------------------------------------------------------------
 const notificationsRegistry = new MessageHandlersRegistry();
 eventConsumer('notifications', notificationsRegistry, 'order:placed');
 eventConsumer('notifications', notificationsRegistry, 'payment:captured');
 eventConsumer('notifications', notificationsRegistry, 'shipment:dispatched');
 
-// --- analytics ---------------------------------------------------------------------------------------
 const analyticsRegistry = new MessageHandlersRegistry();
 eventConsumer('analytics', analyticsRegistry, 'payment:captured');
 eventConsumer('analytics', analyticsRegistry, 'shipment:dispatched');
 
-/**
- * Builds all six service Lambdas, keyed by function name (the name the mesh discovers and invokes).
- * `useMessageHandlers` is imported for its side-effect-free use inside `buildMeshServiceLambda`.
- */
-export function buildServiceLambdas(): Record<string, Handler> {
-  void useMessageHandlers; // (kept as an explicit dependency marker for the wiring in meshService)
-  return {
-    'orders-api': buildMeshServiceLambda({
+// --- the estate: each service's definition (topology + which topics it sends, and over what transport) --
+function definitions(bus: MeshBus): MeshServiceDefinition[] {
+  return [
+    {
       name: 'orders-api',
       registry: ordersRegistry,
       domainHandlers: [CreateOrderHandler],
       consumes: [{ topic: 'orders:create', transport: 'http', httpMappings: [{ method: 'post', path: '/orders' }] }],
       produces: ['payments:capture', 'order:placed'],
-    }),
-    'payments-api': buildMeshServiceLambda({
+      sends: [
+        { topic: 'payments:capture', transport: 'sqs' },
+        { topic: 'order:placed', transport: 'sns' },
+      ],
+      bus,
+    },
+    {
       name: 'payments-api',
       registry: paymentsRegistry,
       domainHandlers: paymentsRegistry.getAll(),
       consumes: [{ topic: 'payments:capture', transport: 'sqs' }],
       produces: ['shipping:book', 'payment:captured'],
+      sends: [
+        { topic: 'shipping:book', transport: 'sqs' },
+        { topic: 'payment:captured', transport: 'eventbridge' },
+      ],
       extraTransports: ['http'],
-    }),
-    'shipping-api': buildMeshServiceLambda({
+      bus,
+    },
+    {
       name: 'shipping-api',
       registry: shippingRegistry,
       domainHandlers: shippingRegistry.getAll(),
       consumes: [{ topic: 'shipping:book', transport: 'sqs' }],
       produces: ['shipment:dispatched'],
+      sends: [{ topic: 'shipment:dispatched', transport: 'eventbridge' }],
       extraTransports: ['http'],
-    }),
-    'inventory-api': buildMeshServiceLambda({
+      bus,
+    },
+    {
       name: 'inventory-api',
       registry: inventoryRegistry,
       domainHandlers: inventoryRegistry.getAll(),
@@ -128,8 +160,8 @@ export function buildServiceLambdas(): Record<string, Handler> {
       ],
       produces: [],
       extraTransports: ['http'],
-    }),
-    'notifications-api': buildMeshServiceLambda({
+    },
+    {
       name: 'notifications-api',
       registry: notificationsRegistry,
       domainHandlers: notificationsRegistry.getAll(),
@@ -140,8 +172,8 @@ export function buildServiceLambdas(): Record<string, Handler> {
       ],
       produces: [],
       extraTransports: ['http'],
-    }),
-    'analytics-api': buildMeshServiceLambda({
+    },
+    {
       name: 'analytics-api',
       registry: analyticsRegistry,
       domainHandlers: analyticsRegistry.getAll(),
@@ -151,6 +183,32 @@ export function buildServiceLambdas(): Record<string, Handler> {
       ],
       produces: [],
       extraTransports: ['http'],
-    }),
-  };
+    },
+  ];
+}
+
+/**
+ * Builds all six service Lambdas, keyed by function name, wired to a shared in-memory {@link MeshBus} so a
+ * runtime send genuinely reaches its consumers. The returned map is what the mesh discovers and invokes.
+ */
+export function buildServiceLambdas(): Record<string, Handler> {
+  const bus = new MeshBus();
+  const defs = definitions(bus);
+
+  // Register every consumed (topic, transport) so the bus can deliver a send to the right services.
+  for (const def of defs) {
+    for (const consume of def.consumes) {
+      if (consume.transport !== 'http') {
+        bus.registerConsumer(def.name, consume.topic, consume.transport as Transport);
+      }
+    }
+  }
+
+  const services: Record<string, Handler> = {};
+  for (const def of defs) {
+    services[def.name] = buildMeshServiceLambda(def);
+  }
+  // Late-bind the built handlers so the bus's fake clients can deliver to them.
+  Object.assign(bus.services, services);
+  return services;
 }
