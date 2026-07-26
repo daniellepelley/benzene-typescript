@@ -1,0 +1,74 @@
+# AWS Lambda mesh — self-discovery, end to end
+
+The TypeScript equivalent of .NET's [`examples/AwsMesh`](https://github.com/daniellepelley/benzene-dotnet/tree/main/examples/AwsMesh):
+**six** Benzene Cloud Service Lambdas that describe themselves and are directly invocable, plus a **mesh**
+that discovers them by tag, interrogates each over a synchronous Lambda invoke, and aggregates the estate
+into a catalog.
+
+The whole chain runs **in-memory** — no AWS account — because the two AWS surfaces the mesh touches are
+stubbed with in-process stand-ins (`src/localAwsEnvironment.ts`): a Lambda client that routes an `Invoke`
+straight to the target service's in-process `handler`, and a discovery client that answers
+`ListFunctions`/`ListTags`. `test/Benzene.Core.Test/Examples/AwsLambdaMeshExampleTest.test.ts` drives and
+asserts the end result.
+
+## The estate
+
+```
+  orders ──payments:capture (SQS)──▶ payments ──shipping:book (SQS)──▶ shipping
+    │                                    │                                 │
+    └─order:placed (SNS)─▶ inventory,    ├─payment:captured (EventBridge)─▶ analytics, notifications
+                          notifications  │
+                                         └─ shipping ─shipment:dispatched (EventBridge)─▶ inventory, notifications, analytics
+```
+
+Each service is **one Lambda** — a composite entry point (`compositeAwsLambda`) that:
+
+- answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
+  mesh interrogates — via `useBenzeneMessage` (`@benzene/aws-lambda-core`), returning a self-derived spec
+  (`requests`/`events`/`transports`) and a health report;
+- hosts its domain handlers over every transport it actually listens on (API Gateway, SQS, SNS,
+  EventBridge), routed by the composite's event-shape predicates;
+- **declares** the topics it produces (spec `events`), which is what lets the mesh derive the structural
+  topology — producer of a topic → every service whose `requests` contain it.
+
+## The mesh (`src/mesh.ts`)
+
+One `runMeshAggregation` pass does exactly what the .NET `MeshAggregateHandler` does:
+
+1. **Discover** the benzene-tagged Lambdas — `AwsLambdaDiscoveryProvider` (`ListFunctions` + `ListTags`) →
+   `aws-lambda-invoke` registry entries.
+2. **Interrogate + aggregate** — `MeshAggregator` resolves each entry to the `LambdaMeshServiceSource`,
+   which invokes the service on `spec` and `healthcheck`, then writes the catalog:
+   `manifest.json`, `services/*.json`, `topics.json`, `topology.json`, `asyncapi.json`.
+
+Here the catalog is written to a `FileSystemMeshArtifactStore` (the .NET example writes to S3 via
+`Benzene.Mesh.Aws.S3`); the discovery + interrogation wiring is otherwise identical.
+
+## What this proves
+
+Running the test asserts the full mesh story on a real, non-trivial graph:
+
+- all six tagged Lambdas are **discovered** as `aws-lambda-invoke` entries;
+- each is **interrogated** and reported **healthy**, with its self-derived transports;
+- the **topic catalog** lists each cross-service topic's producers and consumers;
+- the **structural topology** has all nine producer→consumer edges;
+- a service genuinely answers a **direct Lambda invoke** on `spec` (the interrogation seam), and the same
+  service handles its domain topic over a **real transport** (SQS).
+
+## Notes on the port
+
+- The load-bearing new library piece this example needed is `useBenzeneMessage` /
+  `BenzeneMessageLambdaHandler` (`@benzene/aws-lambda-core`) — the direct-invoke surface a service exposes
+  so it can be interrogated with no HTTP. It is the port of .NET's
+  `Benzene.Aws.Lambda.Core.BenzeneMessage.DirectMessageLambdaHandler`.
+- There are no runtime SQS/SNS/EventBridge **outbound** clients here (those adapter packages aren't ported
+  yet), so services **declare** their produced topics rather than sending at runtime — which is exactly what
+  the .NET example's *structural* topology is derived from too (an observed/usage-driven topology is a
+  separate, additive layer). The inbound transports are real: a service really does consume its topics over
+  SQS/SNS/EventBridge, as the transport assertion in the test shows.
+
+Run it with `npm test` (the whole suite) or target the file:
+
+```bash
+npx vitest run test/Benzene.Core.Test/Examples/AwsLambdaMeshExampleTest.test.ts
+```

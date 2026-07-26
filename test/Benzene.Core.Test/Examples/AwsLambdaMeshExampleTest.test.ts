@@ -1,0 +1,130 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Context } from 'aws-lambda';
+import { MeshServiceStatus } from '@benzene/mesh-contracts';
+import { MeshServiceSource } from '@benzene/mesh-contracts';
+import { messageBuilder } from '@benzene/testing';
+import { asSqs } from '@benzene/aws-lambda-testing';
+import { buildServiceLambdas, receipts, runMeshAggregation } from '@benzene-example/aws-lambda-mesh';
+
+/**
+ * Proves the AWS Lambda mesh works end-to-end in TypeScript, the same way the .NET `examples/AwsMesh` does:
+ * six Benzene Cloud Service Lambdas are discovered by tag, interrogated by a (in-memory) synchronous Lambda
+ * invoke on the reserved `spec`/`healthcheck` topics, and aggregated into a catalog whose topics and
+ * structural topology reflect the real estate — with no cloud account.
+ */
+describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
+  let rootDirectory: string;
+
+  beforeEach(() => {
+    rootDirectory = mkdtempSync(join(tmpdir(), 'benzene-aws-lambda-mesh-'));
+    receipts.length = 0;
+  });
+  afterEach(() => {
+    rmSync(rootDirectory, { recursive: true, force: true });
+  });
+
+  it('discovers all six tagged Lambdas as aws-lambda-invoke entries', async () => {
+    const { registry } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
+
+    expect(registry.services.map((s) => s.name).sort()).toEqual([
+      'analytics-api',
+      'inventory-api',
+      'notifications-api',
+      'orders-api',
+      'payments-api',
+      'shipping-api',
+    ]);
+    // Every entry is interrogated over the Lambda-invoke source (not HTTP).
+    expect(registry.services.every((s) => s.source === MeshServiceSource.awsLambdaInvoke)).toBe(true);
+  });
+
+  it('interrogates each Lambda and reports every service healthy', async () => {
+    const { manifest } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
+
+    expect(manifest.services).toHaveLength(6);
+    expect(manifest.services.every((s) => s.status === MeshServiceStatus.healthy)).toBe(true);
+
+    // The self-derived transports come back in the manifest (payments listens on http + sqs).
+    const payments = manifest.services.find((s) => s.name === 'payments-api')!;
+    expect([...payments.transports].sort()).toEqual(['http', 'sqs']);
+  });
+
+  it('catalogs the cross-service topics with producers and consumers', async () => {
+    const { store } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
+    const catalog = JSON.parse((await store.tryReadAsync('topics.json'))!) as {
+      topics: { topic: string; consumers: { service: string }[]; producers: { service: string }[] }[];
+    };
+    const byTopic = (t: string) => catalog.topics.find((x) => x.topic === t)!;
+    const names = (xs: { service: string }[]) => xs.map((x) => x.service).sort();
+
+    // order:placed — produced by orders, fanned out to inventory + notifications.
+    expect(names(byTopic('order:placed').producers)).toEqual(['orders-api']);
+    expect(names(byTopic('order:placed').consumers)).toEqual(['inventory-api', 'notifications-api']);
+
+    // payment:captured — produced by payments, consumed by analytics + notifications.
+    expect(names(byTopic('payment:captured').producers)).toEqual(['payments-api']);
+    expect(names(byTopic('payment:captured').consumers)).toEqual(['analytics-api', 'notifications-api']);
+
+    // shipment:dispatched — produced by shipping, consumed by inventory + notifications + analytics.
+    expect(names(byTopic('shipment:dispatched').producers)).toEqual(['shipping-api']);
+    expect(names(byTopic('shipment:dispatched').consumers)).toEqual([
+      'analytics-api',
+      'inventory-api',
+      'notifications-api',
+    ]);
+
+    // payments:capture — a point-to-point command orders → payments.
+    expect(names(byTopic('payments:capture').producers)).toEqual(['orders-api']);
+    expect(names(byTopic('payments:capture').consumers)).toEqual(['payments-api']);
+  });
+
+  it('derives the structural topology (producer → consumer edges) from the specs', async () => {
+    const { store } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
+    const topology = JSON.parse((await store.tryReadAsync('topology.json'))!) as {
+      edges: { client: string; server: string; source: string }[];
+    };
+    const edge = (client: string, server: string) =>
+      topology.edges.some((e) => e.client === client && e.server === server);
+
+    // 9 structural edges across the estate (client = producer, server = consumer).
+    expect(topology.edges).toHaveLength(9);
+    expect(edge('orders-api', 'payments-api')).toBe(true); // payments:capture (SQS)
+    expect(edge('orders-api', 'inventory-api')).toBe(true); // order:placed (SNS fan-out)
+    expect(edge('orders-api', 'notifications-api')).toBe(true); // order:placed (SNS fan-out)
+    expect(edge('payments-api', 'shipping-api')).toBe(true); // shipping:book (SQS)
+    expect(edge('payments-api', 'analytics-api')).toBe(true); // payment:captured (EventBridge)
+    expect(edge('shipping-api', 'inventory-api')).toBe(true); // shipment:dispatched (EventBridge)
+    expect(topology.edges.every((e) => e.source === 'structural')).toBe(true);
+  });
+
+  it('a service answers a direct Lambda invoke on the reserved spec topic (the interrogation surface)', async () => {
+    const services = buildServiceLambdas();
+
+    const response = (await services['orders-api']!(
+      { topic: 'spec', headers: {}, body: '' },
+      {} as Context,
+      () => undefined,
+    )) as { statusCode: number; body: string };
+
+    const spec = JSON.parse(response.body) as { requests: { topic: string }[]; events: { topic: string }[]; transports: string[] };
+    expect(spec.requests.map((r) => r.topic)).toContain('orders:create');
+    expect(spec.events.map((e) => e.topic).sort()).toEqual(['order:placed', 'payments:capture']);
+    expect(spec.transports).toContain('http');
+  });
+
+  it('the same service also handles its domain topic over a real transport (SQS)', async () => {
+    const services = buildServiceLambdas();
+
+    await services['payments-api']!(
+      asSqs(messageBuilder('payments:capture', { orderId: 'p-1' })),
+      {} as Context,
+      () => undefined,
+    );
+
+    // The SQS-delivered command reached the payments domain handler.
+    expect(receipts).toContain('payments<-payments:capture:p-1');
+  });
+});

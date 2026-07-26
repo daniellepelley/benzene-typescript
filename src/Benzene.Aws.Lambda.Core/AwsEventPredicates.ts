@@ -55,6 +55,18 @@ export const isEventBridgeEvent: AwsEventPredicate = (event) => {
 };
 
 /**
+ * A direct BenzeneMessage invocation — a transport-neutral `{ topic, headers?, body? }` envelope invoked
+ * straight on the function (the Lambda-to-Lambda path the mesh uses to interrogate a service with the
+ * reserved `spec`/`healthcheck` topics). Discriminated by a non-empty top-level `topic` (.NET checks
+ * `request?.Topic != null`); no proxy/record/detail-type event carries a top-level `topic`, so it is
+ * unambiguous against every other predicate.
+ */
+export const isBenzeneMessageEvent: AwsEventPredicate = (event) => {
+  const topic = asRecord(event)?.['topic'];
+  return typeof topic === 'string' && topic.length > 0;
+};
+
+/**
  * API Gateway REQUEST-type custom (Lambda) authorizer: `type === "REQUEST"` with a non-empty
  * `requestContext.apiId`. The `type` discriminant is what separates it from a v1 proxy event, which also
  * carries `requestContext.apiId` but no `type` (in .NET the payload is deserialized into the distinct
