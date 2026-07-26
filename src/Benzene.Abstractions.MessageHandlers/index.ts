@@ -33,3 +33,4 @@ export * from './Info/ITransportInfo';
 export * from './Info/ITransportsInfo';
 export * from './Info/ICurrentTransport';
 export * from './Info/ISetCurrentTransport';
+export * from './Info/TransportNames';

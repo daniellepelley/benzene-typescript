@@ -1,6 +1,6 @@
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { MiddlewareApplicationWithResult } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { APIGatewayAuthorizerResult, APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 import { ApiGatewayCustomAuthorizerContext } from './ApiGatewayCustomAuthorizerContext';
 
@@ -11,7 +11,7 @@ import { ApiGatewayCustomAuthorizerContext } from './ApiGatewayCustomAuthorizerC
  * into an `ApiGatewayCustomAuthorizerContext` and back into the `APIGatewayAuthorizerResult` the pipeline
  * produced.
  *
- * Faithful to .NET: the pipeline is wrapped in `TransportMiddlewarePipeline('api-gateway', pipeline)`
+ * Faithful to .NET: the pipeline is wrapped in `TransportMiddlewarePipeline(TransportNames.ApiGateway, pipeline)`
  * (the port of C#'s `new TransportMiddlewarePipeline(TransportNames.ApiGateway, pipeline)`), so
  * `ICurrentTransport` reports `api-gateway` while the authorizer runs. C#
  * `MiddlewareApplication<APIGatewayCustomAuthorizerRequest, ApiGatewayCustomAuthorizerContext,
@@ -30,7 +30,7 @@ export class ApiGatewayCustomAuthorizerApplication extends MiddlewareApplication
 > {
   constructor(pipeline: IMiddlewarePipeline<ApiGatewayCustomAuthorizerContext>) {
     super(
-      new TransportMiddlewarePipeline<ApiGatewayCustomAuthorizerContext>('api-gateway', pipeline),
+      new TransportMiddlewarePipeline<ApiGatewayCustomAuthorizerContext>(TransportNames.ApiGateway, pipeline),
       (event) => new ApiGatewayCustomAuthorizerContext(event),
       (context) => context.apiGatewayCustomAuthorizerResponse as APIGatewayAuthorizerResult,
     );

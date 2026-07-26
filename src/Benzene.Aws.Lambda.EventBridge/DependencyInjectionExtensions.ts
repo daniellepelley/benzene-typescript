@@ -10,6 +10,7 @@ import {
   IRequestEnricher,
   IRequestMapper,
   ITransportInfo,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
 import {
@@ -68,6 +69,6 @@ export function addEventBridge(services: IBenzeneServiceContainer): IBenzeneServ
       ) as IRequestMapper<unknown>,
   );
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('eventbridge'));
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.EventBridge));
   return services;
 }

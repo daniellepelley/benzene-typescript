@@ -1,6 +1,6 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.DynamoDbApplication. */
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
+import { ISetCurrentTransport, TransportNames } from '@benzene/abstractions-message-handlers';
 import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { DynamoDBBatchResponse, DynamoDBStreamEvent } from 'aws-lambda';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
@@ -39,7 +39,7 @@ export class DynamoDbApplication
         const scope = serviceResolverFactory.createScope();
         try {
           const setCurrentTransport = scope.getService(ISetCurrentTransport);
-          setCurrentTransport.setTransport('dynamodb');
+          setCurrentTransport.setTransport(TransportNames.DynamoDb);
           await this.pipeline.handleAsync(context, scope);
         } finally {
           scope.dispose();

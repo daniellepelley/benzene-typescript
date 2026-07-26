@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsApplication. */
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { SNSEvent } from 'aws-lambda';
 import { SnsMessageProcessingException } from './SnsMessageProcessingException';
 import { SnsOptions } from './SnsOptions';
@@ -34,7 +34,7 @@ export class SnsApplication implements IMiddlewareApplication<SNSEvent> {
   private readonly options: SnsOptions;
 
   constructor(pipeline: IMiddlewarePipeline<SnsRecordContext>, options?: SnsOptions) {
-    this.pipeline = new TransportMiddlewarePipeline<SnsRecordContext>('sns', pipeline);
+    this.pipeline = new TransportMiddlewarePipeline<SnsRecordContext>(TransportNames.Sns, pipeline);
     this.options = options ?? new SnsOptions();
   }
 

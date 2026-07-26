@@ -3,7 +3,7 @@ import { ServiceBusReceivedMessage } from '@azure/service-bus';
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { EntryPointMiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { ServiceBusContext } from './ServiceBusContext';
 import { ServiceBusMessageProcessingException } from './ServiceBusMessageProcessingException';
 import { ServiceBusOptions } from './ServiceBusOptions';
@@ -61,7 +61,7 @@ export class ServiceBusBatchApplication implements IMiddlewareApplication<Servic
   private readonly options: ServiceBusOptions;
 
   constructor(pipeline: IMiddlewarePipeline<ServiceBusContext>, options?: ServiceBusOptions) {
-    this.pipeline = new TransportMiddlewarePipeline<ServiceBusContext>('service-bus', pipeline);
+    this.pipeline = new TransportMiddlewarePipeline<ServiceBusContext>(TransportNames.ServiceBus, pipeline);
     this.options = options ?? new ServiceBusOptions();
   }
 

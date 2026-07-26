@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.S3.S3Application. */
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { MiddlewareMultiApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { S3Event } from 'aws-lambda';
 import { S3RecordContext } from './S3RecordContext';
 
@@ -19,7 +19,7 @@ import { S3RecordContext } from './S3RecordContext';
 export class S3Application extends MiddlewareMultiApplication<S3Event, S3RecordContext> {
   constructor(pipeline: IMiddlewarePipeline<S3RecordContext>) {
     super(
-      new TransportMiddlewarePipeline<S3RecordContext>('s3', pipeline),
+      new TransportMiddlewarePipeline<S3RecordContext>(TransportNames.S3, pipeline),
       (event) => event.Records.map((record) => S3RecordContext.createInstance(event, record)),
     );
   }

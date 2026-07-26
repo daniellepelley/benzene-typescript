@@ -5,13 +5,14 @@ import {
   IHasMessageResult,
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
 
 // The value ICurrentTransport reports before any transport pipeline has recorded itself; the span skips
-// the transport tag while it still reads this (port of TransportNames.Unresolved).
-const unresolvedTransport = '<missing>';
+// the transport tag while it still reads this.
+const unresolvedTransport = TransportNames.Unresolved;
 
 /**
  * Wraps one middleware in a span (named after it) so `addActivityPerMiddleware`/`addDiagnostics` produce

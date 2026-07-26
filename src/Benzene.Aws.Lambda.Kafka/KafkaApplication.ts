@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaApplication. */
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { MiddlewareMultiApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { MSKEvent } from 'aws-lambda';
 import { KafkaContext } from './KafkaContext';
 
@@ -19,7 +19,7 @@ import { KafkaContext } from './KafkaContext';
 export class KafkaApplication extends MiddlewareMultiApplication<MSKEvent, KafkaContext> {
   constructor(pipeline: IMiddlewarePipeline<KafkaContext>) {
     super(
-      new TransportMiddlewarePipeline<KafkaContext>('kafka', pipeline),
+      new TransportMiddlewarePipeline<KafkaContext>(TransportNames.Kafka, pipeline),
       (event) =>
         Object.values(event.records).flatMap((records) =>
           records.map((record) => new KafkaContext(event, record)),

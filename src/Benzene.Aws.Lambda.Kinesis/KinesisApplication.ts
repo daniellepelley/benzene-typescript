@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kinesis.KinesisStreamApplication (adapted — see the ADAPTATION note). */
 import { IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { KinesisStreamEvent } from 'aws-lambda';
 import { KinesisMessageContext } from './KinesisMessageContext';
 
@@ -23,7 +23,7 @@ export class KinesisApplication implements IMiddlewareApplication<KinesisStreamE
   private readonly pipeline: IMiddlewarePipeline<KinesisMessageContext>;
 
   constructor(pipeline: IMiddlewarePipeline<KinesisMessageContext>) {
-    this.pipeline = new TransportMiddlewarePipeline<KinesisMessageContext>('kinesis', pipeline);
+    this.pipeline = new TransportMiddlewarePipeline<KinesisMessageContext>(TransportNames.Kinesis, pipeline);
   }
 
   async handleAsync(

@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.EventBridge.EventBridgeApplication. */
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { MiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { EventBridgeEvent } from 'aws-lambda';
 import { EventBridgeContext } from './EventBridgeContext';
 
@@ -22,7 +22,7 @@ export class EventBridgeApplication extends MiddlewareApplication<
 > {
   constructor(pipeline: IMiddlewarePipeline<EventBridgeContext>) {
     super(
-      new TransportMiddlewarePipeline<EventBridgeContext>('eventbridge', pipeline),
+      new TransportMiddlewarePipeline<EventBridgeContext>(TransportNames.EventBridge, pipeline),
       (event) => new EventBridgeContext(event),
     );
   }

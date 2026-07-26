@@ -1,6 +1,6 @@
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { MiddlewareApplicationWithResult } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';
 
@@ -10,7 +10,7 @@ import { ApiGatewayV2Context } from './ApiGatewayV2Context';
  * Wraps the API Gateway HTTP API v2 middleware pipeline, converting an incoming `APIGatewayProxyEventV2`
  * into an `ApiGatewayV2Context` and back into an `APIGatewayProxyStructuredResultV2`.
  *
- * Faithful to .NET: the pipeline is wrapped in `TransportMiddlewarePipeline('api-gateway', pipeline)`
+ * Faithful to .NET: the pipeline is wrapped in `TransportMiddlewarePipeline(TransportNames.ApiGateway, pipeline)`
  * (the port of C#'s `new TransportMiddlewarePipeline(TransportNames.ApiGateway, pipeline)`), so
  * `ICurrentTransport` reports `api-gateway` while the request runs — matching the SNS/S3/Kinesis/… apps.
  *
@@ -25,7 +25,7 @@ export class ApiGatewayV2Application extends MiddlewareApplicationWithResult<
 > {
   constructor(pipeline: IMiddlewarePipeline<ApiGatewayV2Context>) {
     super(
-      new TransportMiddlewarePipeline<ApiGatewayV2Context>('api-gateway', pipeline),
+      new TransportMiddlewarePipeline<ApiGatewayV2Context>(TransportNames.ApiGateway, pipeline),
       (event) => new ApiGatewayV2Context(event),
       (context) => context.apiGatewayProxyResponse as APIGatewayProxyStructuredResultV2,
     );

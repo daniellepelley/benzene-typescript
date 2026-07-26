@@ -1,3 +1,4 @@
+import { TransportNames } from '@benzene/abstractions-message-handlers';
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import {
   BenzeneMessageContext,
@@ -29,7 +30,7 @@ export class BenzeneMessageApplication extends MiddlewareApplicationWithResult<
 > {
   constructor(pipeline: IMiddlewarePipeline<BenzeneMessageContext>) {
     super(
-      new TransportMiddlewarePipeline<BenzeneMessageContext>('benzene', pipeline),
+      new TransportMiddlewarePipeline<BenzeneMessageContext>(TransportNames.Benzene, pipeline),
       (event) => new BenzeneMessageContext(event),
       (context) => context.benzeneMessageResponse,
     );

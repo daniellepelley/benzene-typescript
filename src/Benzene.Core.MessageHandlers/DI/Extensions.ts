@@ -55,7 +55,12 @@ import { ApplicationInfo } from '../Info/ApplicationInfo';
 import { BlankApplicationInfo } from '../Info/BlankApplicationInfo';
 import { CurrentTransportInfo } from '../Info/CurrentTransportInfo';
 import { ICurrentTransport, ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
-import { IApplicationInfo, ITransportInfo, ITransportsInfo } from '@benzene/abstractions-message-handlers';
+import {
+  IApplicationInfo,
+  ITransportInfo,
+  ITransportsInfo,
+  TransportNames,
+} from '@benzene/abstractions-message-handlers';
 import { TransportInfo } from '../Info/TransportInfo';
 import { TransportsInfo } from '../Info/TransportsInfo';
 import { addMediaFormatNegotiation } from '../MediaFormats/DependencyInjectionExtensions';
@@ -159,7 +164,10 @@ export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneS
     new DefaultResponsePayloadMapper<BenzeneMessageContext>() as unknown as IResponsePayloadMapper<unknown>,
   );
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('direct'));
+  // The default in-process transport info. C# registers TransportNames.Benzene here (its doc comment
+  // loosely calls it "direct"); the port had drifted to the literal 'direct', which also disagreed with
+  // the 'benzene' tag BenzeneMessageApplication sets at runtime. Aligned back to TransportNames.Benzene.
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.Benzene));
 
   return services;
 }

@@ -3,7 +3,7 @@ import { ReceivedEventData } from '@azure/event-hubs';
 import { IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { EntryPointMiddlewareApplication, MiddlewareMultiApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { EventHubContext } from './EventHubContext';
 
 /**
@@ -33,7 +33,7 @@ export class EventHubApplication extends EntryPointMiddlewareApplication<Receive
   ) {
     super(
       new MiddlewareMultiApplication<ReceivedEventData[], EventHubContext>(
-        new TransportMiddlewarePipeline<EventHubContext>('event-hub', pipeline),
+        new TransportMiddlewarePipeline<EventHubContext>(TransportNames.EventHub, pipeline),
         (events) => events.map((e) => EventHubContext.createInstance(e)),
       ),
       serviceResolverFactory,

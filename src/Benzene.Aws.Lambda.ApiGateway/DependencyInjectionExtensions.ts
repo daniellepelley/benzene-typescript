@@ -11,6 +11,7 @@ import {
   IResponsePayloadMapper,
   IResponseRenderer,
   ITransportInfo,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
 import {
@@ -161,7 +162,7 @@ export function addApiGateway(services: IBenzeneServiceContainer): IBenzeneServi
 
   addMediaFormatNegotiation<ApiGatewayContext>(services);
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('api-gateway'));
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.ApiGateway));
   addHttpMessageHandlers(services);
 
   return services;
@@ -266,7 +267,7 @@ export function addApiGatewayV2(services: IBenzeneServiceContainer): IBenzeneSer
 
   addMediaFormatNegotiation<ApiGatewayV2Context>(services);
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('api-gateway'));
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.ApiGateway));
   addHttpMessageHandlers(services);
 
   return services;

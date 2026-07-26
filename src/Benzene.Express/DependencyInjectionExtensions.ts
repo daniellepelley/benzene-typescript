@@ -11,6 +11,7 @@ import {
   IResponsePayloadMapper,
   IResponseRenderer,
   ITransportInfo,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
 import {
@@ -134,7 +135,7 @@ export function addExpress(services: IBenzeneServiceContainer): IBenzeneServiceC
 
   addMediaFormatNegotiation<ExpressContext>(services);
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('express'));
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.Express));
   addHttpMessageHandlers(services);
 
   return services;

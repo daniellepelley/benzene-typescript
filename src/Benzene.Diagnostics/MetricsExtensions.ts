@@ -3,6 +3,7 @@ import {
   ICurrentTransport,
   IHasMessageResult,
   IMessageGetter,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
@@ -41,7 +42,7 @@ export function useBenzeneMetrics<TContext>(
         | undefined;
       const attributes: Attributes = {
         topic: messageGetter?.getTopic(context)?.id ?? '<missing>',
-        transport: resolver.tryGetService(ICurrentTransport)?.name ?? '<missing>',
+        transport: resolver.tryGetService(ICurrentTransport)?.name ?? TransportNames.Unresolved,
         result,
       };
 

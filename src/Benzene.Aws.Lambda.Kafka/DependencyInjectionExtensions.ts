@@ -6,6 +6,7 @@ import {
   IMessageHandlerResultSetter,
   IMessageTopicGetter,
   ITransportInfo,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
 import { JsonSerializer, TransportInfo } from '@benzene/core-message-handlers';
@@ -44,6 +45,6 @@ export function addKafka(services: IBenzeneServiceContainer): IBenzeneServiceCon
     () => new KafkaMessageMessageHandlerResultSetter() as IMessageHandlerResultSetter<unknown>,
   );
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('kafka'));
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.Kafka));
   return services;
 }

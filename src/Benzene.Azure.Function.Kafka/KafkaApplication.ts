@@ -2,7 +2,7 @@
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { EntryPointMiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { KafkaContext } from './KafkaContext';
 import { KafkaMessageProcessingException } from './KafkaMessageProcessingException';
 import { KafkaOptions } from './KafkaOptions';
@@ -57,7 +57,7 @@ export class KafkaBatchApplication implements IMiddlewareApplication<KafkaRecord
   private readonly options: KafkaOptions;
 
   constructor(pipeline: IMiddlewarePipeline<KafkaContext>, options?: KafkaOptions) {
-    this.pipeline = new TransportMiddlewarePipeline<KafkaContext>('kafka', pipeline);
+    this.pipeline = new TransportMiddlewarePipeline<KafkaContext>(TransportNames.Kafka, pipeline);
     this.options = options ?? new KafkaOptions();
   }
 

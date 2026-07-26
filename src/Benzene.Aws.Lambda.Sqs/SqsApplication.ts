@@ -1,5 +1,5 @@
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
+import { ISetCurrentTransport, TransportNames } from '@benzene/abstractions-message-handlers';
 import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import { SQSBatchItemFailure, SQSBatchResponse, SQSEvent } from 'aws-lambda';
 import { SqsBatchFailureMode } from './SqsBatchFailureMode';
@@ -51,7 +51,7 @@ export class SqsApplication implements IMiddlewareApplicationWithResult<SQSEvent
           const scope = serviceResolverFactory.createScope();
           try {
             const setCurrentTransport = scope.getService(ISetCurrentTransport);
-            setCurrentTransport.setTransport('sqs');
+            setCurrentTransport.setTransport(TransportNames.Sqs);
             await this.pipeline.handleAsync(context, scope);
           } finally {
             scope.dispose();

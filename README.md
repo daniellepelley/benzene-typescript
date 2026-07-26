@@ -309,6 +309,16 @@ next to its C# counterpart:
   is kept. One deliberate rename: `IDeferredRequestMapper`/`DeferredRequestMapper` →
   `IRequestMapperThunk`/`RequestMapperThunk` — a zero-arg deferred producer is idiomatically a
   "thunk" in TypeScript; same shape, TS-native spelling.
+- **Shared literals → constants.** Values that recur across packages are centralized in one `as const`
+  object rather than repeated inline, so a rename is a single-point edit. The canonical case is
+  **`TransportNames`** (`@benzene/abstractions-message-handlers`, faithfully ported from the C# class of
+  the same name): every transport tag (`TransportMiddlewarePipeline`/`setTransport`) and startup
+  `ITransportInfo` registration references `TransportNames.Sqs`/`.ApiGateway`/… instead of the raw string,
+  and it is re-exported from `@benzene/core-message-handlers` so adapters import it alongside the pipeline.
+  One TS-only member (`Express`, no C# counterpart) is added for the Express host adapter. Centralizing
+  also surfaced a drift the literals had hidden — the default in-process `ITransportInfo` had been
+  registered as `'direct'` (a word only C#'s *doc comment* uses) where C# registers `TransportNames.Benzene`;
+  it is now aligned, matching the `'benzene'` tag the runtime already sets.
 - **Types.** `Task`/`Task<T>` → `Promise<void>`/`Promise<T>`; C# `null` → `undefined`;
   `IDictionary<string, T>` → `Record<string, T>`; `Exception` → `Error`
   (`InnerException` → `Error.cause`); `IDisposable.Dispose()` → a `dispose()` method,

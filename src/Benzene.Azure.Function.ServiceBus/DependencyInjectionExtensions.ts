@@ -7,6 +7,7 @@ import {
   IRequestEnricher,
   IRequestMapper,
   ITransportInfo,
+  TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
 import {
@@ -75,6 +76,6 @@ export function addServiceBus(services: IBenzeneServiceContainer): IBenzeneServi
       ) as IRequestMapper<unknown>,
   );
 
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo('service-bus'));
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.ServiceBus));
   return services;
 }
