@@ -17,6 +17,20 @@ review a newly ported package for TS-naturalness, or to decide when a literal po
 TS idiom (and how to document the bend). Faithful by default; bend when fidelity would produce something
 a TS developer would never write; record every bend in the README "Porting conventions" table.
 
+## Documentation
+Documentation written **in this repo is for the TypeScript community**: idiomatic TypeScript, the
+real `@benzene/*` npm packages, ESM imports, `vitest` — the concrete "how to build, host, test, and
+operate a Benzene service in TypeScript". Write it the way a TypeScript developer expects to read it
+(not as a transliteration of the C# prose).
+
+Do **not** restate the language-neutral material here. The concepts, wire contracts, status
+vocabulary, mesh shapes, and the Cloud Service Profile are defined once, for every language, in the
+cross-language [benzene](https://github.com/daniellepelley/Benzene/tree/main/docs/specification)
+repo. **Link to the spec; don't duplicate it.** If you're writing something that is true for every
+port rather than a TypeScript idiom, it's a spec/guide change in the benzene repo — raise it there.
+The website lets a reader pick their language and get the TypeScript docs from this repo, alongside
+the shared spec.
+
 ## Structure
 - `src/<Benzene.PackageName>/` — one npm workspace package per C# project, files named after
   their `.cs` counterparts
