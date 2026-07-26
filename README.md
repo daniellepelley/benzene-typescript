@@ -51,6 +51,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
 | `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; message-client/pipeline/health-check deferred) |
+| `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzene/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path; batch/standalone clients + health checks deferred) |
 | `src/Benzene.Mesh.Aws.Lambda` | `@benzene/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
 | `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
 | `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |

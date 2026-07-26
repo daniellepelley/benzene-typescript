@@ -86,6 +86,9 @@
     "@benzene/messagepack": "0.1.0",
     "@benzene/xml": "0.1.0",
     "@benzene/yup": "0.1.0",
-    "@benzene/zod": "0.1.0"
+    "@benzene/zod": "0.1.0",
+    "@benzene/clients-aws-sqs": "0.1.0",
+    "@benzene/clients-aws-sns": "0.1.0",
+    "@benzene/clients-aws-eventbridge": "0.1.0"
   }
 }
