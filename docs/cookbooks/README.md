@@ -21,24 +21,33 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
 - [SNS Fan-Out Pattern](sns-fan-out.md) — publish one event to an SNS topic and have several
   independently-deployed Lambda functions each process their own copy of it.
 - S3 Event Processing *(coming soon)*
-- Deploying a Benzene Lambda *(coming soon)*
 
-### Testing
+### Reliability & Workflow
 
+- [Idempotency](idempotency.md) — make a handler safe to invoke more than once, so an at-least-once
+  transport (SQS, SNS, retries) can't apply the same effect twice.
+- [Sagas](sagas.md) — coordinate a multi-step workflow across services with compensating rollback when a
+  later step fails.
+- [Global Error Handling](global-error-handling.md) — catch any thrown error at the pipeline edge, log it,
+  and map it to a safe error result without leaking internals.
+
+### Messaging & Integration
+
+- [Response as Event](response-as-event.md) — publish a domain event derived from a handler's result,
+  either by explicit mapping or the CRUD naming convention.
+
+### Security
+
+- [Auth Patterns](auth-patterns.md) — establish authentication (Basic, OAuth2/bearer) and authorize
+  per-handler with `requireRole`/`requireScope`/`requirePolicy`.
+
+### Architecture & Testing
+
+- [Bring Your Own DI Container](bring-your-own-di-container.md) — the default container, the `static inject`
+  convention, and adapting an external container against Benzene's DI contracts.
 - [Mocking External Dependencies](mocking-dependencies.md) — test a handler in isolation by swapping its
   real dependencies (databases, HTTP clients, cloud SDKs) for fakes registered in the container, while
   still running the message through the real pipeline.
-- Integration Testing Lambda Functions *(coming soon)*
-
-### Validation & Error Handling
-
-- Global Error Handling *(coming soon)*
-- Request/Response Transformations *(coming soon)*
-
-### Cross-Cutting Concerns
-
-- Request Correlation Across Services *(coming soon)*
-- Idempotency *(coming soon)*
 
 ## Cookbook structure
 
