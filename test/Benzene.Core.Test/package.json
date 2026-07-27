@@ -108,6 +108,7 @@
     "@benzene/clients-azure-service-bus": "0.1.0",
     "@benzene/clients-azure-event-hub": "0.1.0",
     "@benzene/clients-azure-queue-storage": "0.1.0",
-    "@benzene/clients-azure-event-grid": "0.1.0"
+    "@benzene/clients-azure-event-grid": "0.1.0",
+    "@benzene/clients-google-cloud-pubsub": "0.1.0"
   }
 }

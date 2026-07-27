@@ -70,6 +70,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Clients.Azure.EventHub` | `@benzene/clients-azure-event-hub` | `Benzene.Clients.Azure.EventHub` (outbound `OutboundContext` send path over `@azure/event-hubs`; generic-context + batch clients deferred) |
 | `src/Benzene.Clients.Azure.QueueStorage` | `@benzene/clients-azure-queue-storage` | `Benzene.Clients.Azure.QueueStorage` (outbound `OutboundContext` send path over `@azure/storage-queue`; generic-context client + health check deferred) |
 | `src/Benzene.Clients.Azure.EventGrid` | `@benzene/clients-azure-event-grid` | `Benzene.Clients.Azure.EventGrid` (outbound `OutboundContext` send path over `@azure/eventgrid`, both CloudEvents + classic schemas; generic-context + batch clients deferred) |
+| `src/Benzene.Clients.GoogleCloud.PubSub` | `@benzene/clients-google-cloud-pubsub` | `Benzene.Clients.GoogleCloud.PubSub` (outbound `OutboundContext` publish path over `@google-cloud/pubsub`) |
 | `src/Benzene.Mesh.Aws.Lambda` | `@benzene/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
 | `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
 | `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |
