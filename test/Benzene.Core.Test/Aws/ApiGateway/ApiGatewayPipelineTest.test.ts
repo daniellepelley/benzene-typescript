@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyResult } from 'aws-lambda';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
@@ -55,28 +55,6 @@ class CreateOrderHandler implements IMessageHandler<Order, OrderCreated> {
     payload.reference = `ref-${request.orderId}`;
     return Promise.resolve(BenzeneResult.ok(payload));
   }
-}
-
-function createApiGatewayEvent(
-  httpMethod: string,
-  path: string,
-  body: unknown,
-): APIGatewayProxyEvent {
-  return {
-    httpMethod,
-    path,
-    resource: path,
-    body: body === undefined ? null : JSON.stringify(body),
-    headers: { 'content-type': 'application/json' },
-    multiValueHeaders: {},
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    pathParameters: null,
-    stageVariables: null,
-    isBase64Encoded: false,
-    // requestContext is required by the type; only its presence matters here.
-    requestContext: {} as APIGatewayProxyEvent['requestContext'],
-  };
 }
 
 // Lead-by-example: this block was ported from C# driving `InlineAwsLambdaStartUp` directly; it now
@@ -136,7 +114,7 @@ describe('ApiGatewayApplication (direct)', () => {
     useMessageHandlers(builder, CreateOrderHandler);
 
     const application = new ApiGatewayApplication(builder.build());
-    const event = createApiGatewayEvent('POST', '/orders', { orderId: '7' });
+    const event = asApiGatewayRequest(httpBuilder('POST', '/orders', { orderId: '7' }));
 
     const response = await application.handleAsync(event, container.createServiceResolverFactory());
 
@@ -158,7 +136,7 @@ describe('ApiGatewayApplication (direct)', () => {
 
     const application = new ApiGatewayApplication(builder.build());
     await application.handleAsync(
-      createApiGatewayEvent('GET', '/orders', undefined),
+      asApiGatewayRequest(httpBuilder('GET', '/orders')),
       container.createServiceResolverFactory(),
     );
 

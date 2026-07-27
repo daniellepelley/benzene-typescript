@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { MSKEvent, MSKRecord } from 'aws-lambda';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler, IMessageResult } from '@benzene/abstractions-message-handlers';
@@ -51,35 +50,6 @@ class OrderHandler implements IMessageHandler<Order, OrderCreated> {
     payload.reference = `ref-${request.orderId}`;
     return Promise.resolve(BenzeneResult.ok(payload));
   }
-}
-
-function createKafkaRecord(topic: string, partition: number, body: unknown): MSKRecord {
-  return {
-    topic,
-    partition,
-    offset: 0,
-    timestamp: 0,
-    timestampType: 'CREATE_TIME',
-    key: Buffer.from('key').toString('base64'),
-    value: Buffer.from(JSON.stringify(body), 'utf8').toString('base64'),
-    headers: [],
-  };
-}
-
-function createKafkaEvent(
-  records: { topic: string; partition: number; body: unknown }[],
-): MSKEvent {
-  const grouped: { [topicPartition: string]: MSKRecord[] } = {};
-  for (const r of records) {
-    const key = `${r.topic}-${r.partition}`;
-    (grouped[key] ??= []).push(createKafkaRecord(r.topic, r.partition, r.body));
-  }
-  return {
-    eventSource: 'aws:kafka',
-    eventSourceArn: 'arn:aws:kafka:us-east-1:123456789012:cluster/demo/uuid',
-    bootstrapServers: 'b-1.demo.kafka.us-east-1.amazonaws.com:9092',
-    records: grouped,
-  };
 }
 
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
@@ -140,7 +110,7 @@ describe('KafkaApplication (direct)', () => {
     useMessageHandlers(pipeline, OrderHandler);
 
     const application = new KafkaApplication(pipeline.build());
-    const event = createKafkaEvent([{ topic: 'orders', partition: 0, body: { orderId: '7' } }]);
+    const event = asAwsKafkaEvent(messageBuilder('orders', { orderId: '7' }));
 
     await application.handleAsync(event, container.createServiceResolverFactory());
 

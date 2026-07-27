@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { EventBridgeEvent } from 'aws-lambda';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler, IMessageResult } from '@benzene/abstractions-message-handlers';
@@ -51,23 +50,6 @@ class OrderCreatedHandler implements IMessageHandler<Order, OrderCreated> {
     payload.confirmation = `confirmed-${request.reference}`;
     return Promise.resolve(BenzeneResult.ok(payload));
   }
-}
-
-function createEventBridgeEvent(
-  detailType: string,
-  detail: unknown,
-): EventBridgeEvent<string, unknown> {
-  return {
-    id: 'evt-1',
-    version: '0',
-    account: '123456789012',
-    time: '1970-01-01T00:00:00Z',
-    region: 'us-east-1',
-    resources: [],
-    source: 'my.app',
-    'detail-type': detailType,
-    detail,
-  };
 }
 
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
@@ -122,7 +104,7 @@ describe('EventBridgeApplication (direct)', () => {
     useMessageHandlers(pipeline, OrderCreatedHandler);
 
     const application = new EventBridgeApplication(pipeline.build());
-    const event = createEventBridgeEvent('order.created', { reference: 'XYZ-9' });
+    const event = asEventBridge(messageBuilder('order.created', { reference: 'XYZ-9' }));
 
     await application.handleAsync(event, container.createServiceResolverFactory());
 
@@ -145,7 +127,7 @@ describe('EventBridgeApplication (direct)', () => {
     useMessageHandlers(pipeline, OrderCreatedHandler);
 
     const application = new EventBridgeApplication(pipeline.build());
-    const event = createEventBridgeEvent('no.such.detail-type', { reference: '1' });
+    const event = asEventBridge(messageBuilder('no.such.detail-type', { reference: '1' }));
 
     await application.handleAsync(event, container.createServiceResolverFactory());
 

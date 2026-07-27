@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { SNSEvent, SNSEventRecord } from 'aws-lambda';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
@@ -51,33 +50,6 @@ class CreateOrderHandler implements IMessageHandler<Order, OrderCreated> {
     payload.reference = `ref-${request.orderId}`;
     return Promise.resolve(BenzeneResult.ok(payload));
   }
-}
-
-function createSnsRecord(messageId: string, topic: string | undefined, body: unknown): SNSEventRecord {
-  return {
-    EventVersion: '1.0',
-    EventSubscriptionArn: 'arn:aws:sns:us-east-1:123456789012:topic:subscription',
-    EventSource: 'aws:sns',
-    Sns: {
-      Type: 'Notification',
-      MessageId: messageId,
-      TopicArn: 'arn:aws:sns:us-east-1:123456789012:topic',
-      Message: JSON.stringify(body),
-      Timestamp: '1970-01-01T00:00:00.000Z',
-      SignatureVersion: '1',
-      Signature: 'sig',
-      SigningCertUrl: 'https://sns.us-east-1.amazonaws.com/cert.pem',
-      UnsubscribeUrl: 'https://sns.us-east-1.amazonaws.com/unsubscribe',
-      MessageAttributes:
-        topic === undefined ? {} : { topic: { Type: 'String', Value: topic } },
-    },
-  };
-}
-
-function createSnsEvent(
-  records: { messageId: string; topic?: string; body: unknown }[],
-): SNSEvent {
-  return { Records: records.map((r) => createSnsRecord(r.messageId, r.topic, r.body)) };
 }
 
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
@@ -136,9 +108,7 @@ describe('SnsApplication (direct)', () => {
     useMessageHandlers(pipeline, CreateOrderHandler);
 
     const application = new SnsApplication(pipeline.build());
-    const event = createSnsEvent([
-      { messageId: 'a', topic: 'create-order', body: { orderId: '1' } },
-    ]);
+    const event = asSns(messageBuilder('create-order', { orderId: '1' }));
 
     await application.handleAsync(event, container.createServiceResolverFactory());
 
@@ -158,9 +128,7 @@ describe('SnsApplication (direct)', () => {
     options.raiseOnFailureStatus = true;
     const application = new SnsApplication(builder.build(), options);
 
-    const event = createSnsEvent([
-      { messageId: 'fails', topic: 'no-such-topic', body: { orderId: '9' } },
-    ]);
+    const event = asSns(messageBuilder('no-such-topic', { orderId: '9' }));
 
     await expect(
       application.handleAsync(event, container.createServiceResolverFactory()),

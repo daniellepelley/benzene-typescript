@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { S3Event, S3EventRecord } from 'aws-lambda';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
@@ -46,40 +45,6 @@ class ObjectCreatedHandler implements IMessageHandler<FileUploaded, FileProcesse
     payload.reference = `${request.bucketName}/${request.key}`;
     return Promise.resolve(BenzeneResult.ok(payload));
   }
-}
-
-function createS3Record(eventName: string, bucket: string, key: string): S3EventRecord {
-  return {
-    eventVersion: '2.1',
-    eventSource: 'aws:s3',
-    awsRegion: 'us-east-1',
-    eventTime: '1970-01-01T00:00:00.000Z',
-    eventName,
-    userIdentity: { principalId: 'principal' },
-    requestParameters: { sourceIPAddress: '127.0.0.1' },
-    responseElements: { 'x-amz-request-id': 'req', 'x-amz-id-2': 'id2' },
-    s3: {
-      s3SchemaVersion: '1.0',
-      configurationId: 'config',
-      bucket: {
-        name: bucket,
-        ownerIdentity: { principalId: 'owner' },
-        arn: `arn:aws:s3:::${bucket}`,
-      },
-      object: {
-        key,
-        size: 1024,
-        eTag: 'etag',
-        sequencer: '0A1B2C3D4E5F678901',
-      },
-    },
-  };
-}
-
-function createS3Event(
-  records: { eventName: string; bucket: string; key: string }[],
-): S3Event {
-  return { Records: records.map((r) => createS3Record(r.eventName, r.bucket, r.key)) };
 }
 
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
@@ -131,9 +96,7 @@ describe('S3Application (direct)', () => {
     useMessageHandlers(pipeline, ObjectCreatedHandler);
 
     const application = new S3Application(pipeline.build());
-    const event = createS3Event([
-      { eventName: 'ObjectCreated:Put', bucket: 'b', key: 'k' },
-    ]);
+    const event = asS3('b', 'k');
 
     await application.handleAsync(event, container.createServiceResolverFactory());
 
