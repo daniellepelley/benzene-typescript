@@ -1388,6 +1388,32 @@ Next, in dependency order, following the .NET repository:
    (`Benzene.GoogleCloud.Functions`) is a straightforward extension of the Azure Functions port when the
    two-cloud scope widens.
 
+### Deliberately not ported (no clean JS mapping)
+
+A handful of .NET packages have no faithful TypeScript counterpart because the primitive they are built
+on doesn't exist in the JavaScript ecosystem. Rather than invent a divergent package or hand-roll a whole
+subsystem, they are left out and recorded here:
+
+- **`Benzene.OpenTelemetry`** — its entire surface is `TracerProviderBuilder.AddSource("Benzene")` /
+  `MeterProviderBuilder.AddMeter("Benzene")`, i.e. .NET's opt-in registration of a named `ActivitySource`/
+  `Meter` with an OTel provider. **JS OpenTelemetry has no per-source opt-in**: once a global
+  `TracerProvider`/`MeterProvider` is registered, every `trace.getTracer(name)` / `metrics.getMeter(name)`
+  is live. The ported `@benzene/diagnostics` already emits its spans/metrics through a tracer/meter named
+  `"Benzene"`, so they flow to whatever exporter a JS app configures **with no glue package at all** —
+  wire OTel normally (e.g. a `NodeTracerProvider` + OTLP exporter) and Benzene's telemetry appears. (Filter
+  or sample it by the instrumentation name `"Benzene"`.)
+- **`Benzene.Azure.CosmosDb`** — the standalone Change Feed consumer worker is built entirely on the .NET
+  SDK's **push-based Change Feed Processor** (lease-container ownership, cross-instance load balancing, the
+  batch-level manual-checkpoint hook). `@azure/cosmos` exposes only a **pull-model** change-feed iterator
+  with no processor/lease abstraction, so a faithful port would mean reimplementing the entire
+  lease-ownership + checkpoint-store subsystem the SDK doesn't provide — out of scope for a port. (The
+  shared streaming pipeline shape it uses — `StreamContext`/`StreamMiddlewareApplication` — *is* ported, so
+  the Azure Functions `CosmosDBTrigger` path in `@benzene/azure-function-cosmos-db` remains available.)
+- **`Benzene.JsonSchema`** — generates JSON Schema from CLR types via reflection; TypeScript erases types at
+  runtime, so there is nothing to reflect. The port instead derives JSON Schema from the runtime validation
+  schemas (`@benzene/zod` / `@benzene/joi` / `@benzene/yup` → `@benzene/schema-openapi`), the idiomatic TS
+  equivalent (see the "Type → JSON Schema" convention above).
+
 ## License
 
 MIT — same as the .NET original.
