@@ -55,6 +55,9 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Azure.Function.{QueueStorage,Timer}` | `@benzene/azure-function-{queue-storage,timer}` | same-named `Benzene.Azure.Function.*` (bespoke `QueueStorageMessage`/`TimerTriggerInfo` models — `@azure/functions` has no queue/timer payload type; `useTimerTrigger` avoids the `Benzene.Diagnostics` `useTimer` clash) |
+| `src/Benzene.GoogleCloud.Functions.Core` | `@benzene/google-cloud-functions-core` | `Benzene.GoogleCloud.Functions.Core` (thin bootstrap foundation; the `(services, container)` pair collapses to `DefaultBenzeneServiceContainer` and the `IConfiguration` thread is deferred, like the AWS/Azure inline startups) |
+| `src/Benzene.GoogleCloud.Functions.Http` | `@benzene/google-cloud-functions-http` | `Benzene.GoogleCloud.Functions.Http`◊ |
+| `src/Benzene.GoogleCloud.Functions.PubSub` | `@benzene/google-cloud-functions-pubsub` | `Benzene.GoogleCloud.Functions.PubSub` (single-message CloudEvent trigger, on `@google-cloud/functions-framework`; `PresetTopic` override + registration-diagnostics deferred, as in the .NET package) |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
 | `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; message-client/pipeline/health-check deferred) |
@@ -130,6 +133,15 @@ Node event types: the AWS Lambda packages depend on `@types/aws-lambda`, the Azu
 .NET Lambda takes a raw `Stream` and deserializes/sniffs it to route, whereas Node Lambda receives an
 already-parsed event object — so `AwsEventStreamContext` holds the parsed event and the router
 discriminates on its shape rather than deserializing a stream.
+
+◊ `Benzene.GoogleCloud.Functions.Http` reuses `Benzene.AspNet.Core`'s `IAspApplicationBuilder`/
+`AspNetContext`/`UseHttp` machinery (its `GoogleCloudFunctionApplicationBuilder` implements
+`IAspApplicationBuilder` without a live ASP.NET Core pipeline). `Benzene.AspNet.Core` is .NET-specific
+and unported — `@benzene/express` is its Node analog — and the .NET Functions Framework itself hosts the
+function inside Kestrel, whereas Node's `@google-cloud/functions-framework` hands the handler Express
+req/res. So the port reuses `@benzene/express`'s already-tested `ExpressContext` + `addExpress` adapter
+machinery instead (see the Google Cloud Functions porting-conventions bullet). The transport therefore
+reports `express`, not `http`/`asp`.
 
 § `Benzene.Cache.Redis` wraps the .NET-only `StackExchange.Redis`; per the same convention it is
 re-created as an adapter over `ioredis`, the popular Node Redis client. (`@benzene/clients` also
@@ -467,6 +479,44 @@ next to its C# counterpart:
   (`Benzene.Grpc.AspNet`, no JS analog); the **rich `google.rpc.Status`** error details
   (`grpc-status-details-bin` / `BadRequest` field violations — protobuf-only; the flat `benzene-status`
   trailer *is* ported); and any gRPC **health-check** type (another package's concern).
+- **Google Cloud Functions: hosted on `@google-cloud/functions-framework`.** The Google Cloud lane ports
+  three .NET packages onto Node's Functions Framework, which registers named handlers rather than being
+  the entry point: `functions.http(name, (req, res) => ...)` and `functions.cloudEvent(name,
+  (cloudEvent) => ...)`. **`@benzene/google-cloud-functions-core`** is the thin shared bootstrap
+  (`GoogleCloudStartUpRunner.bootstrap(StartUp)`), Google-neutral (no functions-framework dep) exactly
+  like `Benzene.Aws.Lambda.Core`; the .NET `Bootstrap<TStartUp>()`'s 4-tuple `(StartUp, IConfiguration,
+  IServiceCollection, IBenzeneServiceContainer)` collapses to `(startUp, DefaultBenzeneServiceContainer)`
+  — Node has no `IConfiguration` and the `IServiceCollection`/container split collapses into the
+  first-party container, matching how `InlineAwsLambdaStartUp`/`InlineAzureFunctionStartUp` are adapted.
+  Each host takes a startup constructor (`new GoogleCloudFunctionHost(MyStartUp)`), the port of C#'s
+  `Host<TStartUp> where TStartUp : BenzeneStartUp, new()`; the startup contract is the minimal
+  `configureServices`/`configure` shape (no config param), since the generic-host `BenzeneStartUp` is
+  deferred port-wide. **HTTP** (`@benzene/google-cloud-functions-http`): the .NET reuses
+  `Benzene.AspNet.Core`'s `IAspApplicationBuilder`/`UseHttp` without a live ASP.NET pipeline; that stack
+  is unported and `@benzene/express` is its Node analog, and the Functions Framework's HTTP signature is
+  itself Express req/res — so `useHttp` reuses `@benzene/express`'s `ExpressContext` + `addExpress`
+  machinery to bridge req/res into the Benzene HTTP pipeline (transport reports `express`; see the `◊`
+  footnote). `GoogleCloudFunctionApplicationBuilder` keeps the .NET's deferred-build shape (`add` stores,
+  `build` invokes once the resolver factory is final) and `host.httpFunction` exposes the
+  `functions.http` handler (a bound closure, the `toLambdaHandler` treatment). **Pub/Sub**
+  (`@benzene/google-cloud-functions-pubsub`): a **single-message** CloudEvent trigger (Pub/Sub delivers
+  exactly one message per invocation), so `PubSubMiddlewareApplication` is a single-message application
+  with no batch/`Promise.all` loop — structurally like a request, and the closest existing template is
+  the Azure Service Bus trigger. `PubSubContext` wraps the CloudEvent's `MessagePublishedData` (declared
+  as small structural interfaces, not a protobuf runtime — the Functions Framework ships no type for it,
+  the same "model the already-parsed event" adaptation the AWS adapters make); the body is the base64
+  `message.data` UTF-8-decoded (re-creating the generated `PubsubMessage.TextData`), headers are
+  `message.attributes`, and the topic is the configurable `"topic"` attribute (default `"topic"`, the
+  SQS/SNS/Service-Bus "topic in a custom attribute" convention). `addGooglePubSub` registers the three
+  getters + `addHeaderMessageVersionGetter` + `addMediaFormatNegotiation` + request mapper + a `pubsub`
+  `ITransportInfo` (the `pubsub` `TransportNames` member already existed). `PubSubOptions.raiseOnFailureStatus`
+  defaults **`true`** (faithful to the .NET Pub/Sub default: a returned failure is escalated into a
+  thrown `PubSubMessageProcessingException` and redelivered — unlike the batch Service Bus trigger, whose
+  flag defaults `false`), `catchExceptions` defaults `false`; `host.cloudEventFunction` exposes the
+  `functions.cloudEvent` handler. **Deferred** (matching the .NET package): the `PresetTopic` override
+  wiring (a producer that never sets `"topic"` routes as `<missing>`) and the `RegistrationsBase`
+  registration-diagnostics surface; and, per the health-check carve-out, any Google Cloud health-check
+  type (another agent's domain).
 - **Type → JSON Schema (payload schemas from validation, not reflection).** `Benzene.Schema.OpenApi`
   derives a topic's request/response JSON Schema by *reflecting* over the CLR type and then enriches it
   with FluentValidation rules via `OpenApiValidationSchemaBuilder`. TypeScript erases types, so there is
