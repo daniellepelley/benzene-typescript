@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Context, SNSEvent, SNSEventRecord } from 'aws-lambda';
+import { SNSEvent, SNSEventRecord } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -12,7 +12,6 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   addSns,
   SnsApplication,
@@ -21,6 +20,8 @@ import {
   SnsRecordContext,
   useSns,
 } from '@benzene/aws-lambda-sns';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
+import { asSns, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# SNS pipeline tests (test/Benzene.Core.Test/Aws/Sns/SnsMessagePipelineTest.cs
@@ -77,22 +78,28 @@ function createSnsEvent(
   return { Records: records.map((r) => createSnsRecord(r.messageId, r.topic, r.body)) };
 }
 
-const fakeLambdaContext = {} as Context;
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asSns` event
+// builder — the exact shape an adopter copies.
+class SnsStartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('SnsPipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useSns(app, (sns) => useMessageHandlers(sns, CreateOrderHandler));
+  }
+}
+
+describe('SnsPipeline (via the benzeneTestHost harness)', () => {
   it('routes an SNS record to a decorated handler (fire-and-forget)', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useSns(app, (sns) => useMessageHandlers(sns, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(SnsStartUp).buildAwsLambdaHost();
 
-    const event = createSnsEvent([
-      { messageId: 'm1', topic: 'create-order', body: { orderId: '42' } },
-    ]);
-
-    const response = await entryPoint.functionHandlerAsync(event, fakeLambdaContext);
+    const response = await host.sendEventAsync(
+      asSns(messageBuilder('create-order', { orderId: '42' })),
+    );
 
     // The handler genuinely ran with the deserialized body...
     expect(handled).toEqual(['42']);
@@ -101,14 +108,9 @@ describe('SnsPipeline (via AwsLambdaEntryPoint)', () => {
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useSns(app, (sns) => useMessageHandlers(sns, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(SnsStartUp).buildAwsLambdaHost();
 
-    await expect(entryPoint.functionHandlerAsync({ foo: 'bar' }, fakeLambdaContext)).rejects.toThrow(
-      BenzeneException,
-    );
+    await expect(host.sendEventAsync({ foo: 'bar' })).rejects.toThrow(BenzeneException);
   });
 });
 

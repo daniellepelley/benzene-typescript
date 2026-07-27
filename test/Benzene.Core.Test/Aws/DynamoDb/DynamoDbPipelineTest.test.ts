@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Context, DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda';
+import { DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -12,13 +12,14 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   addDynamoDb,
   DynamoDbApplication,
   DynamoDbRecordContext,
   useDynamoDb,
 } from '@benzene/aws-lambda-dynamodb';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
+import { asDynamoDb, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# DynamoDB pipeline tests
@@ -78,26 +79,28 @@ function createDynamoDbEvent(
   return { Records: records.map((r) => createDynamoDbRecord(r.sequenceNumber, r.eventName, r.orderId)) };
 }
 
-const fakeLambdaContext = {} as Context;
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asDynamoDb`
+// event builder — the exact shape an adopter copies.
+class DynamoDbStartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('DynamoDbPipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useDynamoDb(app, (dynamo) => useMessageHandlers(dynamo, OrderInsertedHandler));
+  }
+}
+
+describe('DynamoDbPipeline (via the benzeneTestHost harness)', () => {
   it('routes a stream record to a decorated handler and returns an empty batch response', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) =>
-        useDynamoDb(app, (dynamo) => useMessageHandlers(dynamo, OrderInsertedHandler)),
-      )
-      .build();
+    const host = benzeneTestHost(DynamoDbStartUp).buildAwsLambdaHost();
 
-    const event = createDynamoDbEvent([
-      { sequenceNumber: '1', eventName: 'INSERT', orderId: '42' },
-    ]);
-
-    const response = (await entryPoint.functionHandlerAsync(event, fakeLambdaContext)) as {
+    const response = await host.sendEventAsync<{
       batchItemFailures: { itemIdentifier: string }[];
-    };
+    }>(asDynamoDb(messageBuilder('orders:INSERT', { orderId: '42' })));
 
     // The handler ran with the AttributeValue image unmarshalled to `{ orderId: '42' }`...
     expect(handled).toEqual(['42']);
@@ -106,16 +109,9 @@ describe('DynamoDbPipeline (via AwsLambdaEntryPoint)', () => {
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) =>
-        useDynamoDb(app, (dynamo) => useMessageHandlers(dynamo, OrderInsertedHandler)),
-      )
-      .build();
+    const host = benzeneTestHost(DynamoDbStartUp).buildAwsLambdaHost();
 
-    await expect(entryPoint.functionHandlerAsync({ foo: 'bar' }, fakeLambdaContext)).rejects.toThrow(
-      BenzeneException,
-    );
+    await expect(host.sendEventAsync({ foo: 'bar' })).rejects.toThrow(BenzeneException);
   });
 });
 

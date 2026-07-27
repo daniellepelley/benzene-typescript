@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Context, MSKEvent, MSKRecord } from 'aws-lambda';
+import { MSKEvent, MSKRecord } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler, IMessageResult } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -12,13 +12,14 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   addKafka,
   KafkaApplication,
   KafkaContext,
   useKafka,
 } from '@benzene/aws-lambda-kafka';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
+import { asAwsKafkaEvent, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# Kafka pipeline test
@@ -79,20 +80,28 @@ function createKafkaEvent(
   };
 }
 
-const fakeLambdaContext = {} as Context;
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asAwsKafkaEvent`
+// event builder — the exact shape an adopter copies.
+class KafkaStartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('KafkaPipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useKafka(app, (kafka) => useMessageHandlers(kafka, OrderHandler));
+  }
+}
+
+describe('KafkaPipeline (via the benzeneTestHost harness)', () => {
   it('routes a Kafka record to a decorated handler by topic (fire-and-forget)', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useKafka(app, (kafka) => useMessageHandlers(kafka, OrderHandler)))
-      .build();
+    const host = benzeneTestHost(KafkaStartUp).buildAwsLambdaHost();
 
-    const event = createKafkaEvent([{ topic: 'orders', partition: 0, body: { orderId: '42' } }]);
-
-    const response = await entryPoint.functionHandlerAsync(event, fakeLambdaContext);
+    const response = await host.sendEventAsync(
+      asAwsKafkaEvent(messageBuilder('orders', { orderId: '42' })),
+    );
 
     // The handler genuinely ran with the base64-decoded value deserialized into its request...
     expect(handled).toEqual(['42']);
@@ -101,14 +110,9 @@ describe('KafkaPipeline (via AwsLambdaEntryPoint)', () => {
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useKafka(app, (kafka) => useMessageHandlers(kafka, OrderHandler)))
-      .build();
+    const host = benzeneTestHost(KafkaStartUp).buildAwsLambdaHost();
 
-    await expect(entryPoint.functionHandlerAsync({ foo: 'bar' }, fakeLambdaContext)).rejects.toThrow(
-      BenzeneException,
-    );
+    await expect(host.sendEventAsync({ foo: 'bar' })).rejects.toThrow(BenzeneException);
   });
 });
 

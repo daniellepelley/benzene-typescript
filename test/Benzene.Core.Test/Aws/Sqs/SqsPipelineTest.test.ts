@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Context, SQSEvent, SQSRecord } from 'aws-lambda';
+import { SQSEvent, SQSRecord } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -12,7 +12,6 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   addSqs,
   SqsApplication,
@@ -22,6 +21,8 @@ import {
   SqsOptions,
   useSqs,
 } from '@benzene/aws-lambda-sqs';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
+import { asSqs, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# SQS pipeline tests (test/Benzene.Core.Test/Aws/Sqs/SqsMessagePipelineTest.cs
@@ -80,24 +81,29 @@ function createSqsEvent(
   return { Records: records.map((r) => createSqsRecord(r.messageId, r.topic, r.body)) };
 }
 
-const fakeLambdaContext = {} as Context;
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`). The single-record case
+// uses the `asSqs` event builder; the mixed-topic partial-batch case keeps a hand-rolled event since it
+// needs per-record topics and message ids the builder does not express.
+class SqsStartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('SqsPipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler));
+  }
+}
+
+describe('SqsPipeline (via the benzeneTestHost harness)', () => {
   it('routes an SQS record to a decorated handler and returns an empty batch response', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(SqsStartUp).buildAwsLambdaHost();
 
-    const event = createSqsEvent([
-      { messageId: 'm1', topic: 'create-order', body: { orderId: '42' } },
-    ]);
-
-    const response = (await entryPoint.functionHandlerAsync(event, fakeLambdaContext)) as {
+    const response = await host.sendEventAsync<{
       batchItemFailures: { itemIdentifier: string }[];
-    };
+    }>(asSqs(messageBuilder('create-order', { orderId: '42' })));
 
     // The handler genuinely ran with the deserialized body...
     expect(handled).toEqual(['42']);
@@ -108,35 +114,27 @@ describe('SqsPipeline (via AwsLambdaEntryPoint)', () => {
   it('reports an unroutable record in batchItemFailures (partial batch failure)', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(SqsStartUp).buildAwsLambdaHost();
 
     const event = createSqsEvent([
       { messageId: 'ok', topic: 'create-order', body: { orderId: '1' } },
       { messageId: 'bad', topic: 'no-such-topic', body: { orderId: '2' } },
     ]);
 
-    const response = (await entryPoint.functionHandlerAsync(event, fakeLambdaContext)) as {
+    const response = await host.sendEventAsync<{
       batchItemFailures: { itemIdentifier: string }[];
-    };
+    }>(event);
 
     expect(handled).toEqual(['1']);
     expect(response.batchItemFailures).toEqual([{ itemIdentifier: 'bad' }]);
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(SqsStartUp).buildAwsLambdaHost();
 
     // An event with no records / no aws:sqs source is not handled by the SQS router, so
     // `context.response` stays undefined and the entry point raises the recognition error.
-    await expect(entryPoint.functionHandlerAsync({ foo: 'bar' }, fakeLambdaContext)).rejects.toThrow(
-      BenzeneException,
-    );
+    await expect(host.sendEventAsync({ foo: 'bar' })).rejects.toThrow(BenzeneException);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Context, S3Event, S3EventRecord } from 'aws-lambda';
+import { S3Event, S3EventRecord } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -12,8 +12,9 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { addS3, S3Application, S3RecordContext, useS3 } from '@benzene/aws-lambda-s3';
+import { benzeneTestHost } from '@benzene/testing';
+import { asS3, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# S3 pipeline test (test/Benzene.Core.Test/Aws/S3/SnsMessagePipelineTest.cs,
@@ -79,22 +80,26 @@ function createS3Event(
   return { Records: records.map((r) => createS3Record(r.eventName, r.bucket, r.key)) };
 }
 
-const fakeLambdaContext = {} as Context;
+// Lead-by-example: this block was ported from C# driving `InlineAwsLambdaStartUp` directly; it now
+// dogfoods the public startup-host harness (`benzeneTestHost(StartUp).buildAwsLambdaHost()` +
+// `host.sendEventAsync(...)`) with the `asS3` event builder — the exact shape an adopter copies.
+class S3StartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('S3Pipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useS3(app, (s3) => useMessageHandlers(s3, ObjectCreatedHandler));
+  }
+}
+
+describe('S3Pipeline (via the benzeneTestHost harness)', () => {
   it('routes an S3 record to a decorated handler by event name (fire-and-forget)', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useS3(app, (s3) => useMessageHandlers(s3, ObjectCreatedHandler)))
-      .build();
+    const host = benzeneTestHost(S3StartUp).buildAwsLambdaHost();
 
-    const event = createS3Event([
-      { eventName: 'ObjectCreated:Put', bucket: 'my-bucket', key: 'photos/cat.png' },
-    ]);
-
-    const response = await entryPoint.functionHandlerAsync(event, fakeLambdaContext);
+    const response = await host.sendEventAsync(asS3('my-bucket', 'photos/cat.png'));
 
     // The handler genuinely ran with the S3Notification body deserialized into its request...
     expect(handled).toEqual([{ bucket: 'my-bucket', key: 'photos/cat.png' }]);
@@ -103,14 +108,9 @@ describe('S3Pipeline (via AwsLambdaEntryPoint)', () => {
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useS3(app, (s3) => useMessageHandlers(s3, ObjectCreatedHandler)))
-      .build();
+    const host = benzeneTestHost(S3StartUp).buildAwsLambdaHost();
 
-    await expect(entryPoint.functionHandlerAsync({ foo: 'bar' }, fakeLambdaContext)).rejects.toThrow(
-      BenzeneException,
-    );
+    await expect(host.sendEventAsync({ foo: 'bar' })).rejects.toThrow(BenzeneException);
   });
 });
 

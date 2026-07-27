@@ -5,7 +5,7 @@
  * separate entry points, one transport each — see the note on `ApiGatewayV2LambdaHandler`.)
  */
 import { describe, expect, it } from 'vitest';
-import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { BenzeneResult } from '@benzene/results';
@@ -13,15 +13,14 @@ import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { httpEndpoint } from '@benzene/http';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   addApiGatewayV2,
   ApiGatewayV2Application,
   ApiGatewayV2Context,
   useApiGatewayV2,
 } from '@benzene/aws-lambda-api-gateway';
-import { httpBuilder } from '@benzene/testing';
-import { asApiGatewayV2Request } from '@benzene/aws-lambda-testing';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
+import { asApiGatewayV2Request, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 class Order {
   orderId?: string;
@@ -44,22 +43,29 @@ class CreateOrderHandler implements IMessageHandler<Order, OrderCreated> {
   }
 }
 
-const context = {} as Context;
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) — the exact shape an
+// adopter copies.
+class ApiGatewayV2StartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-function v2Entry() {
-  return new InlineAwsLambdaStartUp()
-    .configureServices((services) => addBenzene(services))
-    .configure((app) => useApiGatewayV2(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
-    .build();
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useApiGatewayV2(app, (api) => useMessageHandlers(api, CreateOrderHandler));
+  }
 }
 
-describe('ApiGatewayV2Pipeline', () => {
+function v2Host() {
+  return benzeneTestHost(ApiGatewayV2StartUp).buildAwsLambdaHost();
+}
+
+describe('ApiGatewayV2Pipeline (via the benzeneTestHost harness)', () => {
   it('routes an HTTP API v2 request to a decorated handler and returns 200 with the serialized body', async () => {
     handled.length = 0;
-    const response = (await v2Entry().functionHandlerAsync(
+    const response = await v2Host().sendEventAsync<{ statusCode: number; body: string }>(
       asApiGatewayV2Request(httpBuilder('POST', '/orders', { orderId: '42' })),
-      context,
-    )) as { statusCode: number; body: string };
+    );
 
     expect(handled).toEqual(['42']);
     expect(response.statusCode).toBe(200);
@@ -81,7 +87,7 @@ describe('ApiGatewayV2Pipeline', () => {
       isBase64Encoded: true,
     };
 
-    const response = (await v2Entry().functionHandlerAsync(event, context)) as { statusCode: number };
+    const response = await v2Host().sendEventAsync<{ statusCode: number }>(event);
 
     expect(handled).toEqual(['99']); // handler saw the decoded body, not base64
     expect(response.statusCode).toBe(200);
@@ -104,7 +110,7 @@ describe('ApiGatewayV2Pipeline', () => {
     };
 
     // Routes and handles fine with cookies present (the cookie header is folded in by the v2 context).
-    const response = (await v2Entry().functionHandlerAsync(event, context)) as { statusCode: number };
+    const response = await v2Host().sendEventAsync<{ statusCode: number }>(event);
 
     expect(handled).toEqual(['1']);
     expect(response.statusCode).toBe(200);

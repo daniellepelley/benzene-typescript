@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { APIGatewayAuthorizerResult, Context } from 'aws-lambda';
+import { APIGatewayAuthorizerResult } from 'aws-lambda';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { addBenzene } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   ApiGatewayCustomAuthorizerApplication,
   ApiGatewayCustomAuthorizerContext,
   useApiGatewayCustomAuthorizer,
   useCustomAuthorizer,
 } from '@benzene/aws-lambda-api-gateway';
-import { httpBuilder } from '@benzene/testing';
-import { asApiGatewayCustomAuthorizerEvent } from '@benzene/aws-lambda-testing';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
+import { asApiGatewayCustomAuthorizerEvent, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# custom-authorizer pipeline tests
@@ -20,8 +19,6 @@ import { asApiGatewayCustomAuthorizerEvent } from '@benzene/aws-lambda-testing';
  * principal, both directly (`ApiGatewayCustomAuthorizerApplication`) and via the outer AWS Lambda entry
  * point (`useApiGatewayCustomAuthorizer`).
  */
-
-const fakeLambdaContext = {} as Context;
 
 function createRequest(apiId = 'some-id') {
   return asApiGatewayCustomAuthorizerEvent(httpBuilder('GET', '/example', { value: 'some-message' }), {
@@ -79,13 +76,17 @@ describe('ApiGatewayCustomAuthorizerApplication (direct)', () => {
   });
 });
 
-describe('ApiGatewayCustomAuthorizer (via AwsLambdaEntryPoint)', () => {
+describe('ApiGatewayCustomAuthorizer (via the benzeneTestHost harness)', () => {
   it('routes an authorizer event through useApiGatewayCustomAuthorizer and returns the policy', async () => {
     let seen: ApiGatewayCustomAuthorizerContext | undefined;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) =>
+    // The startup closes over `seen`, so it is declared inside the test.
+    class CustomAuthorizerStartUp implements AwsLambdaStartUp {
+      configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+        addBenzene(services);
+      };
+
+      configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
         useApiGatewayCustomAuthorizer(app, (message) =>
           useCustomAuthorizer(message, (request) => {
             expect(request.requestContext.apiId).toBe('some-id');
@@ -93,14 +94,12 @@ describe('ApiGatewayCustomAuthorizer (via AwsLambdaEntryPoint)', () => {
           }).onResponse((context) => {
             seen = context;
           }),
-        ),
-      )
-      .build();
+        );
+      }
+    }
 
-    const response = (await entryPoint.functionHandlerAsync(
-      createRequest(),
-      fakeLambdaContext,
-    )) as APIGatewayAuthorizerResult;
+    const host = benzeneTestHost(CustomAuthorizerStartUp).buildAwsLambdaHost();
+    const response = await host.sendEventAsync<APIGatewayAuthorizerResult>(createRequest());
 
     expect(response.principalId).toBe('some-id');
     expect(response.policyDocument.Version).toBe('some-version');
@@ -108,18 +107,21 @@ describe('ApiGatewayCustomAuthorizer (via AwsLambdaEntryPoint)', () => {
   });
 
   it('defers (event unrecognized) when the request has no API ID', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) =>
+    class CustomAuthorizerStartUp implements AwsLambdaStartUp {
+      configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+        addBenzene(services);
+      };
+
+      configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
         useApiGatewayCustomAuthorizer(app, (message) =>
           useCustomAuthorizer(message, () => okPolicy('some-id')),
-        ),
-      )
-      .build();
+        );
+      }
+    }
+
+    const host = benzeneTestHost(CustomAuthorizerStartUp).buildAwsLambdaHost();
 
     // apiId empty -> canHandle is false -> no route claims it -> the entry point reports "not recognized".
-    await expect(
-      entryPoint.functionHandlerAsync(createRequest(''), fakeLambdaContext),
-    ).rejects.toThrow(/not been recognized/);
+    await expect(host.sendEventAsync(createRequest(''))).rejects.toThrow(/not been recognized/);
   });
 });

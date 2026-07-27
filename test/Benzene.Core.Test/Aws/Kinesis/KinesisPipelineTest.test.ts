@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Context, KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
+import { KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -13,13 +13,14 @@ import {
   usePresetTopic,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import {
   addKinesis,
   KinesisApplication,
   KinesisMessageContext,
   useKinesis,
 } from '@benzene/aws-lambda-kinesis';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
+import { asKinesis, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# Kinesis tests, adapted to this port's PER-RECORD FAN-OUT model (the C#
@@ -74,25 +75,32 @@ function createKinesisEvent(
   return { Records: records.map((r) => createKinesisRecord(r.sequenceNumber, r.body)) };
 }
 
-const fakeLambdaContext = {} as Context;
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asKinesis`
+// event builder — the exact shape an adopter copies. A Kinesis record carries no topic, so the pipeline
+// routes via `usePresetTopic` and the builder's topic is a placeholder.
+class KinesisStartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('KinesisPipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useKinesis(app, (kinesis) => {
+      usePresetTopic(kinesis, 'create-order');
+      useMessageHandlers(kinesis, CreateOrderHandler);
+    });
+  }
+}
+
+describe('KinesisPipeline (via the benzeneTestHost harness)', () => {
   it('routes a base64 Kinesis record to a preset-topic handler (fire-and-forget)', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) =>
-        useKinesis(app, (kinesis) => {
-          usePresetTopic(kinesis, 'create-order');
-          useMessageHandlers(kinesis, CreateOrderHandler);
-        }),
-      )
-      .build();
+    const host = benzeneTestHost(KinesisStartUp).buildAwsLambdaHost();
 
-    const event = createKinesisEvent([{ sequenceNumber: '1', body: { orderId: '42' } }]);
-
-    const response = await entryPoint.functionHandlerAsync(event, fakeLambdaContext);
+    const response = await host.sendEventAsync(
+      asKinesis(messageBuilder('create-order', { orderId: '42' })),
+    );
 
     // The handler ran with the base64-decoded body...
     expect(handled).toEqual(['42']);
@@ -101,19 +109,9 @@ describe('KinesisPipeline (via AwsLambdaEntryPoint)', () => {
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) =>
-        useKinesis(app, (kinesis) => {
-          usePresetTopic(kinesis, 'create-order');
-          useMessageHandlers(kinesis, CreateOrderHandler);
-        }),
-      )
-      .build();
+    const host = benzeneTestHost(KinesisStartUp).buildAwsLambdaHost();
 
-    await expect(entryPoint.functionHandlerAsync({ foo: 'bar' }, fakeLambdaContext)).rejects.toThrow(
-      BenzeneException,
-    );
+    await expect(host.sendEventAsync({ foo: 'bar' })).rejects.toThrow(BenzeneException);
   });
 });
 
