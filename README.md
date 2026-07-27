@@ -48,6 +48,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions + health-check deferred) |
+| `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
@@ -828,6 +829,27 @@ Ported (with tests):
   `@azure/service-bus` receiver-option equivalent, accepted but not plumbed); and the peek-based dependency
   health-check auto-wiring (no Azure Service Bus health-check package ported yet). The emulator integration
   test is replaced by unit tests that drive the `receiver.subscribe` push path over a fake client/receiver.
+- Standalone Event Hubs consumer (`@benzene/azure-event-hub`): the non-Functions Event Hubs **consumer**
+  worker — `useEventHub(workerStartup, config, clientFactory, action)` registers a `BenzeneEventHubWorker`
+  (`IBenzeneWorker`) that consumes a hub and runs each event through an `EventHubConsumerContext` pipeline,
+  tagged transport `"event-hub"`, checkpointing per partition every `checkpointInterval` successfully handled
+  events. `raiseOnFailureStatus` (default on) escalates a non-exception failure result into a
+  not-checkpointed outcome (the partition doesn't advance past it); `catchHandlerExceptions` (default on)
+  logs-and-skips vs. stops-the-worker on an unhandled throw. Sibling of the trigger-delivered
+  `@benzene/azure-function-event-hub`; intended for `@benzene/self-host` workers. Divergences: **the SDK
+  processor model** — .NET's `EventProcessorClient` (`ProcessEventAsync`/`ProcessErrorAsync`/
+  `PartitionInitializingAsync`) maps to a JS `EventHubConsumerClient` (built with a `CheckpointStore` by the
+  caller's factory) whose `subscribe({ processEvents, processError }, { startPosition })` provides automatic
+  partition load-balancing, per-partition sequential dispatch, and checkpointing via
+  `PartitionContext.updateCheckpoint(event)`; the per-event `ProcessEventAsync` becomes a per-partition
+  `processEvents` batch handler (still sequential per partition, so the checkpoint counter keeps the .NET
+  no-same-partition-race invariant), and `DefaultStartingPosition` (`PartitionInitializingAsync`) collapses to
+  the `subscribe` `startPosition` option. `CancellationToken` → optional `AbortSignal`; the
+  stop-on-unhandled-exception path defers `subscription.close()` via `queueMicrotask` (the JS analogue of the
+  C# background `Task.Run`, avoiding a close-inside-handler deadlock); config class → interface with
+  `withEventHubConfigDefaults`; `EventProcessorClient` → `EventHubConsumerClient` (the factory's created type,
+  interface name kept). The emulator integration test is replaced by unit tests that drive the captured
+  `processEvents` handler over a fake client with a checkpoint-recording `PartitionContext`.
 - Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
   `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
   idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable
