@@ -38,7 +38,7 @@ export class KinesisApplication implements IMiddlewareApplication<KinesisStreamE
         try {
           await this.pipeline.handleAsync(context, scope);
         } finally {
-          scope.dispose();
+          await scope.disposeAsync();
         }
       });
 

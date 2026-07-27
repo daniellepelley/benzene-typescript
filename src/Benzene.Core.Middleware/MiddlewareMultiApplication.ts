@@ -26,7 +26,7 @@ export class MiddlewareMultiApplicationWithResult<TEvent, TContext, TResult>
         await this.pipeline.handleAsync(context, scope);
         return this.resultMapper(context);
       } finally {
-        scope.dispose();
+        await scope.disposeAsync();
       }
     });
 
@@ -47,7 +47,7 @@ export class MiddlewareMultiApplication<TEvent, TContext> implements IMiddleware
       try {
         await this.pipeline.handleAsync(context, scope);
       } finally {
-        scope.dispose();
+        await scope.disposeAsync();
       }
     });
 

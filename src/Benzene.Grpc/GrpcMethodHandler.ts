@@ -71,7 +71,7 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
         .convertResponse<TResponse>(grpcContext.responsePayload);
       return { response, trailer };
     } finally {
-      resolver.dispose();
+      await resolver.disposeAsync();
     }
   }
 
@@ -87,7 +87,7 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
       await writeAll(items, call);
       return trailer;
     } finally {
-      resolver.dispose();
+      await resolver.disposeAsync();
     }
   }
 
@@ -105,7 +105,7 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
         .convertResponse<TResponse>(grpcContext.responsePayload);
       return { response, trailer };
     } finally {
-      resolver.dispose();
+      await resolver.disposeAsync();
     }
   }
 
@@ -122,7 +122,7 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
       await writeAll(items, call);
       return trailer;
     } finally {
-      resolver.dispose();
+      await resolver.disposeAsync();
     }
   }
 

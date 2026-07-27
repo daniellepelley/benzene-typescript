@@ -36,7 +36,6 @@ export function fakeResolver(
       /* nothing to dispose */
     },
     disposeAsync(): Promise<void> {
-      /* nothing to dispose */
       return Promise.resolve();
     },
   };

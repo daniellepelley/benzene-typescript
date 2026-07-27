@@ -82,7 +82,7 @@ export class QueueStorageBatchApplication implements IMiddlewareApplication<Queu
           try {
             await this.pipeline.handleAsync(context, scope);
           } finally {
-            scope.dispose();
+            await scope.disposeAsync();
           }
 
           if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
@@ -103,7 +103,7 @@ export class QueueStorageBatchApplication implements IMiddlewareApplication<Queu
               `Processing Queue Storage message ${context.message.messageId ?? '<none>'} failed`,
             );
           } finally {
-            loggingScope.dispose();
+            await loggingScope.disposeAsync();
           }
         }
       },

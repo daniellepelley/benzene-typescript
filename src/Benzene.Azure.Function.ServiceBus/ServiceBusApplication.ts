@@ -77,7 +77,7 @@ export class ServiceBusBatchApplication implements IMiddlewareApplication<Servic
           try {
             await this.pipeline.handleAsync(context, scope);
           } finally {
-            scope.dispose();
+            await scope.disposeAsync();
           }
 
           if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
@@ -98,7 +98,7 @@ export class ServiceBusBatchApplication implements IMiddlewareApplication<Servic
               `Processing Service Bus message ${String(context.message.messageId)} failed`,
             );
           } finally {
-            loggingScope.dispose();
+            await loggingScope.disposeAsync();
           }
         }
       });

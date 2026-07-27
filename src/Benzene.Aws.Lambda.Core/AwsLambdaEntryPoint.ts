@@ -44,7 +44,7 @@ export class AwsLambdaEntryPoint implements IAwsLambdaEntryPoint {
         'The event type has not been recognized. It is possible that there isn\'t a pipeline set up that can handle this event type, or the JSON for the event is not complete, for instance the EventSource field is missing',
       );
     } finally {
-      scope.dispose();
+      await scope.disposeAsync();
     }
   }
 

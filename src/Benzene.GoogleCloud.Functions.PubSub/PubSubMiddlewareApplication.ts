@@ -49,7 +49,7 @@ export class PubSubMiddlewareApplication implements IMiddlewareApplication<Messa
       try {
         await this.pipeline.handleAsync(context, scope);
       } finally {
-        scope.dispose();
+        await scope.disposeAsync();
       }
 
       if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
@@ -67,7 +67,7 @@ export class PubSubMiddlewareApplication implements IMiddlewareApplication<Messa
           NullLogger.instance;
         logger.logError(ex, `Processing Pub/Sub message ${messageIdOf(context)} failed`);
       } finally {
-        loggingScope.dispose();
+        await loggingScope.disposeAsync();
       }
     }
   }

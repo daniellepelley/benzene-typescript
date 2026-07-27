@@ -108,7 +108,7 @@ export class BenzeneEventHubWorker implements IBenzeneWorker {
             `Processing event with sequence number ${event.sequenceNumber} on partition ${context.partitionId} failed`,
           );
         } finally {
-          loggingScope.dispose();
+          await loggingScope.disposeAsync();
         }
 
         if (!this.config.catchHandlerExceptions) {
