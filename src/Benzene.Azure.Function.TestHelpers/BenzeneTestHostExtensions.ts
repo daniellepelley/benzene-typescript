@@ -11,15 +11,18 @@
  * {@link AzureFunctionBenzeneTestHost}.
  */
 import { IAzureFunctionAppBuilder, AzureFunctionAppBuilder } from '@benzene/azure-function-core';
-import { BenzeneStartUp, BenzeneTestHostBuilder } from '@benzene/testing';
+import { BenzeneStartUpOf, BenzeneTestHostBuilder } from '@benzene/testing';
 import { AzureFunctionBenzeneTestHost } from './AzureFunctionBenzeneTestHost';
 
 /**
- * The startup shape an Azure Functions test boots from: a {@link BenzeneStartUp} whose `configure`
- * receives the `IAzureFunctionAppBuilder` (wire triggers on it with `useAzureHttp`, `useServiceBus`, …).
- * Pins `TAppBuilder` so a developer never writes the generic by hand.
+ * The legacy startup shape an Azure Functions test boots from: a startup whose `configure` receives the
+ * `IAzureFunctionAppBuilder` directly (wire triggers on it with `useAzureHttp`, `useServiceBus`, …). Pins
+ * `TAppBuilder` so a developer never writes the generic by hand.
+ *
+ * @deprecated Implement the non-generic `BenzeneStartUp` from `@benzene/testing`. The Azure host-neutral
+ * app-builder overloads are a follow-up to the AWS-first unification.
  */
-export type AzureFunctionStartUp = BenzeneStartUp<IAzureFunctionAppBuilder>;
+export type AzureFunctionStartUp = BenzeneStartUpOf<IAzureFunctionAppBuilder>;
 
 declare module '@benzene/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {

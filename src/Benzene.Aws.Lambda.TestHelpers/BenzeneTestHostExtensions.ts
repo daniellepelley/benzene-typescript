@@ -17,15 +17,19 @@
 import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
 import { AwsEventStreamContext, AwsLambdaEntryPoint } from '@benzene/aws-lambda-core';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneStartUp, BenzeneTestHostBuilder } from '@benzene/testing';
+import { BenzeneStartUpOf, BenzeneTestHostBuilder } from '@benzene/testing';
 import { AwsLambdaBenzeneTestHost } from './AwsLambdaBenzeneTestHost';
 
 /**
- * The startup shape an AWS Lambda test boots from: a {@link BenzeneStartUp} whose `configure` receives the
- * `AwsEventStreamContext` pipeline builder (wire transports on it with `useApiGateway`, `useSqs`, …). Pins
- * `TAppBuilder` so a developer never writes the generic by hand.
+ * The legacy startup shape an AWS Lambda test boots from: a startup whose `configure` receives the
+ * `AwsEventStreamContext` pipeline builder directly (wire transports on it with `useApiGateway`, `useSqs`,
+ * …). Pins `TAppBuilder` so a developer never writes the generic by hand.
+ *
+ * @deprecated Implement the non-generic `BenzeneStartUp` from `@benzene/testing` and select the transport
+ * inside `configure` with `useAwsLambda(app, aws => …)`. This alias remains for legacy AWS test startups
+ * during the migration.
  */
-export type AwsLambdaStartUp = BenzeneStartUp<IMiddlewarePipelineBuilder<AwsEventStreamContext>>;
+export type AwsLambdaStartUp = BenzeneStartUpOf<IMiddlewarePipelineBuilder<AwsEventStreamContext>>;
 
 declare module '@benzene/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {

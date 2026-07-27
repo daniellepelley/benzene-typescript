@@ -15,6 +15,7 @@
  *   (`buildAwsLambdaHost` / `buildAzureFunctionApp`), keeping the neutral core free of cloud imports.
  */
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import {
   BenzeneConfiguration,
@@ -27,26 +28,44 @@ import {
  * `BenzeneStartUp`. A developer's real startup implements it: `configureServices` registers the service
  * graph and `configure` wires the transport pipeline(s), both handed the merged {@link BenzeneConfiguration}.
  *
- * It is generic over `TAppBuilder` because — unlike the .NET reference, whose transports all share the
- * `IBenzeneApplicationBuilder` generic-host base — the TypeScript port has not yet unified the per-transport
- * application builders (that host bootstrap is deferred; see the README). So an AWS startup's `configure`
- * takes the AWS pipeline builder and an Azure startup's takes the Azure app builder. The convenience aliases
- * `AwsLambdaStartUp` / `AzureFunctionStartUp` in the transport testing packages pin `TAppBuilder`, so a
- * developer never writes the generic by hand.
+ * `configure` receives one {@link IBenzeneApplicationBuilder} — the unified, non-generic app builder,
+ * exactly like .NET — and the transport is chosen *inside* `configure` by which verb you call
+ * (`useAwsLambda(app, aws => …)`, `useWorker(app, …)`). This is what lets a single `StartUp` be built for
+ * any platform and read top-to-bottom, and removes the per-transport generic a developer used to write.
  */
-export interface BenzeneStartUp<TAppBuilder> {
+export interface BenzeneStartUp {
   /** Optional: produces the configuration threaded into `configureServices`/`configure`. */
   getConfiguration?(): BenzeneConfiguration;
 
   /** Registers the service graph. Port of C# `ConfigureServices`. */
   configureServices(services: IBenzeneServiceContainer, configuration: BenzeneConfiguration): void;
 
-  /** Wires the transport pipeline(s). Port of C# `Configure`. */
+  /** Wires the transport pipeline(s) on the unified app builder. Port of C# `Configure`. */
+  configure(app: IBenzeneApplicationBuilder, configuration: BenzeneConfiguration): void;
+}
+
+/**
+ * The legacy, transport-generic startup contract, where `configure` receives the per-transport pipeline
+ * builder directly (an AWS startup's takes the AWS pipeline builder, an Azure startup's the Azure app
+ * builder). Kept so existing `AwsLambdaStartUp` / `AzureFunctionStartUp` consumers keep compiling while
+ * they migrate to the non-generic {@link BenzeneStartUp}.
+ *
+ * @deprecated Implement the non-generic {@link BenzeneStartUp}; `configure` now receives an
+ * `IBenzeneApplicationBuilder` and the transport is selected with `useAwsLambda(app, …)` etc. This alias
+ * is removed once the AWS test-startup migration completes.
+ */
+export interface BenzeneStartUpOf<TAppBuilder> {
+  getConfiguration?(): BenzeneConfiguration;
+  configureServices(services: IBenzeneServiceContainer, configuration: BenzeneConfiguration): void;
   configure(app: TAppBuilder, configuration: BenzeneConfiguration): void;
 }
 
-/** A no-argument constructor for a {@link BenzeneStartUp} — the port of C#'s `where TStartUp : new()`. */
-export type BenzeneStartUpConstructor<TAppBuilder> = new () => BenzeneStartUp<TAppBuilder>;
+/**
+ * A no-argument constructor for a startup — the port of C#'s `where TStartUp : new()`. Accepts both the
+ * non-generic {@link BenzeneStartUp} (whose `TAppBuilder` is `IBenzeneApplicationBuilder`) and a legacy
+ * {@link BenzeneStartUpOf} during the transition.
+ */
+export type BenzeneStartUpConstructor<TAppBuilder> = new () => BenzeneStartUpOf<TAppBuilder>;
 
 /**
  * What a transport's `build*Host` specialization receives from {@link BenzeneTestHostBuilder.build}: the
@@ -55,7 +74,7 @@ export type BenzeneStartUpConstructor<TAppBuilder> = new () => BenzeneStartUp<TA
  * .NET `Build<THost>(factory)` hands its factory.
  */
 export interface BenzeneTestHostContext<TAppBuilder> {
-  readonly startUp: BenzeneStartUp<TAppBuilder>;
+  readonly startUp: BenzeneStartUpOf<TAppBuilder>;
   readonly container: IBenzeneServiceContainer;
   readonly configuration: BenzeneConfiguration;
 }
