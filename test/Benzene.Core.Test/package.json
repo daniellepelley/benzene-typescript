@@ -50,6 +50,7 @@
     "@benzene/health-checks-tcp": "0.1.0",
     "@benzene/health-checks-disk": "0.1.0",
     "@benzene/grpc": "0.1.0",
+    "@benzene/grpc-client": "0.1.0",
     "@benzene/google-cloud-functions-core": "0.1.0",
     "@benzene/google-cloud-functions-http": "0.1.0",
     "@benzene/google-cloud-functions-pubsub": "0.1.0",

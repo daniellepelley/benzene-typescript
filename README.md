@@ -40,7 +40,8 @@ Mirrors the .NET repository:
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
 | `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
-| `src/Benzene.Grpc` | `@benzene/grpc` | `Benzene.Grpc` (core **unary** server bridge, on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; streaming, the outbound client + protobuf-descriptor/rich-error specifics deferred) |
+| `src/Benzene.Grpc` | `@benzene/grpc` | `Benzene.Grpc` (core **unary** server bridge, on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; streaming + protobuf-descriptor/rich-error specifics deferred — the outbound client is `@benzene/grpc-client`) |
+| `src/Benzene.Grpc.Client` | `@benzene/grpc-client` | `Benzene.Grpc.Client` (outbound **unary** gRPC message client, on `@grpc/grpc-js`; caller supplies the grpc-js `Client`; reverse status mapper, JSON marshaller default; health check, streaming + inbound-deadline/cancellation propagation deferred) |
 | `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
 | `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
 | `src/Benzene.Aws.Sqs` | `@benzene/aws-sqs` | `Benzene.Aws.Sqs` (standalone SQS polling consumer; `IAmazonSQS`→`ISqsConsumerClient` seam over aws-sdk v3) |
@@ -478,10 +479,36 @@ next to its C# counterpart:
   standalone SQS/Service Bus consumer workers wire themselves. **Deferred** (documented in `index.ts` and not
   half-built): non-unary **streaming** (server-/client-/bidirectional — the `Streaming/` folder,
   `GrpcStreamAdapter`, the three non-unary interceptor overrides; `IGrpcMethodHandler` is narrowed to
-  `handleAsync`); the outbound **client** (`Benzene.Grpc.Client`); the **ASP.NET hosting** package
+  `handleAsync`); the **ASP.NET hosting** package
   (`Benzene.Grpc.AspNet`, no JS analog); the **rich `google.rpc.Status`** error details
   (`grpc-status-details-bin` / `BadRequest` field violations — protobuf-only; the flat `benzene-status`
-  trailer *is* ported); and any gRPC **health-check** type (another package's concern).
+  trailer *is* ported); and any gRPC **health-check** type (another package's concern). The outbound
+  **client** is now ported as `@benzene/grpc-client` (next bullet).
+- **gRPC outbound client: the unary send side, on `@grpc/grpc-js`.** `@benzene/grpc-client` ports
+  `Benzene.Grpc.Client` — a `GrpcBenzeneMessageClient` (an `IBenzeneMessageClient`) that sends **unary**
+  calls through a `GrpcSendMessageContext` middleware pipeline, mirroring the Kafka/RabbitMQ send sides.
+  **Ported:** `GrpcSendMessageContext`, `GrpcContextConverter`, `GrpcClientMiddleware`, the route registry
+  (`IGrpcClientRouteRegistry`/`GrpcClientRouteRegistry` + `IGrpcClientRoute`/`GrpcClientRoute` — topic →
+  full-method-path mapping, validated `/package.Service/Method`), the **full** `DefaultGrpcStatusReverseMapper`
+  table (grpc `status` → Benzene status, the exact inverse of the server's `DefaultGrpcStatusCodeMapper`,
+  unknown → `unexpectedError`, preferring a `benzene-status` trailer verbatim since `created`/`accepted`/…
+  all collapse to `OK` on the wire), and DI + pipeline extensions (`addGrpcClient` / `useGrpcClient` /
+  `useGrpc`). **SDK-model bends** (each also in-code JSDoc): (1) **`GrpcChannel`/`CallInvoker`/`RpcException`
+  → grpc-js `Client`/`makeUnaryRequest`/`ServiceError`** — the caller supplies the grpc-js `Client` (the
+  same caller-owns-the-transport-client shape as SQS's `SQSClient` / Kafka's `Producer` / RabbitMQ's
+  `Channel`); grpc-js reports a non-OK call by passing a `ServiceError` (`StatusObject & Error`) to the
+  unary callback rather than throwing, so the route rejects with it and `GrpcClientMiddleware`'s `try/catch`
+  captures its status + trailers exactly as .NET's `catch (RpcException)` does; the trailing `benzene-status`
+  metadata on a **successful** call arrives on the call's `status` event (the callback carries only the
+  message), which the route reads. (2) **JSON marshaller default** — grpc-js's `makeUnaryRequest` takes an
+  explicit serialize/deserialize pair and grpc-js ships no framework message type, so a route carries a
+  JSON/structural `GrpcClientMarshaller` by default (the exact analog of the server's `JsonGrpcMessageAdapter`
+  bend); a caller talking to a protobuf service passes a protobuf marshaller. **Deferred** (documented in
+  `index.ts`, not half-built): the gRPC **health check** (`GrpcHealthCheck`/`AddGrpcHealthCheck`/the
+  `healthCheck` param — the health-check domain, out of scope as for `@benzene/grpc`); non-unary **streaming**
+  client calls; and **inbound-deadline / cancellation-token propagation** (`@benzene/grpc`'s
+  `IGrpcServerCallAccessor` exposes no deadline, there is no ambient cancellation-token DI seam, and grpc-js
+  `CallOptions` has no cancellation field — an explicit deadline can still be set via `GrpcContextConverter`).
 - **Google Cloud Functions: hosted on `@google-cloud/functions-framework`.** The Google Cloud lane ports
   three .NET packages onto Node's Functions Framework, which registers named handlers rather than being
   the entry point: `functions.http(name, (req, res) => ...)` and `functions.cloudEvent(name,
