@@ -1,0 +1,22 @@
+{
+  "name": "@benzene/grpc",
+  "version": "0.1.0",
+  "description": "TypeScript port of the core unary server-side slice of Benzene.Grpc — routes gRPC unary calls into Benzene message handlers over @grpc/grpc-js",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core": "0.1.0",
+    "@benzene/core-messages": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/dependencies": "0.1.0",
+    "@benzene/results": "0.1.0",
+    "@grpc/grpc-js": "^1"
+  }
+}

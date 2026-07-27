@@ -40,6 +40,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
 | `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
+| `src/Benzene.Grpc` | `@benzene/grpc` | `Benzene.Grpc` (core **unary** server bridge, on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; streaming, the outbound client + protobuf-descriptor/rich-error specifics deferred) |
 | `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
 | `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
 | `src/Benzene.Aws.Sqs` | `@benzene/aws-sqs` | `Benzene.Aws.Sqs` (standalone SQS polling consumer; `IAmazonSQS`→`ISqsConsumerClient` seam over aws-sdk v3) |
@@ -435,6 +436,37 @@ next to its C# counterpart:
   take their third-party library as a real runtime dependency (that is their whole purpose) — the
   "no runtime dependencies outside the workspace" rule applies to the core port, not to these
   deliberately library-specific adapters.
+- **gRPC: the unary server bridge, hosted on `@grpc/grpc-js`.** `@benzene/grpc` ports the **core unary
+  server-side slice** of `Benzene.Grpc` — enough to route gRPC unary calls into Benzene message handlers,
+  no more. **Ported:** `GrpcContext` (over grpc-js `ServerUnaryCall`), the topic/body/headers getters +
+  result setter + `GrpcRequestMapper`, the `@grpcMethod('/pkg.Svc/Method')` decorator + `GrpcMethodDefinition`
+  / `ReflectionGrpcMethodFinder` / `GrpcRouteFinder` (case-insensitive method-path → topic, built once), the
+  unary `GrpcMethodHandler` (+ factory/accessor) that runs the shared `IMiddlewarePipeline<GrpcContext>` and
+  translates the result, the **full** `DefaultGrpcStatusCodeMapper` table (Benzene status → grpc `status`,
+  unknown → `INTERNAL`), `IGrpcServerCallAccessor`, `addGrpcMessageHandlers`, and the `useGrpc` host bridge.
+  **SDK-model bends** (each also in-code JSDoc): (1) **`Server` replaces both the interceptor and the ASP.NET
+  host** — .NET splits a `Grpc.Core.Interceptors.Interceptor` (`BenzeneInterceptor`) from `Benzene.Grpc.AspNet`
+  hosting glue because ASP.NET activates the interceptor in a DI container separate from the pipeline-building
+  one; Node has neither, so the `@grpc/grpc-js` `Server` *is* the host and one `GrpcBenzeneBridge` (from
+  `useGrpc`) is registered directly as its method handler — `bridge.toUnaryHandler(path)` yields a grpc-js
+  `handleUnaryCall`. (2) **`ServerCallContext` → `ServerUnaryCall`** — grpc-js hands the handler one object
+  that is both the call context (`metadata`, `cancelled`, `getDeadline()`) *and* the request (`.request`), so
+  the port folds .NET's `(request, ServerCallContext)` pair into it; `RpcException` → a `ServerErrorResponse`-
+  shaped `GrpcBenzeneError`; `CancellationToken` → the call's `cancelled` flag on `IGrpcServerCallAccessor`. (3)
+  **JSON/structural message adapter** — `ProtobufJsonGrpcMessageAdapter` needs generated protobuf *classes*
+  (reflected `Descriptor` + protobuf `JsonParser`) to parse into; `@grpc/grpc-js` ships no framework message
+  type and hands the handler an already-deserialized plain object, so `JsonGrpcMessageAdapter` is a
+  structural pass-through (= .NET's "already the type ⇒ zero-copy" fast path; a protobuf codec is wired into
+  the grpc-js `Server` via `@grpc/proto-loader` when needed). (4) **wiring** — `useGrpc` uses `addBenzene` +
+  `addGrpcMessageHandlers` **without** `addBenzeneMessage` (under type erasure its `BenzeneMessageGetter`
+  would hijack the single `IMessageGetter` token and route every call to `<missing>`), exactly as the
+  standalone SQS/Service Bus consumer workers wire themselves. **Deferred** (documented in `index.ts` and not
+  half-built): non-unary **streaming** (server-/client-/bidirectional — the `Streaming/` folder,
+  `GrpcStreamAdapter`, the three non-unary interceptor overrides; `IGrpcMethodHandler` is narrowed to
+  `handleAsync`); the outbound **client** (`Benzene.Grpc.Client`); the **ASP.NET hosting** package
+  (`Benzene.Grpc.AspNet`, no JS analog); the **rich `google.rpc.Status`** error details
+  (`grpc-status-details-bin` / `BadRequest` field violations — protobuf-only; the flat `benzene-status`
+  trailer *is* ported); and any gRPC **health-check** type (another package's concern).
 - **Type → JSON Schema (payload schemas from validation, not reflection).** `Benzene.Schema.OpenApi`
   derives a topic's request/response JSON Schema by *reflecting* over the CLR type and then enriches it
   with FluentValidation rules via `OpenApiValidationSchemaBuilder`. TypeScript erases types, so there is
