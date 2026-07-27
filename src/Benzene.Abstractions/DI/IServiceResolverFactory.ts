@@ -12,8 +12,12 @@ export interface IServiceResolverFactory {
   /** Port of C# `IDisposable.Dispose()`; releases synchronously-disposable singletons. */
   dispose(): void;
 
-  /** Port of C# `IAsyncDisposable.DisposeAsync()`; awaits async-disposable singletons at shutdown. */
-  disposeAsync(): Promise<void>;
+  /**
+   * Port of C# `IAsyncDisposable.DisposeAsync()`; awaits async-disposable singletons at shutdown.
+   * Optional, mirroring .NET (the interface is `IDisposable`; async disposal is feature-detected).
+   * Benzene's built-in factories implement it; external DI adapters need not.
+   */
+  disposeAsync?(): Promise<void>;
 }
 
 export const IServiceResolverFactory: ServiceToken<IServiceResolverFactory> =

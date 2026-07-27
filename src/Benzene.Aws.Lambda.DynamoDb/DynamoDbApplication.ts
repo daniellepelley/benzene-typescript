@@ -42,7 +42,11 @@ export class DynamoDbApplication
           setCurrentTransport.setTransport(TransportNames.DynamoDb);
           await this.pipeline.handleAsync(context, scope);
         } finally {
-          await scope.disposeAsync();
+          if (scope.disposeAsync) {
+            await scope.disposeAsync();
+          } else {
+            scope.dispose();
+          }
         }
       } catch (ex) {
         const loggingScope = serviceResolverFactory.createScope();
@@ -55,7 +59,11 @@ export class DynamoDbApplication
             `Processing DynamoDB stream record ${record.dynamodb?.SequenceNumber} failed`,
           );
         } finally {
-          await loggingScope.disposeAsync();
+          if (loggingScope.disposeAsync) {
+            await loggingScope.disposeAsync();
+          } else {
+            loggingScope.dispose();
+          }
         }
 
         context.isSuccessful = false;

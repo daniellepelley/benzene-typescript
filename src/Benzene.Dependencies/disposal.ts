@@ -30,7 +30,7 @@ export function isDisposable(value: unknown): value is DisposableLike {
   );
 }
 
-export function isAsyncDisposable(value: unknown): boolean {
+export function isAsyncDisposable(value: unknown): value is AsyncDisposableLike {
   if (typeof value !== 'object' || value === null) {
     return false;
   }

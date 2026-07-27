@@ -365,15 +365,29 @@ next to its C# counterpart:
   is kept. One deliberate rename: `IDeferredRequestMapper`/`DeferredRequestMapper` →
   `IRequestMapperThunk`/`RequestMapperThunk` — a zero-arg deferred producer is idiomatically a
   "thunk" in TypeScript; same shape, TS-native spelling.
-- **Async scope disposal.** `IServiceResolver`/`IServiceResolverFactory` expose `disposeAsync()`
-  alongside `dispose()`, mirroring .NET's `AsyncServiceScope` (which implements both `IDisposable`
-  and `IAsyncDisposable`). A scope disposes its instances in reverse (LIFO) order; `disposeAsync()`
-  awaits any instance exposing `disposeAsync()` / `Symbol.asyncDispose` — an explicit method rather
-  than `await using`, since the packages target ES2022. This is what lets a scoped
-  [`IUnitOfWork`](docs/cookbooks/unit-of-work.md) commit/roll back a per-request transaction. Note:
-  `IUnitOfWork` + `UnitOfWorkMiddleware` are a TypeScript-first addition (no direct C# counterpart
-  yet — parity is an open question), and adding `disposeAsync()` to the two DI interfaces is a
-  breaking change for anyone implementing them directly (the built-in resolvers already do).
+- **Async scope disposal.** `IServiceResolver`/`IServiceResolverFactory` expose an **optional**
+  `disposeAsync?()` alongside the required `dispose()`, mirroring .NET's `AsyncServiceScope` (whose
+  interface is `IDisposable`, with async disposal feature-detected rather than mandated). Making it
+  optional keeps fidelity with .NET and means external DI-adapter implementers are not forced to add
+  it — Benzene's built-in resolvers/factories (`DefaultServiceResolver{,Factory}`,
+  `NullServiceResolver{,Factory}`) all implement it, but a hand-rolled `IServiceResolver` need not.
+  Callers holding an interface-typed scope therefore **feature-detect** before awaiting: the migrated
+  per-request transport teardowns use an inline
+  `if (scope.disposeAsync) { await scope.disposeAsync(); } else { scope.dispose(); }` (the
+  `disposeInstanceAsync` helper in `@benzene/dependencies` does the same, preferring
+  `disposeAsync()` / `Symbol.asyncDispose` and falling back to `dispose()`). A scope disposes its
+  instances in reverse (LIFO) order; `disposeAsync()` awaits any instance exposing `disposeAsync()` /
+  `Symbol.asyncDispose` — an explicit method rather than `await using`, since the packages target
+  ES2022. This is what lets a scoped [`IUnitOfWork`](docs/cookbooks/unit-of-work.md) commit/roll back
+  a per-request transaction. Synchronous `dispose()` cannot await an async-only disposable, so it
+  skips one and emits a one-time `console.warn` naming the situation rather than silently dropping it.
+  Note: `IUnitOfWork` + `UnitOfWorkMiddleware` are a TypeScript-first addition (no direct C#
+  counterpart yet — parity is an open question). They are deliberately placed in
+  `@benzene/abstractions` (`IUnitOfWork`) + `@benzene/core-middleware` (`UnitOfWorkMiddleware`)
+  rather than a new `@benzene/unit-of-work` package, because .NET has no `Benzene.UnitOfWork` project
+  to mirror — revisit and split them out if one ever ships. The captive-dependency and async-skip DI
+  diagnostics use `console.warn` (not an injected logger) because the resolver underlies logger
+  resolution itself, so it cannot depend on a logger being resolvable.
 - **Shared literals → constants.** Values that recur across packages are centralized in one `as const`
   object rather than repeated inline, so a rename is a single-point edit. The canonical case is
   **`TransportNames`** (`@benzene/abstractions-message-handlers`, faithfully ported from the C# class of

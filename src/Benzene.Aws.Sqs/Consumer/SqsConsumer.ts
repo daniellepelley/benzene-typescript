@@ -111,7 +111,11 @@ export class SqsConsumer implements IBenzeneWorker {
                   `Failed to delete ${failed.length} handled SQS message(s) from queue ${this.config.queueUrl}; they will be redelivered: ${failed.map((x) => x.Id).join(', ')}`,
                 );
               } finally {
-                await loggingScope.disposeAsync();
+                if (loggingScope.disposeAsync) {
+                  await loggingScope.disposeAsync();
+                } else {
+                  loggingScope.dispose();
+                }
               }
             }
           }
@@ -130,7 +134,11 @@ export class SqsConsumer implements IBenzeneWorker {
             NullLogger.instance;
           logger.logError(error, `SQS poll iteration for queue ${this.config.queueUrl} failed`);
         } finally {
-          await loggingScope.disposeAsync();
+          if (loggingScope.disposeAsync) {
+            await loggingScope.disposeAsync();
+          } else {
+            loggingScope.dispose();
+          }
         }
 
         // The first failure retries immediately, so a lone transient blip recovers with no added

@@ -26,7 +26,11 @@ export class MiddlewareApplicationWithResult<TEvent, TContext, TResult>
       await this.pipeline.handleAsync(context, serviceResolver);
       return this.resultMapper(context);
     } finally {
-      await serviceResolver.disposeAsync();
+      if (serviceResolver.disposeAsync) {
+        await serviceResolver.disposeAsync();
+      } else {
+        serviceResolver.dispose();
+      }
     }
   }
 }
@@ -44,7 +48,11 @@ export class MiddlewareApplication<TEvent, TContext> implements IMiddlewareAppli
     try {
       await this.pipeline.handleAsync(context, serviceResolver);
     } finally {
-      await serviceResolver.disposeAsync();
+      if (serviceResolver.disposeAsync) {
+        await serviceResolver.disposeAsync();
+      } else {
+        serviceResolver.dispose();
+      }
     }
   }
 }

@@ -124,7 +124,7 @@ async function handleInScope(
   try {
     await pipeline.handleAsync({ value }, scope);
   } finally {
-    await scope.disposeAsync();
+    await scope.disposeAsync!();
   }
 }
 
@@ -184,7 +184,7 @@ describe('UnitOfWorkMiddleware', () => {
 
     // Resolve + use the unit of work but never commit/rollback (e.g. an early return, no middleware).
     (scope.getService(IUnitOfWork) as unknown as DbUnitOfWork).write('x');
-    await scope.disposeAsync();
+    await scope.disposeAsync!();
 
     expect(db.committed).toEqual([]);
     expect(db.events).toEqual(['begin', 'rollback']);

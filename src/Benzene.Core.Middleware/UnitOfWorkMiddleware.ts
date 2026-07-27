@@ -4,8 +4,10 @@ import { IMiddleware, MiddlewareFactoryFunc, NextFunc } from '@benzene/abstracti
 /** Options for {@link UnitOfWorkMiddleware}. */
 export interface UnitOfWorkOptions<TContext> {
   /**
-   * Decides whether to commit after the handler ran without throwing. Return `false` to roll back —
-   * e.g. when the pipeline produced a failure result rather than an exception. Defaults to committing
+   * Decides whether to commit, consulted **only on the non-throw path** — a handler that throws always
+   * rolls back regardless of this callback. Return `false` to roll back instead of commit, e.g. when the
+   * pipeline produced a failure result rather than an exception. It reads the already-populated
+   * `context` (and any response it carries) **synchronously**; it is not awaited. Defaults to committing
    * whenever the handler did not throw.
    */
   shouldCommit?(context: TContext): boolean;

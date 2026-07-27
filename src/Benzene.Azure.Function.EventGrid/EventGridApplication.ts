@@ -81,7 +81,11 @@ export class EventGridBatchApplication implements IMiddlewareApplication<EventGr
           try {
             await this.pipeline.handleAsync(context, scope);
           } finally {
-            await scope.disposeAsync();
+            if (scope.disposeAsync) {
+              await scope.disposeAsync();
+            } else {
+              scope.dispose();
+            }
           }
 
           if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
@@ -101,7 +105,11 @@ export class EventGridBatchApplication implements IMiddlewareApplication<EventGr
               NullLogger.instance;
             logger.logError(ex, `Processing Event Grid event ${context.event.id ?? '<none>'} failed`);
           } finally {
-            await loggingScope.disposeAsync();
+            if (loggingScope.disposeAsync) {
+              await loggingScope.disposeAsync();
+            } else {
+              loggingScope.dispose();
+            }
           }
         }
       },

@@ -54,7 +54,11 @@ export class SqsApplication implements IMiddlewareApplicationWithResult<SQSEvent
             setCurrentTransport.setTransport(TransportNames.Sqs);
             await this.pipeline.handleAsync(context, scope);
           } finally {
-            await scope.disposeAsync();
+            if (scope.disposeAsync) {
+              await scope.disposeAsync();
+            } else {
+              scope.dispose();
+            }
           }
 
           if (context.isSuccessful === false) {
@@ -68,7 +72,11 @@ export class SqsApplication implements IMiddlewareApplicationWithResult<SQSEvent
               NullLogger.instance;
             logger.logError(ex, `Processing SQS message ${context.sqsMessage.messageId} failed`);
           } finally {
-            await loggingScope.disposeAsync();
+            if (loggingScope.disposeAsync) {
+              await loggingScope.disposeAsync();
+            } else {
+              loggingScope.dispose();
+            }
           }
 
           batchItemFailures.push({ itemIdentifier: context.sqsMessage.messageId });

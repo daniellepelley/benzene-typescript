@@ -73,7 +73,11 @@ export class KafkaBatchApplication implements IMiddlewareApplication<KafkaRecord
           try {
             await this.pipeline.handleAsync(context, scope);
           } finally {
-            await scope.disposeAsync();
+            if (scope.disposeAsync) {
+              await scope.disposeAsync();
+            } else {
+              scope.dispose();
+            }
           }
 
           if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
@@ -94,7 +98,11 @@ export class KafkaBatchApplication implements IMiddlewareApplication<KafkaRecord
               `Processing Kafka record on topic ${context.kafkaEvent.topic} failed`,
             );
           } finally {
-            await loggingScope.disposeAsync();
+            if (loggingScope.disposeAsync) {
+              await loggingScope.disposeAsync();
+            } else {
+              loggingScope.dispose();
+            }
           }
         }
       });

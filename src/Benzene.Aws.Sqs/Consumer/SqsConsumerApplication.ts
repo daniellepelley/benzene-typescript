@@ -46,7 +46,11 @@ export class SqsConsumerApplication
           try {
             await this.pipeline.handleAsync(context, scope);
           } finally {
-            await scope.disposeAsync();
+            if (scope.disposeAsync) {
+              await scope.disposeAsync();
+            } else {
+              scope.dispose();
+            }
           }
           // Only an explicit success is deleted. A failure result OR an unset outcome (undefined
           // messageResult — e.g. an unroutable message) is reported as failed, so it stays on the queue

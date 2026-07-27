@@ -50,7 +50,11 @@ export class ServiceBusConsumerApplication {
       const settlement = serviceResolver.tryGetService(ServiceBusSettlementHolder);
       return new ServiceBusSettlementDecision(context.messageResult, settlement);
     } finally {
-      await serviceResolver.disposeAsync();
+      if (serviceResolver.disposeAsync) {
+        await serviceResolver.disposeAsync();
+      } else {
+        serviceResolver.dispose();
+      }
     }
   }
 }

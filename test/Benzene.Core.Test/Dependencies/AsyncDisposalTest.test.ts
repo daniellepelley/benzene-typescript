@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { serviceToken } from '@benzene/abstractions';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 
@@ -32,6 +32,10 @@ const B = serviceToken<AsyncResource>('B');
 const S = serviceToken<SyncResource>('S');
 
 describe('DI async disposal', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('disposeAsync awaits async disposers in reverse (LIFO) order', async () => {
     const log: string[] = [];
     const container = new DefaultBenzeneServiceContainer();
@@ -43,12 +47,13 @@ describe('DI async disposal', () => {
     scope.getService(A);
     scope.getService(B); // resolved after A, so torn down before A
 
-    await scope.disposeAsync();
+    await scope.disposeAsync!();
 
     expect(log).toEqual(['async:B', 'async:A']);
   });
 
   it('sync dispose() releases sync disposables but leaves async-only ones', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {}); // async-only skip warns; asserted elsewhere
     const log: string[] = [];
     const container = new DefaultBenzeneServiceContainer();
     container.addScopedFactory(S, () => new SyncResource(log, 'S'));
@@ -73,7 +78,7 @@ describe('DI async disposal', () => {
     scope.getService(S);
     scope.getService(A);
 
-    await scope.disposeAsync();
+    await scope.disposeAsync!();
 
     expect(log.sort()).toEqual(['async:A', 'sync:S']);
   });
@@ -86,10 +91,59 @@ describe('DI async disposal', () => {
     const scope = container.createServiceResolverFactory().createScope();
     scope.getService(A);
 
-    await scope.disposeAsync();
-    await scope.disposeAsync();
+    await scope.disposeAsync!();
+    await scope.disposeAsync!();
 
     expect(log).toEqual(['async:A']);
+  });
+
+  it('sync dispose() warns (once) when it skips an async-only disposable', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const log: string[] = [];
+    const container = new DefaultBenzeneServiceContainer();
+    container.addScopedFactory(A, () => new AsyncResource(log, 'A'));
+    container.addScopedFactory(B, () => new AsyncResource(log, 'B'));
+
+    const scope = container.createServiceResolverFactory().createScope();
+    scope.getService(A);
+    scope.getService(B); // two async-only resources skipped, but warned only once
+
+    scope.dispose();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = (warn.mock.calls[0][0] as string).toLowerCase();
+    expect(message).toContain('disposeasync');
+    expect(log).toEqual([]); // neither async-only resource was released
+  });
+
+  it('disposeAsync() does NOT warn about async-only disposables', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const log: string[] = [];
+    const container = new DefaultBenzeneServiceContainer();
+    container.addScopedFactory(A, () => new AsyncResource(log, 'A'));
+
+    const scope = container.createServiceResolverFactory().createScope();
+    scope.getService(A);
+
+    await scope.disposeAsync!();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(log).toEqual(['async:A']);
+  });
+
+  it('sync dispose() does NOT warn when the only disposable is synchronous', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const log: string[] = [];
+    const container = new DefaultBenzeneServiceContainer();
+    container.addScopedFactory(S, () => new SyncResource(log, 'S'));
+
+    const scope = container.createServiceResolverFactory().createScope();
+    scope.getService(S);
+
+    scope.dispose();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(log).toEqual(['sync:S']);
   });
 
   it('factory.disposeAsync awaits async-disposable singletons', async () => {
@@ -100,7 +154,7 @@ describe('DI async disposal', () => {
     const factory = container.createServiceResolverFactory();
     factory.createScope().getService(A);
 
-    await factory.disposeAsync();
+    await factory.disposeAsync!();
 
     expect(log).toEqual(['async:singleton']);
   });

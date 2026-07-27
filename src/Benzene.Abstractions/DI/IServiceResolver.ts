@@ -31,8 +31,12 @@ export interface IServiceResolver {
    * Asynchronously releases the scope and its instances, awaiting each async disposer (a scoped
    * instance's `disposeAsync()` / `Symbol.asyncDispose`). Port of C# `IAsyncDisposable.DisposeAsync()`
    * — use this at the end of a request scope so a scoped Unit of Work can commit / roll back.
+   *
+   * Optional, mirroring .NET: the interface is `IDisposable` and async disposal is feature-detected
+   * (C# `AsyncServiceScope`). Benzene's built-in resolvers implement it; external DI adapters need not.
+   * Callers holding an interface-typed value must feature-detect (see `disposeInstanceAsync`).
    */
-  disposeAsync(): Promise<void>;
+  disposeAsync?(): Promise<void>;
 }
 
 export const IServiceResolver: ServiceToken<IServiceResolver> =

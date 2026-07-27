@@ -16,7 +16,11 @@ This cookbook shows the **Unit of Work** pattern over that scope, using two piec
 ## 1. Implement `IUnitOfWork`
 
 Register it **scoped** so each request gets its own. Implement `disposeAsync()` as a safety-net
-rollback for a unit left unsettled (an early return, a bug, a path with no middleware):
+rollback for a unit left unsettled (an early return, a bug, a path with no middleware). Note this
+safety net fires **only when the scope is torn down with `disposeAsync()`** — a synchronous
+`dispose()` cannot await it, skips it, and warns (see below), so a unit left unsettled would leak.
+Every built-in transport tears its per-request scope down with `disposeAsync()`, so in practice the
+net is always armed:
 
 ```ts
 import { IUnitOfWork } from '@benzene/abstractions';
@@ -70,10 +74,14 @@ The middleware resolves the scoped `IUnitOfWork`, runs the rest of the pipeline,
 success / rolls back on throw**. Pass `unitOfWorkMiddleware({ shouldCommit: (ctx) => ... })` to roll
 back on a *failure result* (not just an exception).
 
-Because the commit/rollback is awaited **inside** the pipeline, this works on every transport today —
-it does not depend on the host tearing the scope down with `disposeAsync()`. The async scope disposal
-is the extra safety net (and the right hook for pooled connections / other `AsyncDisposable`
-resources).
+Because the commit/rollback is awaited **inside** the pipeline (the `UnitOfWorkMiddleware`), the normal
+path is fully transport-independent — it does **not** depend on how the host tears the scope down. The
+async scope disposal is the *extra* safety net (and the right hook for pooled connections / other
+`AsyncDisposable` resources), and it is the one part that **is** teardown-dependent: the
+`disposeAsync()`-based rollback of an unsettled unit only runs under `disposeAsync()` teardown. Under a
+synchronous `dispose()`, an async-only disposable is skipped and the resolver emits a one-time
+`console.warn` rather than silently dropping it. This is why every built-in transport tears its
+per-request scope down with `disposeAsync()`.
 
 ## Why scoped, not singleton
 

@@ -6,7 +6,7 @@ import {
 } from '@benzene/abstractions';
 import { BenzeneException } from '@benzene/core';
 import { ServiceCollection, ServiceDescriptor } from './ServiceCollection';
-import { disposeInstanceAsync, isAnyDisposable, isDisposable } from './disposal';
+import { disposeInstanceAsync, isAnyDisposable, isAsyncDisposable, isDisposable } from './disposal';
 
 /**
  * A dependency injection scope over a ServiceCollection.
@@ -27,6 +27,9 @@ export class DefaultServiceResolver implements IServiceResolver {
   // Dedupes the captive-dependency warning so one bad (singleton -> scoped) pairing warns once, not on
   // every resolution.
   private readonly warnedCaptivePairs = new Set<string>();
+  // Dedupes the async-only-skip warning so a synchronous dispose() that skips an async-only disposable
+  // (e.g. a Unit of Work) warns once, not per skipped instance.
+  private warnedAsyncSkip = false;
 
   constructor(
     private readonly services: ServiceCollection,
@@ -80,6 +83,11 @@ export class DefaultServiceResolver implements IServiceResolver {
       const instance = this.disposables[i];
       if (isDisposable(instance)) {
         instance.dispose();
+      } else if (isAsyncDisposable(instance)) {
+        // Async-only disposable (no synchronous dispose()) — e.g. a scoped Unit of Work whose
+        // commit/rollback is awaitable work. Synchronous dispose() cannot await it, so it is skipped
+        // and its resource is NOT released here. Warn (once) so this isn't silent.
+        this.warnAsyncOnlySkipped();
       }
     }
     this.disposables.length = 0;
@@ -168,6 +176,25 @@ export class DefaultServiceResolver implements IServiceResolver {
         `'${scopedName}'. The scoped instance will be captured by the singleton and reused for the ` +
         `app's lifetime, defeating its per-scope semantics. Register '${singletonName}' as scoped/` +
         `transient, or resolve '${scopedName}' per operation from the scope instead of capturing it.`,
+    );
+  }
+
+  /**
+   * Warns (once) that a synchronous `dispose()` encountered an async-only disposable and skipped it,
+   * leaving its resource unreleased. The classic case is a scoped Unit of Work whose commit/rollback is
+   * awaitable work a synchronous teardown cannot express — tear the scope down with `disposeAsync()`
+   * instead (which every migrated transport does per request). Dev-time warning only — never throws.
+   */
+  private warnAsyncOnlySkipped(): void {
+    if (this.warnedAsyncSkip) {
+      return;
+    }
+    this.warnedAsyncSkip = true;
+    console.warn(
+      "Benzene DI async-only disposable skipped: a scoped resource exposes only 'disposeAsync()' / " +
+        "Symbol.asyncDispose (e.g. a Unit of Work) but the scope was torn down with synchronous " +
+        "dispose(), which cannot await it — so it was NOT released. Use disposeAsync() to tear down " +
+        'the scope so async-disposable resources can commit / roll back.',
     );
   }
 
