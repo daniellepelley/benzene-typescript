@@ -48,12 +48,17 @@ export function is<TContext>(
  * the port's equivalent of C#'s assembly scanning — see `addMessageHandlers`).
  * Port of C# `MiddlewarePipelineExtensions.UseMessageHandlers` (the `Type[]`/no-arg overloads).
  *
+ * Handlers may be passed as varargs or as a single array — `useMessageHandlers(app, H1, H2)`,
+ * `useMessageHandlers(app, [H1, H2])`, or a mix — so a module can export its handler set once
+ * (`export const orderHandlers = [H1, H2]`) and wire it with one binding. This array form is a
+ * TS-idiom addition over the C# `Type[]` params overload; both flatten to the same discovery list.
+ *
  * C# `app.Use<TContext, MessageRouter<TContext>>()` (resolve the router from DI and add it as the
  * terminal middleware) maps to `app.useService(MessageRouter)`.
  */
 export function useMessageHandlers<TContext>(
   app: IMiddlewarePipelineBuilder<TContext>,
-  ...handlerTypes: Constructor<unknown>[]
+  ...handlerTypes: (Constructor<unknown> | readonly Constructor<unknown>[])[]
 ): IMiddlewarePipelineBuilder<TContext> {
   app.register((container) => addMessageHandlers(container, ...handlerTypes));
   return app.useService(MessageRouter as unknown as ServiceIdentifier<IMiddleware<TContext>>);
@@ -71,7 +76,7 @@ export function useMessageHandlers<TContext>(
 export function useMessageHandlersWithRouter<TContext>(
   app: IMiddlewarePipelineBuilder<TContext>,
   router: (builder: MessageRouterBuilder) => void,
-  ...handlerTypes: Constructor<unknown>[]
+  ...handlerTypes: (Constructor<unknown> | readonly Constructor<unknown>[])[]
 ): IMiddlewarePipelineBuilder<TContext> {
   app.register((container) => addMessageHandlers(container, ...handlerTypes));
   const builder = new MessageRouterBuilder([], (action) => app.register(action));

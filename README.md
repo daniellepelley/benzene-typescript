@@ -462,10 +462,17 @@ next to its C# counterpart:
   the `@message('topic')` class decorator, which self-registers the class with a
   `MessageHandlersRegistry` when its module loads; `RegistryMessageHandlersFinder` (the
   counterpart of `ReflectionMessageHandlersFinder`) reads that registry, or an explicit class
-  list (the C# `Type[]` constructor). `importMessageHandlers(dir)` recursively imports every
-  module in a directory so decorated handlers are found automatically — the Node equivalent of
-  assembly scanning. The `Dependency`/`Composite`/`Cache` finders and `MessageHandlersList`
-  port unchanged, so discovery can be overridden the same way as in .NET.
+  list (the C# `Type[]` constructor). `useMessageHandlers(app, ...)` accepts that class list as
+  varargs **or a single array** (`useMessageHandlers(app, [CreateOrderHandler, GetOrderHandler])`,
+  or a mix) — a TS-idiom addition over the C# params overload so a feature module can export its
+  handler set once and wire it tree-shake-safely, with no reliance on the process-wide global
+  registry; pass no classes to serve every `@message`-decorated class that has been imported into
+  `MessageHandlersRegistry.global`. The per-decorator `registry` option redirects a handler's
+  self-registration to a private `MessageHandlersRegistry`, used to isolate multiple handler sets
+  sharing one process (e.g. tests); application code normally needs neither. `importMessageHandlers(dir)`
+  recursively imports every module in a directory so decorated handlers are found automatically —
+  the Node equivalent of assembly scanning. The `Dependency`/`Composite`/`Cache` finders and
+  `MessageHandlersList` port unchanged, so discovery can be overridden the same way as in .NET.
 - **Third-party library integrations.** Some .NET packages exist *only* to wrap a specific
   third-party library — e.g. `Benzene.DataAnnotations` wraps `System.ComponentModel.DataAnnotations`,
   `Benzene.FluentValidation` wraps FluentValidation, `Benzene.Autofac` wraps Autofac. These are

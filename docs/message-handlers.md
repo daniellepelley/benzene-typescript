@@ -166,10 +166,16 @@ downstream of the builder) and returns it, so it still chains at its own call si
 ```ts
 import { useMessageHandlers, useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
 
-// Serve specific handler classes (discovery limited to those you pass):
+// Serve specific handler classes (discovery limited to those you pass) — as varargs...
 useMessageHandlers(app, CreateOrderHandler, GetOrderHandler);
 
-// Serve everything already registered in the global registry (pass no classes):
+// ...or as a single array, so a feature module can export its handler set once and wire it in one line
+// (export const orderHandlers = [CreateOrderHandler, GetOrderHandler]). Varargs and arrays can be mixed;
+// both are tree-shake-safe (the classes are named, used bindings) and need no global registry:
+useMessageHandlers(app, orderHandlers);
+
+// Serve everything already registered in the global registry (pass no classes). This relies on every
+// handler module having been imported somewhere — see importMessageHandlers(dir) below:
 useMessageHandlers(app);
 
 // Configure per-handler middleware (e.g. validation) via the router variant:

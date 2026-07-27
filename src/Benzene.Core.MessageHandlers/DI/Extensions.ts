@@ -256,7 +256,8 @@ export function addContextItems(services: IBenzeneServiceContainer): IBenzeneSer
  * Registers message-handler dispatch infrastructure. With handler classes supplied, discovery is
  * limited to those classes (via a cached `RegistryMessageHandlersFinder`, the port of the C#
  * `Type[]` overload) and each discovered handler is eagerly registered scoped; with none supplied,
- * discovery falls back to the global `MessageHandlersRegistry`.
+ * discovery falls back to the global `MessageHandlersRegistry`. Handler classes may be passed as
+ * varargs or a single array (or a mix); they are flattened to one discovery list.
  * Port of C# `AddMessageHandlers` (the `()`/`Type[]` overloads unified).
  *
  * Wrinkle 3 (discovery: reflection → registry): C#'s no-arg overload registers no reflection finder;
@@ -276,11 +277,13 @@ export function addContextItems(services: IBenzeneServiceContainer): IBenzeneSer
  */
 export function addMessageHandlers(
   services: IBenzeneServiceContainer,
-  ...handlerTypes: Constructor<unknown>[]
+  ...handlerTypes: (Constructor<unknown> | readonly Constructor<unknown>[])[]
 ): IBenzeneServiceContainer {
+  // Handlers arrive as varargs or a single array (or a mix); flatten to one discovery list.
+  const handlers = handlerTypes.flat();
   const registryFinder =
-    handlerTypes.length > 0
-      ? new RegistryMessageHandlersFinder(...handlerTypes)
+    handlers.length > 0
+      ? new RegistryMessageHandlersFinder(...handlers)
       : new RegistryMessageHandlersFinder();
   const cacheMessageHandlersFinder = new CacheMessageHandlersFinder(registryFinder);
   for (const handler of cacheMessageHandlersFinder.findDefinitions()) {
