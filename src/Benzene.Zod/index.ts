@@ -1,4 +1,6 @@
 export * from './ZodSchemaRegistry';
+export * from './zodToJsonSchema';
+export * from './ZodJsonSchemaSource';
 export * from './ValidationMiddleware';
 export * from './ValidationMiddlewareBuilder';
 export * from './ValidationClientMiddleware';

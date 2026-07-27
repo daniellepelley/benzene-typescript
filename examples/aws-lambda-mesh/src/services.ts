@@ -19,6 +19,8 @@ import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers
 import { httpEndpoint } from '@benzene/http';
 import { BenzeneResult } from '@benzene/results';
 import { IBenzeneMessageSender } from '@benzene/clients';
+import { z } from 'zod';
+import { registerZodSchema } from '@benzene/zod';
 import { buildMeshServiceLambda, MeshServiceDefinition, Transport } from './meshService';
 import { MeshBus } from './bus';
 
@@ -38,6 +40,14 @@ class OrderConfirmation {
 class Message {
   orderId?: string;
 }
+
+// Register a Zod schema per payload type. This is the runtime "shape" the spec builder converts to JSON
+// Schema (via ZodJsonSchemaSource) and publishes as each topic's request/response payload — so the mesh
+// catalog and viewer show the payload definitions, not just the topic names. The schema also carries the
+// validation rule (min length), which flows straight into the JSON Schema.
+registerZodSchema(CreateOrder, z.object({ orderId: z.string().min(1).optional() }));
+registerZodSchema(OrderConfirmation, z.object({ orderId: z.string().optional() }));
+registerZodSchema(Message, z.object({ orderId: z.string().min(1).optional() }));
 
 // --- orders: POST /orders → send payments:capture (SQS) + order:placed (SNS) --------------------------
 const ordersRegistry = new MessageHandlersRegistry();

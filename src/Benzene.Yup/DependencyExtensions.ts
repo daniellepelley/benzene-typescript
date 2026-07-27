@@ -2,9 +2,11 @@ import { tryAddSingleton } from '@benzene/abstractions';
 import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
 import {
   DefaultValidationStatusMapper,
+  ITypeJsonSchemaSource,
   IValidationStatusMapper,
 } from '@benzene/abstractions-validation';
 import { ValidationMiddlewareBuilder } from './ValidationMiddlewareBuilder';
+import { YupJsonSchemaSource } from './YupJsonSchemaSource';
 
 export { registerYupSchema } from './YupSchemaRegistry';
 
@@ -25,6 +27,9 @@ export { registerYupSchema } from './YupSchemaRegistry';
 export function useYupValidation(builder: IMessageRouterBuilder): IMessageRouterBuilder {
   builder.register((container) => {
     tryAddSingleton(container, IValidationStatusMapper, DefaultValidationStatusMapper);
+    // Publish the registered Yup schemas as a JSON-Schema source so the topic's payload schema reaches the
+    // spec / mesh descriptor — the runtime replacement for .NET reflecting over the CLR type.
+    container.addSingletonInstance(ITypeJsonSchemaSource, new YupJsonSchemaSource());
   });
   return builder.add(new ValidationMiddlewareBuilder());
 }

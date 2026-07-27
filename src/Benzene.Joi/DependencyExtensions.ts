@@ -2,9 +2,11 @@ import { tryAddSingleton } from '@benzene/abstractions';
 import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
 import {
   DefaultValidationStatusMapper,
+  ITypeJsonSchemaSource,
   IValidationStatusMapper,
 } from '@benzene/abstractions-validation';
 import { ValidationMiddlewareBuilder } from './ValidationMiddlewareBuilder';
+import { JoiJsonSchemaSource } from './JoiJsonSchemaSource';
 
 export { registerJoiSchema } from './JoiSchemaRegistry';
 
@@ -25,6 +27,9 @@ export { registerJoiSchema } from './JoiSchemaRegistry';
 export function useJoiValidation(builder: IMessageRouterBuilder): IMessageRouterBuilder {
   builder.register((container) => {
     tryAddSingleton(container, IValidationStatusMapper, DefaultValidationStatusMapper);
+    // Publish the registered Joi schemas as a JSON-Schema source so the topic's payload schema reaches the
+    // spec / mesh descriptor — the runtime replacement for .NET reflecting over the CLR type.
+    container.addSingletonInstance(ITypeJsonSchemaSource, new JoiJsonSchemaSource());
   });
   return builder.add(new ValidationMiddlewareBuilder());
 }

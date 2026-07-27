@@ -81,6 +81,11 @@
     .swatch { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--edge); vertical-align: middle; margin-right: 6px; }
     a { color: var(--accent); }
     .httpmap { font-size: 12px; color: var(--muted); }
+    .schema { margin-top: 8px; }
+    .schema-group { margin-top: 4px; }
+    .schema-label { display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-right: 6px; }
+    .schema-field { font-size: 12.5px; }
+    .schema-field code { font-size: 12px; }
   </style>
 </head>
 <body>
@@ -215,6 +220,46 @@
         + '</svg>';
     }
 
+    // ---- payload schemas -------------------------------------------------------------------------
+    // A compact one-line-per-field summary of a topic's request/response/message JSON Schema — the payload
+    // definitions the mesh now carries (derived from each service's Zod/Joi/Yup schema). Shows field name,
+    // type, whether it's required, and any constraint (format, min/max length, numeric bounds, enum).
+    function schemaSummary(schema) {
+      if (schema === null || typeof schema !== 'object') return '';
+      const props = schema['properties'];
+      if (props === undefined || props === null || typeof props !== 'object') return '';
+      const required = new Set(Array.isArray(schema['required']) ? schema['required'] : []);
+      const fields = Object.entries(props).map(([name, def]) => {
+        const d = (def && typeof def === 'object') ? def : {};
+        const type = d['type'] || (Array.isArray(d['enum']) ? 'enum' : d['$ref'] ? 'ref' : 'any');
+        const bits = [];
+        if (d['format']) bits.push(String(d['format']));
+        if (d['minLength'] != null) bits.push('min ' + d['minLength']);
+        if (d['maxLength'] != null) bits.push('max ' + d['maxLength']);
+        if (d['minimum'] != null) bits.push('≥ ' + d['minimum']);
+        if (d['maximum'] != null) bits.push('≤ ' + d['maximum']);
+        if (Array.isArray(d['enum'])) bits.push(d['enum'].join(' | '));
+        const opt = required.has(name) ? '' : '?';
+        const detail = bits.length ? ' <span class="muted">(' + esc(bits.join(', ')) + ')</span>' : '';
+        return '<div class="schema-field"><code>' + esc(name) + opt + '</code>: ' + esc(String(type)) + detail + '</div>';
+      });
+      return fields.join('');
+    }
+
+    function payloadBlock(t) {
+      const groups = [
+        ['request', t.requestSchema],
+        ['response', t.responseSchema],
+        ['message', t.messageSchema],
+      ];
+      return groups
+        .map(([label, schema]) => {
+          const summary = schemaSummary(schema);
+          return summary ? '<div class="schema-group"><span class="schema-label">' + label + '</span>' + summary + '</div>' : '';
+        })
+        .join('');
+    }
+
     // ---- topics ----------------------------------------------------------------------------------
     function renderTopics(catalog) {
       const el = $('topics');
@@ -235,7 +280,8 @@
         const reserved = t.reserved ? '<span class="chip">reserved</span>' : '';
         const version = t.version ? '<span class="chip">v' + esc(t.version) + '</span>' : '';
         return '<tr>'
-          + '<td class="svc"><code>' + esc(t.topic) + '</code><div class="row" style="margin-top:6px;gap:6px">' + version + reserved + status + mism + '</div></td>'
+          + '<td class="svc"><code>' + esc(t.topic) + '</code><div class="row" style="margin-top:6px;gap:6px">' + version + reserved + status + mism + '</div>'
+          + '<div class="schema">' + payloadBlock(t) + '</div></td>'
           + '<td>' + svcList(t.producers) + '</td>'
           + '<td>' + svcList(t.consumers) + '</td>'
           + '</tr>';

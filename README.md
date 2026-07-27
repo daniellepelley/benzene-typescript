@@ -404,6 +404,21 @@ next to its C# counterpart:
   take their third-party library as a real runtime dependency (that is their whole purpose) — the
   "no runtime dependencies outside the workspace" rule applies to the core port, not to these
   deliberately library-specific adapters.
+- **Type → JSON Schema (payload schemas from validation, not reflection).** `Benzene.Schema.OpenApi`
+  derives a topic's request/response JSON Schema by *reflecting* over the CLR type and then enriches it
+  with FluentValidation rules via `OpenApiValidationSchemaBuilder`. TypeScript erases types, so there is
+  nothing to reflect over — instead the schema is *provided* by whatever knows the shape at runtime,
+  behind the `ITypeJsonSchemaSource` seam (`@benzene/abstractions-validation`: `getJsonSchema(type) →
+  JSON Schema | undefined`). The validation adapters implement it from the schema they already hold:
+  `@benzene/zod` via Zod 4's native `z.toJSONSchema` (zero new deps), `@benzene/joi`/`@benzene/yup` by
+  mapping their `.describe()` introspection (no third-party converter). Because a validation schema
+  encodes shape **and** rules, one conversion yields both — `required`, `minLength`/`maxLength`,
+  `minimum`/`maximum`, `enum`, `format`, `pattern`, nested objects, arrays — so .NET's two-step
+  (reflect + enrich) collapses into a single pass. `ValidationMeshSchemaProvider` composes the topic →
+  request/response-type lookup with the registered sources to feed the mesh descriptor and the
+  `benzene:spec` topic catalog; `MapTypeJsonSchemaSource` is the bring-your-own path (the runtime
+  equivalent of .NET's `SuppliedSchemaCatalog`), and it composes with the validator sources. A type with
+  no source stays unconstrained (`{}`) — the spec's documented no-schema case.
 
 ## Multi-language interoperability
 
@@ -446,8 +461,12 @@ byte-identical to .NET so the two interoperate:
   topic's request/response JSON Schema (§2.1) by *reflecting* over the handler's CLR types, which
   TypeScript's erased types can't do, so the port injects a pluggable **`IMeshSchemaProvider`** keyed by
   topic (`NoMeshSchemaProvider` / `MapMeshSchemaProvider`) — the schema moves from CLR reflection to an
-  explicit source (a schema registry, a `@benzene/zod`/`joi`/`yup` model, or a hand-written map); the §2.1
-  mapping table itself is normative and unchanged. `docs/specification/conformance/mesh-descriptor-cases.json`
+  explicit source; the §2.1 mapping table itself is normative and unchanged. That source is realized by
+  **`ValidationMeshSchemaProvider`**, which derives each topic's schema from the `@benzene/zod`/`joi`/`yup`
+  schema the service registered to validate the payload type (via the `ITypeJsonSchemaSource` seam — see
+  the "Type → JSON Schema" porting convention), with `MapTypeJsonSchemaSource` for hand-authored/bring-
+  your-own schemas. So a service that validates automatically publishes its payload schemas to the
+  descriptor and the `benzene:spec` topic catalog, carrying the validation rules with them. `docs/specification/conformance/mesh-descriptor-cases.json`
   is ported to `test/Benzene.Core.Test/Conformance/` and pins the derived descriptor + hash properties;
   `examples/mesh-service` serves its normative descriptor at `/benzene/descriptor`
   (`test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` reads it live).

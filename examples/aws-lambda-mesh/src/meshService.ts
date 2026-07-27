@@ -14,15 +14,22 @@
  * yet); the structural topology is derived from the declared `events`, which is what the .NET example's
  * topology is built from too — declaring a send is what surfaces it as a producer edge.
  */
-import { Constructor, IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { Constructor, IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
+import {
+  IMessageHandler,
+  IMessageHandlerDefinition,
+  IMessageHandlerDefinitionLookUp,
+} from '@benzene/abstractions-message-handlers';
 import { Handler } from 'aws-lambda';
 import {
   addBenzene,
+  getMessageMetadata,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
+import { ValidationMeshSchemaProvider } from '@benzene/mesh-wire';
+import { ZodJsonSchemaSource } from '@benzene/zod';
 import { BenzeneResult } from '@benzene/results';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SNSClient } from '@aws-sdk/client-sns';
@@ -68,6 +75,10 @@ export interface OutboundWiring {
 export interface SpecRequest {
   topic: string;
   httpMappings?: { method: string; path: string }[];
+  /** JSON Schema of the topic's request payload, derived from the handler's registered Zod schema. */
+  request?: Record<string, unknown>;
+  /** JSON Schema of the topic's response payload (absent for a `VoidResult` handler). */
+  response?: Record<string, unknown>;
 }
 
 /** The benzene spec shape the mesh aggregator parses (`requests`/`events`/`transports`). */
@@ -103,12 +114,29 @@ export interface MeshServiceDefinition {
   readonly sends?: { topic: string; transport: Transport; targetEnvVar?: string }[];
 }
 
-/** Builds the self-derived benzene spec object for a service definition. */
+/**
+ * Builds the self-derived benzene spec object for a service definition, including each consumed topic's
+ * request/response JSON Schema. The schemas come from the Zod schemas registered for the handlers' payload
+ * types (via `ValidationMeshSchemaProvider` + `ZodJsonSchemaSource`) — the runtime replacement for .NET
+ * reflecting over the CLR type. The mesh aggregator reads these `request`/`response` fields into its topic
+ * catalog (`topics.json`), so a payload declared here surfaces in the catalog and the mesh viewer.
+ */
 export function buildServiceSpec(definition: MeshServiceDefinition): ServiceSpec {
-  const requests: SpecRequest[] = definition.consumes.map((c) => ({
-    topic: c.topic,
-    ...(c.httpMappings !== undefined ? { httpMappings: c.httpMappings } : {}),
-  }));
+  const schemaProvider = schemaProviderFor(definition);
+  const requests: SpecRequest[] = definition.consumes.map((c) => {
+    const schemas = schemaProvider.getSchemas({ id: c.topic, version: '' });
+    const entry: SpecRequest = { topic: c.topic };
+    if (c.httpMappings !== undefined) {
+      entry.httpMappings = c.httpMappings;
+    }
+    if (schemas.request !== undefined) {
+      entry.request = schemas.request;
+    }
+    if (schemas.response !== undefined) {
+      entry.response = schemas.response;
+    }
+    return entry;
+  });
   const transports = new Set<Transport>(definition.extraTransports ?? []);
   for (const c of definition.consumes) {
     transports.add(c.transport);
@@ -118,6 +146,28 @@ export function buildServiceSpec(definition: MeshServiceDefinition): ServiceSpec
     events: definition.produces.map((topic) => ({ topic })),
     transports: [...transports],
   };
+}
+
+/**
+ * A `ValidationMeshSchemaProvider` for one service, built from its domain handlers' `@message` metadata
+ * (topic → request/response type) and the Zod JSON-Schema source. Dogfoods the library seam a real
+ * deployment uses, keyed off the handlers this service actually registers.
+ */
+function schemaProviderFor(definition: MeshServiceDefinition): ValidationMeshSchemaProvider {
+  const handlers = definition.domainHandlers.map((handler) => {
+    const metadata = getMessageMetadata(handler);
+    return {
+      topic: { id: metadata?.topic ?? '', version: metadata?.version ?? '' },
+      requestType: metadata?.requestType ?? VoidResult,
+      responseType: metadata?.responseType ?? VoidResult,
+      handlerType: handler,
+    } as unknown as IMessageHandlerDefinition;
+  });
+  const lookUp: IMessageHandlerDefinitionLookUp = {
+    getAllHandlers: () => handlers,
+    findHandler: (topic) => handlers.find((h) => h.topic.id === topic.id),
+  };
+  return new ValidationMeshSchemaProvider(lookUp, [new ZodJsonSchemaSource()]);
 }
 
 /** The health report a service returns over the reserved `healthcheck` topic. */

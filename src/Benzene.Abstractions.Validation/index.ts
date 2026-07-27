@@ -4,6 +4,8 @@ export * from './IMaxLengthValidationSchema';
 export * from './IRegexValidationSchema';
 export * from './IIsOneOfValidationSchema';
 export * from './IValidationSchemaBuilder';
+export * from './ITypeJsonSchemaSource';
+export * from './MapTypeJsonSchemaSource';
 export * from './IValidationStatusMapper';
 export * from './ValidationConstants';
 export * from './ValidationStatusAttribute';

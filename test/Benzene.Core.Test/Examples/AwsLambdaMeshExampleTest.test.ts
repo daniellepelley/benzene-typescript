@@ -81,6 +81,31 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
     expect(names(byTopic('payments:capture').consumers)).toEqual(['payments-api']);
   });
 
+  it('carries each topic\'s payload JSON Schema (derived from the services\' Zod schemas)', async () => {
+    const { store } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
+    const catalog = JSON.parse((await store.tryReadAsync('topics.json'))!) as {
+      topics: {
+        topic: string;
+        requestSchema?: { type?: string; properties?: Record<string, { type?: string; minLength?: number }> };
+        responseSchema?: { properties?: Record<string, unknown> };
+      }[];
+    };
+    const byTopic = (t: string) => catalog.topics.find((x) => x.topic === t)!;
+
+    // orders:create — request + response payloads, with the Zod min-length rule carried into the schema.
+    const create = byTopic('orders:create');
+    expect(create.requestSchema).toMatchObject({
+      type: 'object',
+      properties: { orderId: { type: 'string', minLength: 1 } },
+    });
+    expect(create.responseSchema?.properties).toHaveProperty('orderId');
+
+    // Every domain topic carries its request payload schema (sourced from its consumer's Zod schema).
+    for (const topic of ['payments:capture', 'order:placed', 'payment:captured', 'shipment:dispatched', 'shipping:book']) {
+      expect(byTopic(topic).requestSchema?.properties).toHaveProperty('orderId');
+    }
+  });
+
   it('derives the structural topology (producer → consumer edges) from the specs', async () => {
     const { store } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
     const topology = JSON.parse((await store.tryReadAsync('topology.json'))!) as {

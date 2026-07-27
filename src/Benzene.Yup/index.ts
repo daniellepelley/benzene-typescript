@@ -1,4 +1,6 @@
 export * from './YupSchemaRegistry';
+export * from './yupToJsonSchema';
+export * from './YupJsonSchemaSource';
 export * from './ValidationMiddleware';
 export * from './ValidationMiddlewareBuilder';
 export * from './ValidationClientMiddleware';

@@ -22,6 +22,7 @@ export * from './MeshJson';
 export * from './MeshServiceDescriptor';
 export * from './MeshServiceInfo';
 export * from './MeshSchemaProvider';
+export * from './ValidationMeshSchemaProvider';
 export * from './MeshDescriptorFactory';
 export * from './MeshTraceEvent';
 export * from './MeshSpan';
