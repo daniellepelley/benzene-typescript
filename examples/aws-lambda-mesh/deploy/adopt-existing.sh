@@ -34,13 +34,15 @@ tf_import() {
   fi
   echo "· import: $addr  <-  $id"
   # A deterministic-id resource that doesn't exist in AWS yet isn't an error — apply will create it.
-  # Terraform reports that as "Cannot import non-existent remote object"; swallow only that.
+  # Terraform words this differently per resource type: most say "Cannot import non-existent remote
+  # object", but a missing aws_lambda_permission (its function not created yet) fails with "couldn't
+  # find resource". Swallow both as "not in AWS yet".
   local out
   if out="$(terraform import -input=false -var "region=$REGION" "$addr" "$id" 2>&1)"; then
     printf '%s\n' "$out"
     return 0
   fi
-  if printf '%s\n' "$out" | grep -q "Cannot import non-existent remote object"; then
+  if printf '%s\n' "$out" | grep -qE "Cannot import non-existent remote object|[Cc]ouldn't find resource"; then
     echo "· skip (not in AWS yet — apply will create it): $addr"
     return 0
   fi
