@@ -16,6 +16,7 @@ export * from './NullBenzeneServiceContainer';
 export * from './NullServiceResolver';
 export * from './NullServiceResolverFactory';
 export * from './RegisterDependency';
+export * from './UnitOfWorkMiddleware';
 export * from './BenzeneApplicationBuilder';
 export * from './BenzeneInvocation';
 export * from './BenzeneInvocationExtensions';

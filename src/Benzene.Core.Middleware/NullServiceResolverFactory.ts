@@ -11,4 +11,6 @@ export class NullServiceResolverFactory implements IServiceResolverFactory {
   }
 
   dispose(): void {}
+
+  async disposeAsync(): Promise<void> {}
 }

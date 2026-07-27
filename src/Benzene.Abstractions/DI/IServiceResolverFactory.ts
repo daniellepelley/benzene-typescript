@@ -9,8 +9,11 @@ export interface IServiceResolverFactory {
   /** Creates a new dependency injection scope. */
   createScope(): IServiceResolver;
 
-  /** Port of C# `IDisposable.Dispose()`. */
+  /** Port of C# `IDisposable.Dispose()`; releases synchronously-disposable singletons. */
   dispose(): void;
+
+  /** Port of C# `IAsyncDisposable.DisposeAsync()`; awaits async-disposable singletons at shutdown. */
+  disposeAsync(): Promise<void>;
 }
 
 export const IServiceResolverFactory: ServiceToken<IServiceResolverFactory> =

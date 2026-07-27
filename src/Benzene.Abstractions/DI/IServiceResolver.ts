@@ -26,6 +26,13 @@ export interface IServiceResolver {
 
   /** Port of C# `IDisposable.Dispose()`; releases the scope and any scoped instances. */
   dispose(): void;
+
+  /**
+   * Asynchronously releases the scope and its instances, awaiting each async disposer (a scoped
+   * instance's `disposeAsync()` / `Symbol.asyncDispose`). Port of C# `IAsyncDisposable.DisposeAsync()`
+   * — use this at the end of a request scope so a scoped Unit of Work can commit / roll back.
+   */
+  disposeAsync(): Promise<void>;
 }
 
 export const IServiceResolver: ServiceToken<IServiceResolver> =

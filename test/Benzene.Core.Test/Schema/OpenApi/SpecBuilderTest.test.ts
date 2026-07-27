@@ -81,6 +81,7 @@ function fakeResolver(config: ResolverConfig): IServiceResolver {
     getServices: <T>(id: ServiceIdentifier<T>): T[] =>
       id === ITypeJsonSchemaSource ? ((config.sources ?? []) as unknown as T[]) : [],
     dispose: () => {},
+    disposeAsync: () => Promise.resolve(),
   };
 }
 

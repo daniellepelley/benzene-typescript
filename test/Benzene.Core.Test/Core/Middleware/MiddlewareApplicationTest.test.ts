@@ -37,6 +37,10 @@ class TrackingServiceResolverFactory implements IServiceResolverFactory {
   dispose(): void {
     this.inner.dispose();
   }
+
+  disposeAsync(): Promise<void> {
+    return this.inner.disposeAsync();
+  }
 }
 
 class TrackingServiceResolver implements IServiceResolver {
@@ -59,6 +63,11 @@ class TrackingServiceResolver implements IServiceResolver {
   dispose(): void {
     this.disposed = true;
     this.inner.dispose();
+  }
+
+  disposeAsync(): Promise<void> {
+    this.disposed = true;
+    return this.inner.disposeAsync();
   }
 }
 

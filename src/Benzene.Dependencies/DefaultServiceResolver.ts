@@ -6,18 +6,7 @@ import {
 } from '@benzene/abstractions';
 import { BenzeneException } from '@benzene/core';
 import { ServiceCollection, ServiceDescriptor } from './ServiceCollection';
-
-interface Disposable {
-  dispose(): void;
-}
-
-function isDisposable(value: unknown): value is Disposable {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as Disposable).dispose === 'function'
-  );
-}
+import { disposeInstanceAsync, isAnyDisposable, isDisposable } from './disposal';
 
 /**
  * A dependency injection scope over a ServiceCollection.
@@ -27,13 +16,15 @@ function isDisposable(value: unknown): value is Disposable {
  */
 export class DefaultServiceResolver implements IServiceResolver {
   private readonly scopedInstances = new Map<ServiceDescriptor, unknown>();
-  private readonly disposables: Disposable[] = [];
+  // Disposal candidates in creation order (sync- and/or async-disposable). Disposed in reverse (LIFO)
+  // by disposeAsync so a resource is torn down before the ones it was built from.
+  private readonly disposables: unknown[] = [];
   private disposed = false;
 
   constructor(
     private readonly services: ServiceCollection,
     private readonly singletonInstances: Map<ServiceDescriptor, unknown>,
-    private readonly singletonDisposables: Disposable[],
+    private readonly singletonDisposables: unknown[],
     private readonly factory: IServiceResolverFactory,
   ) {}
 
@@ -76,8 +67,28 @@ export class DefaultServiceResolver implements IServiceResolver {
     }
     this.disposed = true;
 
-    for (const disposable of this.disposables) {
-      disposable.dispose();
+    // Synchronous teardown only. An async-only disposable (e.g. a scoped Unit of Work that commits a
+    // transaction) cannot be awaited here — use disposeAsync() to release those. Reverse (LIFO) order.
+    for (let i = this.disposables.length - 1; i >= 0; i--) {
+      const instance = this.disposables[i];
+      if (isDisposable(instance)) {
+        instance.dispose();
+      }
+    }
+    this.disposables.length = 0;
+    this.scopedInstances.clear();
+  }
+
+  async disposeAsync(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+
+    // Reverse (LIFO) order, awaiting each async disposer, so a scoped transaction commits/rolls back
+    // at scope end. Port of C# `await using`/`IAsyncDisposable`.
+    for (let i = this.disposables.length - 1; i >= 0; i--) {
+      await disposeInstanceAsync(this.disposables[i]);
     }
     this.disposables.length = 0;
     this.scopedInstances.clear();
@@ -91,7 +102,7 @@ export class DefaultServiceResolver implements IServiceResolver {
         }
         const instance = descriptor.factory(this);
         this.singletonInstances.set(descriptor, instance);
-        if (!descriptor.isExternalInstance && isDisposable(instance)) {
+        if (!descriptor.isExternalInstance && isAnyDisposable(instance)) {
           this.singletonDisposables.push(instance);
         }
         return instance;
@@ -114,7 +125,7 @@ export class DefaultServiceResolver implements IServiceResolver {
   }
 
   private trackDisposable(descriptor: ServiceDescriptor, instance: unknown): void {
-    if (!descriptor.isExternalInstance && instance !== this && isDisposable(instance)) {
+    if (!descriptor.isExternalInstance && instance !== this && isAnyDisposable(instance)) {
       this.disposables.push(instance);
     }
   }

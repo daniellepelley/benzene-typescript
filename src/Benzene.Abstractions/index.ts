@@ -2,6 +2,7 @@ export * from './DI/ServiceToken';
 export * from './DI/IServiceResolver';
 export * from './DI/IServiceResolverFactory';
 export * from './DI/IBenzeneServiceContainer';
+export * from './IUnitOfWork';
 export * from './DI/IRegisterDependency';
 export * from './DI/BenzeneServiceContainerExtensions';
 export * from './DI/Extensions';

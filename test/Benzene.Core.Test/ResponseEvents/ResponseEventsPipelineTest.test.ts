@@ -68,6 +68,7 @@ function makeResolver(entries: [unknown, unknown][]): IServiceResolver {
     tryGetService: <T>(id: ServiceIdentifier<T>): T | undefined => map.get(id) as T | undefined,
     getServices: <T>(id: ServiceIdentifier<T>): T[] => (map.has(id) ? [map.get(id) as T] : []),
     dispose: () => {},
+    disposeAsync: () => Promise.resolve(),
   };
 }
 

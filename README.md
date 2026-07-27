@@ -360,6 +360,15 @@ next to its C# counterpart:
   is kept. One deliberate rename: `IDeferredRequestMapper`/`DeferredRequestMapper` →
   `IRequestMapperThunk`/`RequestMapperThunk` — a zero-arg deferred producer is idiomatically a
   "thunk" in TypeScript; same shape, TS-native spelling.
+- **Async scope disposal.** `IServiceResolver`/`IServiceResolverFactory` expose `disposeAsync()`
+  alongside `dispose()`, mirroring .NET's `AsyncServiceScope` (which implements both `IDisposable`
+  and `IAsyncDisposable`). A scope disposes its instances in reverse (LIFO) order; `disposeAsync()`
+  awaits any instance exposing `disposeAsync()` / `Symbol.asyncDispose` — an explicit method rather
+  than `await using`, since the packages target ES2022. This is what lets a scoped
+  [`IUnitOfWork`](docs/cookbooks/unit-of-work.md) commit/roll back a per-request transaction. Note:
+  `IUnitOfWork` + `UnitOfWorkMiddleware` are a TypeScript-first addition (no direct C# counterpart
+  yet — parity is an open question), and adding `disposeAsync()` to the two DI interfaces is a
+  breaking change for anyone implementing them directly (the built-in resolvers already do).
 - **Shared literals → constants.** Values that recur across packages are centralized in one `as const`
   object rather than repeated inline, so a rename is a single-point edit. The canonical case is
   **`TransportNames`** (`@benzene/abstractions-message-handlers`, faithfully ported from the C# class of
