@@ -1,3 +1,4 @@
+export * from './Capability';
 export * from './IContextConverter';
 export * from './IContextPredicate';
 export * from './IEntryPointMiddlewareApplication';

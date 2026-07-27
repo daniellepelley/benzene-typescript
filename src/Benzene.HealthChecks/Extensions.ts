@@ -4,7 +4,7 @@ import {
   IMessageGetter,
   IMessageHandlerResultSetter,
 } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
 import { FuncWrapperMiddleware } from '@benzene/core-middleware';
 import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
 import {
@@ -62,6 +62,14 @@ export function useHealthCheck<TContext>(
   // The general healthcheck probe harvests the dependency-category checks (external-dependency
   // reachability) for monitoring / the mesh; liveness/readiness deliberately do not (see below).
   return useHealthCheckMiddleware(app, [topic, Constants.defaultHealthCheckTopic], topic, builder, true);
+}
+
+/**
+ * Health-check middleware as a {@link Capability}: `builder.use(healthCheck('healthcheck', checks))`
+ * (the .NET `UseHealthCheck(topic, checks)` shape).
+ */
+export function healthCheck<TContext>(topic: string, config: HealthCheckConfig): Capability<TContext> {
+  return capability<TContext>((builder) => useHealthCheck(builder, topic, config));
 }
 
 /**

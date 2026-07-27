@@ -5,6 +5,7 @@ import {
   ServiceIdentifier,
 } from '@benzene/abstractions';
 import {
+  Capability,
   IBenzeneApplicationBuilder,
   IContextConverter,
   IContextPredicate,
@@ -50,7 +51,12 @@ export class AwsLambdaApplicationBuilder extends BenzeneApplicationBuilder imple
   }
 
   // --- transition scaffold: delegate the IMiddlewarePipelineBuilder surface to eventPipeline ----------
-  use(arg: MiddlewareFactoryFunc<AwsEventStreamContext> | IMiddleware<AwsEventStreamContext>): EventPipeline {
+  use(
+    arg:
+      | MiddlewareFactoryFunc<AwsEventStreamContext>
+      | IMiddleware<AwsEventStreamContext>
+      | Capability<AwsEventStreamContext>,
+  ): EventPipeline {
     return this.eventPipeline.use(arg as MiddlewareFactoryFunc<AwsEventStreamContext>);
   }
   useFn(nameOrFunc: string | MiddlewareFunc<AwsEventStreamContext>, func?: MiddlewareFunc<AwsEventStreamContext>): EventPipeline {

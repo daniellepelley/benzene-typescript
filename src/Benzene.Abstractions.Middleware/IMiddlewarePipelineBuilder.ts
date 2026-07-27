@@ -4,6 +4,7 @@ import {
   IServiceResolver,
   ServiceIdentifier,
 } from '@benzene/abstractions';
+import { Capability } from './Capability';
 import { IMiddleware, MiddlewareFunc } from './IMiddleware';
 import { IMiddlewarePipeline } from './IMiddlewarePipeline';
 import { IContextConverter } from './IContextConverter';
@@ -41,6 +42,8 @@ export interface IMiddlewarePipelineBuilder<TContext> extends IRegisterDependenc
    */
   use(func: MiddlewareFactoryFunc<TContext>): IMiddlewarePipelineBuilder<TContext>;
   use(middleware: IMiddleware<TContext>): IMiddlewarePipelineBuilder<TContext>;
+  /** Applies a {@link Capability} (`builder.use(xml())`, `builder.use(healthCheck(...))`). */
+  use(capability: Capability<TContext>): IMiddlewarePipelineBuilder<TContext>;
 
   /**
    * Adds an inline handler function, optionally named.

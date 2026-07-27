@@ -1,7 +1,7 @@
 /** Port of Benzene.Xml.DependencyInjectionExtensions. */
 import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzene/abstractions';
 import { IMediaFormat } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
 import { XmlMediaFormat } from './XmlMediaFormat';
 import { XmlSerializer } from './XmlSerializer';
 
@@ -35,10 +35,18 @@ export function addXml<TContext>(services: IBenzeneServiceContainer): IBenzeneSe
 /**
  * Registers XML support for `TContext` onto a middleware pipeline builder.
  * Port of C# `UseXml<TContext>` (a fluent extension → a free function taking the builder first).
+ *
+ * @deprecated Prefer the capability form `builder.use(xml())`, which reads as a top-to-bottom capability
+ * checklist like .NET's `app.UseXml()`. This free function stays as the underlying implementation.
  */
 export function useXml<TContext>(
   source: IMiddlewarePipelineBuilder<TContext>,
 ): IMiddlewarePipelineBuilder<TContext> {
   source.register((container) => addXml<TContext>(container));
   return source;
+}
+
+/** XML content-negotiation as a {@link Capability}: `builder.use(xml())` (the .NET `UseXml()` shape). */
+export function xml<TContext>(): Capability<TContext> {
+  return capability<TContext>((builder) => useXml(builder));
 }

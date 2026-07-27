@@ -8,6 +8,7 @@ import {
 } from '@benzene/abstractions';
 import { LogContextBuilder } from '@benzene/core';
 import {
+  Capability,
   IContextConverter,
   IContextPredicate,
   IMiddleware,
@@ -37,7 +38,7 @@ export abstract class MiddlewarePipelineBuilderBase<TContext>
   implements IMiddlewarePipelineBuilder<TContext>
 {
   abstract use(
-    funcOrMiddleware: MiddlewareFactoryFunc<TContext> | IMiddleware<TContext>,
+    funcOrMiddleware: MiddlewareFactoryFunc<TContext> | IMiddleware<TContext> | Capability<TContext>,
   ): IMiddlewarePipelineBuilder<TContext>;
 
   abstract create<TNewContext>(): IMiddlewarePipelineBuilder<TNewContext>;

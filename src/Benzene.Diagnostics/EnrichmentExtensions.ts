@@ -5,7 +5,12 @@ import {
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
 } from '@benzene/abstractions-message-handlers';
-import { IBenzeneInvocation, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import {
+  Capability,
+  IBenzeneInvocation,
+  IMiddlewarePipelineBuilder,
+  capability,
+} from '@benzene/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
 
 /**
@@ -68,4 +73,12 @@ export function useBenzeneEnrichment<TContext>(
       loggerScope.dispose();
     }
   });
+}
+
+/**
+ * Benzene log/trace enrichment as a {@link Capability}: `builder.use(benzeneEnrichment())` (the .NET
+ * `UseBenzeneEnrichment()` shape).
+ */
+export function benzeneEnrichment<TContext>(): Capability<TContext> {
+  return capability<TContext>((builder) => useBenzeneEnrichment(builder));
 }

@@ -1,7 +1,7 @@
 /** Port of Benzene.Schema.OpenApi.Extensions (the UseSpec half). */
 import { tryAddSingletonFactory } from '@benzene/abstractions';
 import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
 import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
 import { RawStringMessage } from '@benzene/core-messages';
 import { Constants } from './Constants';
@@ -31,4 +31,11 @@ export function useSpec<TContext>(
     tryAddSingletonFactory(container, SpecCache, () => new SpecCache());
   });
   return app;
+}
+
+/**
+ * The `spec` endpoint as a {@link Capability}: `builder.use(spec())` (the .NET `UseSpec()` shape).
+ */
+export function spec<TContext>(topic: string = Constants.DefaultSpecTopic): Capability<TContext> {
+  return capability<TContext>((builder) => useSpec(builder, topic));
 }

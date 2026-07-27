@@ -3,10 +3,12 @@ import {
   IRegisterDependency,
 } from '@benzene/abstractions';
 import {
+  Capability,
   IMiddleware,
   IMiddlewarePipeline,
   IMiddlewarePipelineBuilder,
   MiddlewareFactoryFunc,
+  isCapability,
 } from '@benzene/abstractions-middleware';
 import { addBenzeneMiddleware } from './DependencyExtensions';
 import { MiddlewarePipeline } from './MiddlewarePipeline';
@@ -38,8 +40,13 @@ export class MiddlewarePipelineBuilder<TContext> extends MiddlewarePipelineBuild
   }
 
   use(
-    funcOrMiddleware: MiddlewareFactoryFunc<TContext> | IMiddleware<TContext>,
+    funcOrMiddleware: MiddlewareFactoryFunc<TContext> | IMiddleware<TContext> | Capability<TContext>,
   ): IMiddlewarePipelineBuilder<TContext> {
+    if (isCapability<TContext>(funcOrMiddleware)) {
+      // A capability applies both its DI and middleware effects against this builder.
+      funcOrMiddleware.configure(this);
+      return this;
+    }
     this.items.push(
       typeof funcOrMiddleware === 'function' ? funcOrMiddleware : () => funcOrMiddleware,
     );
