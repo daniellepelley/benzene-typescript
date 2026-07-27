@@ -215,7 +215,7 @@ and dispatches each one into a Benzene message pipeline, so the *same* `PlaceOrd
 > Hub self-hosted workers; the TypeScript port ships only the worker *scaffolding*
 > (`InlineSelfHostedStartUp`, the worker builder, `CompositeBenzeneWorker`, and
 > `BoundedConcurrentDispatcher` — see below). You supply the consumer loop that reads your broker and
-> dispatches into `useMessageHandlers`. Track the roadmap in the [README](../README.md#roadmap) rather
+> dispatches into `useMessageHandlers`. Track the roadmap in the [README](../README.md#porting-status-and-roadmap) rather
 > than reaching for a broker worker that isn't there yet.
 
 ## Two AWS deployment shapes

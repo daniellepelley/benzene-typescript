@@ -1385,15 +1385,17 @@ Next, in dependency order, following the .NET repository:
    porting one would invent a package with no C# counterpart. `InMemoryIdempotencyStore` remains the only
    shipped store, matching the original.
 2. Mesh/schema tooling — the sender-definition building blocks (`IMessageSenderDefinition` /
-   `MessageSenderDefinition`, the `IMessageDefinitionFinder` token) are ported; the remaining
-   `Benzene.Mesh.*` catalog/topology/contract-drift surface and schema generation
-   (`Benzene.JsonSchema` / `Benzene.Schema.OpenApi`) build on them.
+   `MessageSenderDefinition`, the `IMessageDefinitionFinder` token) are ported, and so is schema
+   generation: `Benzene.Schema.OpenApi` ships as `@benzene/schema-openapi` (`Benzene.JsonSchema` is a
+   documented non-port — see "Deliberately not ported" below). Much of the `Benzene.Mesh.*`
+   catalog/topology/contract-drift surface is now ported too (see the structure table); the remaining
+   mesh packages build on these.
 3. Host runners — the platform-neutral worker model (`Benzene.SelfHost`: worker builder + composite +
    `BoundedConcurrentDispatcher`) is ported as `@benzene/self-host`; the remaining `Microsoft.Extensions
    .Hosting` generic-host adapter (`Benzene.HostedService`) has no JS counterpart, and an HTTP host
-   entrypoint is held for a design decision on the Node HTTP host shape. Third cloud
-   (`Benzene.GoogleCloud.Functions`) is a straightforward extension of the Azure Functions port when the
-   two-cloud scope widens.
+   entrypoint is held for a design decision on the Node HTTP host shape. The third cloud
+   (`Benzene.GoogleCloud.Functions.{Core,Http,PubSub}`) is now ported as
+   `@benzene/google-cloud-functions-{core,http,pubsub}` (see the structure table).
 
 ### Deliberately not ported (no clean JS mapping)
 
