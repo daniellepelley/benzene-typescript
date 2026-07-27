@@ -13,7 +13,7 @@ import { Topic } from '@benzene/core-messages';
  * Map([[IThing, impl]]))` and `fakeResolver([[IThing, impl]])` both work.
  *
  * `getService` throws for an unregistered identifier (like the real resolver); `tryGetService` returns
- * `undefined`; `getServices` returns the single registration (or none). `dispose` is a no-op.
+ * `undefined`; `getServices` returns the single registration (or none). `dispose`/`disposeAsync` are no-ops.
  */
 export function fakeResolver(
   entries: Iterable<readonly [ServiceIdentifier<unknown>, unknown]>,
@@ -34,6 +34,10 @@ export function fakeResolver(
     },
     dispose(): void {
       /* nothing to dispose */
+    },
+    disposeAsync(): Promise<void> {
+      /* nothing to dispose */
+      return Promise.resolve();
     },
   };
 }
