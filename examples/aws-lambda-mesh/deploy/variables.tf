@@ -64,3 +64,9 @@ variable "mesh_zip" {
   type    = string
   default = "../artifacts/mesh.zip"
 }
+
+variable "viewer_html" {
+  description = "Path to the static catalog viewer page, served from S3 at <website>/mesh/."
+  type        = string
+  default     = "../web/index.html"
+}

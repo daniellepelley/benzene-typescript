@@ -8,6 +8,11 @@ output "service_api_endpoints" {
   value       = { for k, api in aws_apigatewayv2_api.service : k => api.api_endpoint }
 }
 
+output "mesh_ui_url" {
+  description = "Open this in a browser to see the Mesh catalog viewer (services, topology graph, topic catalog). Populated once the mesh has run at least one aggregation pass."
+  value       = "http://${aws_s3_bucket_website_configuration.viewer.website_endpoint}/mesh/"
+}
+
 output "artifact_bucket" {
   description = "The S3 bucket holding the discovered registry.json and the generated catalog artifacts (manifest.json, services/*.json, topics.json, topology.json). The mesh Lambda writes them under the 'mesh/' prefix."
   value       = aws_s3_bucket.artifacts.id

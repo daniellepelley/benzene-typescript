@@ -84,6 +84,12 @@ npm run bundle          # esbuild → artifacts/*.zip (one tiny zip per function
 cd deploy && ./deploy.sh   # terraform init + apply (needs AWS creds + terraform)
 ```
 
+The catalog the mesh builds is browsable through a **static viewer** (`web/index.html`, served from the S3
+catalog bucket at the `mesh_ui_url` output) — a self-contained, language-neutral page rendering the estate,
+a topology graph, and the topic catalog from the same `manifest.json`/`topics.json`/`topology.json` the mesh
+writes. It's the lightweight stand-in for the .NET mesh's Lambda-served UI; a static page serves every port
+equally, so it's a candidate to hoist into the cross-language spec repo later.
+
 See [`deploy/README.md`](./deploy/README.md) for the full resource list, how to trigger the cascade against
 the live estate, and the (documented) divergences from the .NET stack.
 

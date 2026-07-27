@@ -1,0 +1,274 @@
+<!doctype html>
+<!--
+  Benzene mesh — static catalog viewer.
+
+  A single self-contained page (no build step, no dependencies, no framework) that renders the catalog the
+  mesh aggregator writes: manifest.json (the estate + health), topology.json (who calls whom), and
+  topics.json (every cross-service topic's producers/consumers). It fetches those three files relative to
+  its own URL, so hosting it *next to* the catalog is all the wiring it needs — here, the same S3 bucket the
+  mesh writes to, served as a static website (see ../deploy/main.tf).
+
+  This page is deliberately LANGUAGE-NEUTRAL: it reads the cross-language catalog JSON contract, nothing
+  C#- or TypeScript-specific. The .NET mesh serves an equivalent page from a Lambda; there's no real reason
+  it must be — a static page works for every port. A good future home is the shared cross-language benzene
+  spec repo, served by the website for any language; it lives here for now because this is where the AWS
+  Lambda mesh example deploys.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Benzene Mesh — Catalog</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --panel: #ffffff; --ink: #1a1d21; --muted: #6b7280; --line: #e5e7eb;
+      --accent: #4f46e5; --edge: #94a3b8; --node: #4f46e5; --node-ink: #ffffff;
+      --ok: #15803d; --ok-bg: #dcfce7; --bad: #b91c1c; --bad-bg: #fee2e2;
+      --warn: #92400e; --warn-bg: #fef3c7; --neutral: #374151; --neutral-bg: #eef2f7;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0e1116; --panel: #161b22; --ink: #e6edf3; --muted: #9198a1; --line: #2a313c;
+        --accent: #a5b4fc; --edge: #55606e; --node: #6366f1; --node-ink: #ffffff;
+        --ok: #4ade80; --ok-bg: #10331d; --bad: #f87171; --bad-bg: #3a1414;
+        --warn: #fbbf24; --warn-bg: #3a2c08; --neutral: #cbd5e1; --neutral-bg: #1e242c;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    header {
+      display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+      padding: 20px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
+    }
+    header h1 { font-size: 18px; margin: 0; font-weight: 650; }
+    header .sub { color: var(--muted); font-size: 13px; }
+    header .spacer { flex: 1; }
+    button {
+      font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+      border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    section { margin: 0 0 32px; }
+    section > h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .card .name { font-weight: 600; font-size: 15px; word-break: break-word; }
+    .card .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+    .badge { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+    .badge.ok { color: var(--ok); background: var(--ok-bg); }
+    .badge.bad { color: var(--bad); background: var(--bad-bg); }
+    .badge.warn { color: var(--warn); background: var(--warn-bg); }
+    .badge.neutral { color: var(--neutral); background: var(--neutral-bg); }
+    .chip { font-size: 12px; color: var(--muted); background: var(--neutral-bg); border-radius: 6px; padding: 1px 7px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    td.svc { font-weight: 600; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+    .muted { color: var(--muted); }
+    .topo-wrap { padding: 12px; overflow-x: auto; }
+    svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .node-label { font: 12px ui-monospace, monospace; fill: var(--node-ink); }
+    .empty { padding: 40px 24px; text-align: center; color: var(--muted); }
+    .error { color: var(--bad); }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 0 16px 14px; color: var(--muted); font-size: 13px; }
+    .swatch { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--edge); vertical-align: middle; margin-right: 6px; }
+    a { color: var(--accent); }
+    .httpmap { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Benzene Mesh <span class="muted">·</span> Catalog</h1>
+      <div class="sub" id="generated">Loading…</div>
+    </div>
+    <div class="spacer"></div>
+    <button id="refresh" type="button">↻ Refresh</button>
+  </header>
+
+  <main>
+    <section id="services-section">
+      <h2>Services <span id="services-count" class="muted"></span></h2>
+      <div id="services" class="grid"></div>
+    </section>
+
+    <section id="topology-section">
+      <h2>Topology <span id="edges-count" class="muted"></span></h2>
+      <div class="panel">
+        <div class="topo-wrap" id="topology"></div>
+        <div class="legend">
+          <span><span class="swatch"></span>directed edge: <em>client → server</em> (the producer of a topic → each service that consumes it)</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="topics-section">
+      <h2>Topics <span id="topics-count" class="muted"></span></h2>
+      <div class="panel" id="topics"></div>
+    </section>
+  </main>
+
+  <script>
+    // ---- helpers ---------------------------------------------------------------------------------
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    async function loadJson(name) {
+      // Cache-bust so ↻ Refresh reflects the latest aggregation pass rather than a cached copy.
+      const res = await fetch('./' + name + '?t=' + Date.now(), { cache: 'no-store' });
+      if (res.status === 404 || res.status === 403) return null; // not written yet (first run)
+      if (!res.ok) throw new Error(name + ': HTTP ' + res.status);
+      return res.json();
+    }
+
+    const fmtTime = (ms) => (typeof ms === 'number' ? new Date(ms).toLocaleString() : '—');
+
+    function serviceBadgeClass(status) {
+      if (status === 'healthy') return 'ok';
+      if (status === 'unhealthy' || status === 'unreachable') return 'bad';
+      return 'neutral';
+    }
+    function topicBadgeClass(status) {
+      if (status === 'gap' || status === 'deprecation-candidate') return 'warn';
+      return 'neutral';
+    }
+
+    // ---- services --------------------------------------------------------------------------------
+    function renderServices(manifest) {
+      const el = $('services');
+      const services = (manifest && manifest.services) || [];
+      $('services-count').textContent = services.length ? '(' + services.length + ')' : '';
+      if (!services.length) { el.innerHTML = '<div class="empty">No services in the manifest yet.</div>'; return; }
+
+      el.innerHTML = services.map((s) => {
+        const transports = (s.transports || []).map((t) => '<span class="chip">' + esc(t) + '</span>').join(' ');
+        const drift = s.contractDrift ? '<span class="badge warn" title="Spec changed since the previous run">contract drift</span>' : '';
+        const team = s.owningTeam ? '<span class="chip">' + esc(s.owningTeam) + '</span>' : '';
+        return '<div class="card">'
+          + '<div class="name">' + esc(s.name) + '</div>'
+          + '<div class="row"><span class="badge ' + serviceBadgeClass(s.status) + '">' + esc(s.status || 'unknown') + '</span>' + drift + team + '</div>'
+          + (transports ? '<div class="row">' + transports + '</div>' : '')
+          + '<div class="row muted" style="font-size:12px">snapshot ' + esc(fmtTime(s.snapshotAtUtc)) + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    // ---- topology graph (circular layout, no dependencies) ---------------------------------------
+    function renderTopology(topology, manifest) {
+      const el = $('topology');
+      const edges = (topology && topology.edges) || [];
+      $('edges-count').textContent = edges.length ? '(' + edges.length + ' edges)' : '';
+
+      // Node set: every service in the manifest, plus any endpoint that appears only in an edge.
+      const nodes = [];
+      const seen = new Set();
+      const add = (n) => { if (n && !seen.has(n)) { seen.add(n); nodes.push(n); } };
+      ((manifest && manifest.services) || []).forEach((s) => add(s.name));
+      edges.forEach((e) => { add(e.client); add(e.server); });
+
+      if (!nodes.length) { el.innerHTML = '<div class="empty">No topology yet.</div>'; return; }
+      if (!edges.length) { el.innerHTML = '<div class="empty">Services discovered, but no cross-service edges declared yet.</div>'; return; }
+
+      const N = nodes.length;
+      const W = 720, H = 460, cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 90;
+      const pos = {};
+      nodes.forEach((n, i) => {
+        const a = (i / N) * 2 * Math.PI - Math.PI / 2;
+        pos[n] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
+      });
+
+      const line = (e, i) => {
+        const a = pos[e.client], b = pos[e.server];
+        if (!a || !b) return '';
+        // Shorten the segment so the arrowhead sits at the node's edge, not its centre.
+        const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len, pad = 26;
+        const x1 = a.x + ux * pad, y1 = a.y + uy * pad, x2 = b.x - ux * pad, y2 = b.y - uy * pad;
+        const title = esc(e.client) + ' → ' + esc(e.server) + ' (' + esc(e.source || 'edge') + ')';
+        return '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
+          + '" stroke="var(--edge)" stroke-width="1.6" marker-end="url(#arrow)"><title>' + title + '</title></line>';
+      };
+
+      const node = (n) => {
+        const p = pos[n];
+        const short = n.length > 16 ? n.slice(0, 15) + '…' : n;
+        const w = Math.max(64, short.length * 7.6 + 16);
+        return '<g transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">'
+          + '<rect x="' + (-w / 2) + '" y="-13" width="' + w + '" height="26" rx="13" fill="var(--node)"></rect>'
+          + '<text class="node-label" text-anchor="middle" dy="4">' + esc(short) + '<title>' + esc(n) + '</title></text>'
+          + '</g>';
+      };
+
+      el.innerHTML =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Service topology graph">'
+        + '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
+        + '<path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"></path></marker></defs>'
+        + edges.map(line).join('')
+        + nodes.map(node).join('')
+        + '</svg>';
+    }
+
+    // ---- topics ----------------------------------------------------------------------------------
+    function renderTopics(catalog) {
+      const el = $('topics');
+      const topics = (catalog && catalog.topics) || [];
+      // Domain topics first (reserved spec/health/mesh utility topics last), then alphabetical.
+      topics.sort((a, b) => (a.reserved === b.reserved ? String(a.topic).localeCompare(b.topic) : a.reserved ? 1 : -1));
+      $('topics-count').textContent = topics.length ? '(' + topics.length + ')' : '';
+      if (!topics.length) { el.innerHTML = '<div class="empty">No topics catalogued yet.</div>'; return; }
+
+      const svcList = (arr) => (arr || []).map((c) => {
+        const maps = (c.httpMappings || []).map((m) => '<span class="httpmap"> ' + esc(m.method) + ' ' + esc(m.path) + '</span>').join('');
+        return '<div><code>' + esc(c.service) + '</code>' + maps + '</div>';
+      }).join('') || '<span class="muted">—</span>';
+
+      const rows = topics.map((t) => {
+        const status = t.status ? '<span class="badge ' + topicBadgeClass(t.status) + '">' + esc(t.status) + '</span>' : '';
+        const mism = t.schemaMismatch ? '<span class="badge bad" title="Consumers disagree on the payload">schema mismatch</span>' : '';
+        const reserved = t.reserved ? '<span class="chip">reserved</span>' : '';
+        const version = t.version ? '<span class="chip">v' + esc(t.version) + '</span>' : '';
+        return '<tr>'
+          + '<td class="svc"><code>' + esc(t.topic) + '</code><div class="row" style="margin-top:6px;gap:6px">' + version + reserved + status + mism + '</div></td>'
+          + '<td>' + svcList(t.producers) + '</td>'
+          + '<td>' + svcList(t.consumers) + '</td>'
+          + '</tr>';
+      }).join('');
+
+      el.innerHTML = '<table><thead><tr><th>Topic</th><th>Producers</th><th>Consumers</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    // ---- orchestration ---------------------------------------------------------------------------
+    async function load() {
+      $('generated').textContent = 'Loading…';
+      try {
+        const [manifest, topics, topology] = await Promise.all([
+          loadJson('manifest.json'), loadJson('topics.json'), loadJson('topology.json'),
+        ]);
+
+        if (!manifest) {
+          $('generated').innerHTML = '<span class="error">No catalog yet.</span> The mesh writes it on its schedule — check back after the next aggregation pass (or invoke the mesh function directly).';
+          renderServices(null); renderTopology(null, null); renderTopics(null);
+          return;
+        }
+
+        $('generated').textContent = 'Generated ' + fmtTime(manifest.generatedAtUtc);
+        renderServices(manifest);
+        renderTopology(topology, manifest);
+        renderTopics(topics);
+      } catch (err) {
+        $('generated').innerHTML = '<span class="error">Failed to load the catalog: ' + esc(err.message) + '</span>';
+      }
+    }
+
+    $('refresh').addEventListener('click', load);
+    load();
+  </script>
+</body>
+</html>

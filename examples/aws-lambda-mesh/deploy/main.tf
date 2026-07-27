@@ -70,6 +70,58 @@ resource "aws_s3_bucket" "artifacts" {
 }
 
 # ---------------------------------------------------------------------------------------------------
+# Static catalog viewer: the mesh writes its catalog (manifest/topics/topology.json) under mesh/, and a
+# single self-contained web/index.html reads them with same-origin relative fetches. Serve it as an S3
+# static website so `http://<endpoint>/mesh/` resolves to mesh/index.html and its ./manifest.json etc.
+# resolve to the catalog next to it. This is the lightweight, language-neutral stand-in for the .NET
+# mesh's Lambda-served UI. NOTE: this makes the catalog under mesh/ publicly readable (demo default) —
+# the catalog is non-sensitive service metadata; drop the public-read policy to keep it private.
+# ---------------------------------------------------------------------------------------------------
+resource "aws_s3_bucket_website_configuration" "viewer" {
+  bucket = aws_s3_bucket.artifacts.id
+  index_document {
+    suffix = "index.html"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "viewer" {
+  bucket                  = aws_s3_bucket.artifacts.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# Public read for the viewer + the catalog it reads (everything under mesh/).
+data "aws_iam_policy_document" "viewer_public_read" {
+  statement {
+    sid       = "PublicReadMeshCatalog"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.artifacts.arn}/mesh/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "viewer" {
+  bucket     = aws_s3_bucket.artifacts.id
+  policy     = data.aws_iam_policy_document.viewer_public_read.json
+  depends_on = [aws_s3_bucket_public_access_block.viewer]
+}
+
+# The viewer page itself, uploaded next to the catalog the mesh writes (mesh/index.html). Re-uploaded
+# whenever the file changes (etag). Independent of the mesh's own artifact writes — different key.
+resource "aws_s3_object" "viewer" {
+  bucket       = aws_s3_bucket.artifacts.id
+  key          = "mesh/index.html"
+  source       = var.viewer_html
+  etag         = filemd5(var.viewer_html)
+  content_type = "text/html"
+}
+
+# ---------------------------------------------------------------------------------------------------
 # IAM: a shared execution+messaging role for the service Lambdas, and a discover+invoke+S3 role for the
 # mesh. Node bundles are tiny (~60 KB), so code is deployed inline (filename) rather than via S3 — no
 # RequestEntityTooLarge concern like the .NET self-contained publishes have.

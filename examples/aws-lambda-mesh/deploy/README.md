@@ -16,6 +16,7 @@ adapted for the Node runtime (no custom bootstrap, no ADOT/X-Ray layer wiring).
 | 1 **EventBridge bus** + 2 rules + 5 targets | `payment:captured` → notifications/analytics; `shipment:dispatched` → inventory/notifications/analytics |
 | 6 **HTTP APIs** | one per service; the load-bearing route is `POST /orders` (kicks off the cascade) |
 | 1 **S3 bucket** | the discovered `registry.json` + the catalog (`manifest.json`, `services/*.json`, `topics.json`, `topology.json`, `asyncapi.json`) under the `mesh/` prefix |
+| 1 **static catalog viewer** | `web/index.html`, uploaded to `mesh/index.html` and served via S3 static-website hosting — a self-contained page (services + health, topology graph, topic catalog) that reads the catalog JSON next to it |
 | 1 **EventBridge schedule** | fires the mesh Lambda every minute (`var.aggregate_schedule`) to keep the catalog fresh |
 
 Each producer is handed its downstream target as an environment variable (`PAYMENTS_QUEUE_URL`,
@@ -76,7 +77,10 @@ curl -X POST "$(terraform output -raw orders_url)" \
 # 2. The mesh aggregates on a schedule; or run a pass now:
 aws lambda invoke --function-name "$(terraform output -raw mesh_function_name)" /dev/stdout
 
-# 3. Read the catalog the mesh built
+# 3. Open the catalog viewer in a browser (populated after the mesh's first pass)
+terraform output -raw mesh_ui_url
+
+# ...or read the catalog JSON directly
 aws s3 cp "$(terraform output -raw catalog_manifest_uri)" -
 aws s3 ls "s3://$(terraform output -raw artifact_bucket)/mesh/" --recursive
 ```
@@ -91,10 +95,12 @@ asynchronously across the real Lambdas; CloudWatch Logs for each function shows 
 - **No observability layer.** The .NET stack attaches the ADOT collector layer, X-Ray active tracing, and a
   CloudWatch EMF usage feed. Those depend on Benzene packages not part of this TypeScript example, so they're
   omitted — the topology and the discover→aggregate story are intact without them.
-- **The mesh has no HTTP API.** Its handler returns a plain summary (discover → aggregate to S3), not an
-  API-Gateway proxy response, so it's driven purely by the schedule (and on-demand `aws lambda invoke`).
-  Read its output from the S3 bucket. (The .NET mesh serves a Mesh UI over HTTP via `@benzene/mesh-ui`,
-  which isn't ported yet.)
+- **The mesh has no HTTP API; the UI is a static page, not a Lambda.** The mesh handler returns a plain
+  summary (discover → aggregate to S3), not an API-Gateway proxy response, so it's driven purely by the
+  schedule (and on-demand `aws lambda invoke`). Instead of the .NET mesh's Lambda-served `@benzene/mesh-ui`
+  (not ported), the catalog is browsed through `web/index.html` served as an S3 static site — a
+  language-neutral page that reads the same `manifest.json`/`topics.json`/`topology.json`. (A static page
+  serves every port equally, so a natural future home is the cross-language benzene spec repo.)
 - **Inline code, no S3 code bucket.** Node bundles are tiny, so there's no `RequestEntityTooLarge` limit to
   work around; the S3 bucket here holds only the mesh's catalog artifacts.
 - **No remote state backend.** This stack uses local state for simplicity. For CI/shared use, add a
