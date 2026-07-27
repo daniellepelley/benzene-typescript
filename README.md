@@ -49,6 +49,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions + health-check deferred) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
+| `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; producer + dead-letter/`DrainOnRevoke` + health-check deferred) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
@@ -850,6 +851,41 @@ Ported (with tests):
   `withEventHubConfigDefaults`; `EventProcessorClient` → `EventHubConsumerClient` (the factory's created type,
   interface name kept). The emulator integration test is replaced by unit tests that drive the captured
   `processEvents` handler over a fake client with a checkpoint-recording `PartitionContext`.
+- Standalone Kafka consumer (`@benzene/kafka-core`): the **consumer-worker slice only** of
+  `Benzene.Kafka.Core`, on `kafkajs` — `useKafka(workerStartup, config, consumerFactory, action)` registers a
+  `BenzeneKafkaWorker` (`IBenzeneWorker`) that consumes topics and runs each record through a
+  `KafkaRecordContext` pipeline, tagged transport `"kafka"`. Sibling of the trigger-delivered
+  `@benzene/aws-lambda-kafka` / `@benzene/azure-function-kafka`; intended for `@benzene/self-host` workers.
+  Divergences: **the SDK consume model** — .NET hand-rolls a synchronous Confluent `IConsumer.Consume()`
+  poll loop on a background `Task` dispatching each `ConsumeResult` through a `BoundedConcurrentDispatcher`;
+  kafkajs has no synchronous `Consume()` and is push-based, so this maps to `consumer.run({ eachMessage,
+  partitionsConsumedConcurrently, autoCommit })`. `ConcurrentRequests` → `partitionsConsumedConcurrently`
+  (kafkajs parallelises across partitions rather than bounding a shared handler pool);
+  `PreserveOrderPerPartition` is **inherent** to `eachMessage` (a partition's records arrive sequentially),
+  so the flag can't be turned off for unordered round-robin dispatch — it's retained (default `true`) only to
+  keep the `CommitOnlyOnSuccess` startup validation faithful; `CatchHandlerExceptions` `true` → catch/log/
+  continue, `false` → stop the worker by `consumer.disconnect()` (deferred via `queueMicrotask`, since a
+  throw out of `eachMessage` makes kafkajs *retry* the record — the worker swallows-then-disconnects instead
+  of rethrowing); `CommitOnlyOnSuccess` → `autoCommit: false` + an explicit `consumer.commitOffsets(...)`
+  after a successful handle (kafkajs commits the **next** offset, so the worker commits `message.offset + 1`).
+  Startup still throws for `CommitOnlyOnSuccess` combined with `CatchHandlerExceptions` or with
+  `PreserveOrderPerPartition = false`, matching the C#. **Generic erasure**: the .NET types are
+  `…<TKey, TValue>`; kafkajs delivers raw `Buffer` key/value with no per-message deserializer seam, so the
+  port carries no type parameters and the body getter handles `Buffer`/string (`null` → `undefined`).
+  **Config bag**: .NET's single Confluent `ConsumerConfig` (brokers/groupId/…) is split in kafkajs across the
+  caller-built `Kafka` client (`brokers`) and `consumer` (`groupId`), which the caller hands to
+  `IKafkaConsumerFactory` (mirroring the Event Hubs factory seam), so `BenzeneKafkaConfig` carries only
+  `topics`, `fromBeginning` (the `AutoOffsetReset` analog), and the behaviour flags — not brokers/groupId.
+  Also: `KafkaApplication` extends `MiddlewareApplicationWithResult` (the C# uses the plain, result-less
+  `MiddlewareApplication` and gates commits on whether the handler threw); `KafkaMessageTopicGetter` is
+  registered directly (not behind a `PresetTopicMessageTopicGetter` as SQS/Event Hubs are — a Kafka record
+  always carries its native topic); config class → interface with `withKafkaConfigDefaults`;
+  `CancellationToken` → optional `AbortSignal`. **Deferred** (not ported): the outbound producer / message
+  client (`Kafka/` subdir — a separate clients concern), the `KafkaDeadLetterOptions` retry-then-dead-letter
+  re-produce and `DrainOnRevoke` rebalance-draining (both lean on Confluent's manual `StoreOffset` /
+  `SetPartitionsRevokedHandler` seams kafkajs's higher-level push model doesn't expose in the same shape),
+  and the `KafkaHealthCheck` / `IKafkaAdminClientFactory` (the health-check domain). Tests drive the captured
+  `eachMessage` handler over a fake kafkajs consumer recording `commitOffsets`/`disconnect`.
 - Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
   `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
   idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable
