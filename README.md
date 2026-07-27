@@ -42,6 +42,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
 | `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
 | `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
+| `src/Benzene.Aws.Sqs` | `@benzene/aws-sqs` | `Benzene.Aws.Sqs` (standalone SQS polling consumer; `IAmazonSQS`→`ISqsConsumerClient` seam over aws-sdk v3) |
 | `src/Benzene.Aws.Lambda.ApiGateway` | `@benzene/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
 | `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzene/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
@@ -791,6 +792,20 @@ Ported (with tests):
   already ported (merged into `@benzene/abstractions`/`@benzene/abstractions-middleware`/`@benzene/clients`),
   and `Benzene.HostedService` (the .NET generic-host `IHostedService` adapter) has no JS counterpart — see
   the roadmap.
+- Standalone SQS consumer (`@benzene/aws-sqs`): the non-Lambda SQS **polling** host — `useSqs(workerStartup,
+  config, clientFactory, action)` registers an `SqsConsumer` (`IBenzeneWorker`) that long-polls a queue and
+  runs each received message through a `SqsConsumerMessageContext` pipeline, tagged transport `"sqs"`, with
+  per-message DI scopes fanned out by `BoundedFanOut` and PerMessage-vs-WholeBatch ack modes. Sibling of the
+  Lambda-delivered `@benzene/aws-lambda-sqs`; intended for `@benzene/self-host` workers. Divergences:
+  `CancellationToken` → optional `AbortSignal` (and `Task.Delay(token)` → a signal-aware `delay` that
+  resolves early rather than throwing on the backoff path); `IAmazonSQS` (which `SqsConsumer` calls directly)
+  → a small `ISqsConsumerClient` seam (`receiveMessageAsync`/`deleteMessageBatchAsync`) because aws-sdk v3
+  uses `client.send(new XCommand(...))` — `SqsClientFactory` wraps a v3 `SQSClient`, and the injected client
+  is app-owned so `using var client` has no counterpart; `SqsConsumerOptions`/`SqsConsumerConfig` classes →
+  interfaces (`AckMode`'s C# `= PerMessage` default becomes "unset behaves as PerMessage", `WaitTimeSeconds`'s
+  `= 20` default applied by `withConfigDefaults`); and the container registration of `ISqsClientFactory` is
+  dropped since the factory is passed to `useSqs` directly and its `SQSClient` isn't container-resolvable. The
+  C# LocalStack integration test is replaced by a unit-level poll-loop test over a mock `ISqsConsumerClient`.
 - Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
   `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
   idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable
