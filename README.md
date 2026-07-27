@@ -47,6 +47,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzene/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
+| `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions + health-check deferred) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
@@ -806,6 +807,27 @@ Ported (with tests):
   `= 20` default applied by `withConfigDefaults`); and the container registration of `ISqsClientFactory` is
   dropped since the factory is passed to `useSqs` directly and its `SQSClient` isn't container-resolvable. The
   C# LocalStack integration test is replaced by a unit-level poll-loop test over a mock `ISqsConsumerClient`.
+- Standalone Service Bus consumer (`@benzene/azure-service-bus`): the non-Functions Service Bus **consumer**
+  worker — `useServiceBus(workerStartup, config, clientFactory, action)` registers a
+  `BenzeneServiceBusWorker` (`IBenzeneWorker`) that consumes a queue or topic subscription and runs each
+  message through a `ServiceBusConsumerContext` pipeline, tagged transport `"service-bus"`, settling it per
+  `ServiceBusConsumerAckMode` (`Explicit` default — a failure result *or* a throw abandons for redelivery;
+  `AutoComplete` opt-in). A handler can request an explicit settlement (complete/abandon/dead-letter/defer)
+  via the scoped `ServiceBusSettlementHolder` (the "scoped DI state, not context" convention). Sibling of the
+  trigger-delivered `@benzene/azure-function-service-bus`; intended for `@benzene/self-host` workers.
+  Divergences: **the SDK push model** — .NET's `ServiceBusProcessor`/`ProcessMessageAsync` maps to
+  `@azure/service-bus`'s `ServiceBusReceiver.subscribe({ processMessage, processError }, …)` (no
+  `ServiceBusProcessor` type exists in the JS SDK), with settlement on the receiver rather than the delivery
+  event args, so the `IServiceBusMessageSettler` seam collapses to one implementation over `receiver` +
+  `message`; `CancellationToken` → optional `AbortSignal` (the per-message `SeedCancellationToken` is dropped,
+  as the port has no ambient cancellation-token DI seam); the config/holder classes → interfaces/mutable
+  holders with `withServiceBusConfigDefaults` applying the C# property-initializer defaults. **Deferred**
+  (retained for API parity, documented, and fail-loud where applicable): session consumption
+  (`sessionsEnabled` throws at `startAsync` — the JS SDK has no session *processor*, only one-session
+  `acceptSession`/`acceptNextSession`; a bounded session pump is the follow-up); `prefetchCount` (no
+  `@azure/service-bus` receiver-option equivalent, accepted but not plumbed); and the peek-based dependency
+  health-check auto-wiring (no Azure Service Bus health-check package ported yet). The emulator integration
+  test is replaced by unit tests that drive the `receiver.subscribe` push path over a fake client/receiver.
 - Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
   `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
   idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable

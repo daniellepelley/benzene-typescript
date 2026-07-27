@@ -16,6 +16,7 @@
     "@benzene/auth-oauth2": "0.1.0",
     "@benzene/avro": "0.1.0",
     "@benzene/aws-sqs": "0.1.0",
+    "@benzene/azure-service-bus": "0.1.0",
     "@benzene/aws-lambda-core": "0.1.0",
     "@benzene/aws-lambda-api-gateway": "0.1.0",
     "@benzene/aws-lambda-sqs": "0.1.0",
