@@ -3,32 +3,40 @@
  * `Shared/MeshServiceWiring`. Each service is a single Lambda (a composite entry point) that:
  *
  *  - answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
- *    mesh interrogates (via `@benzene/aws-lambda-core`'s `useBenzeneMessage`), returning a self-derived spec
- *    (`requests`/`events`/`transports`) and a health report;
+ *    mesh interrogates (via `@benzene/aws-lambda-core`'s `useBenzeneMessage`). The `spec` topic is served by
+ *    the **library `useSpec`** (`@benzene/schema-openapi`) — the standard, dogfooded self-description path —
+ *    which builds the benzene spec document (`{ requests, events, transports, components.schemas }`) from the
+ *    service's own DI-registered feeds. There is deliberately no hand-built spec: `useSpec` IS the single
+ *    source of truth, so running the example proves `useSpec` emits the correct spec.
  *  - hosts its domain handlers over every transport it actually listens on (API Gateway, SQS, SNS,
- *    EventBridge) — the same handler on each, routed by the composite's event-shape predicates;
- *  - **declares** the topics it produces (spec `events`) so the mesh can derive the structural topology
- *    (producer of a topic → every service whose `requests` contain it), exactly as the .NET example does.
+ *    EventBridge) — the same handler on each, routed by the composite's event-shape predicates.
  *
- * There are no runtime SQS/SNS/EventBridge *outbound* clients here (those adapter packages aren't ported
- * yet); the structural topology is derived from the declared `events`, which is what the .NET example's
- * topology is built from too — declaring a send is what surfaces it as a producer edge.
+ * `useSpec` reads these from the container at spec-build time; the composite gives each route its own
+ * container plus the shared `configureServices` registrations, so every feed `useSpec` needs is registered
+ * in `configureServices`:
+ *  - request/response payload schemas ← the registered `ZodJsonSchemaSource` (`ITypeJsonSchemaSource`),
+ *    which reads the Zod schemas the domain payloads registered (`services.ts`);
+ *  - `httpMappings` ← `addHttpMessageHandlers` (correlates each handler's `@httpEndpoint` with its `@message`);
+ *  - `events[]` (produced topics → the structural topology) ← `addResponseEventDeclarations`, the port of
+ *    .NET's `AddResponseEventDeclarations`;
+ *  - `transports[]` ← a declared `TransportsInfo` (the composite is multi-container, so the transports the
+ *    service listens on are declared here rather than auto-aggregated across routes).
  */
-import { Constructor, IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import {
-  IMessageHandler,
-  IMessageHandlerDefinition,
-  IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
+import { Constructor, IBenzeneResultOf } from '@benzene/abstractions';
+import { IMessageHandler, ITransportsInfo } from '@benzene/abstractions-message-handlers';
+import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
 import { Handler } from 'aws-lambda';
 import {
   addBenzene,
-  getMessageMetadata,
   message,
   MessageHandlersRegistry,
+  TransportInfo,
+  TransportsInfo,
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
-import { ValidationMeshSchemaProvider } from '@benzene/mesh-wire';
+import { addHttpMessageHandlers } from '@benzene/http';
+import { addResponseEventDeclarations, ResponseEventDefinition } from '@benzene/response-events';
+import { useSpec } from '@benzene/schema-openapi';
 import { ZodJsonSchemaSource } from '@benzene/zod';
 import { BenzeneResult } from '@benzene/results';
 import { SQSClient } from '@aws-sdk/client-sqs';
@@ -71,23 +79,6 @@ export interface OutboundWiring {
   target(topic: string, transport: Transport): string;
 }
 
-/** One consumed-topic entry in a service's self-derived spec (`requests`). */
-export interface SpecRequest {
-  topic: string;
-  httpMappings?: { method: string; path: string }[];
-  /** JSON Schema of the topic's request payload, derived from the handler's registered Zod schema. */
-  request?: Record<string, unknown>;
-  /** JSON Schema of the topic's response payload (absent for a `VoidResult` handler). */
-  response?: Record<string, unknown>;
-}
-
-/** The benzene spec shape the mesh aggregator parses (`requests`/`events`/`transports`). */
-export interface ServiceSpec {
-  requests: SpecRequest[];
-  events: { topic: string }[];
-  transports: Transport[];
-}
-
 /** The definition of one mesh service: its domain handlers, what it consumes, and what it produces. */
 export interface MeshServiceDefinition {
   /** The service (and Lambda function) name, e.g. `orders-api`. */
@@ -98,8 +89,10 @@ export interface MeshServiceDefinition {
   readonly domainHandlers: Constructor<unknown>[];
   /** Consumed domain topics, with the transport they arrive over — drives both the spec and the routes. */
   readonly consumes: { topic: string; transport: Transport; httpMappings?: { method: string; path: string }[] }[];
-  /** Produced domain topics — declared in the spec's `events` for the structural topology. */
+  /** Produced domain topics — declared as response events so they appear in the spec's `events` (topology). */
   readonly produces: string[];
+  /** The payload type of the produced events (all events in this example carry the same `{ orderId }` shape). */
+  readonly eventPayloadType?: Constructor<unknown>;
   /** Extra transports the service listens on beyond those implied by `consumes` (e.g. `http` for orders). */
   readonly extraTransports?: Transport[];
   /**
@@ -114,60 +107,13 @@ export interface MeshServiceDefinition {
   readonly sends?: { topic: string; transport: Transport; targetEnvVar?: string }[];
 }
 
-/**
- * Builds the self-derived benzene spec object for a service definition, including each consumed topic's
- * request/response JSON Schema. The schemas come from the Zod schemas registered for the handlers' payload
- * types (via `ValidationMeshSchemaProvider` + `ZodJsonSchemaSource`) — the runtime replacement for .NET
- * reflecting over the CLR type. The mesh aggregator reads these `request`/`response` fields into its topic
- * catalog (`topics.json`), so a payload declared here surfaces in the catalog and the mesh viewer.
- */
-export function buildServiceSpec(definition: MeshServiceDefinition): ServiceSpec {
-  const schemaProvider = schemaProviderFor(definition);
-  const requests: SpecRequest[] = definition.consumes.map((c) => {
-    const schemas = schemaProvider.getSchemas({ id: c.topic, version: '' });
-    const entry: SpecRequest = { topic: c.topic };
-    if (c.httpMappings !== undefined) {
-      entry.httpMappings = c.httpMappings;
-    }
-    if (schemas.request !== undefined) {
-      entry.request = schemas.request;
-    }
-    if (schemas.response !== undefined) {
-      entry.response = schemas.response;
-    }
-    return entry;
-  });
+/** The set of transports a service listens on (from its consumed topics + any extra transports). */
+function serviceTransports(definition: MeshServiceDefinition): Set<Transport> {
   const transports = new Set<Transport>(definition.extraTransports ?? []);
-  for (const c of definition.consumes) {
-    transports.add(c.transport);
+  for (const consume of definition.consumes) {
+    transports.add(consume.transport);
   }
-  return {
-    requests,
-    events: definition.produces.map((topic) => ({ topic })),
-    transports: [...transports],
-  };
-}
-
-/**
- * A `ValidationMeshSchemaProvider` for one service, built from its domain handlers' `@message` metadata
- * (topic → request/response type) and the Zod JSON-Schema source. Dogfoods the library seam a real
- * deployment uses, keyed off the handlers this service actually registers.
- */
-function schemaProviderFor(definition: MeshServiceDefinition): ValidationMeshSchemaProvider {
-  const handlers = definition.domainHandlers.map((handler) => {
-    const metadata = getMessageMetadata(handler);
-    return {
-      topic: { id: metadata?.topic ?? '', version: metadata?.version ?? '' },
-      requestType: metadata?.requestType ?? VoidResult,
-      responseType: metadata?.responseType ?? VoidResult,
-      handlerType: handler,
-    } as unknown as IMessageHandlerDefinition;
-  });
-  const lookUp: IMessageHandlerDefinitionLookUp = {
-    getAllHandlers: () => handlers,
-    findHandler: (topic) => handlers.find((h) => h.topic.id === topic.id),
-  };
-  return new ValidationMeshSchemaProvider(lookUp, [new ZodJsonSchemaSource()]);
+  return transports;
 }
 
 /** The health report a service returns over the reserved `healthcheck` topic. */
@@ -176,34 +122,20 @@ function buildHealth(name: string): { isHealthy: boolean; checks: { name: string
 }
 
 /**
- * Builds a service's Lambda `handler`: a composite entry point that answers direct-invoke `spec`/`healthcheck`
- * plus its domain handlers on every transport it listens on. The reserved-topic handlers are defined here so
- * each service closes over its OWN spec/health (a fresh handler class per service, registered in the
- * service's own registry — no cross-service topic collision).
+ * Builds a service's Lambda `handler`: a composite entry point that answers direct-invoke `spec` (via the
+ * library `useSpec`) and `healthcheck` plus its domain handlers on every transport it listens on.
  */
 export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbound?: OutboundWiring): Handler {
-  const { name, registry, domainHandlers } = definition;
-  const spec = buildServiceSpec(definition);
+  const { name, domainHandlers, produces, eventPayloadType, sends } = definition;
   const health = buildHealth(name);
+  const transports = serviceTransports(definition);
 
-  // The reserved spec/health handlers register into their OWN throwaway registry, never the service's
-  // domain `registry` — otherwise `registry.getAll()` would pick them up as domain handlers on a later
-  // build and the topics would collide. `useMessageHandlers` reads each class's `@message` metadata
-  // directly from the classes passed to it, so a separate registry is invisible to the pipeline.
+  // The reserved health handler registers into its OWN throwaway registry, never a service's domain registry
+  // — so a later build never picks it up as a domain handler. `useMessageHandlers` reads each class's
+  // `@message` metadata directly from the classes passed to it, so a separate registry is invisible.
   const reservedRegistry = new MessageHandlersRegistry();
-
-  // Empty marker request/response classes: the reserved handlers ignore the request and return a plain
-  // object the renderer serializes to the invoke's response body (the raw spec/health JSON the mesh reads).
   class ReservedRequest {}
-  class SpecResponse {}
   class HealthResponse {}
-
-  @message('spec', { registry: reservedRegistry, requestType: ReservedRequest, responseType: SpecResponse })
-  class SpecHandler implements IMessageHandler<ReservedRequest, SpecResponse> {
-    handleAsync(): Promise<IBenzeneResultOf<SpecResponse>> {
-      return Promise.resolve(BenzeneResult.ok(spec as unknown as SpecResponse));
-    }
-  }
 
   @message('healthcheck', { registry: reservedRegistry, requestType: ReservedRequest, responseType: HealthResponse })
   class HealthHandler implements IMessageHandler<ReservedRequest, HealthResponse> {
@@ -212,16 +144,24 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbou
     }
   }
 
-  const transports = new Set(spec.transports);
-
-  const { sends } = definition;
-
   const entryPoint = compositeAwsLambda((c) => {
     c.configureServices((s) => {
       addBenzene(s);
-      // Wire the runtime outbound routes: each sent topic converts to the right transport and publishes via
-      // the supplied AWS SDK client to the topic's target (the in-memory bus, or a real queue/topic/bus).
-      // `useX(app, target, client [, source])` — same code for the fake and the real client.
+
+      // --- the feeds `useSpec` reads to build the benzene spec document (see the file header) --------------
+      // Payload schemas: derived from the Zod schemas the domain payloads registered (services.ts).
+      s.addSingletonInstance(ITypeJsonSchemaSource, new ZodJsonSchemaSource());
+      // httpMappings: correlate each handler's @httpEndpoint with its @message topic (idempotent — tryAdd).
+      addHttpMessageHandlers(s);
+      // events[]: declare the produced topics so they surface in the spec (→ the structural topology).
+      if (produces.length > 0 && eventPayloadType !== undefined) {
+        addResponseEventDeclarations(s, ...produces.map((topic) => new ResponseEventDefinition(topic, eventPayloadType)));
+      }
+      // transports[]: declared here (the composite is multi-container, so we can't auto-aggregate across
+      // routes); the benzene direct-invoke surface is the interrogation channel, not a listen transport.
+      s.addSingletonInstance(ITransportsInfo, new TransportsInfo([...transports].map((t) => new TransportInfo(t))));
+
+      // --- runtime outbound routing (unchanged): a handler's send reaches the bus / a real queue/topic/bus --
       if (outbound !== undefined && sends !== undefined && sends.length > 0) {
         addOutboundRouting(s, (routing) => {
           for (const send of sends) {
@@ -239,9 +179,11 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbou
       }
     });
 
-    // The direct-invoke surface the mesh interrogates: reserved spec/health + the domain handlers.
+    // The direct-invoke surface the mesh interrogates: the library spec handler + healthcheck + domain
+    // handlers. `useSpec(bm)` owns the reserved `spec` topic (DI-dispatched); it must NOT also appear in the
+    // `useMessageHandlers` list, or the two finders would collide on the topic.
     c.route(isBenzeneMessageEvent, (app) =>
-      useBenzeneMessage(app, (bm) => useMessageHandlers(bm, SpecHandler, HealthHandler, ...domainHandlers)),
+      useBenzeneMessage(app, (bm) => useMessageHandlers(useSpec(bm), HealthHandler, ...domainHandlers)),
     );
 
     // The domain handlers over each transport the service actually listens on.

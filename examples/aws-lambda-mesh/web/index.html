@@ -263,9 +263,9 @@
     // ---- topics ----------------------------------------------------------------------------------
     function renderTopics(catalog) {
       const el = $('topics');
-      const topics = (catalog && catalog.topics) || [];
-      // Domain topics first (reserved spec/health/mesh utility topics last), then alphabetical.
-      topics.sort((a, b) => (a.reserved === b.reserved ? String(a.topic).localeCompare(b.topic) : a.reserved ? 1 : -1));
+      // Show domain topics only — the reserved utility topics (spec/healthcheck/…) the service also serves
+      // are part of the spec but not the business catalog, so they're filtered from this view.
+      const topics = ((catalog && catalog.topics) || []).filter((t) => !t.reserved).sort((a, b) => String(a.topic).localeCompare(b.topic));
       $('topics-count').textContent = topics.length ? '(' + topics.length + ')' : '';
       if (!topics.length) { el.innerHTML = '<div class="empty">No topics catalogued yet.</div>'; return; }
 

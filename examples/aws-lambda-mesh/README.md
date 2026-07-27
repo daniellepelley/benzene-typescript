@@ -24,12 +24,18 @@ asserts the end result.
 Each service is **one Lambda** — a composite entry point (`compositeAwsLambda`) that:
 
 - answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
-  mesh interrogates — via `useBenzeneMessage` (`@benzene/aws-lambda-core`), returning a self-derived spec
-  (`requests`/`events`/`transports`) and a health report;
+  mesh interrogates — via `useBenzeneMessage` (`@benzene/aws-lambda-core`). The `spec` topic is served by the
+  **library `useSpec`** (`@benzene/schema-openapi`) — the standard, dogfooded self-description path — which
+  builds the benzene spec document (`{ requests, events, transports, components.schemas }`, payload schemas
+  as `$ref`s) from the service's own DI feeds. There is **no hand-built spec**: `useSpec` is the single
+  source of truth, so running the example proves `useSpec` emits the correct spec end-to-end;
 - hosts its domain handlers over every transport it actually listens on (API Gateway, SQS, SNS,
   EventBridge), routed by the composite's event-shape predicates;
-- **declares** the topics it produces (spec `events`), which is what lets the mesh derive the structural
-  topology — producer of a topic → every service whose `requests` contain it.
+- **declares** the topics it produces via `addResponseEventDeclarations` (→ the spec's `events`), which is
+  what lets the mesh derive the structural topology — producer of a topic → every service whose `requests`
+  contain it. The payload schemas come from each service's registered Zod schemas (via `ZodJsonSchemaSource`),
+  and `httpMappings` from each handler's `@httpEndpoint` — every spec field is fed to `useSpec`, never
+  hand-assembled.
 
 ## The mesh (`src/mesh.ts`)
 

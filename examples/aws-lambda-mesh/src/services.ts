@@ -132,6 +132,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
     domainHandlers: [CreateOrderHandler],
     consumes: [{ topic: 'orders:create', transport: 'http', httpMappings: [{ method: 'post', path: '/orders' }] }],
     produces: ['payments:capture', 'order:placed'],
+    eventPayloadType: Message,
     sends: [
       { topic: 'payments:capture', transport: 'sqs', targetEnvVar: 'PAYMENTS_QUEUE_URL' },
       { topic: 'order:placed', transport: 'sns', targetEnvVar: 'ORDER_PLACED_TOPIC_ARN' },
@@ -143,6 +144,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
     domainHandlers: paymentsRegistry.getAll(),
     consumes: [{ topic: 'payments:capture', transport: 'sqs' }],
     produces: ['shipping:book', 'payment:captured'],
+    eventPayloadType: Message,
     sends: [
       { topic: 'shipping:book', transport: 'sqs', targetEnvVar: 'SHIPPING_QUEUE_URL' },
       { topic: 'payment:captured', transport: 'eventbridge', targetEnvVar: 'EVENT_BUS_NAME' },
@@ -155,6 +157,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
     domainHandlers: shippingRegistry.getAll(),
     consumes: [{ topic: 'shipping:book', transport: 'sqs' }],
     produces: ['shipment:dispatched'],
+    eventPayloadType: Message,
     sends: [{ topic: 'shipment:dispatched', transport: 'eventbridge', targetEnvVar: 'EVENT_BUS_NAME' }],
     extraTransports: ['http'],
   },
