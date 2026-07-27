@@ -176,7 +176,7 @@ Two representative examples, verified against the port's source:
   Partial-batch mode requires `ReportBatchItemFailures` on the event source mapping's
   `FunctionResponseTypes`.
 - **AWS SNS** (`@benzene/aws-lambda-sns`) — one notification per invocation, no per-record ack API, so
-  settlement rides on whether the invocation throws. `SnsMessageHandlerResultSetter` records the result;
+  settlement rides on whether the invocation throws. `SnsMessageMessageHandlerResultSetter` records the result;
   `SnsApplication` then consults `SnsOptions`. Both flags are **opt-in, defaulting to `false`**:
   - `raiseOnFailureStatus` (default `false`) — when `true`, a non-exception failure result is escalated
     into a thrown `SnsMessageProcessingException`, so SNS's subscription retry/redrive applies (the same
