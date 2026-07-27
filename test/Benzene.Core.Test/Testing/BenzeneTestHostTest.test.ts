@@ -18,7 +18,7 @@
  * every handler and an identical `configureServices`, differing only in `configure`.
  */
 import { describe, expect, it } from 'vitest';
-import { APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyResult, SQSBatchResponse } from 'aws-lambda';
 import { HttpResponseInit } from '@azure/functions';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
@@ -33,6 +33,7 @@ import {
 import { httpEndpoint } from '@benzene/http';
 import { IBenzeneMessageSender } from '@benzene/clients';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useAzureHttp } from '@benzene/azure-function-http';
 import { useServiceBus } from '@benzene/azure-function-service-bus';
 import {
@@ -42,7 +43,7 @@ import {
   messageBuilder,
   type BenzeneConfiguration,
 } from '@benzene/testing';
-import { asApiGatewayRequest, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { asApiGatewayRequest, asSqs, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 import {
   asAzureHttpRequest,
   asAzureServiceBusMessage,
@@ -127,6 +128,19 @@ class AwsOrdersStartUp implements AwsLambdaStartUp {
   }
 }
 
+// An SQS-triggered AWS startup — the direct parallel of AwsOrdersStartUp (both handlers, one transport)
+// for a NON-HTTP AWS event source. Its configureServices is byte-identical to the API Gateway startup's;
+// only `configure` names the transport (useSqs vs useApiGateway). This proves the harness reaches every
+// AWS event source through the one buildAwsLambdaHost line, not just API Gateway (the consistency law):
+// the single AwsLambdaEntryPoint sniffs the native event, so a test swaps only the as* builder.
+class AwsSqsOrdersStartUp implements AwsLambdaStartUp {
+  configureServices = configureSharedServices;
+
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler, PublishOrderCreatedHandler));
+  }
+}
+
 // The HTTP-triggered Azure startup — the direct parallel of AwsOrdersStartUp (both handlers, one
 // transport). Its configureServices is byte-identical to AWS's; only `configure` names the transport.
 class AzureOrdersStartUp implements AzureFunctionStartUp {
@@ -177,6 +191,40 @@ describe('benzeneTestHost — AWS Lambda', () => {
     const response = await host.sendEventAsync<APIGatewayProxyResult>(request);
 
     expect(response.statusCode).toBe(202);
+    expect(fake.lastTopic).toBe(MessageTopics.orderCreated);
+    expect(fake.lastRequest).toMatchObject({ id: 'abc', name: 'acme' });
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// AWS Lambda, SQS event source — the SAME buildAwsLambdaHost line as the API Gateway block above; only
+// the as* builder (asApiGatewayRequest → asSqs) and the native response shape (APIGatewayProxyResult →
+// SQSBatchResponse) change. Proves a non-HTTP AWS event source is reachable through the harness end to end.
+// ---------------------------------------------------------------------------------------------------
+
+describe('benzeneTestHost — AWS Lambda (SQS event source)', () => {
+  it('routes an SQS record to the create-order handler and returns an empty batch response', async () => {
+    const host = benzeneTestHost(AwsSqsOrdersStartUp).buildAwsLambdaHost();
+
+    const request = asSqs(messageBuilder(MessageTopics.createOrder, { name: 'acme' }));
+    const response = await host.sendEventAsync<SQSBatchResponse>(request);
+
+    // A successful record is not reported as a failure — the native SQS partial-batch response is empty.
+    expect(response.batchItemFailures).toEqual([]);
+  });
+
+  it('publishes on the order-created topic via an SQS record (ingress → handler → egress), asserting response AND egress', async () => {
+    const fake = new FakeBenzeneMessageSender();
+
+    const host = benzeneTestHost(AwsSqsOrdersStartUp)
+      .withServices((services) => services.addSingletonInstance(IBenzeneMessageSender, fake))
+      .buildAwsLambdaHost();
+
+    const orderCreated: OrderCreatedEvent = { id: 'abc', name: 'acme' };
+    const request = asSqs(messageBuilder(MessageTopics.placeOrder, orderCreated));
+    const response = await host.sendEventAsync<SQSBatchResponse>(request);
+
+    expect(response.batchItemFailures).toEqual([]);
     expect(fake.lastTopic).toBe(MessageTopics.orderCreated);
     expect(fake.lastRequest).toMatchObject({ id: 'abc', name: 'acme' });
   });
