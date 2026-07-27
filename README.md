@@ -73,6 +73,7 @@ Mirrors the .NET repository:
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
 | `src/Benzene.Schema.OpenApi` | `@benzene/schema-openapi` | `Benzene.Schema.OpenApi` (benzene format only; schema from validators, not reflection) |
+| `src/Benzene.Spec.Ui` | `@benzene/spec-ui` | `Benzene.Spec.Ui` (explorer page inlined as a string, not an embedded resource) |
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
 | `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
@@ -443,6 +444,12 @@ next to its C# counterpart:
   `benzene:spec` topic catalog; `MapTypeJsonSchemaSource` is the bring-your-own path (the runtime
   equivalent of .NET's `SuppliedSchemaCatalog`), and it composes with the validator sources. A type with
   no source stays unconstrained (`{}`) — the spec's documented no-schema case.
+- **Embedded UI assets → inlined string constants.** .NET packages that serve a self-contained HTML page
+  (e.g. `Benzene.Spec.Ui`'s Spec Explorer) ship it as an **assembly-embedded resource** read via reflection.
+  A bundled Node/Lambda artifact can't rely on filesystem/resource access, so the port inlines the page as a
+  string constant in a `.ts` file (`@benzene/spec-ui`'s `SpecUiPage`) — no I/O, works in any bundle. The
+  page itself is written fresh as an idiomatic viewer (theme-aware, dependency-free, resolving `$ref`s
+  against `components.schemas`) rather than transliterating the .NET HTML; same purpose, TS-native code.
 
 ## Multi-language interoperability
 

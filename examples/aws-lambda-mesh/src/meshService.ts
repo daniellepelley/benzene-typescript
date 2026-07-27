@@ -32,6 +32,7 @@ import {
   addBenzene,
   message,
   MessageHandlersRegistry,
+  setApplicationInfo,
   TransportInfo,
   TransportsInfo,
   useMessageHandlers,
@@ -138,6 +139,8 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbou
   const entryPoint = compositeAwsLambda((c) => {
     c.configureServices((s) => {
       addBenzene(s);
+      // The service's identity → the spec document's `info` (title/version), shown by the Spec Explorer.
+      setApplicationInfo(s, name, '1.0.0', `${name} Cloud Service`);
 
       // --- the feeds `useSpec` reads to build the benzene spec document (see the file header) --------------
       // Payload schemas: derived from the Zod schemas the domain payloads registered (services.ts).
