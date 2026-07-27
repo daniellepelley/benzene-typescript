@@ -50,6 +50,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions + health-check deferred) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
 | `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; producer + dead-letter/`DrainOnRevoke` + health-check deferred) |
+| `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish + health-check deferred) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
@@ -886,6 +887,44 @@ Ported (with tests):
   `SetPartitionsRevokedHandler` seams kafkajs's higher-level push model doesn't expose in the same shape),
   and the `KafkaHealthCheck` / `IKafkaAdminClientFactory` (the health-check domain). Tests drive the captured
   `eachMessage` handler over a fake kafkajs consumer recording `commitOffsets`/`disconnect`.
+- Standalone RabbitMQ consumer (`@benzene/rabbitmq`): the **consumer-worker slice only** of
+  `Benzene.RabbitMq`, on `amqplib` — `useRabbitMq(workerStartup, config, connectionFactory, action)` registers
+  a `RabbitMqWorker` (`IBenzeneWorker`) that consumes a queue and runs each delivery through a
+  `RabbitMqContext` pipeline, tagged transport `"rabbitmq"`. RabbitMQ is the first vendor-neutral, self-hosted
+  broker in Benzene; intended for `@benzene/self-host` workers (console, container, Kubernetes). **Ack policy
+  — safe by default**: `RabbitMqConfig.ackMode` defaults to `RabbitMqAckMode.Explicit` — a delivery is `ack`ed
+  on handler success and `nack`ed on a failure result **or** a thrown exception, with requeue bounded to one
+  retry (a first-attempt failure requeues; an already-`redelivered` failure is nacked without requeue so a
+  poison message can't hot-loop), governed by `requeueOnFailure`; `RabbitMqAckMode.AutoAck` (broker acks on
+  dispatch, `noAck: true`) is available for at-most-once, loss-tolerant workloads. Divergences: **the SDK
+  consume model** — .NET's `RabbitMQ.Client` v7 async API (`IConnection`/`IChannel`,
+  `AsyncEventingBasicConsumer`, `BasicAck`/`BasicNack`) maps to `amqplib` (`ChannelModel`/`Channel`,
+  `channel.consume(queue, onMessage, { noAck })`, `channel.ack`/`channel.nack(msg, false, requeue)`);
+  deliveries are still fanned out through `@benzene/self-host`'s `BoundedConcurrentDispatcher` bounded by
+  `concurrentRequests`, with the prefetch QoS (`channel.prefetch(count)`) bounding unacked deliveries, exactly
+  as the C#. **Connection seam** — `IRabbitMqConnectionFactory.createConnectionAsync` returns amqplib's
+  `ChannelModel` (amqplib's name for the connection object; it has no `ConnectionFactory` type), and the
+  default `RabbitMqConnectionFactory` wraps a URL/connect-options and calls `amqplib.connect`, so the caller
+  owns host/credentials/vhost/TLS — mirroring the Kafka/Service Bus client-factory seams (passed directly to
+  `useRabbitMq`, not container-resolved, so no `ServiceToken`). **Message-type adaptation** — `RabbitMqContext`
+  wraps a `ConsumeMessage` (`BasicDeliverEventArgs`→`ConsumeMessage`): body from `message.content` (a
+  `Buffer`, UTF-8 decoded), routing key from `message.fields.routingKey`, redelivered from
+  `message.fields.redelivered`, headers from `message.properties.headers` (string / `Buffer` values decoded);
+  the C#'s rented-buffer copy (`Body.ToArray()`) is unnecessary since amqplib hands out a fresh `Buffer` per
+  message. `RabbitMqApplication` extends `MiddlewareApplicationWithResult` (like `KafkaApplication`);
+  `RabbitMqMessageTopicGetter` reads the topic header **falling back to the AMQP routing key** and is
+  registered behind a `PresetTopicMessageTopicGetter` (so `.usePresetTopic(...)` works); config class →
+  interface with `withRabbitMqConfigDefaults`; `DrainTimeout` (`TimeSpan`) → `drainTimeoutMs` (`number`);
+  `CancellationToken` → optional `AbortSignal`; the logger is resolved lazily via `ILoggerFactory` through a
+  scope (matching the Kafka/Service Bus workers) rather than constructor-injected. No `SeedCancellationToken`
+  middleware is added (the port has no ambient cancellation-token DI seam yet, matching `useServiceBus`).
+  **Deferred** (not ported): the **outbound publish** slice (`RabbitMqSendMessage/`:
+  `RabbitMqBenzeneMessageClient`, `RabbitMqClientMiddleware`, `RabbitMqContextConverter`,
+  `.UseRabbitMq<T>(...)`) — a separate follow-up; this port covers the consumer-worker core only; and the
+  **health-check** slice (`RabbitMqHealthCheck`, `RabbitMqHealthCheckExtensions`, `RabbitMqConnectionProvider`,
+  and `UseRabbitMq`'s auto-wiring `healthCheck` flag) — the health-check domain is owned separately. Tests
+  drive the captured `channel.consume` callback over a fake amqplib channel/connection recording
+  `ack`/`nack`/`cancel`/`close`.
 - Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
   `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
   idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable

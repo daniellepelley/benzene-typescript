@@ -19,6 +19,7 @@
     "@benzene/azure-service-bus": "0.1.0",
     "@benzene/azure-event-hub": "0.1.0",
     "@benzene/kafka-core": "0.1.0",
+    "@benzene/rabbitmq": "0.1.0",
     "@benzene/aws-lambda-core": "0.1.0",
     "@benzene/aws-lambda-api-gateway": "0.1.0",
     "@benzene/aws-lambda-sqs": "0.1.0",
