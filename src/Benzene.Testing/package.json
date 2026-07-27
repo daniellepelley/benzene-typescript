@@ -8,6 +8,9 @@
   "types": "./index.ts",
   "dependencies": {
     "@benzene/abstractions": "0.1.0",
-    "@benzene/core-messages": "0.1.0"
+    "@benzene/clients": "0.1.0",
+    "@benzene/core-messages": "0.1.0",
+    "@benzene/dependencies": "0.1.0",
+    "@benzene/results": "0.1.0"
   }
 }

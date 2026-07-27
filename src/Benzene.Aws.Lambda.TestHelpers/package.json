@@ -9,6 +9,9 @@
   "dependencies": {
     "@types/aws-lambda": "^8.10",
     "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/aws-lambda-core": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
     "@benzene/testing": "0.1.0"
   }
 }

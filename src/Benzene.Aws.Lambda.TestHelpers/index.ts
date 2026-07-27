@@ -8,7 +8,13 @@
  * (each isolating a specific `Amazon.Lambda.*Events` NuGet). In the Node ecosystem every Lambda event
  * type comes from the single `@types/aws-lambda` package, so there is no dependency to isolate - the
  * TypeScript-idiomatic shape is one `@benzene/aws-lambda-testing` package with a builder per transport.
+ *
+ * `buildAwsLambdaHost(...)` is the AWS specialization step for `benzeneTestHost(...)` (from
+ * `@benzene/testing`): the one transport-specific line that turns a neutral, booted-from-startup test host
+ * into an `AwsLambdaBenzeneTestHost` you push native events into with `sendEventAsync`.
  */
+export * from './AwsLambdaBenzeneTestHost';
+export * from './BenzeneTestHostExtensions';
 export * from './ApiGatewayMessageBuilderExtensions';
 export * from './SqsMessageBuilderExtensions';
 export * from './SnsMessageBuilderExtensions';

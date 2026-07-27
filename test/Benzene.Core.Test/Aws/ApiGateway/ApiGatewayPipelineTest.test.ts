@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
@@ -12,7 +12,8 @@ import {
 } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
+import { asApiGatewayRequest, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 import {
   addApiGateway,
   ApiGatewayApplication,
@@ -76,23 +77,28 @@ function createApiGatewayEvent(
   };
 }
 
-const fakeLambdaContext = {} as Context;
+// Lead-by-example: this block was ported from C# driving `InlineAwsLambdaStartUp` directly; it now
+// dogfoods the public startup-host harness (`benzeneTestHost(StartUp).buildAwsLambdaHost()` +
+// `host.sendEventAsync(...)`) — the exact shape an adopter copies — instead of a rig no adopter could.
+class ApiGatewayStartUp implements AwsLambdaStartUp {
+  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
 
-describe('ApiGatewayPipeline (via AwsLambdaEntryPoint)', () => {
+  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
+    useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler));
+  }
+}
+
+describe('ApiGatewayPipeline (via the benzeneTestHost harness)', () => {
   it('routes an HTTP request to a decorated handler and returns 200 with the serialized body', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(ApiGatewayStartUp).buildAwsLambdaHost();
 
-    const event = createApiGatewayEvent('POST', '/orders', { orderId: '42' });
-
-    const response = (await entryPoint.functionHandlerAsync(
-      event,
-      fakeLambdaContext,
-    )) as APIGatewayProxyResult;
+    const response = await host.sendEventAsync<APIGatewayProxyResult>(
+      asApiGatewayRequest(httpBuilder('POST', '/orders', { orderId: '42' })),
+    );
 
     // The handler genuinely ran with the deserialized body...
     expect(handled).toEqual(['42']);
@@ -106,17 +112,11 @@ describe('ApiGatewayPipeline (via AwsLambdaEntryPoint)', () => {
   it('returns 404 for an unknown route (no matching topic)', async () => {
     handled.length = 0;
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
-      .build();
+    const host = benzeneTestHost(ApiGatewayStartUp).buildAwsLambdaHost();
 
-    const event = createApiGatewayEvent('GET', '/no-such-route', undefined);
-
-    const response = (await entryPoint.functionHandlerAsync(
-      event,
-      fakeLambdaContext,
-    )) as APIGatewayProxyResult;
+    const response = await host.sendEventAsync<APIGatewayProxyResult>(
+      asApiGatewayRequest(httpBuilder('GET', '/no-such-route')),
+    );
 
     // Nothing handled the request; the not-found status maps to HTTP 404.
     expect(handled).toEqual([]);

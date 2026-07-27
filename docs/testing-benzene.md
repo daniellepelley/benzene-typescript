@@ -19,18 +19,37 @@ The test helpers live in three packages, all dev-only:
 - **`@benzene/azure-function-testing`** — the Azure counterpart (`asAzureHttpRequest`,
   `asAzureServiceBusMessage`, `asEventHubBenzeneMessage`, `asAzureKafkaEvent`).
 
-You then drive the generated event through a real entry point built with `InlineAwsLambdaStartUp` /
-`InlineAzureFunctionStartUp` — the same construction a deployed [AWS Lambda](getting-started-aws.md)
-or [Azure Functions](azure-functions.md) host performs.
+You then drive the generated event through a real app booted from its own `BenzeneStartUp` with the
+`benzeneTestHost` startup-host harness — the same construction a deployed
+[AWS Lambda](getting-started-aws.md) or [Azure Functions](azure-functions.md) host performs:
 
-> **Divergence from .NET.** The .NET library ships a `BenzeneTestHost` / `BenzeneTestHostBuilder` that
-> spins an in-memory host from a deployed `BenzeneStartUp`. The TypeScript port does **not** port that
-> host builder — its transports are already driven directly through their `Inline*StartUp` entry points
-> (and their `*Application` classes), which is exactly what the ported test suite uses. So where the
-> .NET doc says "build a `BenzeneTestHost` and call `SendSqsAsync`", the TypeScript equivalent is "build
-> an `InlineAwsLambdaStartUp` entry point and call `functionHandlerAsync` with an `asSqs(...)` event".
-> `@benzene/testing` ports the reusable request-construction half. See the
-> [README](../README.md#porting-conventions).
+```ts
+const fake = new FakeBenzeneMessageSender();
+
+const host = benzeneTestHost(OrdersStartUp)              // boot the REAL app from its startup
+  .withServices((s) => s.addSingletonInstance(IBenzeneMessageSender, fake))  // override ANY registration
+  .buildAwsLambdaHost();                                 // the ONE transport/cloud-specific line
+
+const response = await host.sendEventAsync<APIGatewayProxyResult>(
+  asApiGatewayRequest(httpBuilder('POST', '/orders', order)),
+);
+
+expect(response.statusCode).toBe(201);                   // assert the native response…
+expect(fake.lastTopic).toBe('order:created');            // …and the egress
+```
+
+To test the same handlers on Azure, only the `.buildAwsLambdaHost()` line (→ `.buildAzureFunctionApp()`)
+and the `as*` builder change; everything else is identical. The worked exemplars live in
+`test/Benzene.Core.Test/Testing/BenzeneTestHostTest.test.ts`.
+
+> **Fidelity to .NET.** `benzeneTestHost(StartUp)` ports the .NET `BenzeneTestHost` / `BenzeneTestHostBuilder`
+> (`benzeneTestHost` → `Create`, `.withServices` → `WithServices`, `.withConfiguration` → `WithConfiguration`,
+> `.buildAwsLambdaHost()`/`.buildAzureFunctionApp()` → the `Build*Host` extensions). Two idiom bends are
+> recorded in the [README](../README.md#porting-conventions): the neutral `BenzeneStartUp` is generic over
+> its app-builder type (the per-transport app-builder unification is still deferred), and the `Build*`
+> extension is a fluent method added by module augmentation. You can still drive a transport directly via
+> its `Inline*StartUp` entry point (as some low-level unit tests below do) when you want to bypass a startup
+> class entirely.
 
 ## Installation
 
@@ -326,11 +345,13 @@ trailing options object.
 
 ## Notes and limitations
 
-- **`BenzeneTestHost` is not ported.** Build the entry point directly with `Inline*StartUp` (above);
-  it is the same construction a real host performs and the same shape the ported test suite uses.
-- **Configuration overrides.** There is no `WithConfiguration` builder; register configuration values
-  as services inside `configureServices`, or read them from `process.env` set by the test, before
-  `addBenzene` wires dependents.
+- **`benzeneTestHost` boots from your `BenzeneStartUp`.** Prefer it (top of this guide) to test the real
+  app end to end; drop to `Inline*StartUp` only for low-level unit tests that deliberately bypass a startup
+  class. The specialization method (`buildAwsLambdaHost` / `buildAzureFunctionApp`) lights up when you
+  import its transport `*-testing` package, which you already do for the `as*` builder.
+- **Configuration overrides.** `benzeneTestHost(...).withConfiguration(key, value)` (or an object) layers
+  in-memory config over your startup's own `getConfiguration()` (last-wins), handed to `configureServices`/
+  `configure` as a `BenzeneConfiguration`.
 - **Express host.** For an [Express](getting-started.md)-hosted service you can test over real HTTP
   with [`supertest`](https://github.com/ladjs/supertest) against the `express()` app — the analog of
   .NET's `WebApplicationFactory` — since the app is a standard Express app; or use the API Gateway

@@ -9,7 +9,14 @@
  * project per trigger; in Node the payload types come from a few shared packages (`@azure/functions`,
  * `@azure/service-bus`, `@azure/event-hubs`), so one `@benzene/azure-function-testing` package with a
  * builder per trigger is the idiomatic shape. (Queue Storage is not ported, so it has no builder.)
+ *
+ * `buildAzureFunctionApp(...)` is the Azure specialization step for `benzeneTestHost(...)` (from
+ * `@benzene/testing`) — the Azure counterpart of `buildAwsLambdaHost`: the one transport-specific line that
+ * turns a neutral, booted-from-startup test host into an `AzureFunctionBenzeneTestHost` you push native
+ * trigger payloads into with `sendEventAsync`.
  */
+export * from './AzureFunctionBenzeneTestHost';
+export * from './BenzeneTestHostExtensions';
 export * from './AzureHttpBuilderExtensions';
 export * from './ServiceBusMessageBuilderExtensions';
 export * from './EventHubMessageBuilderExtensions';

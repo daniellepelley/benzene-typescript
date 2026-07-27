@@ -1,0 +1,32 @@
+import { Context } from 'aws-lambda';
+import { IAwsLambdaEntryPoint } from '@benzene/aws-lambda-core';
+
+/**
+ * Port of Benzene.Aws.Lambda.Core.TestHelpers.AwsLambdaBenzeneTestHost — an in-memory AWS Lambda test
+ * host. Wraps a built {@link IAwsLambdaEntryPoint} and pushes native Lambda events (built by the `as*`
+ * builders in this package) in through the front door, returning the transport's native response.
+ *
+ * IDIOM MAP: the .NET host takes/returns raw `Stream`s (the .NET Lambda runtime hands the handler an
+ * unparsed byte stream); the Node runtime hands an already-parsed event and expects a value back, so —
+ * exactly as `AwsLambdaEntryPoint` is adapted — `sendEventAsync` takes the parsed event and returns the
+ * parsed response, with no stream (de)serialization dance. C# `IDisposable` → `dispose()`.
+ */
+export class AwsLambdaBenzeneTestHost {
+  constructor(private readonly entryPoint: IAwsLambdaEntryPoint) {}
+
+  /**
+   * Sends a native Lambda event through the pipeline and returns the transport's native response
+   * (`APIGatewayProxyResult`, an SQS batch response, …), typed by `TResponse`.
+   * @param event The native Lambda event (typically built by an `as*` builder in this package).
+   * @param context An optional Lambda context; a minimal fake is used when omitted.
+   */
+  async sendEventAsync<TResponse = unknown>(event: unknown, context?: Context): Promise<TResponse> {
+    const lambdaContext = context ?? ({} as Context);
+    return (await this.entryPoint.functionHandlerAsync(event, lambdaContext)) as TResponse;
+  }
+
+  /** Disposes the underlying entry point (its service resolver factory). Port of C# `Dispose`. */
+  dispose(): void {
+    this.entryPoint.dispose();
+  }
+}

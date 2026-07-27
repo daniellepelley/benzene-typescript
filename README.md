@@ -137,7 +137,8 @@ AWS: `asApiGatewayRequest`, `asApiGatewayV2Request`, `asSqs`, `asSns`, `asEventB
 `asEventHubBenzeneMessage`, `asAzureKafkaEvent` — each turning one `messageBuilder`/`httpBuilder` into a
 native cloud event routable by the matching adapter (`asS3` takes a bucket/key directly, since an S3
 notification carries no JSON body). Every one is exercised end-to-end in memory in
-`test/Benzene.Core.Test/Testing/`, driving the real transport pipeline via `Inline*StartUp`. **Two deliberate TS-DX bends,** both
+`test/Benzene.Core.Test/Testing/`, driving the real transport pipeline via the `benzeneTestHost` startup-host
+harness (below) or `Inline*StartUp`. **Two deliberate TS-DX bends,** both
 from the TypeScript-DX-champion lens (see `.claude/agents/typescript-dx-champion.md`): (1) the C# ships one
 `*.TestHelpers` project per transport to isolate each `Amazon.Lambda.*Events` NuGet, but in Node the event
 types come from a few shared packages (`@types/aws-lambda`; `@azure/functions`/`service-bus`/`event-hubs`),
@@ -146,10 +147,28 @@ so there is no dependency to isolate — the idiomatic shape is one `@benzene/aw
 `As*(serializer, numberOfMessages)` parameters become a single trailing **options object**
 (`{ serializer?, numberOfMessages? }`), consistent across every builder. There is a builder for every
 ported transport; the DynamoDB one ships a small AttributeValue marshaller (the inverse of the adapter's
-`DynamoDbAttributeValueConverter`). Not ported: the `BenzeneTestHost`/`BenzeneTestHostBuilder`
-startup-host (the TS transports are driven directly via their `*Application`/`Inline*StartUp` entry
-points, which the tests already use), and an Azure Queue Storage builder (that transport itself isn't
-ported).
+`DynamoDbAttributeValueConverter`). The `BenzeneTestHost`/`BenzeneTestHostBuilder` **startup-host is now
+ported**: `benzeneTestHost(StartUp)` (in `@benzene/testing`) boots a real app from its `BenzeneStartUp`,
+`.withServices((services) => ...)` overrides ANY registration (last-registration-wins over the port's
+first-party container), `.withConfiguration(...)` layers config, and a single transport specialization
+finishes it — `.buildAwsLambdaHost()` / `.buildAzureFunctionApp()` (in the transport `*-testing`
+packages). Send native events in with `host.sendEventAsync<TResponse>(asX(...))`; assert on the native
+response AND on egress via the first-party `FakeBenzeneMessageSender`. **Bends recorded here:** (3) the
+neutral `BenzeneStartUp` is **generic over its app-builder type** (`BenzeneStartUp<TAppBuilder>`, pinned
+by the `AwsLambdaStartUp`/`AzureFunctionStartUp` aliases) rather than the single `IBenzeneApplicationBuilder`
+the .NET reference uses, because the port's per-transport application-builder unification (the generic-host
+bootstrap) is still deferred — so an AWS startup's `configure` takes the AWS pipeline builder and an Azure
+startup's takes the Azure app builder, but `benzeneTestHost`/`.withServices`/`.withConfiguration` and the
+egress assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name
+change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
+by module augmentation** (`declare module '@benzene/testing'` + a prototype assignment) so the
+`benzeneTestHost(...).withServices(...).buildAwsLambdaHost()` chain reads as in the reference while the
+neutral core keeps zero cloud imports — it lights up on importing the transport `*-testing` package, which
+a test always does for its `as*` builder; (5) `FakeBenzeneMessageSender` (the egress test double each .NET
+example re-declares as a local helper) is promoted into `@benzene/testing` so adopters get it first-party.
+The startup-host builder is dogfooded by `test/Benzene.Core.Test/Testing/BenzeneTestHostTest.test.ts` (the
+AWS+Azure worked exemplars) and by the converted `ApiGatewayPipelineTest`/`AzureHttpPipelineTest`. Still not
+ported: an Azure Queue Storage builder (that transport itself isn't ported).
 
 §§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client

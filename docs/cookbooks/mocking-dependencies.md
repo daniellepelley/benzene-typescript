@@ -30,15 +30,19 @@ those into native cloud events (`asApiGatewayRequest`, `asSqs`, …).
 
 ## The approach
 
-The .NET library ships a `BenzeneTestHost` that builds an in-memory host from your production `StartUp` and
-lets you override registrations with `WithServices(...)`. **The TypeScript port does not port that host** —
-under type erasure the transports are driven directly via their entry points (`InlineAwsLambdaStartUp`) or
-a pipeline built by hand, which is exactly what the ported tests do. So the TypeScript way to "swap in a
-mock" is:
+The TypeScript port ships `benzeneTestHost(StartUp)` — the port of .NET's `BenzeneTestHost` — which builds an
+in-memory host from your production `BenzeneStartUp` and lets you override any registration with
+`.withServices(...)` (last-registration-wins), then finishes with a single `.buildAwsLambdaHost()` /
+`.buildAzureFunctionApp()` line. So the TypeScript way to "swap in a mock" is:
 
-1. Build the entry point (or pipeline) in the test.
-2. In `configureServices`, register your fake against the **same service identifier** the handler injects.
-3. Drive a real event through it and assert.
+1. `benzeneTestHost(YourStartUp)`.
+2. `.withServices((services) => services.addSingletonInstance(IYourDep, fake))` — the fake wins over the
+   startup's own registration of the **same service identifier** the handler injects.
+3. `.buildAwsLambdaHost()`, then `host.sendEventAsync(asX(...))` a real event through it and assert on the
+   response and on the fake.
+
+(For a low-level unit test that deliberately bypasses a startup class, you can still build a transport
+entry point directly with `InlineAwsLambdaStartUp` / a hand-built pipeline.)
 
 Because the container resolves the **most recent** registration for an identifier
 (`Microsoft.Extensions.DependencyInjection` semantics), registering a fake *after* the real dependency

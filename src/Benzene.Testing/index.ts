@@ -7,11 +7,16 @@
  * Transport-specific `as*` builders (turning a builder into a native SQS/SNS/API Gateway/… event) live
  * in the per-platform testing packages, e.g. `@benzene/aws-lambda-testing`, which build on these.
  *
- * Divergence from .NET: the `BenzeneTestHost`/`BenzeneTestHostBuilder` startup-host builder (which wraps
- * a `BenzeneStartUp` + MEL container) is not ported here - the TypeScript port's transports are driven
- * directly via their `*Application`/`InlineAwsLambdaStartUp` entry points; these builders provide the
- * request-construction half, which is the reused, transport-testing core. See the README.
+ * `benzeneTestHost(StartUp)` is the neutral startup-host builder (port of `BenzeneTestHost` /
+ * `BenzeneTestHostBuilder`): boot a real app from its `BenzeneStartUp`, override any dependency with
+ * `.withServices(...)` (last-registration-wins), layer config with `.withConfiguration(...)`, then finish
+ * with a single transport-specific `build*Host` specialization from a `*.TestHelpers` package
+ * (`buildAwsLambdaHost` / `buildAzureFunctionApp`, …). `FakeBenzeneMessageSender` is the first-party egress
+ * test double.
  */
 export * from './MessageBuilder';
 export * from './HttpBuilder';
 export * from './MessageBuilderExtensions';
+export * from './BenzeneConfiguration';
+export * from './BenzeneTestHost';
+export * from './FakeBenzeneMessageSender';

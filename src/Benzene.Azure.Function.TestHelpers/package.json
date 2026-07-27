@@ -11,6 +11,8 @@
     "@azure/service-bus": "^7",
     "@azure/event-hubs": "^6",
     "@benzene/abstractions": "0.1.0",
+    "@benzene/azure-function-core": "0.1.0",
+    "@benzene/azure-function-http": "0.1.0",
     "@benzene/azure-function-kafka": "0.1.0",
     "@benzene/testing": "0.1.0"
   }

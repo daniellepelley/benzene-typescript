@@ -13,11 +13,12 @@ import {
 import { httpEndpoint } from '@benzene/http';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
+import { asAzureHttpRequest, type AzureFunctionStartUp } from '@benzene/azure-function-testing';
 import {
   addAzureHttp,
   AzureHttpApplication,
   AzureHttpContext,
-  handleHttpRequest,
   useAzureHttp,
 } from '@benzene/azure-function-http';
 
@@ -66,20 +67,29 @@ function createHttpRequest(method: string, path: string, body: unknown): HttpReq
   });
 }
 
-describe('AzureHttpPipeline (via AzureFunctionApp entry point)', () => {
+// Lead-by-example: this block was ported from C# driving `InlineAzureFunctionStartUp` directly; it now
+// dogfoods the public startup-host harness (`benzeneTestHost(StartUp).buildAzureFunctionApp()` +
+// `host.sendEventAsync(...)`) — the same shape adopters copy, and the exact parallel of the AWS
+// `ApiGatewayPipelineTest` conversion (only `buildAzureFunctionApp` + `asAzureHttpRequest` differ).
+class AzureHttpStartUp implements AzureFunctionStartUp {
+  configureServices = (services: Parameters<AzureFunctionStartUp['configureServices']>[0]): void => {
+    addBenzene(services);
+  };
+
+  configure(app: Parameters<AzureFunctionStartUp['configure']>[0]): void {
+    useAzureHttp(app, (http) => useMessageHandlers(http, CreateOrderHandler));
+  }
+}
+
+describe('AzureHttpPipeline (via the benzeneTestHost harness)', () => {
   it('routes an HTTP request to a decorated handler and returns 200 with the serialized body', async () => {
     handled.length = 0;
 
-    const app = new InlineAzureFunctionStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((builder) =>
-        useAzureHttp(builder, (http) => useMessageHandlers(http, CreateOrderHandler)),
-      )
-      .build();
+    const host = benzeneTestHost(AzureHttpStartUp).buildAzureFunctionApp();
 
-    const request = createHttpRequest('POST', '/orders', { orderId: '42' });
-
-    const response: HttpResponseInit = await handleHttpRequest(app, request);
+    const response = await host.sendEventAsync<HttpResponseInit>(
+      asAzureHttpRequest(httpBuilder('POST', '/orders', { orderId: '42' })),
+    );
 
     // The handler genuinely ran with the deserialized body...
     expect(handled).toEqual(['42']);
@@ -93,16 +103,11 @@ describe('AzureHttpPipeline (via AzureFunctionApp entry point)', () => {
   it('returns 404 for an unknown route (no matching topic)', async () => {
     handled.length = 0;
 
-    const app = new InlineAzureFunctionStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((builder) =>
-        useAzureHttp(builder, (http) => useMessageHandlers(http, CreateOrderHandler)),
-      )
-      .build();
+    const host = benzeneTestHost(AzureHttpStartUp).buildAzureFunctionApp();
 
-    const request = createHttpRequest('GET', '/no-such-route', undefined);
-
-    const response: HttpResponseInit = await handleHttpRequest(app, request);
+    const response = await host.sendEventAsync<HttpResponseInit>(
+      asAzureHttpRequest(httpBuilder('GET', '/no-such-route')),
+    );
 
     // Nothing handled the request; the not-found status maps to HTTP 404.
     expect(handled).toEqual([]);
