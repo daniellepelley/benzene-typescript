@@ -11,9 +11,9 @@ export const RabbitMqConstants = {
    * the consumer via {@link RabbitMqConfig.topicHeaderKey} (or the `addRabbitMqConsumer(topicHeaderKey)`
    * overload / the `RabbitMqMessageTopicGetter` constructor).
    *
-   * PORTING NOTE: the producer-side overrides the C# doc mentions (the outbound `UseRabbitMq(...)`
-   * extensions / `RabbitMqBenzeneMessageClient` / `RabbitMqContextConverter`) live in the outbound
-   * publish slice, which is not ported here — see the README porting-conventions bullet.
+   * The producer-side overrides live in the outbound publish slice (`RabbitMqSendMessage/`): the
+   * `useRabbitMq(...)` extensions, `RabbitMqBenzeneMessageClient`'s `topicHeaderKey` constructor param,
+   * and `RabbitMqContextConverter`'s `topicHeaderKey`.
    */
   DefaultTopicHeader: 'topic',
 } as const;
