@@ -14,11 +14,8 @@ import {
 import { httpEndpoint } from '@benzene/http';
 import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { ApiGatewayContext, useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { benzeneTestHost, type BenzeneStartUp } from '@benzene/testing';
-// Importing this package installs `buildAwsLambdaHost` on the test-host builder (module augmentation).
-// This harness hand-rolls its event, so it imports no `as*` builder value; the bare import runs the
-// package's side effect (a type-only import would be erased and the method never installed).
-import '@benzene/aws-lambda-testing';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
 
 /**
  * Shared harness for the auth tests. The C# auth suite (BasicAuthTest / AuthorizationTest) hosts a
@@ -46,25 +43,11 @@ class SecureHandler implements IMessageHandler<SecureRequest, SecureResponse> {
 
 /** Builds an API Gateway `GET /secure` event, optionally carrying an `Authorization` header. */
 export function createSecureEvent(authorization?: string): APIGatewayProxyEvent {
-  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  const request = httpBuilder('GET', '/secure');
   if (authorization !== undefined) {
-    headers['authorization'] = authorization;
+    request.withHeader('authorization', authorization);
   }
-
-  return {
-    httpMethod: 'GET',
-    path: '/secure',
-    resource: '/secure',
-    body: null,
-    headers,
-    multiValueHeaders: {},
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    pathParameters: null,
-    stageVariables: null,
-    isBase64Encoded: false,
-    requestContext: {} as APIGatewayProxyEvent['requestContext'],
-  };
+  return asApiGatewayRequest(request);
 }
 
 /**

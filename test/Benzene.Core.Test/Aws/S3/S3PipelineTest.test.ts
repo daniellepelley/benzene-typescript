@@ -82,9 +82,9 @@ function createS3Event(
   return { Records: records.map((r) => createS3Record(r.eventName, r.bucket, r.key)) };
 }
 
-// Lead-by-example: this block was ported from C# driving `InlineAwsLambdaStartUp` directly; it now
-// dogfoods the public startup-host harness (`benzeneTestHost(StartUp).buildAwsLambdaHost()` +
-// `host.sendEventAsync(...)`) with the `asS3` event builder — the exact shape an adopter copies.
+// Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
+// (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asS3` event
+// builder — the exact shape an adopter copies.
 class S3StartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
