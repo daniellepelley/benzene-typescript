@@ -20,6 +20,12 @@ export interface IHealthCheckBuilder {
   /** Registers a health check via a factory function invoked with the current `IServiceResolver` each time checks run. */
   addHealthCheckFn(func: (resolver: IServiceResolver) => IHealthCheck): IHealthCheckBuilder;
 
-  /** Resolves every registered health check against the given resolver. */
-  getHealthChecks(resolver: IServiceResolver): IHealthCheck[];
+  /**
+   * Resolves the registered health checks. When `includeDependencyChecks` is `false` the
+   * dependency-category checks (`IDependencyHealthCheck` — auto-wired external-dependency checks) are
+   * excluded, so a liveness or readiness probe never fails over a shared-downstream blip; only the
+   * general `healthcheck` probe includes them. Defaults to `true` (include everything), matching the
+   * C# `GetHealthChecks(resolver)` behaviour.
+   */
+  getHealthChecks(resolver: IServiceResolver, includeDependencyChecks?: boolean): IHealthCheck[];
 }

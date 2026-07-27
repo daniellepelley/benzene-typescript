@@ -17,6 +17,45 @@ export interface IHealthCheck {
    * connection refused) - report them via a failed `IHealthCheckResult` instead.
    */
   executeAsync(): Promise<IHealthCheckResult>;
+
+  // The members below are C# default interface members. TypeScript interfaces can't carry a default
+  // implementation, so they are OPTIONAL here and every consumer reads them through a `?? default`
+  // (see `HealthCheckProcessor`, `DependencyHealthCheck`). This preserves the .NET semantics — an
+  // implementer may omit them and get the documented default — while a check can still describe its
+  // own routing/criticality/cost rather than have those decided processor-wide.
+
+  /**
+   * Open-string labels for routing/filtering a check. Defaults to none. Probe separation
+   * (liveness/readiness) is done by dedicated topic + the dependency registration category, not by a
+   * tag — tags are for finer filtering on top of that.
+   */
+  readonly tags?: string[];
+
+  /**
+   * Whether a failure of this check should **not** make the whole probe unhealthy. Defaults to
+   * `false` — a check is critical unless it opts out, so a `HealthCheckStatus.failed` flips the
+   * aggregated response to unhealthy. Set to `true` to have a failure downgraded to
+   * `HealthCheckStatus.warning` during aggregation, so a non-critical dependency being down degrades
+   * but does not take the instance out of service.
+   *
+   * The polarity is deliberate (`isNonCritical`, not `isCritical`): the default/unknown value must
+   * fail **safe** (critical). An unset/`undefined` value therefore reads as critical.
+   */
+  readonly isNonCritical?: boolean;
+
+  /**
+   * A per-check cache lifetime hint (milliseconds) for a caching processor, overriding its
+   * processor-wide TTL. Defaults to `undefined` (use the processor's TTL). Reserved for a future
+   * per-check caching layer.
+   */
+  readonly ttl?: number;
+
+  /**
+   * A per-check timeout (milliseconds), overriding the processor-wide timeout. Defaults to
+   * `undefined` (use the processor's timeout). Lets a known-slow check have a longer budget, or a
+   * must-be-fast one a shorter budget, without widening the timeout for every check.
+   */
+  readonly timeout?: number;
 }
 
 /**

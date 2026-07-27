@@ -36,23 +36,13 @@ export const HealthCheckProcessor = {
    * accepted for callers that need to correlate the run with a topic (matches the C# signature).
    */
   async performHealthChecksAsync(_topic: string, healthChecks: IHealthCheck[]): Promise<IBenzeneResult> {
-    const running = healthChecks.map((x) => ({
-      type: x.type,
-      resultPromise: new TimeOutHealthCheck(new ExceptionHandlingHealthCheck(x)).executeAsync(),
-    }));
-
-    const results = await Promise.all(running.map((x) => x.resultPromise));
+    const results = await Promise.all(healthChecks.map((x) => runTimedAsync(x)));
     const isHealthy = results.every((x) => x.status !== HealthCheckStatus.failed);
 
     const namer = new HealthCheckNamer();
     const healthChecksRecord: Record<string, HealthCheckResult> = {};
     for (const result of results) {
-      healthChecksRecord[namer.getName(result.type)] = new HealthCheckResult(
-        result.status,
-        result.type,
-        result.data,
-        result.dependencies,
-      );
+      healthChecksRecord[namer.getName(result.type)] = result;
     }
 
     const message = new HealthCheckResponse(isHealthy, healthChecksRecord);
@@ -64,3 +54,26 @@ export const HealthCheckProcessor = {
       : BenzeneResult.set(BenzeneResultStatus.serviceUnavailable, message, true);
   },
 } as const;
+
+/**
+ * Times a single check and rebuilds its result with the measured duration. Honours the check's own
+ * `timeout` override (passed to `TimeOutHealthCheck`) and applies the non-critical downgrade: a
+ * `failed` result of a non-critical check (`IHealthCheck.isNonCritical`) is softened to `warning` so a
+ * non-critical dependency being down degrades rather than takes the instance out of service — **unless**
+ * the failure is persistent (`IHealthCheckResult.isPersistent`, e.g. an authorization denial), which
+ * escapes the downgrade and stays `failed`. Mirrors .NET's `HealthCheckProcessor.RunTimedAsync`.
+ */
+async function runTimedAsync(healthCheck: IHealthCheck): Promise<HealthCheckResult> {
+  const check = new TimeOutHealthCheck(new ExceptionHandlingHealthCheck(healthCheck), healthCheck.timeout);
+
+  const start = Date.now();
+  const result = await check.executeAsync();
+  const duration = Date.now() - start;
+
+  const status =
+    result.status === HealthCheckStatus.failed && (healthCheck.isNonCritical ?? false) && !result.isPersistent
+      ? HealthCheckStatus.warning
+      : result.status;
+
+  return new HealthCheckResult(status, result.type, result.data, result.dependencies, duration, result.isPersistent);
+}

@@ -133,4 +133,60 @@ describe('HealthCheckProcessor', () => {
     expect(result.payload.healthChecks.Boom.status).toBe(HealthCheckStatus.failed);
     expect(result.payload.healthChecks.Boom.data.Exception).toBe('Error');
   });
+
+  it('PerformHealthChecks_NonCriticalFailure_IsDowngradedToWarningAndDoesNotFlipUnhealthy', async () => {
+    // A non-critical check that fails: the processor downgrades a failed result to a warning, so the
+    // aggregate stays healthy (a non-critical dependency being down degrades, not de-services).
+    const nonCriticalFailing: IHealthCheck = {
+      type: 'Downstream',
+      isNonCritical: true,
+      executeAsync: () => Promise.resolve(HealthCheckResult.createInstance(false, 'Downstream')),
+    };
+
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+      nonCriticalFailing,
+    ])) as IBenzeneResultOf<HealthCheckResponse>;
+
+    expect(result.status).toBe(BenzeneResultStatus.ok);
+    expect(result.payload.isHealthy).toBe(true);
+    expect(result.payload.healthChecks.Downstream.status).toBe(HealthCheckStatus.warning);
+  });
+
+  it('PerformHealthChecks_PersistentFailureOnNonCriticalCheck_EscapesDowngradeAndStaysUnhealthy', async () => {
+    // A persistent failure (e.g. an authorization denial) on a non-critical check is NOT softened — it
+    // won't self-heal, so it surfaces as failed/unhealthy even for a dependency-category check.
+    const nonCriticalPersistent: IHealthCheck = {
+      type: 'Denied',
+      isNonCritical: true,
+      executeAsync: () =>
+        Promise.resolve(HealthCheckResult.createPersistentFailure('Denied', { StatusCode: 403 }, [])),
+    };
+
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+      nonCriticalPersistent,
+    ])) as IBenzeneResultOf<HealthCheckResponse>;
+
+    expect(result.status).toBe(BenzeneResultStatus.serviceUnavailable);
+    expect(result.payload.isHealthy).toBe(false);
+    expect(result.payload.healthChecks.Denied.status).toBe(HealthCheckStatus.failed);
+    expect(result.payload.healthChecks.Denied.isPersistent).toBe(true);
+  });
+
+  it('PerformHealthChecks_StampsDurationOnEachResult', async () => {
+    const slowish: IHealthCheck = {
+      type: 'Slowish',
+      executeAsync: () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve(HealthCheckResult.createInstance(true, 'Slowish')), 5),
+        ),
+    };
+
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+      slowish,
+    ])) as IBenzeneResultOf<HealthCheckResponse>;
+
+    // The processor times each check and stamps the measured duration (ms) onto the result.
+    expect(result.payload.healthChecks.Slowish.duration).toBeGreaterThanOrEqual(0);
+    expect(typeof result.payload.healthChecks.Slowish.duration).toBe('number');
+  });
 });

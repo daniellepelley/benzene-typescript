@@ -15,21 +15,31 @@ export class HealthCheckResult implements IHealthCheckResult {
   readonly type: string;
   readonly data: Record<string, unknown>;
   readonly dependencies: HealthCheckDependency[];
+  readonly duration: number;
+  readonly isPersistent: boolean;
 
   /**
-   * C#'s single constructor with an optional `dependencies` parameter ports directly.
+   * C#'s single constructor with optional `dependencies`/`duration`/`isPersistent` parameters ports
+   * directly (one constructor, not overloads — matching .NET's reason: reflection-based deserializers
+   * bind unambiguously to a single constructor).
    * @param dependencies Defaults to none (C# `?? Array.Empty<...>()`).
+   * @param duration How long the check took to run, in milliseconds. Defaults to `0`.
+   * @param isPersistent Whether a `failed` result is a persistent, deterministic fault. Defaults to `false`.
    */
   constructor(
     status: string,
     type: string,
     data: Record<string, unknown>,
     dependencies?: HealthCheckDependency[],
+    duration = 0,
+    isPersistent = false,
   ) {
     this.status = status;
     this.type = type;
     this.data = data;
     this.dependencies = dependencies ?? [];
+    this.duration = duration;
+    this.isPersistent = isPersistent;
   }
 
   /**
@@ -62,6 +72,20 @@ export class HealthCheckResult implements IHealthCheckResult {
    */
   static async createInstanceAsync(success: Promise<boolean>, type: string): Promise<IHealthCheckResult> {
     return HealthCheckResult.createInstance(await success, type, {});
+  }
+
+  /**
+   * Creates a **persistent** `failed` result with diagnostic data and dependency metadata — a
+   * deterministic fault (e.g. an authorization denial) that will not self-heal, so it is **not**
+   * softened by the non-critical downgrade and surfaces as unhealthy even for a dependency-category
+   * check. See `IHealthCheckResult.isPersistent`.
+   */
+  static createPersistentFailure(
+    type: string,
+    data: Record<string, unknown>,
+    dependencies?: HealthCheckDependency[],
+  ): IHealthCheckResult {
+    return new HealthCheckResult(HealthCheckStatus.failed, type, data, dependencies, 0, true);
   }
 
   /**

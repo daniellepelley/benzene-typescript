@@ -13,9 +13,23 @@ import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzene/he
  * race settles (and `unref`-ing it so it never keeps a Node process alive).
  */
 export class TimeOutHealthCheck implements IHealthCheck {
+  /** The timeout applied when the constructor is not given one. */
   static readonly timeoutMs = 10000;
 
-  constructor(private readonly inner: IHealthCheck) {}
+  private readonly timeoutMs: number;
+
+  /**
+   * @param inner The check to time out.
+   * @param timeoutMs The timeout in milliseconds. Defaults to {@link TimeOutHealthCheck.timeoutMs}
+   * (10s). `HealthCheckProcessor` passes each check's own `timeout` override here when set, matching
+   * .NET's `TimeOutHealthCheck(inner, timeout)`.
+   */
+  constructor(
+    private readonly inner: IHealthCheck,
+    timeoutMs: number = TimeOutHealthCheck.timeoutMs,
+  ) {
+    this.timeoutMs = timeoutMs;
+  }
 
   get type(): string {
     return this.inner.type;
@@ -27,7 +41,7 @@ export class TimeOutHealthCheck implements IHealthCheck {
 
     let timer: ReturnType<typeof setTimeout>;
     const timeout = new Promise<typeof timedOut>((resolve) => {
-      timer = setTimeout(() => resolve(timedOut), TimeOutHealthCheck.timeoutMs);
+      timer = setTimeout(() => resolve(timedOut), this.timeoutMs);
       if (typeof (timer as { unref?: () => void }).unref === 'function') {
         (timer as { unref: () => void }).unref();
       }

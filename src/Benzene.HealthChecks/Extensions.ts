@@ -59,7 +59,9 @@ export function useHealthCheck<TContext>(
   config: HealthCheckConfig,
 ): IMiddlewarePipelineBuilder<TContext> {
   const builder = resolveBuilder(app, config);
-  return useHealthCheckMiddleware(app, [topic, Constants.defaultHealthCheckTopic], topic, builder);
+  // The general healthcheck probe harvests the dependency-category checks (external-dependency
+  // reachability) for monitoring / the mesh; liveness/readiness deliberately do not (see below).
+  return useHealthCheckMiddleware(app, [topic, Constants.defaultHealthCheckTopic], topic, builder, true);
 }
 
 /**
@@ -73,11 +75,14 @@ export function useLivenessCheck<TContext>(
   config: HealthCheckConfig,
 ): IMiddlewarePipelineBuilder<TContext> {
   const builder = resolveBuilder(app, config);
+  // Liveness excludes dependency-category checks: a shared-downstream blip must never restart-storm
+  // the fleet (a liveness failure restarts the pod).
   return useHealthCheckMiddleware(
     app,
     [Constants.defaultLivenessTopic],
     Constants.defaultLivenessTopic,
     builder,
+    false,
   );
 }
 
@@ -91,11 +96,15 @@ export function useReadinessCheck<TContext>(
   config: HealthCheckConfig,
 ): IMiddlewarePipelineBuilder<TContext> {
   const builder = resolveBuilder(app, config);
+  // Readiness excludes dependency-category checks too: a shared-downstream blip must never pull every
+  // pod from the Service's endpoints at once (turning a degraded dependency into a total outage). A
+  // developer can still add a specific dependency to readiness explicitly via the builder.
   return useHealthCheckMiddleware(
     app,
     [Constants.defaultReadinessTopic],
     Constants.defaultReadinessTopic,
     builder,
+    false,
   );
 }
 
@@ -109,6 +118,7 @@ function useHealthCheckMiddleware<TContext>(
   matchTopics: string[],
   reportedTopic: string,
   builder: IHealthCheckBuilder,
+  includeDependencyChecks: boolean,
 ): IMiddlewarePipelineBuilder<TContext> {
   return app.use(
     (resolver) =>
@@ -127,7 +137,7 @@ function useHealthCheckMiddleware<TContext>(
           if (messageTopic !== undefined && matchTopics.includes(messageTopic.id)) {
             const result = await HealthCheckProcessor.performHealthChecksAsync(
               reportedTopic,
-              builder.getHealthChecks(resolver),
+              builder.getHealthChecks(resolver, includeDependencyChecks),
             );
             await resultSetter.setResultAsync(
               context,
