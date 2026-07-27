@@ -184,14 +184,13 @@ ported**: `benzeneTestHost(StartUp)` (in `@benzene/testing`) boots a real app fr
 first-party container), `.withConfiguration(...)` layers config, and a single transport specialization
 finishes it — `.buildAwsLambdaHost()` / `.buildAzureFunctionApp()` (in the transport `*-testing`
 packages). Send native events in with `host.sendEventAsync<TResponse>(asX(...))`; assert on the native
-response AND on egress via the first-party `FakeBenzeneMessageSender`. **Bends recorded here:** (3) the
-neutral `BenzeneStartUp` is **generic over its app-builder type** (`BenzeneStartUp<TAppBuilder>`, pinned
-by the `AwsLambdaStartUp`/`AzureFunctionStartUp` aliases) rather than the single `IBenzeneApplicationBuilder`
-the .NET reference uses, because the port's per-transport application-builder unification (the generic-host
-bootstrap) is still deferred — so an AWS startup's `configure` takes the AWS pipeline builder and an Azure
-startup's takes the Azure app builder, but `benzeneTestHost`/`.withServices`/`.withConfiguration` and the
-egress assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name
-change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
+response AND on egress via the first-party `FakeBenzeneMessageSender`. **Bends recorded here:** (3) AWS startups implement the
+**non-generic `BenzeneStartUp`** (`configure(app: IBenzeneApplicationBuilder)`, selecting the transport inside
+with `useAwsLambda(app, aws => …)`), matching the .NET reference's single app-builder shape; the generic
+`BenzeneStartUpOf<TAppBuilder>` (pinned by the `AzureFunctionStartUp` alias) is retained only for Azure, whose
+per-transport application-builder unification is still deferred — so an Azure startup's `configure` still
+takes the Azure app builder. Either way `benzeneTestHost`/`.withServices`/`.withConfiguration` and the egress
+assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
 by module augmentation** (`declare module '@benzene/testing'` + a prototype assignment) so the
 `benzeneTestHost(...).withServices(...).buildAwsLambdaHost()` chain reads as in the reference while the
 neutral core keeps zero cloud imports — it lights up on importing the transport `*-testing` package, which

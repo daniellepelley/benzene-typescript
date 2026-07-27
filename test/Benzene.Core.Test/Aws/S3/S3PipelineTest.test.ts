@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { S3Event, S3EventRecord } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
 import { BenzeneException } from '@benzene/core';
@@ -12,9 +13,10 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { addS3, S3Application, S3RecordContext, useS3 } from '@benzene/aws-lambda-s3';
-import { benzeneTestHost } from '@benzene/testing';
-import { asS3, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { benzeneTestHost, type BenzeneStartUp } from '@benzene/testing';
+import { asS3 } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# S3 pipeline test (test/Benzene.Core.Test/Aws/S3/SnsMessagePipelineTest.cs,
@@ -83,13 +85,13 @@ function createS3Event(
 // Lead-by-example: this block was ported from C# driving `InlineAwsLambdaStartUp` directly; it now
 // dogfoods the public startup-host harness (`benzeneTestHost(StartUp).buildAwsLambdaHost()` +
 // `host.sendEventAsync(...)`) with the `asS3` event builder — the exact shape an adopter copies.
-class S3StartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class S3StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useS3(app, (s3) => useMessageHandlers(s3, ObjectCreatedHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useS3(aws, (s3) => useMessageHandlers(s3, ObjectCreatedHandler)));
   }
 }
 

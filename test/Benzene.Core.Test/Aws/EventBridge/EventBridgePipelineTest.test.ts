@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EventBridgeEvent } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler, IMessageResult } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
@@ -18,8 +19,9 @@ import {
   EventBridgeContext,
   useEventBridge,
 } from '@benzene/aws-lambda-eventbridge';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asEventBridge, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asEventBridge } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# EventBridge pipeline test
@@ -71,13 +73,13 @@ function createEventBridgeEvent(
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asEventBridge`
 // event builder — the exact shape an adopter copies.
-class EventBridgeStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class EventBridgeStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useEventBridge(app, (eb) => useMessageHandlers(eb, OrderCreatedHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useEventBridge(aws, (eb) => useMessageHandlers(eb, OrderCreatedHandler)));
   }
 }
 

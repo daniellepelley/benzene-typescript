@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
@@ -18,8 +19,9 @@ import {
   DynamoDbRecordContext,
   useDynamoDb,
 } from '@benzene/aws-lambda-dynamodb';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asDynamoDb, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asDynamoDb } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# DynamoDB pipeline tests
@@ -82,13 +84,13 @@ function createDynamoDbEvent(
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asDynamoDb`
 // event builder — the exact shape an adopter copies.
-class DynamoDbStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class DynamoDbStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useDynamoDb(app, (dynamo) => useMessageHandlers(dynamo, OrderInsertedHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useDynamoDb(aws, (dynamo) => useMessageHandlers(dynamo, OrderInsertedHandler)));
   }
 }
 

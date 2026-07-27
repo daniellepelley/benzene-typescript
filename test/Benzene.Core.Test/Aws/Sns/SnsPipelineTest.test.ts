@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SNSEvent, SNSEventRecord } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
 import { BenzeneException } from '@benzene/core';
@@ -20,8 +21,9 @@ import {
   SnsRecordContext,
   useSns,
 } from '@benzene/aws-lambda-sns';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asSns, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asSns } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# SNS pipeline tests (test/Benzene.Core.Test/Aws/Sns/SnsMessagePipelineTest.cs
@@ -81,13 +83,13 @@ function createSnsEvent(
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asSns` event
 // builder — the exact shape an adopter copies.
-class SnsStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class SnsStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useSns(app, (sns) => useMessageHandlers(sns, CreateOrderHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useSns(aws, (sns) => useMessageHandlers(sns, CreateOrderHandler)));
   }
 }
 

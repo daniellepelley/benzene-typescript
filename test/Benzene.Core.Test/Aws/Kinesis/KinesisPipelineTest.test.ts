@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
@@ -19,8 +20,9 @@ import {
   KinesisMessageContext,
   useKinesis,
 } from '@benzene/aws-lambda-kinesis';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asKinesis, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asKinesis } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# Kinesis tests, adapted to this port's PER-RECORD FAN-OUT model (the C#
@@ -79,16 +81,18 @@ function createKinesisEvent(
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asKinesis`
 // event builder — the exact shape an adopter copies. A Kinesis record carries no topic, so the pipeline
 // routes via `usePresetTopic` and the builder's topic is a placeholder.
-class KinesisStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class KinesisStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useKinesis(app, (kinesis) => {
-      usePresetTopic(kinesis, 'create-order');
-      useMessageHandlers(kinesis, CreateOrderHandler);
-    });
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) =>
+      useKinesis(aws, (kinesis) => {
+        usePresetTopic(kinesis, 'create-order');
+        useMessageHandlers(kinesis, CreateOrderHandler);
+      }),
+    );
   }
 }
 

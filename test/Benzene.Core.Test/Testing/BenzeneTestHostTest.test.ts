@@ -23,6 +23,7 @@ import { HttpResponseInit } from '@azure/functions';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { BenzeneResult } from '@benzene/results';
 import {
   addBenzene,
@@ -32,6 +33,7 @@ import {
 } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
 import { IBenzeneMessageSender } from '@benzene/clients';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useAzureHttp } from '@benzene/azure-function-http';
@@ -42,8 +44,9 @@ import {
   httpBuilder,
   messageBuilder,
   type BenzeneConfiguration,
+  type BenzeneStartUp,
 } from '@benzene/testing';
-import { asApiGatewayRequest, asSqs, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { asApiGatewayRequest, asSqs } from '@benzene/aws-lambda-testing';
 import {
   asAzureHttpRequest,
   asAzureServiceBusMessage,
@@ -118,12 +121,12 @@ function configureSharedServices(services: IBenzeneServiceContainer, _configurat
   services.addSingletonInstance(IBenzeneMessageSender, new ThrowingMessageSender());
 }
 
-class AwsOrdersStartUp implements AwsLambdaStartUp {
+class AwsOrdersStartUp implements BenzeneStartUp {
   configureServices = configureSharedServices;
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useApiGateway(app, (api) =>
-      useMessageHandlers(api, CreateOrderHandler, PublishOrderCreatedHandler),
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) =>
+      useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler, PublishOrderCreatedHandler)),
     );
   }
 }
@@ -133,11 +136,13 @@ class AwsOrdersStartUp implements AwsLambdaStartUp {
 // only `configure` names the transport (useSqs vs useApiGateway). This proves the harness reaches every
 // AWS event source through the one buildAwsLambdaHost line, not just API Gateway (the consistency law):
 // the single AwsLambdaEntryPoint sniffs the native event, so a test swaps only the as* builder.
-class AwsSqsOrdersStartUp implements AwsLambdaStartUp {
+class AwsSqsOrdersStartUp implements BenzeneStartUp {
   configureServices = configureSharedServices;
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler, PublishOrderCreatedHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) => useMessageHandlers(sqs, CreateOrderHandler, PublishOrderCreatedHandler)),
+    );
   }
 }
 
@@ -284,14 +289,14 @@ describe('benzeneTestHost — configuration override', () => {
   it('threads withConfiguration through to the startup', async () => {
     let seen: string | undefined;
 
-    class ConfiguredStartUp implements AwsLambdaStartUp {
+    class ConfiguredStartUp implements BenzeneStartUp {
       configureServices(services: IBenzeneServiceContainer, configuration: BenzeneConfiguration): void {
         addBenzene(services);
         seen = configuration.get('greeting');
       }
 
-      configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-        useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler));
+      configure(app: IBenzeneApplicationBuilder): void {
+        useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
       }
     }
 

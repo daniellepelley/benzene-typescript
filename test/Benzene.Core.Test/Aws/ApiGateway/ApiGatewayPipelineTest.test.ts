@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
 import {
@@ -12,8 +13,9 @@ import {
 } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asApiGatewayRequest, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
 import {
   addApiGateway,
   ApiGatewayApplication,
@@ -80,13 +82,13 @@ function createApiGatewayEvent(
 // Lead-by-example: this block was ported from C# driving `InlineAwsLambdaStartUp` directly; it now
 // dogfoods the public startup-host harness (`benzeneTestHost(StartUp).buildAwsLambdaHost()` +
 // `host.sendEventAsync(...)`) — the exact shape an adopter copies — instead of a rig no adopter could.
-class ApiGatewayStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class ApiGatewayStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
   }
 }
 

@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayAuthorizerResult } from 'aws-lambda';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { addBenzene } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import {
   ApiGatewayCustomAuthorizerApplication,
   ApiGatewayCustomAuthorizerContext,
   useApiGatewayCustomAuthorizer,
   useCustomAuthorizer,
 } from '@benzene/aws-lambda-api-gateway';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asApiGatewayCustomAuthorizerEvent, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asApiGatewayCustomAuthorizerEvent } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# custom-authorizer pipeline tests
@@ -81,19 +84,21 @@ describe('ApiGatewayCustomAuthorizer (via the benzeneTestHost harness)', () => {
     let seen: ApiGatewayCustomAuthorizerContext | undefined;
 
     // The startup closes over `seen`, so it is declared inside the test.
-    class CustomAuthorizerStartUp implements AwsLambdaStartUp {
-      configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    class CustomAuthorizerStartUp implements BenzeneStartUp {
+      configureServices(services: IBenzeneServiceContainer): void {
         addBenzene(services);
-      };
+      }
 
-      configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-        useApiGatewayCustomAuthorizer(app, (message) =>
-          useCustomAuthorizer(message, (request) => {
-            expect(request.requestContext.apiId).toBe('some-id');
-            return okPolicy('some-id', 'some-version');
-          }).onResponse((context) => {
-            seen = context;
-          }),
+      configure(app: IBenzeneApplicationBuilder): void {
+        useAwsLambda(app, (aws) =>
+          useApiGatewayCustomAuthorizer(aws, (message) =>
+            useCustomAuthorizer(message, (request) => {
+              expect(request.requestContext.apiId).toBe('some-id');
+              return okPolicy('some-id', 'some-version');
+            }).onResponse((context) => {
+              seen = context;
+            }),
+          ),
         );
       }
     }
@@ -107,14 +112,16 @@ describe('ApiGatewayCustomAuthorizer (via the benzeneTestHost harness)', () => {
   });
 
   it('defers (event unrecognized) when the request has no API ID', async () => {
-    class CustomAuthorizerStartUp implements AwsLambdaStartUp {
-      configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+    class CustomAuthorizerStartUp implements BenzeneStartUp {
+      configureServices(services: IBenzeneServiceContainer): void {
         addBenzene(services);
-      };
+      }
 
-      configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-        useApiGatewayCustomAuthorizer(app, (message) =>
-          useCustomAuthorizer(message, () => okPolicy('some-id')),
+      configure(app: IBenzeneApplicationBuilder): void {
+        useAwsLambda(app, (aws) =>
+          useApiGatewayCustomAuthorizer(aws, (message) =>
+            useCustomAuthorizer(message, () => okPolicy('some-id')),
+          ),
         );
       }
     }

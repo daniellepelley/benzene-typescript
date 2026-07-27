@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
 import { AuthenticationHolder, ClaimsPrincipal } from '@benzene/auth-core';
 import { FuncWrapperMiddleware } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
@@ -12,13 +12,13 @@ import {
   useMessageHandlers,
 } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { ApiGatewayContext, useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { benzeneTestHost } from '@benzene/testing';
+import { benzeneTestHost, type BenzeneStartUp } from '@benzene/testing';
 // Importing this package installs `buildAwsLambdaHost` on the test-host builder (module augmentation).
-// Unlike the pipeline tests, this harness hand-rolls its event, so it imports no `as*` builder value —
-// the type-only `AwsLambdaStartUp` import alone would be erased and the method never installed.
+// This harness hand-rolls its event, so it imports no `as*` builder value; the bare import runs the
+// package's side effect (a type-only import would be erased and the method never installed).
 import '@benzene/aws-lambda-testing';
-import { type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
 
 /**
  * Shared harness for the auth tests. The C# auth suite (BasicAuthTest / AuthorizationTest) hosts a
@@ -77,16 +77,18 @@ export async function runSecure(
   event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> {
   // The startup closes over `configureAuth`, so it is declared inside the function.
-  class SecureStartUp implements AwsLambdaStartUp {
-    configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+  class SecureStartUp implements BenzeneStartUp {
+    configureServices(services: IBenzeneServiceContainer): void {
       addBenzene(services);
-    };
+    }
 
-    configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-      useApiGateway(app, (api) => {
-        configureAuth(api);
-        useMessageHandlers(api, SecureHandler);
-      });
+    configure(app: IBenzeneApplicationBuilder): void {
+      useAwsLambda(app, (aws) =>
+        useApiGateway(aws, (api) => {
+          configureAuth(api);
+          useMessageHandlers(api, SecureHandler);
+        }),
+      );
     }
   }
 

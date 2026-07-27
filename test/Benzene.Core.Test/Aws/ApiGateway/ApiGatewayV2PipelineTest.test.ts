@@ -6,7 +6,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEventV2 } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { BenzeneResult } from '@benzene/results';
 import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
@@ -19,8 +20,9 @@ import {
   ApiGatewayV2Context,
   useApiGatewayV2,
 } from '@benzene/aws-lambda-api-gateway';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asApiGatewayV2Request, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asApiGatewayV2Request } from '@benzene/aws-lambda-testing';
 
 class Order {
   orderId?: string;
@@ -46,13 +48,13 @@ class CreateOrderHandler implements IMessageHandler<Order, OrderCreated> {
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) — the exact shape an
 // adopter copies.
-class ApiGatewayV2StartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class ApiGatewayV2StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useApiGatewayV2(app, (api) => useMessageHandlers(api, CreateOrderHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGatewayV2(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
   }
 }
 

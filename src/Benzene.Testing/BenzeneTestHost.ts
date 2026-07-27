@@ -46,13 +46,13 @@ export interface BenzeneStartUp {
 
 /**
  * The legacy, transport-generic startup contract, where `configure` receives the per-transport pipeline
- * builder directly (an AWS startup's takes the AWS pipeline builder, an Azure startup's the Azure app
- * builder). Kept so existing `AwsLambdaStartUp` / `AzureFunctionStartUp` consumers keep compiling while
- * they migrate to the non-generic {@link BenzeneStartUp}.
+ * builder directly (e.g. an Azure startup's takes the Azure app builder). The AWS startups have migrated
+ * to the non-generic {@link BenzeneStartUp}; this remains for the `AzureFunctionStartUp` consumers, whose
+ * app-builder unification is still deferred.
  *
  * @deprecated Implement the non-generic {@link BenzeneStartUp}; `configure` now receives an
  * `IBenzeneApplicationBuilder` and the transport is selected with `useAwsLambda(app, …)` etc. This alias
- * is removed once the AWS test-startup migration completes.
+ * is removed once every transport's test startups are migrated (Azure remaining).
  */
 export interface BenzeneStartUpOf<TAppBuilder> {
   getConfiguration?(): BenzeneConfiguration;

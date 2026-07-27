@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MSKEvent, MSKRecord } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler, IMessageResult } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
@@ -18,8 +19,9 @@ import {
   KafkaContext,
   useKafka,
 } from '@benzene/aws-lambda-kafka';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asAwsKafkaEvent, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asAwsKafkaEvent } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# Kafka pipeline test
@@ -83,13 +85,13 @@ function createKafkaEvent(
 // Migrated off `InlineAwsLambdaStartUp` to the public startup-host harness
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`) with the `asAwsKafkaEvent`
 // event builder — the exact shape an adopter copies.
-class KafkaStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class KafkaStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useKafka(app, (kafka) => useMessageHandlers(kafka, OrderHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useKafka(aws, (kafka) => useMessageHandlers(kafka, OrderHandler)));
   }
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SQSEvent, SQSRecord } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResult } from '@benzene/results';
@@ -21,8 +22,9 @@ import {
   SqsOptions,
   useSqs,
 } from '@benzene/aws-lambda-sqs';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asSqs, type AwsLambdaStartUp } from '@benzene/aws-lambda-testing';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
+import { asSqs } from '@benzene/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# SQS pipeline tests (test/Benzene.Core.Test/Aws/Sqs/SqsMessagePipelineTest.cs
@@ -85,13 +87,13 @@ function createSqsEvent(
 // (`benzeneTestHost(StartUp).buildAwsLambdaHost()` + `host.sendEventAsync(...)`). The single-record case
 // uses the `asSqs` event builder; the mixed-topic partial-batch case keeps a hand-rolled event since it
 // needs per-record topics and message ids the builder does not express.
-class SqsStartUp implements AwsLambdaStartUp {
-  configureServices = (services: Parameters<AwsLambdaStartUp['configureServices']>[0]): void => {
+class SqsStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
-  };
+  }
 
-  configure(app: Parameters<AwsLambdaStartUp['configure']>[0]): void {
-    useSqs(app, (sqs) => useMessageHandlers(sqs, CreateOrderHandler));
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useSqs(aws, (sqs) => useMessageHandlers(sqs, CreateOrderHandler)));
   }
 }
 
