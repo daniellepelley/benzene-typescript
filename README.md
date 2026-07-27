@@ -53,6 +53,7 @@ Mirrors the .NET repository:
 | `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish + health-check deferred) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
+| `src/Benzene.Azure.Function.{QueueStorage,Timer}` | `@benzene/azure-function-{queue-storage,timer}` | same-named `Benzene.Azure.Function.*` (bespoke `QueueStorageMessage`/`TimerTriggerInfo` models — `@azure/functions` has no queue/timer payload type; `useTimerTrigger` avoids the `Benzene.Diagnostics` `useTimer` clash) |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
 | `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; message-client/pipeline/health-check deferred) |
