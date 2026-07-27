@@ -1,0 +1,19 @@
+{
+  "name": "@benzene/azure-function-blob-storage",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Azure.Function.BlobStorage",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@azure/functions": "^4",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/azure-function-core": "0.1.0"
+  }
+}
