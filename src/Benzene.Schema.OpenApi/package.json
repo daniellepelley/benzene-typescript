@@ -1,0 +1,20 @@
+{
+  "name": "@benzene/schema-openapi",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Schema.OpenApi (benzene spec document with $ref/components, sourced from validation schemas)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/abstractions-validation": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/core-messages": "0.1.0",
+    "@benzene/http": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}

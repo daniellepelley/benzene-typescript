@@ -72,6 +72,7 @@ Mirrors the .NET repository:
 | `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
+| `src/Benzene.Schema.OpenApi` | `@benzene/schema-openapi` | `Benzene.Schema.OpenApi` (benzene format only; schema from validators, not reflection) |
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
 | `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
@@ -157,9 +158,13 @@ boundary; this port generates the client from the service's mesh **ServiceDescri
 whose per-topic schemas are language-neutral JSON Schema (§2.1). So a C# service's descriptor and a
 TypeScript service's descriptor generate an identical, fully typed client. A bespoke emitter covers the
 §2.1 subset (keeping the zero-runtime-deps rule; `json-schema-to-typescript` is the drop-in for arbitrary
-schemas). Not ported: the reflection/OpenAPI-document plumbing (`Benzene.CodeGen.Core`,
-`Benzene.Schema.OpenApi`, `Microsoft.OpenApi`), the C#-target type builder, and the generated health-check/
-hash/outbound-routing-contract extras, which are .NET-client-infrastructure specific.
+schemas). `Benzene.Schema.OpenApi`'s **`benzene` spec document** IS ported (`@benzene/schema-openapi`:
+`useSpec` serves `{ requests, events, transports?, components.schemas }` with payload schemas stored once and
+referenced by `$ref`, sourced from the `ITypeJsonSchemaSource` validators rather than CLR reflection — see
+the "Type → JSON Schema" convention). Not ported: that package's `openapi`/`asyncapi` output formats,
+generated examples, schema-compatibility checking, and test-payloads handler; the `Benzene.CodeGen.Core`
+reflection plumbing, `Microsoft.OpenApi`, the C#-target type builder, and the generated health-check/hash/
+outbound-routing-contract extras, which are .NET-client-infrastructure specific.
 
 † Marks a third-party-library integration re-created against the JavaScript ecosystem rather than
 ported literally, per the "Third-party library integrations" convention. **Validation:** .NET's
