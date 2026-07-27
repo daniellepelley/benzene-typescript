@@ -1,7 +1,7 @@
 {
   "name": "@benzene/grpc",
   "version": "0.1.0",
-  "description": "TypeScript port of the core unary server-side slice of Benzene.Grpc — routes gRPC unary calls into Benzene message handlers over @grpc/grpc-js",
+  "description": "TypeScript port of the server-side slice of Benzene.Grpc — routes gRPC calls of all four shapes (unary, server-/client-/bidi-streaming) into Benzene message handlers over @grpc/grpc-js",
   "license": "MIT",
   "type": "module",
   "main": "./index.ts",

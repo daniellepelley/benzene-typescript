@@ -4,13 +4,24 @@ import { BenzeneException } from '@benzene/core';
 import { addBenzene, TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { handleUnaryCall, ServerUnaryCall, status } from '@grpc/grpc-js';
+import {
+  handleBidiStreamingCall,
+  handleClientStreamingCall,
+  handleServerStreamingCall,
+  handleUnaryCall,
+  Metadata,
+  ServerDuplexStream,
+  ServerReadableStream,
+  ServerUnaryCall,
+  ServerWritableStream,
+  status,
+} from '@grpc/grpc-js';
 import { addGrpcMessageHandlers } from './DependencyInjectionExtensions';
 import { GrpcBenzeneError } from './GrpcBenzeneError';
 import { GrpcContext } from './GrpcContext';
 import { GrpcMethodHandlerFactory } from './GrpcMethodHandlerFactory';
 import { GrpcMethodHandlerFactoryAccessor } from './GrpcMethodHandlerFactoryAccessor';
-import { GrpcUnaryResult } from './IGrpcMethodHandler';
+import { GrpcUnaryResult, IGrpcMethodHandler } from './IGrpcMethodHandler';
 import { IGrpcMethodHandlerFactoryAccessor } from './IGrpcMethodHandlerFactoryAccessor';
 import { IGrpcRouteFinder } from './IGrpcRouteFinder';
 
@@ -30,9 +41,17 @@ export interface BenzeneGrpcOptions {
  * SDK-MODEL BEND: this single object replaces BOTH .NET pieces — the `BenzeneInterceptor` (a
  * `Grpc.Core.Interceptors.Interceptor`) AND the `Benzene.Grpc.AspNet` hosting glue. In Node there is no
  * ASP.NET Core and no interceptor split: the `@grpc/grpc-js` `Server` *is* the host, so the bridge is
- * registered directly as the `Server`'s method handler(s). {@link toUnaryHandler} yields a grpc-js
- * `handleUnaryCall` you pass to `server.addService(...)`; {@link dispatchUnary} is the lower-level "given a
- * method path + call, run the pipeline" entry point.
+ * registered directly as the `Server`'s method handler(s). The `to*Handler` methods yield grpc-js handlers
+ * you pass to `server.addService(...)` — one per RPC shape ({@link toUnaryHandler},
+ * {@link toServerStreamingHandler}, {@link toClientStreamingHandler}, {@link toBidiStreamingHandler}); the
+ * `dispatch*` methods are the lower-level "given a method path + call, run the pipeline" entry points.
+ *
+ * STREAMING BEND (`IAsyncEnumerable<T>` → grpc-js stream calls): where .NET's `BenzeneInterceptor` overrides
+ * `ClientStreamingServerHandler`/`ServerStreamingServerHandler`/`DuplexStreamingServerHandler`, the bridge
+ * exposes the three matching grpc-js handler shapes. The response-writing shapes (server-/bidi-streaming)
+ * have no callback: on success the bridge `end()`s the call with the trailing metadata; on failure it emits
+ * the {@link GrpcBenzeneError} on the call (grpc-js's `ServerWritableStream`/`ServerDuplexStream` translate
+ * an emitted `'error'` into the RPC status), the streaming analog of the unary error callback.
  */
 export class GrpcBenzeneBridge {
   constructor(
@@ -41,33 +60,80 @@ export class GrpcBenzeneBridge {
   ) {}
 
   /**
-   * Routes a unary call: finds the topic for `methodPath`, creates a {@link GrpcMethodHandler} and runs the
-   * pipeline. Resolves to the wire response + trailing `benzene-status` metadata, or rejects with a
-   * {@link GrpcBenzeneError} — `UNIMPLEMENTED` when no Benzene handler owns the method (the analog of .NET's
-   * interceptor falling through to the native service), otherwise the mapped non-OK status.
+   * Resolves the {@link GrpcMethodHandler} that owns `methodPath`, or throws — a {@link GrpcBenzeneError}
+   * with `UNIMPLEMENTED` when no Benzene handler owns the method (the analog of .NET's interceptor falling
+   * through to the native service), or a {@link BenzeneException} when the pipeline hasn't been configured.
    */
-  dispatchUnary<TResponse>(
-    methodPath: string,
-    call: ServerUnaryCall<unknown, TResponse>,
-  ): Promise<GrpcUnaryResult<TResponse>> {
+  private resolveHandler(methodPath: string): IGrpcMethodHandler {
     const definition = this.routeFinder.find(methodPath);
     if (definition === undefined) {
-      return Promise.reject(
-        new GrpcBenzeneError(
-          status.UNIMPLEMENTED,
-          `No Benzene handler is registered for gRPC method '${methodPath}'.`,
-        ),
+      throw new GrpcBenzeneError(
+        status.UNIMPLEMENTED,
+        `No Benzene handler is registered for gRPC method '${methodPath}'.`,
       );
     }
 
     const factory = this.accessor.factory;
     if (factory === undefined) {
-      return Promise.reject(
-        new BenzeneException('No gRPC pipeline has been configured; call useGrpc before handling requests.'),
+      throw new BenzeneException(
+        'No gRPC pipeline has been configured; call useGrpc before handling requests.',
       );
     }
 
-    return factory.create(definition).handleAsync(call);
+    return factory.create(definition);
+  }
+
+  /**
+   * Routes a unary call: finds the topic for `methodPath`, creates a {@link GrpcMethodHandler} and runs the
+   * pipeline. Resolves to the wire response + trailing `benzene-status` metadata, or rejects (see
+   * {@link resolveHandler} for the routing/config errors, otherwise the mapped non-OK status).
+   */
+  dispatchUnary<TResponse>(
+    methodPath: string,
+    call: ServerUnaryCall<unknown, TResponse>,
+  ): Promise<GrpcUnaryResult<TResponse>> {
+    let handler: IGrpcMethodHandler;
+    try {
+      handler = this.resolveHandler(methodPath);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+
+    return handler.handleAsync(call);
+  }
+
+  /**
+   * Routes a server-streaming call: runs the pipeline for the unary request, then writes every response
+   * item to `call`. Resolves to the trailing `benzene-status` metadata (the caller `end()`s the call with
+   * it); rejects with a {@link GrpcBenzeneError} on a non-OK status (or a routing/config error).
+   */
+  async dispatchServerStreaming<TResponse>(
+    methodPath: string,
+    call: ServerWritableStream<unknown, TResponse>,
+  ): Promise<Metadata> {
+    return this.resolveHandler(methodPath).serverStreamingAsync<TResponse>(call);
+  }
+
+  /**
+   * Routes a client-streaming call: presents the inbound request stream as an `AsyncIterable`, runs the
+   * pipeline, and resolves to the single wire response + trailing metadata (or rejects as above).
+   */
+  async dispatchClientStreaming<TResponse>(
+    methodPath: string,
+    call: ServerReadableStream<unknown, TResponse>,
+  ): Promise<GrpcUnaryResult<TResponse>> {
+    return this.resolveHandler(methodPath).clientStreamingAsync<TResponse>(call);
+  }
+
+  /**
+   * Routes a bidirectional-streaming call: streams requests in and response items out over `call`. Resolves
+   * to the trailing `benzene-status` metadata (the caller `end()`s the call with it); rejects as above.
+   */
+  async dispatchDuplexStreaming<TResponse>(
+    methodPath: string,
+    call: ServerDuplexStream<unknown, TResponse>,
+  ): Promise<Metadata> {
+    return this.resolveHandler(methodPath).duplexStreamingAsync<TResponse>(call);
   }
 
   /**
@@ -82,6 +148,57 @@ export class GrpcBenzeneBridge {
       this.dispatchUnary<TResponse>(path, call).then(
         ({ response, trailer }) => callback(null, response, trailer),
         (error: unknown) => callback(error as GrpcBenzeneError),
+      );
+    };
+  }
+
+  /**
+   * Builds a `@grpc/grpc-js` `handleServerStreamingCall` for a method. On success the response items have
+   * already been written to the call and the bridge `end()`s it with the `benzene-status` trailer; on
+   * failure it emits the {@link GrpcBenzeneError} on the call, which grpc-js turns into the RPC status.
+   */
+  toServerStreamingHandler<TRequest, TResponse>(
+    methodPath?: string,
+  ): handleServerStreamingCall<TRequest, TResponse> {
+    return (call) => {
+      const path = methodPath ?? call.getPath();
+      this.dispatchServerStreaming<TResponse>(path, call).then(
+        (trailer) => call.end(trailer),
+        (error: unknown) => call.emit('error', error),
+      );
+    };
+  }
+
+  /**
+   * Builds a `@grpc/grpc-js` `handleClientStreamingCall` for a method. On success it invokes the callback
+   * with the single response and the `benzene-status` trailer; on failure it invokes it with the
+   * {@link GrpcBenzeneError} — the same callback shape as the unary handler.
+   */
+  toClientStreamingHandler<TRequest, TResponse>(
+    methodPath?: string,
+  ): handleClientStreamingCall<TRequest, TResponse> {
+    return (call, callback) => {
+      const path = methodPath ?? call.getPath();
+      this.dispatchClientStreaming<TResponse>(path, call).then(
+        ({ response, trailer }) => callback(null, response, trailer),
+        (error: unknown) => callback(error as GrpcBenzeneError),
+      );
+    };
+  }
+
+  /**
+   * Builds a `@grpc/grpc-js` `handleBidiStreamingCall` for a method. On success the response items have
+   * already been written to the call and the bridge `end()`s it with the `benzene-status` trailer; on
+   * failure it emits the {@link GrpcBenzeneError} on the call, which grpc-js turns into the RPC status.
+   */
+  toBidiStreamingHandler<TRequest, TResponse>(
+    methodPath?: string,
+  ): handleBidiStreamingCall<TRequest, TResponse> {
+    return (call) => {
+      const path = methodPath ?? call.getPath();
+      this.dispatchDuplexStreaming<TResponse>(path, call).then(
+        (trailer) => call.end(trailer),
+        (error: unknown) => call.emit('error', error),
       );
     };
   }

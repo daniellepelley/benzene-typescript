@@ -40,7 +40,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
 | `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
-| `src/Benzene.Grpc` | `@benzene/grpc` | `Benzene.Grpc` (core **unary** server bridge, on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; streaming + protobuf-descriptor/rich-error specifics deferred — the outbound client is `@benzene/grpc-client`) |
+| `src/Benzene.Grpc` | `@benzene/grpc` | `Benzene.Grpc` (server bridge for **all four RPC shapes** — unary + server-/client-/bidi-streaming — on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; protobuf-descriptor/rich-error specifics deferred — the outbound client is `@benzene/grpc-client`) |
 | `src/Benzene.Grpc.Client` | `@benzene/grpc-client` | `Benzene.Grpc.Client` (outbound **unary** gRPC message client, on `@grpc/grpc-js`; caller supplies the grpc-js `Client`; reverse status mapper, JSON marshaller default; health check, streaming + inbound-deadline/cancellation propagation deferred) |
 | `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
 | `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
@@ -452,38 +452,52 @@ next to its C# counterpart:
   take their third-party library as a real runtime dependency (that is their whole purpose) — the
   "no runtime dependencies outside the workspace" rule applies to the core port, not to these
   deliberately library-specific adapters.
-- **gRPC: the unary server bridge, hosted on `@grpc/grpc-js`.** `@benzene/grpc` ports the **core unary
-  server-side slice** of `Benzene.Grpc` — enough to route gRPC unary calls into Benzene message handlers,
-  no more. **Ported:** `GrpcContext` (over grpc-js `ServerUnaryCall`), the topic/body/headers getters +
-  result setter + `GrpcRequestMapper`, the `@grpcMethod('/pkg.Svc/Method')` decorator + `GrpcMethodDefinition`
+- **gRPC: the server bridge for all four RPC shapes, hosted on `@grpc/grpc-js`.** `@benzene/grpc` ports the
+  **server-side slice** of `Benzene.Grpc` — routing gRPC calls into Benzene message handlers for **unary**
+  *and* the three streaming shapes (**server-**, **client-**, **bidirectional**-streaming). **Ported:**
+  `GrpcContext` (over the shared grpc-js `ServerSurfaceCall`; a unary request *or* an inbound request
+  `AsyncIterable`), the topic/body/headers getters + result setter + `GrpcRequestMapper` (incl. its
+  request-stream branch), the `@grpcMethod('/pkg.Svc/Method')` decorator + `GrpcMethodDefinition`
   / `ReflectionGrpcMethodFinder` / `GrpcRouteFinder` (case-insensitive method-path → topic, built once), the
-  unary `GrpcMethodHandler` (+ factory/accessor) that runs the shared `IMiddlewarePipeline<GrpcContext>` and
-  translates the result, the **full** `DefaultGrpcStatusCodeMapper` table (Benzene status → grpc `status`,
-  unknown → `INTERNAL`), `IGrpcServerCallAccessor`, `addGrpcMessageHandlers`, and the `useGrpc` host bridge.
+  `GrpcMethodHandler` (+ factory/accessor) for all four shapes — `handleAsync`, `serverStreamingAsync`,
+  `clientStreamingAsync`, `duplexStreamingAsync` — each running the shared `IMiddlewarePipeline<GrpcContext>`
+  once and translating the result, the `Streaming/GrpcStreamAdapter` (grpc-js streams ↔ `AsyncIterable`,
+  direction-aware per-item conversion), the **full** `DefaultGrpcStatusCodeMapper` table (Benzene status →
+  grpc `status`, unknown → `INTERNAL`), `IGrpcServerCallAccessor`, `addGrpcMessageHandlers`, and the `useGrpc`
+  host bridge (a `to*Handler` per shape).
   **SDK-model bends** (each also in-code JSDoc): (1) **`Server` replaces both the interceptor and the ASP.NET
-  host** — .NET splits a `Grpc.Core.Interceptors.Interceptor` (`BenzeneInterceptor`) from `Benzene.Grpc.AspNet`
-  hosting glue because ASP.NET activates the interceptor in a DI container separate from the pipeline-building
-  one; Node has neither, so the `@grpc/grpc-js` `Server` *is* the host and one `GrpcBenzeneBridge` (from
-  `useGrpc`) is registered directly as its method handler — `bridge.toUnaryHandler(path)` yields a grpc-js
-  `handleUnaryCall`. (2) **`ServerCallContext` → `ServerUnaryCall`** — grpc-js hands the handler one object
-  that is both the call context (`metadata`, `cancelled`, `getDeadline()`) *and* the request (`.request`), so
-  the port folds .NET's `(request, ServerCallContext)` pair into it; `RpcException` → a `ServerErrorResponse`-
-  shaped `GrpcBenzeneError`; `CancellationToken` → the call's `cancelled` flag on `IGrpcServerCallAccessor`. (3)
+  host** — .NET splits a `Grpc.Core.Interceptors.Interceptor` (`BenzeneInterceptor`, with one override per
+  shape) from `Benzene.Grpc.AspNet` hosting glue because ASP.NET activates the interceptor in a DI container
+  separate from the pipeline-building one; Node has neither, so the `@grpc/grpc-js` `Server` *is* the host and
+  one `GrpcBenzeneBridge` (from `useGrpc`) is registered directly as its method handler(s) —
+  `bridge.toUnaryHandler(path)` / `toServerStreamingHandler` / `toClientStreamingHandler` /
+  `toBidiStreamingHandler` yield the four grpc-js handler shapes (`handleUnaryCall` /
+  `handleServerStreamingCall` / `handleClientStreamingCall` / `handleBidiStreamingCall`). (2)
+  **`ServerCallContext` → `ServerSurfaceCall`; `IServerStreamWriter<T>`/`IAsyncStreamReader<T>` → grpc-js
+  stream calls; `IAsyncEnumerable<T>` → `AsyncIterable<T>`** — .NET's one `ServerCallContext` is shared by
+  every shape; grpc-js has a purpose-built call per shape (`ServerUnaryCall` / `ServerReadableStream` /
+  `ServerWritableStream` / `ServerDuplexStream`) that all extend the common `ServerSurfaceCall` (`metadata`,
+  `cancelled`, `getDeadline()`), so the port stores the call as `ServerSurfaceCall` (**widening**
+  `GrpcContext.call` and `IGrpcServerCallAccessor.call` from `ServerUnaryCall` — the faithful analog of the
+  base context, so the accessor works for every shape). The request enters as `call.request` (unary/server-
+  streaming) or an inbound `AsyncIterable` (client/bidi); the handler's response stream is pumped back with
+  `call.write`/`call.end`. `RpcException` → a `ServerErrorResponse`-shaped `GrpcBenzeneError` (the callback on
+  the response-returning shapes; **emitted on the call** for the response-writing shapes, which have no
+  callback); `CancellationToken` → the call's `cancelled` flag on `IGrpcServerCallAccessor`. (3)
   **JSON/structural message adapter** — `ProtobufJsonGrpcMessageAdapter` needs generated protobuf *classes*
   (reflected `Descriptor` + protobuf `JsonParser`) to parse into; `@grpc/grpc-js` ships no framework message
   type and hands the handler an already-deserialized plain object, so `JsonGrpcMessageAdapter` is a
-  structural pass-through (= .NET's "already the type ⇒ zero-copy" fast path; a protobuf codec is wired into
-  the grpc-js `Server` via `@grpc/proto-loader` when needed). (4) **wiring** — `useGrpc` uses `addBenzene` +
+  structural pass-through (= .NET's "already the type ⇒ zero-copy" fast path, per stream item too; a protobuf
+  codec is wired into the grpc-js `Server` via `@grpc/proto-loader` when needed) — and, correspondingly,
+  `GrpcStreamAdapter.tryConvertStream` detects a stream **structurally** (`Symbol.asyncIterator`) where .NET
+  reflects on `IAsyncEnumerable<>` generic arguments. (4) **wiring** — `useGrpc` uses `addBenzene` +
   `addGrpcMessageHandlers` **without** `addBenzeneMessage` (under type erasure its `BenzeneMessageGetter`
   would hijack the single `IMessageGetter` token and route every call to `<missing>`), exactly as the
   standalone SQS/Service Bus consumer workers wire themselves. **Deferred** (documented in `index.ts` and not
-  half-built): non-unary **streaming** (server-/client-/bidirectional — the `Streaming/` folder,
-  `GrpcStreamAdapter`, the three non-unary interceptor overrides; `IGrpcMethodHandler` is narrowed to
-  `handleAsync`); the **ASP.NET hosting** package
-  (`Benzene.Grpc.AspNet`, no JS analog); the **rich `google.rpc.Status`** error details
-  (`grpc-status-details-bin` / `BadRequest` field violations — protobuf-only; the flat `benzene-status`
-  trailer *is* ported); and any gRPC **health-check** type (another package's concern). The outbound
-  **client** is now ported as `@benzene/grpc-client` (next bullet).
+  half-built): the **ASP.NET hosting** package (`Benzene.Grpc.AspNet`, no JS analog); the **rich
+  `google.rpc.Status`** error details (`grpc-status-details-bin` / `BadRequest` field violations —
+  protobuf-only; the flat `benzene-status` trailer *is* ported); and any gRPC **health-check** type (another
+  package's concern). The outbound **client** is now ported as `@benzene/grpc-client` (next bullet).
 - **gRPC outbound client: the unary send side, on `@grpc/grpc-js`.** `@benzene/grpc-client` ports
   `Benzene.Grpc.Client` — a `GrpcBenzeneMessageClient` (an `IBenzeneMessageClient`) that sends **unary**
   calls through a `GrpcSendMessageContext` middleware pipeline, mirroring the Kafka/RabbitMQ send sides.
