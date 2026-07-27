@@ -6,13 +6,16 @@
  * standard Benzene message envelope; `LocalAwsLambdaClientFactory` builds a profile-authenticated client for
  * local dev.
  *
- * Deferred (documented in the README): the high-level `AwsLambdaBenzeneMessageClient` (its
- * `typeof(TResponse) == typeof(Void)` fire-and-forget branch has no runtime equivalent under TS generic
- * erasure), the outbound middleware-pipeline converter (`UseAwsLambda`), and the `AwsLambdaHealthCheck`
- * (needs the not-yet-ported `HealthCheckMode`/`HealthCheckError`/persistent-failure health-check infra).
+ * `AwsLambdaHealthCheck` (reachability mode) is a non-destructive `GetFunctionConfiguration` check that
+ * comes with this client package, now that the `HealthCheckMode`/`HealthCheckError`/persistent-failure
+ * infra it needs is ported. Still deferred (documented in the README): the high-level
+ * `AwsLambdaBenzeneMessageClient` (its `typeof(TResponse) == typeof(Void)` fire-and-forget branch has no
+ * runtime equivalent under TS generic erasure), the outbound middleware-pipeline converter
+ * (`UseAwsLambda`), and this health check's `HealthCheckMode.Active` invoke path (needs that client).
  */
 export * from './BenzeneMessageClientRequest';
 export * from './IAwsLambdaClient';
 export * from './AwsLambdaFunctionErrorException';
 export * from './AwsLambdaClient';
+export * from './AwsLambdaHealthCheck';
 export * from './LocalAwsLambdaClientFactory';

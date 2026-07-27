@@ -1,8 +1,14 @@
 import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
 import { OutboundContext } from '@benzene/clients';
 import { SQSClient } from '@aws-sdk/client-sqs';
+import {
+  addDependencyHealthCheck,
+  HealthCheckMode,
+  IHealthCheckBuilder,
+} from '@benzene/health-checks-core';
 import { OutboundSqsContextConverter } from './OutboundSqsContextConverter';
 import { SqsClientMiddleware } from './SqsClientMiddleware';
+import { SqsHealthCheck } from './SqsHealthCheck';
 import { SqsSendMessageContext } from './SqsSendMessageContext';
 
 /**
@@ -31,8 +37,41 @@ export function useSqs(
   queueUrl: string,
   amazonSqs: SQSClient,
   topicAttributeKey: string = OutboundSqsContextConverter.DefaultTopicAttribute,
+  healthCheck = true,
 ): IMiddlewarePipelineBuilder<OutboundContext> {
+  // Auto-register a non-destructive SQS reachability check for the queue on the DEPENDENCY category, so
+  // it surfaces on the deep healthcheck layer (monitoring / mesh) but never on a Kubernetes probe.
+  // Deduped by `Sqs:<queueUrl>` so two `useSqs(sameUrl)` calls yield one check; reuses the same
+  // `SQSClient` this send pipeline uses. Pass `healthCheck: false` to opt out. Mirrors .NET's `UseSqs`.
+  if (healthCheck) {
+    app.register((container) =>
+      addDependencyHealthCheck(
+        container,
+        () => new SqsHealthCheck(queueUrl, amazonSqs, HealthCheckMode.reachability, topicAttributeKey),
+        `Sqs:${queueUrl}`,
+      ),
+    );
+  }
   return app.convert(new OutboundSqsContextConverter(queueUrl, topicAttributeKey), (builder) =>
     useSqsClient(builder, amazonSqs),
   );
+}
+
+/**
+ * Adds an SQS queue health check to a health-check builder explicitly. By default
+ * (`HealthCheckMode.reachability`) this is a non-destructive read-only `GetQueueAttributes` probe; pass
+ * `HealthCheckMode.active` to send a real ping message instead (side-effecting — the queue's consumer
+ * must recognise and drop it). Mirrors .NET's `AddSqsHealthCheck`.
+ *
+ * PORT DIVERGENCE: like `useSqs`, this takes the `SQSClient` explicitly rather than resolving
+ * `IAmazonSQS` from DI.
+ */
+export function addSqsHealthCheck(
+  builder: IHealthCheckBuilder,
+  queueUrl: string,
+  amazonSqs: SQSClient,
+  topicAttributeKey: string = OutboundSqsContextConverter.DefaultTopicAttribute,
+  mode: HealthCheckMode = HealthCheckMode.reachability,
+): IHealthCheckBuilder {
+  return builder.addHealthCheckFn(() => new SqsHealthCheck(queueUrl, amazonSqs, mode, topicAttributeKey));
 }

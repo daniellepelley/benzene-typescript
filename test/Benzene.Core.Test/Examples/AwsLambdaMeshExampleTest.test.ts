@@ -156,7 +156,11 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
       healthChecks: Record<string, { status: string; type: string; data: Record<string, unknown>; dependencies: { kind: string; name: string }[] }>;
     };
     expect(health.isHealthy).toBe(true);
-    expect(Object.keys(health.healthChecks).sort()).toEqual(['PostgresDatabase', 'SqsQueue']);
+    // The explicit domain checks (PostgresDatabase, SqsQueue) PLUS the transport reachability checks the
+    // outbound clients auto-register: orders sends payments:capture over SQS (-> Sqs) and order:placed
+    // over SNS (-> Sns). This is the .NET behaviour — wiring `useSqs`/`useSns` contributes a dependency
+    // health check to the deep healthcheck layer, so the mesh surfaces transport health for free.
+    expect(Object.keys(health.healthChecks).sort()).toEqual(['PostgresDatabase', 'Sns', 'Sqs', 'SqsQueue']);
 
     const db = health.healthChecks['PostgresDatabase']!;
     expect(db.status).toBe('ok');
@@ -180,9 +184,16 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
     };
 
     // The aggregator stored the service's HealthCheckResponse verbatim — the Mesh UI's per-service,
-    // per-check health view reads exactly this.
+    // per-check health view reads exactly this. payments has the explicit domain checks (PaymentGateway,
+    // PostgresDatabase) PLUS the transport checks auto-registered by its outbound clients: it sends
+    // shipping:book over SQS (-> Sqs) and payment:captured over EventBridge (-> EventBridge).
     expect(snapshot.health.isHealthy).toBe(true);
-    expect(Object.keys(snapshot.health.healthChecks).sort()).toEqual(['PaymentGateway', 'PostgresDatabase']);
+    expect(Object.keys(snapshot.health.healthChecks).sort()).toEqual([
+      'EventBridge',
+      'PaymentGateway',
+      'PostgresDatabase',
+      'Sqs',
+    ]);
     expect(snapshot.health.healthChecks['PaymentGateway']!.dependencies).toEqual([
       { kind: 'Http', name: 'stripe-gateway' },
     ]);
