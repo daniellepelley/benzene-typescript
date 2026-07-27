@@ -1,0 +1,16 @@
+{
+  "name": "@benzene/clients-aws-step-functions",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.Clients.Aws.StepFunctions (outbound Step Functions client + health check)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@aws-sdk/client-sfn": "^3.700.0",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/results": "0.1.0",
+    "@benzene/health-checks-core": "0.1.0"
+  }
+}

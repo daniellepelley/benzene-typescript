@@ -66,6 +66,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
 | `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; message-client/pipeline/health-check deferred) |
 | `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzene/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path; batch/standalone clients + health checks deferred) |
+| `src/Benzene.Clients.Aws.StepFunctions` | `@benzene/clients-aws-step-functions` | `Benzene.Clients.Aws.StepFunctions` (outbound Step Functions client + reachability health check over `@aws-sdk/client-sfn`) |
 | `src/Benzene.Clients.Azure.ServiceBus` | `@benzene/clients-azure-service-bus` | `Benzene.Clients.Azure.ServiceBus` (outbound `OutboundContext` send path over `@azure/service-bus`; generic-context + batch clients deferred) |
 | `src/Benzene.Clients.Azure.EventHub` | `@benzene/clients-azure-event-hub` | `Benzene.Clients.Azure.EventHub` (outbound `OutboundContext` send path over `@azure/event-hubs`; generic-context + batch clients deferred) |
 | `src/Benzene.Clients.Azure.QueueStorage` | `@benzene/clients-azure-queue-storage` | `Benzene.Clients.Azure.QueueStorage` (outbound `OutboundContext` send path over `@azure/storage-queue`; generic-context client + health check deferred) |
