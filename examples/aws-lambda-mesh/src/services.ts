@@ -23,6 +23,17 @@ import { z } from 'zod';
 import { registerZodSchema } from '@benzene/zod';
 import { buildMeshServiceLambda, MeshServiceDefinition, Transport } from './meshService';
 import { MeshBus } from './bus';
+import {
+  AnalyticsStoreHealthCheck,
+  CarrierApiHealthCheck,
+  EmailProviderHealthCheck,
+  InventoryDatabaseHealthCheck,
+  OrdersDatabaseHealthCheck,
+  OrdersQueueHealthCheck,
+  PaymentsDatabaseHealthCheck,
+  PaymentsGatewayHealthCheck,
+  ShippingDatabaseHealthCheck,
+} from './healthChecks';
 
 /** Cross-service delivery log, so a test can assert an event actually reached its consumer. */
 export const receipts: string[] = [];
@@ -133,6 +144,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
     consumes: [{ topic: 'orders:create', transport: 'http', httpMappings: [{ method: 'post', path: '/orders' }] }],
     produces: ['payments:capture', 'order:placed'],
     eventPayloadType: Message,
+    healthChecks: [new OrdersDatabaseHealthCheck(), new OrdersQueueHealthCheck()],
     sends: [
       { topic: 'payments:capture', transport: 'sqs', targetEnvVar: 'PAYMENTS_QUEUE_URL' },
       { topic: 'order:placed', transport: 'sns', targetEnvVar: 'ORDER_PLACED_TOPIC_ARN' },
@@ -145,6 +157,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
     consumes: [{ topic: 'payments:capture', transport: 'sqs' }],
     produces: ['shipping:book', 'payment:captured'],
     eventPayloadType: Message,
+    healthChecks: [new PaymentsDatabaseHealthCheck(), new PaymentsGatewayHealthCheck()],
     sends: [
       { topic: 'shipping:book', transport: 'sqs', targetEnvVar: 'SHIPPING_QUEUE_URL' },
       { topic: 'payment:captured', transport: 'eventbridge', targetEnvVar: 'EVENT_BUS_NAME' },
@@ -158,6 +171,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
     consumes: [{ topic: 'shipping:book', transport: 'sqs' }],
     produces: ['shipment:dispatched'],
     eventPayloadType: Message,
+    healthChecks: [new ShippingDatabaseHealthCheck(), new CarrierApiHealthCheck()],
     sends: [{ topic: 'shipment:dispatched', transport: 'eventbridge', targetEnvVar: 'EVENT_BUS_NAME' }],
     extraTransports: ['http'],
   },
@@ -170,6 +184,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
       { topic: 'shipment:dispatched', transport: 'eventbridge' },
     ],
     produces: [],
+    healthChecks: [new InventoryDatabaseHealthCheck()],
     extraTransports: ['http'],
   },
   {
@@ -182,6 +197,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
       { topic: 'shipment:dispatched', transport: 'eventbridge' },
     ],
     produces: [],
+    healthChecks: [new EmailProviderHealthCheck()],
     extraTransports: ['http'],
   },
   {
@@ -193,6 +209,7 @@ export const serviceDefinitions: MeshServiceDefinition[] = [
       { topic: 'shipment:dispatched', transport: 'eventbridge' },
     ],
     produces: [],
+    healthChecks: [new AnalyticsStoreHealthCheck()],
     extraTransports: ['http'],
   },
 ];

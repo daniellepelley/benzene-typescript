@@ -140,6 +140,54 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
     expect(spec.transports).toContain('http');
   });
 
+  it('a service answers the reserved healthcheck invoke with a real HealthCheckResponse (per-check status + dependencies)', async () => {
+    const services = buildServiceLambdas();
+
+    const response = (await services['orders-api']!(
+      { topic: 'healthcheck', headers: {}, body: '' },
+      {} as Context,
+      () => undefined,
+    )) as { statusCode: number; body: string };
+
+    // The `@benzene/health-checks` middleware served it — the canonical { isHealthy, healthChecks } wire
+    // shape the mesh + cross-language Mesh UI read, NOT the old hand-rolled { isHealthy, checks:[…] } blob.
+    const health = JSON.parse(response.body) as {
+      isHealthy: boolean;
+      healthChecks: Record<string, { status: string; type: string; data: Record<string, unknown>; dependencies: { kind: string; name: string }[] }>;
+    };
+    expect(health.isHealthy).toBe(true);
+    expect(Object.keys(health.healthChecks).sort()).toEqual(['PostgresDatabase', 'SqsQueue']);
+
+    const db = health.healthChecks['PostgresDatabase']!;
+    expect(db.status).toBe('ok');
+    expect(db.type).toBe('PostgresDatabase');
+    expect(db.data['latencyMs']).toBe(4);
+    expect(db.dependencies).toEqual([{ kind: 'Database', name: 'orders-db' }]);
+
+    const queue = health.healthChecks['SqsQueue']!;
+    expect(queue.status).toBe('ok');
+    expect(queue.dependencies).toEqual([{ kind: 'Queue', name: 'order-events' }]);
+  });
+
+  it('writes each service\'s per-check health (status + dependencies) into services/{name}.json', async () => {
+    const { store } = await runMeshAggregation(buildServiceLambdas(), rootDirectory);
+
+    const snapshot = JSON.parse((await store.tryReadAsync('services/payments-api.json'))!) as {
+      health: {
+        isHealthy: boolean;
+        healthChecks: Record<string, { status: string; type: string; dependencies: { kind: string; name: string }[] }>;
+      };
+    };
+
+    // The aggregator stored the service's HealthCheckResponse verbatim — the Mesh UI's per-service,
+    // per-check health view reads exactly this.
+    expect(snapshot.health.isHealthy).toBe(true);
+    expect(Object.keys(snapshot.health.healthChecks).sort()).toEqual(['PaymentGateway', 'PostgresDatabase']);
+    expect(snapshot.health.healthChecks['PaymentGateway']!.dependencies).toEqual([
+      { kind: 'Http', name: 'stripe-gateway' },
+    ]);
+  });
+
   it('the same service also handles its domain topic over a real transport (SQS)', async () => {
     const services = buildServiceLambdas();
 

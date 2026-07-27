@@ -25,6 +25,8 @@
 import { Constructor, IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler, ITransportsInfo } from '@benzene/abstractions-message-handlers';
 import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { IHealthCheck } from '@benzene/health-checks-core';
+import { useHealthCheck } from '@benzene/health-checks';
 import { Handler } from 'aws-lambda';
 import {
   addBenzene,
@@ -93,6 +95,13 @@ export interface MeshServiceDefinition {
   readonly produces: string[];
   /** The payload type of the produced events (all events in this example carry the same `{ orderId }` shape). */
   readonly eventPayloadType?: Constructor<unknown>;
+  /**
+   * The service's health checks, run by `@benzene/health-checks`' `useHealthCheck` middleware on the
+   * reserved `healthcheck` topic (mirrors .NET's `.UseHealthCheck("benzene:healthcheck", healthChecks)`).
+   * Their aggregated `HealthCheckResponse` is what the mesh writes into `services/{name}.json` and the
+   * Mesh UI renders per check (status + declared dependencies). Optional; omit for a service with none.
+   */
+  readonly healthChecks?: IHealthCheck[];
   /** Extra transports the service listens on beyond those implied by `consumes` (e.g. `http` for orders). */
   readonly extraTransports?: Transport[];
   /**
@@ -116,10 +125,6 @@ function serviceTransports(definition: MeshServiceDefinition): Set<Transport> {
   return transports;
 }
 
-/** The health report a service returns over the reserved `healthcheck` topic. */
-function buildHealth(name: string): { isHealthy: boolean; checks: { name: string; isHealthy: boolean }[] } {
-  return { isHealthy: true, checks: [{ name: `${name}-self`, isHealthy: true }] };
-}
 
 /**
  * Builds a service's Lambda `handler`: a composite entry point that answers direct-invoke `spec` (via the
@@ -127,22 +132,8 @@ function buildHealth(name: string): { isHealthy: boolean; checks: { name: string
  */
 export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbound?: OutboundWiring): Handler {
   const { name, domainHandlers, produces, eventPayloadType, sends } = definition;
-  const health = buildHealth(name);
+  const healthChecks = definition.healthChecks ?? [];
   const transports = serviceTransports(definition);
-
-  // The reserved health handler registers into its OWN throwaway registry, never a service's domain registry
-  // — so a later build never picks it up as a domain handler. `useMessageHandlers` reads each class's
-  // `@message` metadata directly from the classes passed to it, so a separate registry is invisible.
-  const reservedRegistry = new MessageHandlersRegistry();
-  class ReservedRequest {}
-  class HealthResponse {}
-
-  @message('healthcheck', { registry: reservedRegistry, requestType: ReservedRequest, responseType: HealthResponse })
-  class HealthHandler implements IMessageHandler<ReservedRequest, HealthResponse> {
-    handleAsync(): Promise<IBenzeneResultOf<HealthResponse>> {
-      return Promise.resolve(BenzeneResult.ok(health as unknown as HealthResponse));
-    }
-  }
 
   const entryPoint = compositeAwsLambda((c) => {
     c.configureServices((s) => {
@@ -179,11 +170,17 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbou
       }
     });
 
-    // The direct-invoke surface the mesh interrogates: the library spec handler + healthcheck + domain
-    // handlers. `useSpec(bm)` owns the reserved `spec` topic (DI-dispatched); it must NOT also appear in the
-    // `useMessageHandlers` list, or the two finders would collide on the topic.
+    // The direct-invoke surface the mesh interrogates: reserved `spec` (via the library `useSpec`,
+    // DI-dispatched), reserved `healthcheck` (via the library `useHealthCheck` middleware, which runs the
+    // service's checks and aggregates a `HealthCheckResponse`, then falls through for any other topic), plus
+    // the domain handlers. `useSpec(bm)` owns the `spec` topic, so it must NOT also appear in the
+    // `useMessageHandlers` list or the two finders would collide; `useHealthCheck` is registered before the
+    // handler router so it claims `healthcheck` first.
     c.route(isBenzeneMessageEvent, (app) =>
-      useBenzeneMessage(app, (bm) => useMessageHandlers(useSpec(bm), HealthHandler, ...domainHandlers)),
+      useBenzeneMessage(app, (bm) => {
+        useHealthCheck(bm, 'healthcheck', healthChecks);
+        useMessageHandlers(useSpec(bm), ...domainHandlers);
+      }),
     );
 
     // The domain handlers over each transport the service actually listens on.

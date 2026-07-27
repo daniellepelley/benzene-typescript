@@ -28,7 +28,13 @@ Each service is **one Lambda** — a composite entry point (`compositeAwsLambda`
   **library `useSpec`** (`@benzene/schema-openapi`) — the standard, dogfooded self-description path — which
   builds the benzene spec document (`{ requests, events, transports, components.schemas }`, payload schemas
   as `$ref`s) from the service's own DI feeds. There is **no hand-built spec**: `useSpec` is the single
-  source of truth, so running the example proves `useSpec` emits the correct spec end-to-end;
+  source of truth, so running the example proves `useSpec` emits the correct spec end-to-end. The reserved
+  `healthcheck` topic is likewise served by the **library `useHealthCheck`** (`@benzene/health-checks`, the
+  same path .NET's `.UseHealthCheck("benzene:healthcheck", …)` takes), which runs the service's registered
+  `IHealthCheck`s (`src/healthChecks.ts`, one per .NET `examples/AwsMesh/<Service>/HealthChecks` class) and
+  aggregates a `HealthCheckResponse` — `{ isHealthy, healthChecks: { <type>: { status, type, data,
+  dependencies } } }` — so each `services/{name}.json` carries genuine per-check health + declared
+  dependencies for the Mesh UI;
 - hosts its domain handlers over every transport it actually listens on (API Gateway, SQS, SNS,
   EventBridge), routed by the composite's event-shape predicates;
 - **declares** the topics it produces via `addResponseEventDeclarations` (→ the spec's `events`), which is
@@ -55,7 +61,8 @@ Here the catalog is written to a `FileSystemMeshArtifactStore` (the .NET example
 Running the test asserts the full mesh story on a real, non-trivial graph:
 
 - all six tagged Lambdas are **discovered** as `aws-lambda-invoke` entries;
-- each is **interrogated** and reported **healthy**, with its self-derived transports;
+- each is **interrogated** and reported **healthy** — its `healthcheck` invoke returns a real
+  `HealthCheckResponse` whose per-check `status`/`type`/`data`/`dependencies` land in `services/{name}.json`;
 - the **topic catalog** lists each cross-service topic's producers and consumers;
 - the **structural topology** has all nine producer→consumer edges;
 - a service genuinely answers a **direct Lambda invoke** on `spec` (the interrogation seam), and the same

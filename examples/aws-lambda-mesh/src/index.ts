@@ -6,6 +6,7 @@
  * `AwsLambdaMeshExampleTest` drives the whole discover → interrogate → aggregate → catalog chain in-memory.
  */
 export * from './meshService';
+export * from './healthChecks';
 export * from './bus';
 export * from './services';
 export * from './localAwsEnvironment';
