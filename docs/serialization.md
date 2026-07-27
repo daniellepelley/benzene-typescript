@@ -18,7 +18,7 @@ JSON format and any additional `IMediaFormat<TContext>` you register. For each m
 - picks the **write** format from the request's `accept` header (falling back to the read format, then to
   JSON).
 
-**JSON is the default** — it ships in `@benzene/core-messages` (`JsonMediaFormat` over `JsonSerializer`)
+**JSON is the default** — it ships in `@benzene/core-message-handlers` (`JsonMediaFormat` over `JsonSerializer`)
 and is always present, so you never install anything to use it. When no header matches a registered format,
 the negotiator falls back to JSON. Adding a format is opt-in: install its package and register it into a
 pipeline, and content negotiation starts routing matching requests to it while everything else stays JSON.

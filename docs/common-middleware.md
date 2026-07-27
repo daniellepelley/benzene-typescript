@@ -47,7 +47,7 @@ Opens a named span around the rest of the pipeline. Every middleware already get
 automatically via `addDiagnostics()` (see [Middleware — automatic activity
 wrapping](middleware.md#automatic-activity-wrapping-imiddlewarewrapper)) — `useTimer` is for naming a
 specific stage explicitly so it stands out in an exported trace. Internally it resolves the registered
-`IProcessTimerFactory` (the `addDiagnostics()`-registered default, `ActivityProcessTimer`, opens a
+`IProcessTimerFactory` (the `addDiagnostics()`-registered default, `ActivityProcessTimerFactory`, opens a
 real OpenTelemetry span); if none is registered it's a no-op wrapper around `next()`.
 
 C# overloads `UseTimer` twice; the two forms are distinguishable at runtime here (a `string` timer
