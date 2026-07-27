@@ -20,3 +20,5 @@ export * from './MessageBuilderExtensions';
 export * from './BenzeneConfiguration';
 export * from './BenzeneTestHost';
 export * from './FakeBenzeneMessageSender';
+export * from './FakeResolver';
+export * from './TestPipeline';
