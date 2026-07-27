@@ -197,12 +197,6 @@ describe('BenzeneServiceBusWorker validation', () => {
   it('throws when a topic has no subscription', async () => {
     await expect(worker({ topicName: 't' }).startAsync()).rejects.toThrow(BenzeneException);
   });
-
-  it('throws for session-enabled entities (not yet supported in the port)', async () => {
-    await expect(worker({ queueName: 'q', sessionsEnabled: true }).startAsync()).rejects.toThrow(
-      /session/i,
-    );
-  });
 });
 
 /** A fake ServiceBusReceiver capturing the subscribe handlers and recording settle operations. */

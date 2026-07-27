@@ -8,8 +8,9 @@
  * than Azure Functions (for a Service Bus trigger, use `@benzene/azure-function-service-bus`).
  *
  * PORTING NOTES: .NET's `ServiceBusProcessor` push model maps to a `ServiceBusReceiver.subscribe(...)`;
- * session consumption (`sessionsEnabled`) and the peek-based dependency health-check auto-wiring are
- * deferred (see the README roadmap and the per-symbol doc comments).
+ * session consumption (`sessionsEnabled`) is a bounded `acceptNextSession` pump recreating the
+ * (non-existent-in-JS) session processor; the peek-based dependency health-check auto-wiring is
+ * deferred (see the README "Porting conventions" note and the per-symbol doc comments).
  */
 export * from './BenzeneServiceBusConfig';
 export * from './BenzeneServiceBusWorker';

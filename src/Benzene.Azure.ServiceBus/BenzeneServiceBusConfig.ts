@@ -53,17 +53,26 @@ export interface BenzeneServiceBusConfig {
    * Whether the entity is session-enabled and should be consumed with per-session FIFO ordering.
    * Defaults to `false`.
    *
-   * DIVERGENCE: session consumption is NOT yet supported in the TypeScript port — `@azure/service-bus`
-   * has no session *processor* (only one-session-at-a-time `acceptSession`/`acceptNextSession`), so the
-   * .NET `ServiceBusSessionProcessor`'s auto-managed concurrent sessions have no direct equivalent. The
-   * field (and {@link maxConcurrentSessions}/{@link maxConcurrentCallsPerSession}) is retained for API
-   * parity; setting it `true` makes `startAsync` throw a clear error rather than silently ignoring it.
-   * A bounded `acceptNextSession` pump is the tracked follow-up (see README roadmap).
+   * BEND — the bounded session pump. `@azure/service-bus` has no session *processor* (the .NET
+   * `ServiceBusSessionProcessor` has no direct equivalent), only the one-session-at-a-time
+   * `client.acceptNextSession(entity, options)` primitive. When `true`, {@link BenzeneServiceBusWorker}
+   * recreates the session-processor behaviour over that primitive: it runs up to
+   * {@link maxConcurrentSessions} concurrent "session slots", each looping accept-a-session →
+   * `subscribe` → on drain/error/idle, close and accept the next. Messages are delivered FIFO within a
+   * session ({@link maxConcurrentCallsPerSession}, default 1) and settled through the same ack-mode /
+   * override logic as the non-session path. The entity must be created session-enabled, and producers
+   * must set a session id. See the README "Porting conventions" note and the worker's class doc.
    */
   sessionsEnabled?: boolean;
-  /** Maximum sessions handled concurrently when {@link sessionsEnabled} (session support deferred). Defaults to 8. */
+  /**
+   * Maximum sessions handled concurrently when {@link sessionsEnabled} — the number of session-slot
+   * pump loops. Defaults to 8.
+   */
   maxConcurrentSessions?: number;
-  /** Messages of a single session handled concurrently when {@link sessionsEnabled} (deferred). Defaults to 1. */
+  /**
+   * Messages of a single session handled concurrently when {@link sessionsEnabled} — the session
+   * receiver's `maxConcurrentCalls`. Defaults to 1 (per-session FIFO, the ordering-preserving setting).
+   */
   maxConcurrentCallsPerSession?: number;
 }
 

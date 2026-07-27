@@ -49,7 +49,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzene/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
-| `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions + health-check deferred) |
+| `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; health-check deferred) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
 | `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); dead-letter/`DrainOnRevoke` + health-check deferred) |
 | `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); health-check deferred) |
@@ -951,13 +951,26 @@ Ported (with tests):
   event args, so the `IServiceBusMessageSettler` seam collapses to one implementation over `receiver` +
   `message`; `CancellationToken` → optional `AbortSignal` (the per-message `SeedCancellationToken` is dropped,
   as the port has no ambient cancellation-token DI seam); the config/holder classes → interfaces/mutable
-  holders with `withServiceBusConfigDefaults` applying the C# property-initializer defaults. **Deferred**
-  (retained for API parity, documented, and fail-loud where applicable): session consumption
-  (`sessionsEnabled` throws at `startAsync` — the JS SDK has no session *processor*, only one-session
-  `acceptSession`/`acceptNextSession`; a bounded session pump is the follow-up); `prefetchCount` (no
-  `@azure/service-bus` receiver-option equivalent, accepted but not plumbed); and the peek-based dependency
-  health-check auto-wiring (no Azure Service Bus health-check package ported yet). The emulator integration
-  test is replaced by unit tests that drive the `receiver.subscribe` push path over a fake client/receiver.
+  holders with `withServiceBusConfigDefaults` applying the C# property-initializer defaults. **Session
+  consumption is a BEND, not a deferral** — the JS SDK has no session *processor* (no `ServiceBusProcessor`
+  equivalent at all), only the one-session-at-a-time `client.acceptNextSession(entity, options)` primitive,
+  which locks a single session and returns a `ServiceBusSessionReceiver` (itself a `ServiceBusReceiver`,
+  same `subscribe` + same settle methods). `sessionsEnabled: true` recreates the .NET
+  `ServiceBusSessionProcessor` behaviour faithfully in spirit over that primitive: a **bounded session
+  pump** runs `maxConcurrentSessions` (default 8) concurrent "session slots", each looping
+  `acceptNextSession` → `subscribe` (FIFO within the session via `maxConcurrentCalls =
+  maxConcurrentCallsPerSession`, default 1) → on drain (an internal session-idle timeout, the pump's
+  stand-in for .NET's `SessionIdleTimeout`)/`processError`/stop, close the session receiver and accept the
+  next. Settlement is IDENTICAL to the non-session path — the same `settleAsync`/`ackMode`/override logic
+  over an `IServiceBusMessageSettler` built on the session receiver. An `acceptNextSession` that times out
+  or rejects with no session available (a `ServiceBusError`, e.g. code `"SessionCannotBeLocked"`) is a
+  normal "retry after a short backoff" case, not a fatal error; an unexpected error is logged and the slot
+  keeps running. `stopAsync` signals the slots (AbortController), closes any open session receivers,
+  drains the loops, then disposes the client. Still **deferred** (retained for API parity, documented, and
+  fail-loud where applicable): `prefetchCount` (no `@azure/service-bus` receiver-option equivalent,
+  accepted but not plumbed); and the peek-based dependency health-check auto-wiring (no Azure Service Bus
+  health-check package ported yet). The emulator integration test is replaced by unit tests that drive the
+  `receiver.subscribe` push path (and the session pump) over a fake client/receiver.
 - Standalone Event Hubs consumer (`@benzene/azure-event-hub`): the non-Functions Event Hubs **consumer**
   worker — `useEventHub(workerStartup, config, clientFactory, action)` registers a `BenzeneEventHubWorker`
   (`IBenzeneWorker`) that consumes a hub and runs each event through an `EventHubConsumerContext` pipeline,
