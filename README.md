@@ -867,6 +867,22 @@ Ported (with tests):
   yields a null payload (a failure result carries the `VoidResult` sentinel), so the check treats
   null/undefined OR that sentinel as "no payload". The C# package ships no test suite, so its tests here
   are new port-verification tests rather than ported C# scenarios.
+- Provider-side & cloud reachability health checks: the cloud probes classify failures via the shared
+  `HealthCheckError` policy (an authorization denial is a persistent failure, anything else transient;
+  the SDK error code/status go into `data`, never the error message) and — matching the
+  `@benzene/clients-aws-*` convention — take their raw SDK client directly rather than via a synthetic
+  DI token. `@benzene/health-checks-dynamodb` (`DescribeTable` over `@aws-sdk/client-dynamodb`) and
+  `@benzene/health-checks-azure-service-bus` (`peekMessages` over `@azure/service-bus`, queue or
+  subscription; the JS SDK folds C#'s `UnauthorizedAccessException`/`ServiceBusException` into one
+  `ServiceBusError`, so the port keys off `code === 'UnauthorizedAccess'` to reproduce the persistent/
+  transient split). `@benzene/health-checks-schema` is the **provider** side of the contract-drift loop
+  above: it hashes the service's handlers-only message contract and publishes it under the `schema`
+  check for the consumer's `ClientHealthCheckProcessor` to compare. C#'s `CodeGenHelpers.GenerateHash`
+  isn't portable (`CodeGen.Core` isn't ported), so it reuses `@benzene/schema-openapi`'s
+  `EventServiceDocumentBuilder.generateJson()` (already the example/`messageEndpoint`-free normalized
+  form) + `MeshHashing.computeHash`; DIVERGENCE: C#'s `SchemaBuilder` reflects the CLR type, the TS one
+  sources schemas from the registered `ITypeJsonSchemaSource`s, so the check additionally takes them
+  (resolved from DI by `addSchemaHealthCheck`, the same seam `SpecBuilder`/the mesh use).
 - Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
   convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
   alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the
