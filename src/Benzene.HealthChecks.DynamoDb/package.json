@@ -1,0 +1,14 @@
+{
+  "name": "@benzene/health-checks-dynamodb",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.HealthChecks.DynamoDb (DynamoDB table reachability health check)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/health-checks-core": "0.1.0"
+  }
+}

@@ -78,6 +78,7 @@
     "@benzene/health-checks": "0.1.0",
     "@benzene/health-checks-core": "0.1.0",
     "@benzene/health-checks-disk": "0.1.0",
+    "@benzene/health-checks-dynamodb": "0.1.0",
     "@benzene/health-checks-http": "0.1.0",
     "@benzene/health-checks-tcp": "0.1.0",
     "@benzene/http": "0.1.0",

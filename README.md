@@ -81,6 +81,7 @@ Mirrors the .NET repository:
 | `src/Benzene.HealthChecks.Http` | `@benzene/health-checks-http` | `Benzene.HealthChecks.Http` |
 | `src/Benzene.HealthChecks.Tcp` | `@benzene/health-checks-tcp` | `Benzene.HealthChecks.Tcp` (over `node:net`) |
 | `src/Benzene.HealthChecks.Disk` | `@benzene/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
+| `src/Benzene.HealthChecks.DynamoDb` | `@benzene/health-checks-dynamodb` | `Benzene.HealthChecks.DynamoDb` (`DescribeTable` reachability check over `@aws-sdk/client-dynamodb`) |
 | `src/Benzene.Clients.HealthChecks` | `@benzene/clients-health-checks` | `Benzene.Clients.HealthChecks` |
 | `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
 | `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
