@@ -117,6 +117,9 @@ Mirrors the .NET repository:
 | `src/Benzene.Testing` | `@benzene/testing` | `Benzene.Testing`¶ |
 | `src/Benzene.Aws.Lambda.TestHelpers` | `@benzene/aws-lambda-testing` | `Benzene.Aws.Lambda.*.TestHelpers`¶ |
 | `src/Benzene.Azure.Function.TestHelpers` | `@benzene/azure-function-testing` | `Benzene.Azure.Function.*.TestHelpers`¶ |
+| `src/Benzene.Aws.Sqs.TestHelpers` | `@benzene/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
+| `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzene/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
+| `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -202,7 +205,16 @@ a test always does for its `as*` builder; (5) `FakeBenzeneMessageSender` (the eg
 example re-declares as a local helper) is promoted into `@benzene/testing` so adopters get it first-party.
 The startup-host builder is dogfooded by `test/Benzene.Core.Test/Testing/BenzeneTestHostTest.test.ts` (the
 AWS+Azure worked exemplars) and by the converted `ApiGatewayPipelineTest`/`AzureHttpPipelineTest`. Still not
-ported: an Azure Queue Storage builder (that transport itself isn't ported).
+ported: an Azure Queue Storage builder (that transport itself isn't ported). The **standalone (non-Functions)
+consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
+`@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers` — kept one-per-C#-project
+(unlike the consolidated `*-testing` packages, since each targets a distinct transport SDK, the very
+dependency the C# split isolates). They follow the same law: a native-message builder (`asSqsMessage` /
+`asAzureServiceBusMessage` / `asEventHubBenzeneMessage`) plus, for the two worker hosts, the same
+module-augmentation fluent specialization — `benzeneTestHost(StartUp).withServices(...).buildServiceBusWorkerHost()`
+/ `.buildEventHubWorkerHost()` — running a native message through the real `ServiceBusConsumerApplication`/
+`EventHubConsumerApplication` and returning its native settlement decision / recorded result (the SQS helper is
+a message builder only, faithful to its C# `.csproj`, which ships no worker host).
 
 §§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
