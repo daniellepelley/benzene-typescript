@@ -83,6 +83,7 @@ Mirrors the .NET repository:
 | `src/Benzene.HealthChecks.Disk` | `@benzene/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
 | `src/Benzene.HealthChecks.DynamoDb` | `@benzene/health-checks-dynamodb` | `Benzene.HealthChecks.DynamoDb` (`DescribeTable` reachability check over `@aws-sdk/client-dynamodb`) |
 | `src/Benzene.HealthChecks.Azure.ServiceBus` | `@benzene/health-checks-azure-service-bus` | `Benzene.HealthChecks.Azure.ServiceBus` (`peekMessages` reachability check over `@azure/service-bus`) |
+| `src/Benzene.HealthChecks.Schema` | `@benzene/health-checks-schema` | `Benzene.HealthChecks.Schema` (provider-side contract-drift hash; `CodeGen.Core` hashing → `MeshHashing` over the schema-openapi doc) |
 | `src/Benzene.Clients.HealthChecks` | `@benzene/clients-health-checks` | `Benzene.Clients.HealthChecks` |
 | `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
 | `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
