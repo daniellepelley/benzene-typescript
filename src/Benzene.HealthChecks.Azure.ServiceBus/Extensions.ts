@@ -8,12 +8,15 @@ import { ServiceBusHealthCheckFactory } from './ServiceBusHealthCheckFactory';
  *
  * PORT DIVERGENCE: the C# `AddServiceBusQueueHealthCheck(queueName)` resolves `ServiceBusClient` from
  * DI; the TypeScript port takes the `@azure/service-bus` `ServiceBusClient` explicitly (there is no
- * synthetic DI token for the raw SDK client), matching the `@benzene/clients-azure-*` siblings.
+ * synthetic DI token for the raw SDK client), matching the `@benzene/clients-azure-*` siblings. The
+ * argument order is resource-first (`queueName`, then `client`) to match the family's `add*HealthCheck`
+ * helpers (`addSqsHealthCheck`, `addDynamoDbHealthCheck`), even though the underlying constructor is
+ * client-first (faithful to the C# ctor).
  */
 export function addServiceBusQueueHealthCheck(
   builder: IHealthCheckBuilder,
-  client: ServiceBusClient,
   queueName: string,
+  client: ServiceBusClient,
 ): IHealthCheckBuilder {
   return addHealthCheckFactory(builder, new ServiceBusHealthCheckFactory(client, queueName));
 }
@@ -24,13 +27,14 @@ export function addServiceBusQueueHealthCheck(
  *
  * PORT DIVERGENCE: the C# `AddServiceBusSubscriptionHealthCheck(topicName, subscriptionName)` resolves
  * `ServiceBusClient` from DI; the TypeScript port takes it explicitly (there is no synthetic DI token
- * for the raw SDK client), matching the `@benzene/clients-azure-*` siblings.
+ * for the raw SDK client), matching the `@benzene/clients-azure-*` siblings. Argument order is
+ * resource-first (the topic/subscription, then `client`) to match the family's `add*HealthCheck` helpers.
  */
 export function addServiceBusSubscriptionHealthCheck(
   builder: IHealthCheckBuilder,
-  client: ServiceBusClient,
   topicName: string,
   subscriptionName: string,
+  client: ServiceBusClient,
 ): IHealthCheckBuilder {
   return addHealthCheckFactory(builder, new ServiceBusHealthCheckFactory(client, topicName, subscriptionName));
 }

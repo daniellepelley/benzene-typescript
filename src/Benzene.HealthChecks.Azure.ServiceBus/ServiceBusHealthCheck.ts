@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.Azure.ServiceBus.ServiceBusHealthCheck. */
-import { ServiceBusClient, ServiceBusError } from '@azure/service-bus';
+import { ServiceBusClient, ServiceBusError, ServiceBusReceiver } from '@azure/service-bus';
 import {
   HealthCheckDependency,
   HealthCheckError,
@@ -64,12 +64,17 @@ export class ServiceBusHealthCheck implements IHealthCheck {
 
   async executeAsync(): Promise<IHealthCheckResult> {
     const dependencies = [this.dependency];
-    const receiver =
-      this.queueName !== undefined
-        ? this.client.createReceiver(this.queueName)
-        : this.client.createReceiver(this.topicName!, this.subscriptionName!);
+    // Create the receiver inside the try (as C# does): createReceiver can throw synchronously (a
+    // malformed/empty entity name, an already-closed client), and an IHealthCheck must report an
+    // expected failure as a classified result rather than let it escape executeAsync.
+    let receiver: ServiceBusReceiver | undefined;
 
     try {
+      receiver =
+        this.queueName !== undefined
+          ? this.client.createReceiver(this.queueName)
+          : this.client.createReceiver(this.topicName!, this.subscriptionName!);
+
       // Peek is read-only and non-destructive: it neither locks nor removes the message, and returns
       // an empty array on an empty entity — a successful round-trip is the connectivity signal.
       await receiver.peekMessages(1);
@@ -87,7 +92,9 @@ export class ServiceBusHealthCheck implements IHealthCheck {
         data: this.buildData(),
       });
     } finally {
-      await receiver.close();
+      if (receiver !== undefined) {
+        await receiver.close();
+      }
     }
   }
 
