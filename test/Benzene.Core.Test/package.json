@@ -104,6 +104,7 @@
     "@benzene/messagepack": "0.1.0",
     "@benzene/rabbitmq": "0.1.0",
     "@benzene/rate-limiting": "0.1.0",
+    "@benzene/cockatiel": "0.1.0",
     "@benzene/resilience": "0.1.0",
     "@benzene/response-events": "0.1.0",
     "@benzene/results": "0.1.0",

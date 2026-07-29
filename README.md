@@ -37,6 +37,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Joi` | `@benzene/joi` | `Benzene.FluentValidation`† (Joi adapter) |
 | `src/Benzene.Yup` | `@benzene/yup` | `Benzene.FluentValidation`† (Yup adapter) |
 | `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
+| `src/Benzene.Cockatiel` | `@benzene/cockatiel` | `Benzene.Resilience.Polly` (cockatiel adapter) |
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
 | `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
@@ -783,6 +784,19 @@ Ported (with tests):
   reimplemented" convention in action — .NET's `Benzene.DataAnnotations` / `Benzene.FluentValidation`
   (both wrapping .NET-only libraries) become adapters over the popular JS validation libraries instead.
 - Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
+  Its **sibling** `@benzene/cockatiel` ports `Benzene.Resilience.Polly` under the "adapted, not
+  reimplemented" convention — where the .NET package adapts Polly v8, this adapts its JS analogue
+  [cockatiel](https://github.com/connor4312/cockatiel): `CockatielResilienceMiddleware` (Polly's
+  `PollyResilienceMiddleware`, lib-swapped) runs the rest of the pipeline through a cockatiel `IPolicy`
+  (retry/circuit-breaker/timeout/bulkhead/fallback, composed via `wrap`), and `useResiliencePipeline`
+  bridges Benzene's dual failure model — a thrown error *or* an unsuccessful result — to the policy via
+  an optional `isFailure` predicate that throws the internal `BenzeneFailureResultException` sentinel
+  (swallowed once the policy finishes, so the result stays on the context). DIVERGENCES: the Polly
+  `ResiliencePipeline`/`ExecuteAsync` map to cockatiel's `IPolicy`/`execute`; C#'s four
+  `UseResiliencePipeline` overloads collapse to one function with an optional `isFailure` because
+  cockatiel composes policies *functionally* (`wrap(...)`) rather than via a mutable
+  `ResiliencePipelineBuilder`, so the two "build inline" overloads have no counterpart — the caller
+  constructs the `IPolicy` argument directly.
 - Diagnostics: `TimerMiddleware` and the debug-middleware decorator/wrapper + `useTimer`, plus the
   correlation-id middleware and the process-timer surface. C# `Stopwatch` → `Date.now()` deltas;
   `Debug.WriteLine` → an injectable, silent-by-default sink; `Guid.NewGuid()` →
