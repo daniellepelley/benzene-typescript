@@ -3,10 +3,11 @@
 Retry the rest of a Benzene pipeline on failure, with exponential backoff.
 
 > **Boundary:** `@benzene/resilience` ships **retry-with-backoff only**, with zero runtime
-> dependencies. Circuit breaker, timeout, bulkhead, hedging, and fallback are **not** ported — the
-> .NET original's broader toolkit lives in a separate `Benzene.Resilience.Polly` package (built on
-> [Polly](https://www.pollydocs.org/)) that has no TypeScript equivalent today. See
-> [Beyond retry](#beyond-retry) for what to reach for instead.
+> dependencies. The broader toolkit — circuit breaker, timeout, bulkhead, and fallback — lives in the
+> sibling **`@benzene/cockatiel`** package, which adapts
+> [cockatiel](https://github.com/connor4312/cockatiel) (the JS analogue of the .NET original's
+> [Polly](https://www.pollydocs.org/)-based `Benzene.Resilience.Polly`). See
+> [Beyond retry](#beyond-retry).
 
 ## Overview
 
@@ -208,26 +209,70 @@ retrying successful, non-throwing calls until `numberOfRetries` is exhausted, th
 without an error — so the failure may not show up in a stack trace.
 
 **I need a circuit breaker / timeout / bulkhead, not just retry.**
-Not ported — see below.
+Reach for the sibling `@benzene/cockatiel` package — see [Beyond retry](#beyond-retry).
 
 ## Beyond retry
 
 The .NET original offers the full [Polly](https://www.pollydocs.org/) strategy set (circuit breaker,
-timeout, hedging, fallback, rate limiting) through a sibling `Benzene.Resilience.Polly` package.
-**There is no `@benzene/*` equivalent in the TypeScript port today** — `@benzene/resilience` is
-retry-only, and this doc will not invent an API that doesn't exist.
+timeout, bulkhead, fallback, and compositions) through a sibling `Benzene.Resilience.Polly` package. The
+TypeScript port ships the same capability as **`@benzene/cockatiel`**, which adapts
+[cockatiel](https://github.com/connor4312/cockatiel) — the closest JS analogue of Polly — under the
+"adapted, not reimplemented" convention. Unlike `@benzene/resilience`, it takes `cockatiel` as a runtime
+dependency, in exchange for the whole toolkit.
 
-For those patterns in a Node/TypeScript service, reach for an established resilience library and call
-it from inside your own middleware (`app.useFn(...)` — see [Middleware](middleware.md)) or around your
-port/client calls:
+```
+npm install @benzene/cockatiel
+```
 
-- [**cockatiel**](https://www.npmjs.com/package/cockatiel) — the closest analog to Polly: composable
-  retry, circuit breaker, timeout, bulkhead, and fallback policies.
-- [**p-retry**](https://www.npmjs.com/package/p-retry) — a focused retry helper (built on
-  `retry`/`p-timeout`) when you only need retry/timeout around a promise.
+`useResiliencePipeline(app, policy, isFailure?)` runs everything nested after it through a cockatiel
+`IPolicy`. cockatiel composes policies *functionally*, so you build the policy you want with `wrap(...)`
+and pass it in — there is no separate builder to configure:
 
-These are third-party runtime dependencies of *your* service, not of Benzene — Benzene stays
-dependency-free here on purpose.
+```ts
+import { useResiliencePipeline } from '@benzene/cockatiel';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { wrap, retry, circuitBreaker, handleAll, ConsecutiveBreaker, ExponentialBackoff } from 'cockatiel';
+
+const policy = wrap(
+  retry(handleAll, { maxAttempts: 3, backoff: new ExponentialBackoff() }),
+  circuitBreaker(handleAll, { halfOpenAfter: 10_000, breaker: new ConsecutiveBreaker(5) }),
+);
+
+useResiliencePipeline(app, policy);
+useMessageHandlers(app, ProcessOrderHandler);
+```
+
+Strategies fire on **errors thrown** by the wrapped pipeline. To also treat an **unsuccessful result**
+— Benzene's other failure mode, a result set on the context rather than thrown — as a handled outcome,
+pass an `isFailure` predicate *and* configure the policy to handle the `BenzeneFailureResultException`
+sentinel the middleware raises for it:
+
+```ts
+import { useResiliencePipeline, BenzeneFailureResultException } from '@benzene/cockatiel';
+import { retry, handleType, ExponentialBackoff } from 'cockatiel';
+import { BenzeneResultStatus } from '@benzene/results';
+
+useResiliencePipeline(
+  app,
+  retry(handleType(BenzeneFailureResultException), { maxAttempts: 3, backoff: new ExponentialBackoff() }),
+  (context) => BenzeneResultStatus.isTransient(context.result?.status),
+);
+```
+
+The sentinel never escapes: once the policy finishes (all retries exhausted) it is swallowed and the
+last unsuccessful result remains on the context — exactly as if no resilience middleware were present. A
+*real* error thrown by the pipeline propagates normally, including cockatiel's own `BrokenCircuitError`
+when a breaker is open and `TaskCancelledError` from a `timeout` policy.
+
+> **Timeout caveat.** Benzene's `IMiddleware` seam carries no cancellation token, so the middleware
+> calls `next()` without threading cockatiel's per-execution `AbortSignal`. A `timeout` policy therefore
+> *rejects* on time (`TaskCancelledError`, which propagates) but does **not** actually abort the
+> in-flight handler — `next()` runs to completion in the background. Use `timeout` to bound how long you
+> *wait* for a result, not to cancel work already started.
+
+For a one-off promise with no middleware involved, [**p-retry**](https://www.npmjs.com/package/p-retry)
+is a lighter option around a single port/client call — a third-party dependency of *your* service, not
+of Benzene.
 
 ## See Also
 

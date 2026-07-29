@@ -37,7 +37,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Joi` | `@benzene/joi` | `Benzene.FluentValidation`† (Joi adapter) |
 | `src/Benzene.Yup` | `@benzene/yup` | `Benzene.FluentValidation`† (Yup adapter) |
 | `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
-| `src/Benzene.Cockatiel` | `@benzene/cockatiel` | `Benzene.Resilience.Polly` (cockatiel adapter) |
+| `src/Benzene.Cockatiel` | `@benzene/cockatiel` | `Benzene.Resilience.Polly`† (cockatiel adapter) |
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
 | `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
 | `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
@@ -228,7 +228,13 @@ three mirroring the `Benzene.FluentValidation` integration shape. **Serializatio
 `System.Xml.Serialization`) become adapters over `avsc`, `@msgpack/msgpack` and `fast-xml-parser`,
 each mirroring the .NET package's `IMediaFormat` / serializer shape. **Auth:** `Benzene.Auth.OAuth2`
 (→ `Microsoft.IdentityModel`'s `JsonWebTokenHandler` + JWKS `ConfigurationManager`) becomes an adapter
-over `jose`, mirroring the middleware shape (`useOAuth2Bearer` / `requireScope`).
+over `jose`, mirroring the middleware shape (`useOAuth2Bearer` / `requireScope`). **Resilience:**
+`Benzene.Resilience.Polly` (→ Polly v8) becomes an adapter over `cockatiel`, mirroring the middleware
+shape (`useResiliencePipeline` running the pipeline through a cockatiel `IPolicy`). Because the C# type
+name embeds the library (`PollyResilienceMiddleware`), both the type **and its file** are lib-swapped to
+`CockatielResilienceMiddleware` (and the runtime `name` with them) — the same lib-swap the validation
+adapters apply, extended to the embedded name. This is the one place a port file name deliberately does
+not match its `.cs` counterpart.
 
 ## Getting started
 

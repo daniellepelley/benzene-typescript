@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ConstantBackoff, handleAll, handleType, retry } from 'cockatiel';
+import {
+  BrokenCircuitError,
+  circuitBreaker,
+  ConsecutiveBreaker,
+  ConstantBackoff,
+  fallback,
+  handleAll,
+  handleType,
+  retry,
+} from 'cockatiel';
 import { BenzeneFailureResultException, CockatielResilienceMiddleware } from '@benzene/cockatiel';
 
 /**
@@ -117,5 +126,44 @@ describe('CockatielResilienceMiddleware', () => {
     });
 
     expect(attempts).toBe(1);
+  });
+
+  // TS-only coverage beyond the retry-only C# suite — exercises the richer policy surface this adapter
+  // exists for, and locks the one non-trivial correctness property: the middleware swallows ONLY the
+  // sentinel and re-throws every real cockatiel error.
+  it('propagates a BrokenCircuitError when the breaker is open, without running next', async () => {
+    // ConsecutiveBreaker(1) opens after the first handled failure.
+    const middleware = new CockatielResilienceMiddleware<TestContext>(
+      circuitBreaker(handleType(TransientError), { halfOpenAfter: 60_000, breaker: new ConsecutiveBreaker(1) }),
+    );
+
+    // First call fails and trips the breaker; the real error propagates.
+    await expect(
+      middleware.handleAsync({ failed: false }, async () => {
+        throw new TransientError('boom');
+      }),
+    ).rejects.toBeInstanceOf(TransientError);
+
+    // With the circuit open, the next call is rejected with cockatiel's BrokenCircuitError WITHOUT
+    // running next — proving a real error escapes handleAsync rather than being swallowed as a sentinel.
+    let ran = false;
+    await expect(
+      middleware.handleAsync({ failed: false }, async () => {
+        ran = true;
+      }),
+    ).rejects.toBeInstanceOf(BrokenCircuitError);
+    expect(ran).toBe(false);
+  });
+
+  it('lets a fallback policy handle a thrown error (the widened-AltReturn path)', async () => {
+    // fallback returns a non-void value on a handled error; the middleware ignores the return, so
+    // handleAsync resolves rather than throwing. This exercises the IPolicy<..., unknown> typing.
+    const middleware = new CockatielResilienceMiddleware<TestContext>(fallback(handleAll, 'fallback-value'));
+
+    await expect(
+      middleware.handleAsync({ failed: false }, async () => {
+        throw new TransientError('boom');
+      }),
+    ).resolves.toBeUndefined();
   });
 });
