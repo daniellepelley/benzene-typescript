@@ -550,8 +550,11 @@ next to its C# counterpart:
   `GrpcStreamAdapter.tryConvertStream` detects a stream **structurally** (`Symbol.asyncIterator`) where .NET
   reflects on `IAsyncEnumerable<>` generic arguments. (4) **wiring** — `useGrpc` uses `addBenzene` +
   `addGrpcMessageHandlers` **without** `addBenzeneMessage` (under type erasure its `BenzeneMessageGetter`
-  would hijack the single `IMessageGetter` token and route every call to `<missing>`), exactly as the
-  standalone SQS/Service Bus consumer workers wire themselves. **Deferred** (documented in `index.ts` and not
+  would hijack the single `IMessageGetter` / `IMessageBodyBytesGetter` tokens — C#'s distinct
+  `IMessageGetter<TContext>` closed generics collapse to one — and route every call to `<missing>` or
+  read the body off the wrong context shape), exactly as the standalone SQS / Service Bus / Event Hub
+  consumer workers wire themselves (`useSqs`/`useServiceBus`/`useEventHub` each register `addBenzene` +
+  their own consumer getters, not `addBenzeneMessage`). **Deferred** (documented in `index.ts` and not
   half-built): the **ASP.NET hosting** package (`Benzene.Grpc.AspNet`, no JS analog); the **rich
   `google.rpc.Status`** error details (`grpc-status-details-bin` / `BadRequest` field violations —
   protobuf-only; the flat `benzene-status` trailer *is* ported); and any gRPC **health-check** type (another

@@ -1,5 +1,5 @@
 import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzeneMessage } from '@benzene/core-message-handlers';
+import { addBenzene } from '@benzene/core-message-handlers';
 import { IBenzeneWorkerStartup } from '@benzene/self-host';
 import { useBenzeneInvocation } from './Consumer/BenzeneInvocationExtensions';
 import { ISqsClientFactory } from './Consumer/ISqsClientFactory';
@@ -44,8 +44,13 @@ export function useSqs(
   const topicAttributeKey =
     sqsConsumerConfig.topicAttributeKey ?? SqsConsumerMessageTopicGetter.DefaultTopicAttribute;
 
+  // PORT DIVERGENCE: C# calls `AddBenzeneMessage()` here; under the port's type erasure that would
+  // register `BenzeneMessageGetter` under the single `IMessageGetter` / `IMessageBodyBytesGetter`
+  // tokens and hijack routing/request-mapping over the SQS getters. So the port wires `addBenzene`
+  // (base services, no message-envelope getters) + the consumer's own getters — as `useGrpc` does
+  // (see the gRPC "wiring" divergence note in the README, which documents this same type-erasure fix).
   app.register((x) => {
-    addBenzeneMessage(x);
+    addBenzene(x);
     addSqsConsumer(x, topicAttributeKey);
   });
 

@@ -7,21 +7,15 @@
  *    (`addBenzene().addEventHubConsumer()` + `useMessageHandlers()`) and an `EventHubConsumerApplication`,
  *    asserting the event routes to a decorated handler and the egress it published.
  * 2. `buildEventHubWorkerHost` — dogfoods the ported startup-host harness: boot a real `BenzeneStartUp`
- *    with `benzeneTestHost(...)`, specialize it with the one `buildEventHubWorkerHost(...)` line, override
- *    the outbound client with a fake via `withServices`, and push a native `asEventHubBenzeneMessage(...)`
- *    in the front door — asserting the recorded result AND the egress.
- *
- * NOTE (reported separately): booting the host with `useEventHub` + `useMessageHandlers` does not route to
- * a message handler, because the standalone consumer's `useEventHub` calls `addBenzeneMessage`, whose
- * type-erased `IMessageGetter` (the port collapses C#'s `IMessageGetter<TContext>` generics to one token)
- * hijacks routing over the Event Hub getters. That is a pre-existing bug in `@benzene/azure-event-hub`,
- * not in these test helpers; the host half here therefore drives the real pipeline through a `useFn`
- * middleware that reads the native event via the real getters and records a result, proving the host
- * boots/builds/resolves/runs the real application and returns the native result.
+ *    that wires the full `useEventHub(...)` + `useMessageHandlers(...)` pipeline, specialize it with the
+ *    one `buildEventHubWorkerHost(...)` line, override the outbound client with a fake via `withServices`,
+ *    and push a native `asEventHubBenzeneMessage(...)` in the front door — asserting the native event
+ *    routes to the decorated handler, the recorded result, AND the egress. This exercises the real
+ *    handler-routing path end to end (see the type-erasure fix in `addEventHubConsumer`, README wrinkle 5).
  */
 import { describe, expect, it } from 'vitest';
 import type { EventHubConsumerClient } from '@azure/event-hubs';
-import { IBenzeneResultOf, IBenzeneServiceContainer, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { BenzeneResult } from '@benzene/results';
@@ -39,8 +33,6 @@ import {
   addEventHubConsumer,
   EventHubConsumerApplication,
   EventHubConsumerContext,
-  EventHubConsumerMessageBodyGetter,
-  EventHubConsumerMessageTopicGetter,
   IEventProcessorClientFactory,
   useEventHub,
 } from '@benzene/azure-event-hub';
@@ -134,9 +126,9 @@ describe('asEventHubBenzeneMessage', () => {
   });
 });
 
-// The StartUp whose consumer pipeline the host boots. Its `useFn` middleware reads the native event via
-// the real getters and publishes through the injected sender, so the host test proves ingress -> real
-// pipeline -> egress + result without depending on message-handler routing (see the file header).
+// The StartUp whose consumer pipeline the host boots: the full standalone-consumer wiring —
+// `useEventHub(...)` + `useMessageHandlers(...)` — so the host test proves ingress -> real
+// message-handler routing -> handler -> egress + result through the front door.
 class EventHubOrdersStartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
@@ -146,22 +138,14 @@ class EventHubOrdersStartUp implements BenzeneStartUp {
   configure(app: IBenzeneApplicationBuilder): void {
     useWorker(app, (workers) =>
       useEventHub(workers, {}, noopClientFactory, (eh) => {
-        eh.useFn(async (context: EventHubConsumerContext, next, resolver: IServiceResolver) => {
-          const topic = new EventHubConsumerMessageTopicGetter().getTopic(context)?.id;
-          const body = new EventHubConsumerMessageBodyGetter().getBody(context);
-          await resolver
-            .getService(IBenzeneMessageSender)
-            .sendAsync(Topics.orderCreated, { receivedTopic: topic, receivedBody: body });
-          context.messageResult = BenzeneResult.ok();
-          await next();
-        });
+        useMessageHandlers(eh, PlaceOrderHandler);
       }),
     );
   }
 }
 
 describe('EventHubWorkerBenzeneTestHost (via the benzeneTestHost harness)', () => {
-  it('boots the startup, runs a native event through the real pipeline, and returns the recorded result', async () => {
+  it('boots the startup, routes a native event to the handler, and returns the recorded result', async () => {
     const fake = new FakeBenzeneMessageSender();
 
     const host = benzeneTestHost(EventHubOrdersStartUp)
@@ -175,12 +159,9 @@ describe('EventHubWorkerBenzeneTestHost (via the benzeneTestHost harness)', () =
     // The recorded result (native response out)...
     expect(result).toBeDefined();
     expect(result!.isSuccessful).toBe(true);
-    // ...and the egress the pipeline published through the faked client, proving the native event's topic
-    // + body rode through the real getters and the withServices override reached the sender.
+    // ...and the egress the handler published through the faked client, proving the native event routed
+    // to PlaceOrderHandler (with its request mapped) and the withServices override reached the sender.
     expect(fake.lastTopic).toBe(Topics.orderCreated);
-    expect(fake.lastRequest).toMatchObject({
-      receivedTopic: Topics.placeOrder,
-      receivedBody: JSON.stringify({ name: 'acme' }),
-    });
+    expect(fake.lastRequest).toMatchObject({ name: 'acme' });
   });
 });

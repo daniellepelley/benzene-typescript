@@ -8,22 +8,15 @@
  *    `useMessageHandlers()`) and a `ServiceBusConsumerApplication`, asserting the message routes to a
  *    decorated handler and the egress it published.
  * 2. `buildServiceBusWorkerHost` — dogfoods the ported startup-host harness: boot a real `BenzeneStartUp`
- *    with `benzeneTestHost(...)`, specialize it with the one `buildServiceBusWorkerHost(...)` line,
- *    override the outbound client with a fake via `withServices`, and push a native
- *    `asAzureServiceBusMessage(...)` in the front door — asserting the settlement decision AND the egress
- *    (invariants 1-4).
- *
- * NOTE (reported separately): booting the host with `useServiceBus` + `useMessageHandlers` does not route
- * to a message handler, because the standalone consumer's `useServiceBus` calls `addBenzeneMessage`,
- * whose type-erased `IMessageGetter` (the port collapses C#'s `IMessageGetter<TContext>` generics to one
- * token) hijacks routing over the Service Bus getters. That is a pre-existing bug in
- * `@benzene/azure-service-bus`, not in these test helpers; the host half here therefore drives the real
- * pipeline through a `useFn` middleware that reads the native message via the real getters and records a
- * result, proving the host boots/builds/resolves/runs the real application and returns the native
- * settlement decision.
+ *    that wires the full `useServiceBus(...)` + `useMessageHandlers(...)` pipeline, specialize it with the
+ *    one `buildServiceBusWorkerHost(...)` line, override the outbound client with a fake via
+ *    `withServices`, and push a native `asAzureServiceBusMessage(...)` in the front door — asserting the
+ *    native message routes to the decorated handler, the settlement decision, AND the egress (invariants
+ *    1-4). This exercises the real handler-routing path end to end (see the type-erasure fix in
+ *    `addServiceBusConsumer`, README wrinkle 5, that lets `useServiceBus` + `useMessageHandlers` route).
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import { BenzeneResult } from '@benzene/results';
@@ -42,8 +35,6 @@ import {
   IServiceBusClientFactory,
   ServiceBusConsumerApplication,
   ServiceBusConsumerContext,
-  ServiceBusConsumerMessageBodyGetter,
-  ServiceBusConsumerMessageTopicGetter,
   useServiceBus,
 } from '@benzene/azure-service-bus';
 import {
@@ -136,9 +127,9 @@ describe('asAzureServiceBusMessage', () => {
   });
 });
 
-// The StartUp whose consumer pipeline the host boots. Its `useFn` middleware reads the native message via
-// the real getters and publishes through the injected sender, so the host test proves ingress -> real
-// pipeline -> egress + settlement without depending on message-handler routing (see the file header).
+// The StartUp whose consumer pipeline the host boots: the full standalone-consumer wiring —
+// `useServiceBus(...)` + `useMessageHandlers(...)` — so the host test proves ingress -> real
+// message-handler routing -> handler -> egress + settlement through the front door.
 class ServiceBusOrdersStartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
     addBenzene(services);
@@ -148,22 +139,14 @@ class ServiceBusOrdersStartUp implements BenzeneStartUp {
   configure(app: IBenzeneApplicationBuilder): void {
     useWorker(app, (workers) =>
       useServiceBus(workers, { queueName: 'orders' }, noopClientFactory, (sb) => {
-        sb.useFn(async (context: ServiceBusConsumerContext, next, resolver: IServiceResolver) => {
-          const topic = new ServiceBusConsumerMessageTopicGetter().getTopic(context)?.id;
-          const body = new ServiceBusConsumerMessageBodyGetter().getBody(context);
-          await resolver
-            .getService(IBenzeneMessageSender)
-            .sendAsync(Topics.orderCreated, { receivedTopic: topic, receivedBody: body });
-          context.messageResult = BenzeneResult.ok();
-          await next();
-        });
+        useMessageHandlers(sb, PlaceOrderHandler);
       }),
     );
   }
 }
 
 describe('ServiceBusWorkerBenzeneTestHost (via the benzeneTestHost harness)', () => {
-  it('boots the startup, runs a native message through the real pipeline, and returns the settlement decision', async () => {
+  it('boots the startup, routes a native message to the handler, and returns the settlement decision', async () => {
     const fake = new FakeBenzeneMessageSender();
 
     const host = benzeneTestHost(ServiceBusOrdersStartUp)
@@ -177,12 +160,10 @@ describe('ServiceBusWorkerBenzeneTestHost (via the benzeneTestHost harness)', ()
     // The mapped settlement decision (native response out)...
     expect(decision.messageResult).toBeDefined();
     expect(decision.messageResult!.isSuccessful).toBe(true);
-    // ...and the egress the pipeline published through the faked client, proving the native message's
-    // topic + body rode through the real getters and the withServices override reached the sender.
+    // ...and the egress the handler published through the faked client, proving the native message
+    // routed to PlaceOrderHandler (with its request mapped) and the withServices override reached the
+    // sender.
     expect(fake.lastTopic).toBe(Topics.orderCreated);
-    expect(fake.lastRequest).toMatchObject({
-      receivedTopic: Topics.placeOrder,
-      receivedBody: JSON.stringify({ name: 'acme' }),
-    });
+    expect(fake.lastRequest).toMatchObject({ name: 'acme' });
   });
 });
