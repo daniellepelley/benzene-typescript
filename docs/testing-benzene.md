@@ -20,8 +20,33 @@ The test helpers live in three packages, all dev-only:
   `asAzureServiceBusMessage`, `asEventHubBenzeneMessage`, `asAzureKafkaEvent`).
 
 You then drive the generated event through a real app booted from its own `BenzeneStartUp` with the
-`benzeneTestHost` startup-host harness — the same construction a deployed
-[AWS Lambda](getting-started-aws.md) or [Azure Functions](azure-functions.md) host performs:
+`benzeneTestHost` startup-host harness. A `BenzeneStartUp` is a small class with two methods — the same
+`configureServices` / `configure` split every host uses — that a test boots as-is:
+
+```ts
+// src/OrdersStartUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { BenzeneStartUp } from '@benzene/testing';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { CreateOrderHandler } from './handlers.js';
+
+export class OrdersStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+    // register your real services here — a test overrides any of them via `.withServices(...)`
+  }
+
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
+  }
+}
+```
+
+Booting it is then the same construction a deployed [AWS Lambda](getting-started-aws.md) or
+[Azure Functions](azure-functions.md) host performs:
 
 ```ts
 const fake = new FakeBenzeneMessageSender();

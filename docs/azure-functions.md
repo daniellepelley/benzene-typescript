@@ -10,7 +10,7 @@ If you're new to Benzene, read [Getting Started](getting-started.md) first — i
 handler locally on Express in about five minutes. The handler you write there runs here unchanged; only
 the transport wiring differs.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene-dotnet).
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > The .NET original hosts Azure Functions on the isolated-worker model and uses a source generator to
 > emit the trigger classes. The Node v4 programming model already registers triggers with a plain
 > function call (`app.http(...)`, `app.serviceBusQueue(...)`, …), so the port leans on that native API

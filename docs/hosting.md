@@ -4,13 +4,15 @@ Benzene lets you write one message handler and run it, unchanged, on Express, AW
 Functions, or a self-hosted worker process. Only the small piece of code that wires a transport to
 your handler changes between hosts — the handler itself never moves.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene-dotnet).
-> The .NET original centres this model on a single `BenzeneStartUp` class run through per-platform host
-> adapters (`AwsLambdaHost<TStartUp>`, `IHostBuilder.UseBenzene<TStartUp>()`). **That single-class host
-> model has no port yet.** Instead each host exposes its own small fluent entry-point builder
-> (`InlineAwsLambdaStartUp`, `InlineAzureFunctionStartUp`, `InlineSelfHostedStartUp`) or middleware
-> factory (Express's `benzene(...)`), all built over the same platform-neutral
-> `IBenzeneApplicationBuilder` model described below. Where the shape differs, the README's
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
+> The .NET original centres this model on a single `BenzeneStartUp` class run through per-platform
+> **production host adapters** (`AwsLambdaHost<TStartUp>`, `IHostBuilder.UseBenzene<TStartUp>()`).
+> **Those production host adapters have no port yet.** Instead each host exposes its own small fluent
+> entry-point builder (`InlineAwsLambdaStartUp`, `InlineAzureFunctionStartUp`, `InlineSelfHostedStartUp`)
+> or middleware factory (Express's `benzene(...)`), all built over the same platform-neutral
+> `IBenzeneApplicationBuilder` model described below. (The `BenzeneStartUp` contract itself *is* ported —
+> the `benzeneTestHost(...)` harness boots one to test a service from its own startup; see
+> [Testing Benzene](testing-benzene.md).) Where the shape differs, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why.
 
 ## The through-line: one handler, many hosts

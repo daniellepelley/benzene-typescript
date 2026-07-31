@@ -9,7 +9,7 @@ If you already know you're deploying to a specific platform, you can jump straig
 [AWS Lambda Setup](getting-started-aws.md) or [Azure Functions Setup](azure-functions.md) — but starting
 here first is the quickest way to see how Benzene fits together.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene-dotnet).
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why.
 
@@ -64,6 +64,11 @@ npm install --save-dev typescript tsx @types/express
 `@benzene/express` is the Express host adapter; it brings in the middleware pipeline and message-handler
 infrastructure. The `@benzene/*` abstraction packages supply the types your handler references, and
 [`tsx`](https://github.com/privatenumber/tsx) lets you run TypeScript directly without a build step.
+
+> No `tsconfig.json` is needed for this quickstart: Benzene uses the standard (TC39 stage-3) decorators,
+> which `tsx` runs directly — you do **not** need `experimentalDecorators`. Your editor may still want a
+> `tsconfig.json` for IntelliSense; a plain `{ "compilerOptions": { "target": "ES2022", "module": "ESNext",
+> "moduleResolution": "Bundler", "strict": true } }` is enough.
 
 ## 3. Write a message handler
 

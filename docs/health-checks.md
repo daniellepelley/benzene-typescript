@@ -423,7 +423,7 @@ a route that maps that path to the health topic, then wire the middleware by top
 ```ts
 import express from 'express';
 import { benzene } from '@benzene/express';
-import { DefaultBenzeneServiceContainer, IBenzeneServiceContainer } from '@benzene/dependencies';
+import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzene/http';
 import { useHealthCheck, Constants } from '@benzene/health-checks';
 import { addHttpPing } from '@benzene/health-checks-http';
