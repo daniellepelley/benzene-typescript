@@ -120,6 +120,8 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Sqs.TestHelpers` | `@benzene/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
 | `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzene/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
 | `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
+| `src/Benzene.RabbitMq.TestHelpers` | `@benzene/rabbitmq-test-helpers` | `Benzene.RabbitMq.TestHelpers`¶ |
+| `src/Benzene.Kafka.Core.TestHelpers` | `@benzene/kafka-core-test-helpers` | `Benzene.Kafka.Core.TestHelpers`¶ |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -207,14 +209,19 @@ The startup-host builder is dogfooded by `test/Benzene.Core.Test/Testing/Benzene
 AWS+Azure worked exemplars) and by the converted `ApiGatewayPipelineTest`/`AzureHttpPipelineTest`. Still not
 ported: an Azure Queue Storage builder (that transport itself isn't ported). The **standalone (non-Functions)
 consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
-`@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers` — kept one-per-C#-project
+`@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers`,
+`@benzene/rabbitmq-test-helpers`, `@benzene/kafka-core-test-helpers` — kept one-per-C#-project
 (unlike the consolidated `*-testing` packages, since each targets a distinct transport SDK, the very
 dependency the C# split isolates). They follow the same law: a native-message builder (`asSqsMessage` /
-`asAzureServiceBusMessage` / `asEventHubBenzeneMessage`) plus, for the two worker hosts, the same
-module-augmentation fluent specialization — `benzeneTestHost(StartUp).withServices(...).buildServiceBusWorkerHost()`
-/ `.buildEventHubWorkerHost()` — running a native message through the real `ServiceBusConsumerApplication`/
-`EventHubConsumerApplication` and returning its native settlement decision / recorded result (the SQS helper is
-a message builder only, faithful to its C# `.csproj`, which ships no worker host).
+`asAzureServiceBusMessage` / `asEventHubBenzeneMessage` / `asRabbitMqBenzeneMessage` / `asKafkaBenzeneMessage`)
+plus, for the four worker hosts, the same module-augmentation fluent specialization —
+`benzeneTestHost(StartUp).withServices(...).buildServiceBusWorkerHost()` / `.buildEventHubWorkerHost()` /
+`.buildRabbitMqWorkerHost()` / `.buildKafkaWorkerHost()` — running a native message through the real
+`ServiceBusConsumerApplication` / `EventHubConsumerApplication` / `RabbitMqApplication` / `KafkaApplication`
+and returning its native settlement decision / recorded result (the SQS helper is a message builder only,
+faithful to its C# `.csproj`, which ships no worker host). The `KafkaBenzeneTestHost` drops the C#
+`<TKey, TValue>` generics — the port's `KafkaApplication` erases them (kafkajs delivers a raw
+`EachMessagePayload`), matching the erasure already documented on `useKafka`.
 
 §§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client

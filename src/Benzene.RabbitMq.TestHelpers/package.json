@@ -1,0 +1,21 @@
+{
+  "name": "@benzene/rabbitmq-test-helpers",
+  "version": "0.1.0",
+  "description": "Test helpers for @benzene/rabbitmq (ports the Benzene.RabbitMq.TestHelpers project) - for testing purposes only",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/rabbitmq": "0.1.0",
+    "@benzene/self-host": "0.1.0",
+    "@benzene/testing": "0.1.0",
+    "amqplib": "^0.10"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10"
+  }
+}
