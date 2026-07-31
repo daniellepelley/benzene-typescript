@@ -50,6 +50,8 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
 - [Mocking External Dependencies](mocking-dependencies.md) — test a handler in isolation by swapping its
   real dependencies (databases, HTTP clients, cloud SDKs) for fakes registered in the container, while
   still running the message through the real pipeline.
+- [Per-Request Unit of Work](unit-of-work.md) — commit a scoped unit of work when the pipeline succeeds
+  and roll it back when it fails, transport-independently, via `unitOfWorkMiddleware`.
 
 ## Cookbook structure
 
