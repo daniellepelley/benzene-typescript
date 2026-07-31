@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { ConsumeMessage } from 'amqplib';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
@@ -14,7 +13,8 @@ import {
   RabbitMqContext,
   useRabbitMq,
 } from '@benzene/rabbitmq';
-import { FakeBenzeneMessageSender } from '@benzene/testing';
+import { FakeBenzeneMessageSender, messageBuilder } from '@benzene/testing';
+import { asRabbitMqBenzeneMessage } from '@benzene/rabbitmq-test-helpers';
 
 /**
  * Regression test for the type-erasure routing fix: booting the full `useRabbitMq(...)` +
@@ -50,15 +50,6 @@ const noopConnectionFactory: IRabbitMqConnectionFactory = {
   },
 };
 
-/** A delivery carrying the topic in the default `"topic"` header and a JSON body. */
-function delivery(topic: string, body: string): ConsumeMessage {
-  return {
-    content: Buffer.from(body, 'utf8'),
-    fields: { deliveryTag: 1, redelivered: false, exchange: 'exchange', routingKey: 'rk', consumerTag: 'c' },
-    properties: { headers: { topic } } as unknown as ConsumeMessage['properties'],
-  } as ConsumeMessage;
-}
-
 describe('useRabbitMq + useMessageHandlers routing', () => {
   it('routes a native delivery to the decorated handler through the real RabbitMqApplication', async () => {
     const fake = new FakeBenzeneMessageSender();
@@ -76,7 +67,7 @@ describe('useRabbitMq + useMessageHandlers routing', () => {
     const application = resolverFactory.createScope().getService(RabbitMqApplication) as RabbitMqApplication;
 
     const result = await application.handleAsync(
-      delivery(Topics.placeOrder, JSON.stringify({ name: 'acme' })),
+      asRabbitMqBenzeneMessage(messageBuilder(Topics.placeOrder, { name: 'acme' })),
       resolverFactory,
     );
 

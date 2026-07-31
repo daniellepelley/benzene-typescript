@@ -11,9 +11,11 @@ import { RabbitMqApplication } from '@benzene/rabbitmq';
  * `asRabbitMqBenzeneMessage(...)`).
  *
  * IDIOM MAP: C# `IDisposable.Dispose` → `dispose()` (the port's disposal convention); the underlying
- * `handleAsync` keeps the documented `Async` suffix camelCased. Front door in (`ConsumeMessage`, the
- * amqplib delivery the getters read — see the `AsRabbitMqBenzeneMessage` message-type adaptation), the
- * handler's recorded result out — assert on the result and on what a faked outbound client captured.
+ * `handleAsync` keeps the documented `Async` suffix camelCased, and C#'s `Task<IBenzeneResult?>` return
+ * maps to `Promise<IMessageResult | undefined>` (the port's message-result type). Front door in
+ * (`ConsumeMessage`, the amqplib delivery the getters read — see the `AsRabbitMqBenzeneMessage`
+ * message-type adaptation), the handler's recorded result out — assert on the result and on what a faked
+ * outbound client captured.
  */
 export class RabbitMqBenzeneTestHost {
   constructor(

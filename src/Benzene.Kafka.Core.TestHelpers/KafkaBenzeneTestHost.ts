@@ -16,7 +16,10 @@ import { KafkaApplication } from '@benzene/kafka-core';
  * documented on `useKafka` / `KafkaApplication`.
  *
  * IDIOM MAP: C# `IDisposable.Dispose` → `dispose()` (the port's disposal convention); the underlying
- * `handleAsync` keeps the documented `Async` suffix camelCased.
+ * `handleAsync` keeps the documented `Async` suffix camelCased. C# `HandleAsync` returns bare `Task`
+ * (void); the port returns the record's recorded `IMessageResult | undefined`, matching the
+ * `KafkaApplication` result-surfacing divergence (the port's `KafkaApplication` extends
+ * `MiddlewareApplicationWithResult` so the worker can gate `commitOnlyOnSuccess`).
  */
 export class KafkaBenzeneTestHost {
   constructor(

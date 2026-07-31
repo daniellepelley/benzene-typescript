@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { EachMessagePayload } from 'kafkajs';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
@@ -14,7 +13,8 @@ import {
   KafkaRecordContext,
   useKafka,
 } from '@benzene/kafka-core';
-import { FakeBenzeneMessageSender } from '@benzene/testing';
+import { FakeBenzeneMessageSender, messageBuilder } from '@benzene/testing';
+import { asKafkaBenzeneMessage } from '@benzene/kafka-core-test-helpers';
 
 /**
  * Regression test for the type-erasure routing fix: booting the full `useKafka(...)` +
@@ -50,14 +50,6 @@ const noopConsumerFactory: IKafkaConsumerFactory = {
   },
 };
 
-function record(topic: string, value: string): EachMessagePayload {
-  return {
-    topic,
-    partition: 0,
-    message: { value: Buffer.from(value, 'utf8'), offset: '1', headers: undefined, key: null },
-  } as unknown as EachMessagePayload;
-}
-
 describe('useKafka + useMessageHandlers routing', () => {
   it('routes a native record to the decorated handler through the real KafkaApplication', async () => {
     const fake = new FakeBenzeneMessageSender();
@@ -75,7 +67,7 @@ describe('useKafka + useMessageHandlers routing', () => {
     const application = resolverFactory.createScope().getService(KafkaApplication) as KafkaApplication;
 
     const result = await application.handleAsync(
-      record(Topics.placeOrder, JSON.stringify({ name: 'acme' })),
+      asKafkaBenzeneMessage(messageBuilder(Topics.placeOrder, { name: 'acme' })),
       resolverFactory,
     );
 
