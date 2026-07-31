@@ -53,7 +53,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
-| `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); dead-letter/`DrainOnRevoke` + health-check deferred) |
+| `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); metadata dependency health-check auto-wired via an explicit `IKafkaAdminClientFactory`; dead-letter/`DrainOnRevoke` deferred) |
 | `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); passive-declare dependency health-check auto-wired) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
@@ -1127,10 +1127,19 @@ Ported (with tests):
   `IProducer.ProduceAsync` / `DeliveryResult<TKey,TValue>` / `PersistenceStatus.Persisted` →
   `producer.send({ topic, messages })` / `RecordMetadata[]` (persisted = every `errorCode === 0`); the
   send-side `useKafka` is re-exported as `useKafkaSend` to avoid clashing with the consumer worker's
-  `useKafka`. **Deferred** (not ported): the `KafkaDeadLetterOptions` retry-then-dead-letter
-  re-produce and `DrainOnRevoke` rebalance-draining (both lean on Confluent's manual `StoreOffset` /
-  `SetPartitionsRevokedHandler` seams kafkajs's higher-level push model doesn't expose in the same shape),
-  and the `KafkaHealthCheck` / `IKafkaAdminClientFactory` (the health-check domain). Tests drive the captured
+  `useKafka`. The **health-check** slice **is ported**: `KafkaHealthCheck` (a read-only
+  `admin.describeCluster` + `admin.fetchTopicMetadata` reachability probe verifying the brokers are
+  reachable and every subscribed topic exists, classified via the shared `HealthCheckError` policy — a
+  Kafka authorization type → persistent 403, anything else transient), `addKafkaHealthCheck` /
+  `addKafkaDependencyHealthCheck`, and `useKafka(..., adminClientFactory, healthCheck = true)`'s
+  auto-wiring. DIVERGENCE: C# reads the brokers from `config.ConsumerConfig` and reuses one admin client;
+  the TS `BenzeneKafkaConfig` holds no broker settings and a kafkajs `Consumer` gives no route to an
+  `Admin`, so a separate `IKafkaAdminClientFactory` (carrying the `Admin` factory **and** the
+  `bootstrapServers`) is passed to `useKafka` to enable the check, and a fresh `Admin` is
+  connected/disconnected per probe (the reused thing is the caller's `Kafka` client). **Deferred** (not
+  ported): the `KafkaDeadLetterOptions` retry-then-dead-letter re-produce and `DrainOnRevoke`
+  rebalance-draining (both lean on Confluent's manual `StoreOffset` / `SetPartitionsRevokedHandler` seams
+  kafkajs's higher-level push model doesn't expose in the same shape). Tests drive the captured
   `eachMessage` handler over a fake kafkajs consumer recording `commitOffsets`/`disconnect`; the send-side
   tests drive the message client over a fake kafkajs `Producer` asserting the produced record + status.
 - Standalone RabbitMQ consumer (`@benzene/rabbitmq`): the **consumer-worker slice only** of
