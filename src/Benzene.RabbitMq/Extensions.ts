@@ -1,5 +1,5 @@
 import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzeneMessage } from '@benzene/core-message-handlers';
+import { addBenzene } from '@benzene/core-message-handlers';
 import { IBenzeneWorkerStartup } from '@benzene/self-host';
 import { addRabbitMqConsumer } from './DependencyInjectionExtensions';
 import { IRabbitMqConnectionFactory } from './IRabbitMqConnectionFactory';
@@ -46,8 +46,14 @@ export function useRabbitMq(
 ): IBenzeneWorkerStartup {
   const topicHeaderKey = config.topicHeaderKey ?? RabbitMqConstants.DefaultTopicHeader;
 
+  // PORT DIVERGENCE: C# calls `AddBenzeneMessage()` here; under the port's type erasure that would
+  // register `BenzeneMessageGetter` under the single `IMessageGetter` / `IMessageBodyBytesGetter`
+  // tokens and hijack routing/request-mapping over the RabbitMq getters (the delivery context is not
+  // the Benzene envelope). So the port wires `addBenzene` (base services, no message-envelope getters)
+  // + the consumer's own getters — as `useGrpc` / the standalone SQS/Service Bus/Event Hub consumers do
+  // (see the gRPC "wiring" divergence note in the README, which documents this same type-erasure fix).
   app.register((x) => {
-    addBenzeneMessage(x);
+    addBenzene(x);
     addRabbitMqConsumer(x, topicHeaderKey);
   });
 
