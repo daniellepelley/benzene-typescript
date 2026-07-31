@@ -1191,7 +1191,9 @@ Ported (with tests):
   the shared `HealthCheckError` policy — AMQP `403 access-refused` → persistent, `404 not-found` →
   transient; C#'s `CancellationToken` bound becomes a `Promise.race` timeout since amqplib takes no
   signal), `RabbitMqConnectionProvider` (one reused connection, a cheap channel per probe; C#'s
-  `IConnection.IsOpen` → tracking `close`/`error` events), `addRabbitMqHealthCheck` /
+  `IConnection.IsOpen` → tracking `close`/`error` events; C#'s `IAsyncDisposable` → `disposeAsync()`,
+  closing the one reused connection so a stopped worker's amqplib heartbeat timer no longer holds the
+  event loop open), `addRabbitMqHealthCheck` /
   `addRabbitMqDependencyHealthCheck`, and `useRabbitMq(..., healthCheck = true)`'s auto-wiring (opt-out
   with `false`). Tests drive the captured `channel.consume` callback over a fake amqplib channel/
   connection recording `ack`/`nack`/`cancel`/`close`; the send-side tests drive the message client over a

@@ -105,4 +105,18 @@ describe('ServiceBusHealthCheck', () => {
 
     expect(receiver.closed).toBe(true);
   });
+
+  it('returns a classified result (not a throw) when both peek and the receiver close reject', async () => {
+    // A broken AMQP link after a failed peek can make close() itself reject; that must not escape
+    // executeAsync as a throw (which would discard the classified result) — the close is best-effort.
+    const receiver = {
+      peekMessages: () => Promise.reject(new ServiceBusError('peek failed', 'ServiceCommunicationProblem')),
+      close: () => Promise.reject(new Error('link already gone')),
+    } as unknown as ServiceBusReceiver;
+
+    const result = await new ServiceBusHealthCheck(stubClient(receiver), 'orders').executeAsync();
+
+    expect(result.status).toBe(HealthCheckStatus.failed);
+    expect(result.data.ErrorCode).toBe('ServiceCommunicationProblem');
+  });
 });

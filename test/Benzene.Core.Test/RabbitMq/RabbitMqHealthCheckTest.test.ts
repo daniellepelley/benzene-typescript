@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Channel, ChannelModel } from 'amqplib';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
@@ -9,6 +9,7 @@ import {
   addRabbitMqDependencyHealthCheck,
   IRabbitMqConnectionFactory,
   IRabbitMqConnectionProvider,
+  RabbitMqConnectionProvider,
   RabbitMqHealthCheck,
   useRabbitMq,
 } from '@benzene/rabbitmq';
@@ -77,6 +78,68 @@ describe('RabbitMqHealthCheck', () => {
 
     expect(result.status).toBe(HealthCheckStatus.failed);
     expect(result.dependencies).toEqual([{ kind: 'Queue', name: 'orders' }]);
+  });
+
+  it('closes a channel that opens only after the probe already timed out (no channel leak)', async () => {
+    // The channel opens *after* the timeout fires — the exact case the outer-`finally` version leaked,
+    // because it closed nothing while `channel` was still undefined, then the late channel was abandoned.
+    const close = vi.fn(() => Promise.resolve());
+    let openChannel!: (channel: Channel) => void;
+    const channel = {
+      checkQueue: () => Promise.resolve({ queue: 'orders' }),
+      close,
+    } as unknown as Channel;
+    const connection = {
+      createChannel: () => new Promise<Channel>((resolve) => (openChannel = resolve)),
+    } as unknown as ChannelModel;
+    const provider: IRabbitMqConnectionProvider = {
+      getConnectionAsync: () => Promise.resolve(connection),
+    };
+
+    const result = await new RabbitMqHealthCheck(provider, 'orders', 5).executeAsync();
+    expect(result.status).toBe(HealthCheckStatus.failed); // timed out
+    expect(close).not.toHaveBeenCalled(); // createChannel is still pending
+
+    // The broker finally opens the channel; the probe's closure must still close it.
+    openChannel(channel);
+    await new Promise((resolve) => setTimeout(resolve, 0)); // flush the closure's continuation
+
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('RabbitMqConnectionProvider.disposeAsync', () => {
+  it('closes the reused connection and re-opens on the next request', async () => {
+    const close = vi.fn(() => Promise.resolve());
+    const connection = {
+      close,
+      once: () => undefined,
+    } as unknown as ChannelModel;
+    let opened = 0;
+    const factory: IRabbitMqConnectionFactory = {
+      createConnectionAsync: () => {
+        opened += 1;
+        return Promise.resolve(connection);
+      },
+    };
+    const provider = new RabbitMqConnectionProvider(factory);
+
+    await provider.getConnectionAsync();
+    expect(opened).toBe(1);
+
+    await provider.disposeAsync();
+    expect(close).toHaveBeenCalledTimes(1);
+
+    // A request after disposal opens a fresh connection rather than handing back the closed one.
+    await provider.getConnectionAsync();
+    expect(opened).toBe(2);
+  });
+
+  it('is a no-op when no connection was ever opened', async () => {
+    const factory: IRabbitMqConnectionFactory = {
+      createConnectionAsync: () => Promise.reject(new Error('should not be called')),
+    };
+    await expect(new RabbitMqConnectionProvider(factory).disposeAsync()).resolves.toBeUndefined();
   });
 });
 

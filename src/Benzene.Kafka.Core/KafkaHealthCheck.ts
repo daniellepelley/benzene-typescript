@@ -21,9 +21,11 @@ import { IKafkaAdminClientFactory } from './IKafkaAdminClientFactory';
  *
  * ADAPTATION: C# fetches cluster metadata with no topic argument (to avoid broker-side auto-topic-create)
  * and checks each configured topic. kafkajs `fetchTopicMetadata()` with no `topics` returns all topics —
- * the same cluster-level read — and the check compares the configured topics against it. A fresh `Admin`
- * is connected/disconnected per probe (see {@link IKafkaAdminClientFactory}); the round-trip is bounded by
- * a `Promise.race` timeout.
+ * the same cluster-level read — and the check compares the configured topics against it. The port also
+ * issues a separate `describeCluster()` for the reported `Brokers` count, so it makes two metadata reads
+ * where C#'s single `GetMetadata` yields both — behaviourally equivalent, one extra round-trip. A fresh
+ * `Admin` is connected/disconnected per probe (see {@link IKafkaAdminClientFactory}); the round-trip is
+ * bounded by a `Promise.race` timeout.
  */
 export class KafkaHealthCheck implements IHealthCheck {
   /** The default metadata-request timeout, in milliseconds. */

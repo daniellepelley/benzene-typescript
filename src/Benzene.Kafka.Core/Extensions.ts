@@ -37,8 +37,11 @@ import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
  * @param action Configures the inner Kafka message pipeline.
  * @param adminClientFactory Optional admin-client + bootstrap-servers seam enabling the reachability
  *   health check (see the divergence above).
- * @param healthCheck When `true` (the default) and an `adminClientFactory` is supplied, auto-registers the
- *   metadata reachability check. Pass `false` to opt out.
+ * @param healthCheck **A no-op unless `adminClientFactory` is also supplied.** When `true` (the default)
+ *   AND an `adminClientFactory` is given, auto-registers the metadata reachability check; with no admin
+ *   factory the default-`true` flag registers nothing (unlike `useServiceBus` / `useRabbitMq`, whose
+ *   required worker factory already suffices — see the divergence above). Pass `false` to opt out even
+ *   when a factory is supplied.
  * @returns The worker startup, for chaining.
  */
 export function useKafka(
@@ -61,7 +64,7 @@ export function useKafka(
   });
 
   if (healthCheck && adminClientFactory !== undefined) {
-    app.register((x) => addKafkaDependencyHealthCheck(x, adminClientFactory, config));
+    app.register((x) => addKafkaDependencyHealthCheck(x, config, adminClientFactory));
   }
 
   const middlewarePipelineBuilder = app.create<KafkaRecordContext>();

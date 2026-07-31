@@ -100,7 +100,7 @@ describe('KafkaHealthCheck', () => {
 describe('Kafka consumer health-check auto-wiring', () => {
   it('registers a Kafka dependency check on the dependency category only', () => {
     const container = new DefaultBenzeneServiceContainer();
-    addKafkaDependencyHealthCheck(container, factoryReturning([]), { topics: ['orders'] });
+    addKafkaDependencyHealthCheck(container, { topics: ['orders'] }, factoryReturning([]));
     const scope = container.createServiceResolverFactory().createScope();
     const found = scope.getServices(IDependencyHealthCheck);
     scope.dispose();
@@ -111,8 +111,8 @@ describe('Kafka consumer health-check auto-wiring', () => {
 
   it('de-duplicates two registrations of the same cluster into one check (via the finder)', () => {
     const container = new DefaultBenzeneServiceContainer();
-    addKafkaDependencyHealthCheck(container, factoryReturning([]), { topics: ['orders'] });
-    addKafkaDependencyHealthCheck(container, factoryReturning([]), { topics: ['invoices'] });
+    addKafkaDependencyHealthCheck(container, { topics: ['orders'] }, factoryReturning([]));
+    addKafkaDependencyHealthCheck(container, { topics: ['invoices'] }, factoryReturning([]));
     getHealthCheckerBuilder({ register: (action) => action(container) });
 
     const scope = container.createServiceResolverFactory().createScope();
