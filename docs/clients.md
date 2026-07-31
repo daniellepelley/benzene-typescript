@@ -272,10 +272,12 @@ object into `TResponse`. `BenzeneMessageClientRequest` is the standard Benzene m
 profile-authenticated `LambdaClient` for local development.
 
 > **Deferred.** The high-level `AwsLambdaBenzeneMessageClient` (whose `TResponse === Void`
-> fire-and-forget branch has no runtime equivalent under TypeScript's generic erasure), the outbound
-> route extension (`.useAwsLambda`), and the Lambda health check are not yet ported — see the
-> [README package table](../README.md). Kafka, EventBridge, and gRPC outbound clients are also not
-> ported yet.
+> fire-and-forget branch has no runtime equivalent under TypeScript's generic erasure) and its outbound
+> route extension (`.useAwsLambda`) are not yet ported — see the [README package table](../README.md).
+> The `AwsLambdaHealthCheck` reachability check *is* ported (its `HealthCheckMode.Active` invoke path,
+> which needs that high-level client, is not). The Kafka and EventBridge outbound clients are ported now
+> (`@benzene/kafka-core`'s `KafkaBenzeneMessageClient` / `useKafkaSend`, and
+> `@benzene/clients-aws-eventbridge`'s `useEventBridge`); the gRPC outbound client is not ported yet.
 
 ## Lower-level: the `IBenzeneMessageClient` decorator suite
 

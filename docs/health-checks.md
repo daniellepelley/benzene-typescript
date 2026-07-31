@@ -30,20 +30,32 @@ endpoint. For the Kubernetes liveness/readiness split built on top of this, see
 | `@benzene/health-checks-disk` | `DiskHealthCheck` / `addDiskSpaceCheck` — free space on a drive. |
 | `@benzene/health-checks-http` | `HttpPingHealthCheck` / `addHttpPing` — pings a downstream HTTP URL. |
 | `@benzene/health-checks-tcp` | `TcpHealthCheck` / `addTcpPing` — opens a TCP connection to a host/port. |
+| `@benzene/health-checks-dynamodb` | `DynamoDbHealthCheck` / `addDynamoDbHealthCheck` — a read-only `DescribeTable` reachability probe for a DynamoDB table. |
+| `@benzene/health-checks-azure-service-bus` | `ServiceBusHealthCheck` / `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` — a read-only `peekMessages` reachability probe for a queue or a topic subscription. |
+| `@benzene/health-checks-schema` | `SchemaHealthCheck` / `addSchemaHealthCheck` — publishes a hash of the service's own message contract under the `schema` check, so a consumer can detect contract drift. |
+| `@benzene/clients-health-checks` | `ClientHealthCheck` / `addContractCheck` — the consumer-side companion: probes a downstream provider via its generated client and reports whether its contract has drifted. |
 
 ```bash
 npm install @benzene/health-checks
 # plus whichever built-in checks you need:
 npm install @benzene/health-checks-disk @benzene/health-checks-http @benzene/health-checks-tcp
+# ...and the reachability/contract checks where you depend on those resources:
+npm install @benzene/health-checks-dynamodb @benzene/health-checks-azure-service-bus @benzene/health-checks-schema
 ```
 
-Add `@benzene/health-checks` to any project that wires up a pipeline; add the disk/http/tcp packages
-only where you need those specific checks.
+Add `@benzene/health-checks` to any project that wires up a pipeline; add the disk/http/tcp/dynamodb/
+service-bus packages only where you need those specific checks.
+
+Beyond the standalone check packages, several **consumer workers and client packages auto-wire their
+own dependency reachability check** for the resource they talk to — see
+[Dependency reachability checks](#dependency-reachability-checks) below.
 
 > **Porting note.** The .NET library also ships `Benzene.HealthChecks.EntityFramework`, a
-> `MemoryHealthCheck`, a `ShutdownReadinessHealthCheck`, AWS reachability probes, a per-check
-> `Timeout`/`IsNonCritical` override, and a grpc.health.v1 bridge. Those have no TypeScript port yet
-> — this doc only covers what exists in `src/`. See [Not yet ported](#not-yet-ported).
+> `MemoryHealthCheck`, a `ShutdownReadinessHealthCheck`, a per-check `Timeout`/`IsNonCritical`
+> override, and a grpc.health.v1 bridge. Those have no TypeScript port yet — this doc only covers
+> what exists in `src/`. (The AWS/Azure/Kafka/RabbitMq reachability probes **are** ported now — see
+> [Dependency reachability checks](#dependency-reachability-checks).) See
+> [Not yet ported](#not-yet-ported).
 
 ## Basic usage
 
@@ -552,6 +564,75 @@ export class OrdersDbHealthCheck implements IHealthCheck {
 Register it with `checks.addHealthCheck(OrdersDbHealthCheck)` (DI-resolved) — make sure `OrdersDb` is
 registered in the same container the pipeline is built from.
 
+## Dependency reachability checks
+
+The checks above are ones *you* register. Benzene also ships **reachability probes for the external
+resources a service talks to** — the queue it consumes, the table it reads, the downstream it calls —
+and most of them are **auto-wired**: adding the transport or client already registers its check, so you
+don't hand-write an `IHealthCheck` per dependency.
+
+### Where they run — the dependency category, never a probe
+
+Auto-wired dependency checks are registered under a distinct DI category, `IDependencyHealthCheck`, and
+are harvested **only by the deep `'healthcheck'` topic** — never by the Kubernetes liveness or readiness
+probes. A dependency check is *shared-fate*: every replica runs the same probe against the same
+downstream, so a transient blip fails them all at once. Gating liveness on that would restart-storm the
+fleet; gating readiness on it would pull every pod from the load balancer together. So these checks feed
+monitoring, humans, and the mesh inventory, while the probes stay about *this* instance. (You can still
+add a specific dependency to readiness by hand if you've reasoned it's safe to gate traffic on — the
+auto-wiring just never does it for you.) See
+[Kubernetes Health Checks](kubernetes-health-checks.md) for the full probe split.
+
+Each check carries a stable `dedupKey` (the dependency's `kind:name`), so two registrations of the same
+resource — two `useSns(sameArn)` calls, say, or the same Service Bus queue reached from more than one
+place — collapse to a single check.
+
+Failures are classified with a shared policy: an **authorization** failure (an HTTP 401/403 or a known
+auth error code) becomes a *persistent* failure — retrying won't fix a missing IAM permission or SAS
+claim — while anything else (an unreachable broker, a timeout) is *transient*. The probe never leaks the
+underlying error message; it reports the dependency, a status code, and an error code only.
+
+### What's wired, and how
+
+| Package | Check | Wiring |
+| --- | --- | --- |
+| `@benzene/azure-service-bus` | `ServiceBusHealthCheck` (peek) for the consumed queue/subscription | `useServiceBus(app, config, …, healthCheck = true)` |
+| `@benzene/rabbitmq` | `RabbitMqHealthCheck` (passive `checkQueue`) | `useRabbitMq(app, config, …, healthCheck = true)` |
+| `@benzene/kafka-core` | `KafkaHealthCheck` (cluster metadata, subscribed topics present) | `useKafka(app, config, consumerFactory, action, adminClientFactory, healthCheck = true)` |
+| `@benzene/clients-aws-sns` · `-sqs` · `-eventbridge` · `-step-functions` | Send-side reachability for the target resource | Auto-registered by the client's `use*` wiring (`healthCheck = true` default) |
+| `@benzene/clients-aws-lambda` | `AwsLambdaHealthCheck` (`GetFunctionConfiguration`) | Shipped, registered explicitly (no auto-wiring) |
+| `@benzene/health-checks-dynamodb` | `DynamoDbHealthCheck` (`DescribeTable`) | `addDynamoDbHealthCheck(builder, tableName, dynamoDb)` (explicit) |
+| `@benzene/health-checks-azure-service-bus` | `ServiceBusHealthCheck` (peek) | `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` (explicit) |
+
+(The SQS and Event Hub **consumer** workers carry no reachability check — neither does the .NET original;
+the send-side `@benzene/clients-aws-sqs` covers SQS reachability.)
+
+The Service Bus and Rabbit MQ consumer workers default `healthCheck` to `true`; pass `false` to opt out
+(e.g. in a test that only exercises routing). Kafka is the one exception — its probe needs
+cluster-metadata access the consumer config doesn't carry, so it stays off until you supply an
+`IKafkaAdminClientFactory`:
+
+```ts
+// Auto-wired: adding the consumer also registers its reachability check on the deep 'healthcheck' topic.
+useServiceBus(app, { queueName: 'orders' }, clientFactory, (pipeline) => { /* … */ });
+
+// Opt out (routing only, no dependency check):
+useServiceBus(app, { queueName: 'orders' }, clientFactory, (pipeline) => { /* … */ }, false);
+
+// Kafka: supply an admin factory to enable the metadata probe.
+useKafka(app, { topics: ['orders'] }, consumerFactory, (pipeline) => { /* … */ }, adminClientFactory);
+```
+
+> **Porting note.** In .NET a consumer's `Use*` builds the reachability check's client from the same
+> config it consumes with. The TypeScript configs are leaner — they don't carry broker/connection
+> settings — so the check reuses the factory you already pass for consuming (Service Bus, Rabbit MQ), and
+> Kafka needs the extra `IKafkaAdminClientFactory` seam because the consumer factory yields a `Consumer`
+> with no route to an `Admin`. These are noted in the README porting-conventions table.
+
+To register a dependency check yourself (a resource with no auto-wiring, or a bespoke probe), use
+`addDependencyHealthCheck(services, () => new MyCheck(), 'MyResource:name')` from
+`@benzene/health-checks-core` — the same primitive the auto-wiring uses.
+
 ## Troubleshooting
 
 - **A check never seems to finish, it just reports `failed` after ~10 seconds.** That's
@@ -581,13 +662,18 @@ rather than fabricated:
   [the example above](#example-a-custom-health-check-class)).
 - **`MemoryHealthCheck`** and **`ShutdownReadinessHealthCheck`** — the host-self-check and
   graceful-drain checks.
-- **AWS transport reachability probes** and their read-only IAM requirements.
 - **Per-check configurable `timeout` / `isNonCritical`** — the port's timeout is a fixed 10s and the
   interface carries neither flag.
 - **The grpc.health.v1 bridge** (`Benzene.Grpc.AspNet`).
 
-The consumer-side **contract-drift** check does have a partial port (`@benzene/clients-health-checks`'
-`ClientHealthCheck` / `addContractCheck`), but no `useContractsCheck` middleware exists yet — see
+The transport/resource **reachability probes** (DynamoDB, Azure Service Bus, Kafka, Rabbit MQ, and the
+send-side AWS clients) and their read-only IAM/claim requirements **are** ported — see
+[Dependency reachability checks](#dependency-reachability-checks).
+
+The consumer-side **contract-drift** check also has a partial port (`@benzene/clients-health-checks`'
+`ClientHealthCheck` / `addContractCheck`), paired with the provider-side `@benzene/health-checks-schema`
+(`SchemaHealthCheck` / `addSchemaHealthCheck`) that publishes the hash it compares against — but no
+`useContractsCheck` middleware exists yet — see
 [Kubernetes Health Checks](kubernetes-health-checks.md#client--contract-drift-checks-belong-in-neither-probe).
 
 ## See Also
