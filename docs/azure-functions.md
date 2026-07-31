@@ -406,12 +406,23 @@ export function orderPlacedKafka(records: KafkaRecord[]): Promise<void> {
 `KafkaRecord[]` before forwarding. `useKafka` accepts the same optional `KafkaOptions`
 (`catchExceptions` / `raiseOnFailureStatus`) as Service Bus.
 
-### Triggers not yet ported
+### Other triggers
 
-The .NET library also ships Cosmos DB Change Feed, Queue Storage, Blob Storage, Event Grid, and Timer
-triggers. **These are not yet in the TypeScript port** — only HTTP, Service Bus, Event Hub, and Kafka are
-ported. If you need one of the others, track the port's roadmap in the [README](../README.md) rather than
-reaching for an API that doesn't exist yet.
+Beyond HTTP, Service Bus, Event Hub, and Kafka, the port also ships the remaining Azure Functions
+triggers. Each follows the identical `use*(app, (pipeline) => …)` shape as the sections above (the only
+things that change are the entry-point verb, the trigger's context type, and the host binding you declare
+in step 6), and each is tested the same way through `@benzene/azure-function-testing`:
+
+| Trigger | Entry point | Context | Package |
+| --- | --- | --- | --- |
+| Cosmos DB Change Feed | `useCosmosDbChangeFeed` | `StreamContext<TDocument>` | `@benzene/azure-function-cosmos-db` |
+| Queue Storage | `useQueueStorage` | `QueueStorageContext` | `@benzene/azure-function-queue-storage` |
+| Blob Storage | `useBlobStorage` | `BlobStorageContext` | `@benzene/azure-function-blob-storage` |
+| Event Grid | `useEventGrid` | `EventGridContext` | `@benzene/azure-function-event-grid` |
+| Timer | `useTimerTrigger` | `TimerContext` | `@benzene/azure-function-timer` |
+
+See the [README package table](../README.md) for the full list and each package's own README for the
+trigger-specific binding.
 
 ## Correlation and tracing
 
