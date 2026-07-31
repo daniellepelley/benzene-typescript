@@ -141,7 +141,8 @@ export const handler = toLambdaHandler(entryPoint);
 What each step does:
 
 - `new InlineAwsLambdaStartUp()` is the fluent entry-point builder. `configureServices(...)` registers
-  services on the container — `addBenzene(services)` wires up the message-handler infrastructure — and
+  services on the container — `addBenzene(services)` registers Benzene's baseline services (though
+  `useMessageHandlers` now pulls that baseline in on its own, so this call is belt-and-braces) — and
   `configure(...)` builds the event pipeline on an `AwsEventStreamContext`.
 - `useApiGateway(app, (api) => …)` inserts the API Gateway transport, and inside it
   `useMessageHandlers(api, PlaceOrderHandler)` is the step that routes a matched request to its handler.

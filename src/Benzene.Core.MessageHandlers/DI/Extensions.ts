@@ -279,6 +279,14 @@ export function addMessageHandlers(
   services: IBenzeneServiceContainer,
   ...handlerTypes: (Constructor<unknown> | readonly Constructor<unknown>[])[]
 ): IBenzeneServiceContainer {
+  // The message router and factory registered below have a hard dependency on the addBenzene baseline
+  // (IDefaultStatuses, ISerializer, the service resolver, core middleware). Ensuring it here —
+  // idempotently, since addBenzene is all tryAdd — means registering handlers is enough on its own: no
+  // transport and no hand-composed app can wire up dispatch and forget the baseline it needs. (The old
+  // footgun surfaced far from its cause, as IDefaultStatuses being unresolvable from inside
+  // MessageHandlerFactory on the first message.) Ports the same fix made to C# AddMessageHandlers.
+  addBenzene(services);
+
   // Handlers arrive as varargs or a single array (or a mix); flatten to one discovery list.
   const handlers = handlerTypes.flat();
   const registryFinder =
