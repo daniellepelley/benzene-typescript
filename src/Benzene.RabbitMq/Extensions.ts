@@ -7,6 +7,7 @@ import { RabbitMqApplication } from './RabbitMqMessage/RabbitMqApplication';
 import { RabbitMqConfig } from './RabbitMqConfig';
 import { RabbitMqConstants } from './RabbitMqConstants';
 import { RabbitMqContext } from './RabbitMqMessage/RabbitMqContext';
+import { addRabbitMqDependencyHealthCheck } from './RabbitMqHealthCheckExtensions';
 import { RabbitMqWorker } from './RabbitMqWorker';
 
 /**
@@ -16,12 +17,6 @@ import { RabbitMqWorker } from './RabbitMqWorker';
  * Adds a self-hosted RabbitMQ consumer to a Benzene worker, mirroring `useKafka`/`useServiceBus`. This is
  * the first vendor-neutral, self-hosted broker in Benzene — intended for long-running workers (console,
  * container, Kubernetes) via `@benzene/self-host`.
- *
- * DIVERGENCE — no auto-wired health check. The C# overload takes a `healthCheck` flag (default on) that
- * auto-registers a passive-declare RabbitMQ dependency health check. The TypeScript port omits it: the
- * health-check package (`RabbitMqHealthCheck` / `RabbitMqConnectionProvider` / the flag) is out of scope
- * for this port (the health-check domain is owned separately), so wire a check manually once the package
- * exists. See the README porting-conventions bullet.
  *
  * DIVERGENCE — no SeedCancellationToken middleware. The C# `UseRabbitMq` seeds each scope's ambient
  * cancellation token from the delivery. The port has no ambient cancellation-token DI seam yet (matching
@@ -36,6 +31,10 @@ import { RabbitMqWorker } from './RabbitMqWorker';
  * @param connectionFactory The factory used to open the RabbitMQ connection (the caller decides host,
  *   credentials, vhost, TLS).
  * @param action Configures the inner RabbitMQ message pipeline.
+ * @param healthCheck When `true` (the default) a non-destructive passive-declare reachability check for
+ *   the consumed queue is auto-registered on the deep `healthcheck` layer (a dedicated reused connection,
+ *   a cheap channel per probe) — never a Kubernetes probe (a broker being unreachable is shared-fate; see
+ *   `IDependencyHealthCheck`). Pass `false` to opt out.
  * @returns The worker startup, for chaining.
  */
 export function useRabbitMq(
@@ -43,6 +42,7 @@ export function useRabbitMq(
   config: RabbitMqConfig,
   connectionFactory: IRabbitMqConnectionFactory,
   action: PipelineBuilderAction<RabbitMqContext>,
+  healthCheck = true,
 ): IBenzeneWorkerStartup {
   const topicHeaderKey = config.topicHeaderKey ?? RabbitMqConstants.DefaultTopicHeader;
 
@@ -56,6 +56,10 @@ export function useRabbitMq(
     addBenzene(x);
     addRabbitMqConsumer(x, topicHeaderKey);
   });
+
+  if (healthCheck) {
+    app.register((x) => addRabbitMqDependencyHealthCheck(x, config, connectionFactory));
+  }
 
   const middlewarePipelineBuilder = app.create<RabbitMqContext>();
   action(middlewarePipelineBuilder);

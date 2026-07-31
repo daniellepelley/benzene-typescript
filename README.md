@@ -54,7 +54,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
 | `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); dead-letter/`DrainOnRevoke` + health-check deferred) |
-| `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); health-check deferred) |
+| `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); passive-declare dependency health-check auto-wired) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
 | `src/Benzene.Azure.Function.{QueueStorage,Timer}` | `@benzene/azure-function-{queue-storage,timer}` | same-named `Benzene.Azure.Function.*` (bespoke `QueueStorageMessage`/`TimerTriggerInfo` models — `@azure/functions` has no queue/timer payload type; `useTimerTrigger` avoids the `Benzene.Diagnostics` `useTimer` clash) |
@@ -1170,10 +1170,14 @@ Ported (with tests):
   `useRabbitMqChannel` wiring. SDK-mapping bend: `RabbitMQ.Client` v7's async `IChannel.BasicPublishAsync`
   + `BasicProperties { Headers, Persistent }` → amqplib's synchronous `channel.publish(exchange, routingKey,
   content, { headers, persistent, mandatory })`; the send-side `useRabbitMq` is re-exported as
-  `useRabbitMqSend` to avoid clashing with the consumer worker's `useRabbitMq`. **Deferred** (not ported):
-  the **health-check** slice (`RabbitMqHealthCheck`, `RabbitMqHealthCheckExtensions`,
-  `RabbitMqConnectionProvider`, and `UseRabbitMq`'s auto-wiring `healthCheck` flag) — the health-check domain
-  is owned separately. Tests drive the captured `channel.consume` callback over a fake amqplib channel/
+  `useRabbitMqSend` to avoid clashing with the consumer worker's `useRabbitMq`. The **health-check** slice
+  **is ported**: `RabbitMqHealthCheck` (a passive `channel.checkQueue` reachability probe, classified via
+  the shared `HealthCheckError` policy — AMQP `403 access-refused` → persistent, `404 not-found` →
+  transient; C#'s `CancellationToken` bound becomes a `Promise.race` timeout since amqplib takes no
+  signal), `RabbitMqConnectionProvider` (one reused connection, a cheap channel per probe; C#'s
+  `IConnection.IsOpen` → tracking `close`/`error` events), `addRabbitMqHealthCheck` /
+  `addRabbitMqDependencyHealthCheck`, and `useRabbitMq(..., healthCheck = true)`'s auto-wiring (opt-out
+  with `false`). Tests drive the captured `channel.consume` callback over a fake amqplib channel/
   connection recording `ack`/`nack`/`cancel`/`close`; the send-side tests drive the message client over a
   fake amqplib `Channel` asserting the publish (exchange/routing-key/body/headers) + status.
 - Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —

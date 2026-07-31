@@ -33,6 +33,9 @@
  */
 export * from './IRabbitMqConnectionFactory';
 export * from './RabbitMqConnectionFactory';
+export * from './RabbitMqConnectionProvider';
+export * from './RabbitMqHealthCheck';
+export * from './RabbitMqHealthCheckExtensions';
 export * from './RabbitMqAckMode';
 export * from './RabbitMqConfig';
 export * from './RabbitMqConstants';
