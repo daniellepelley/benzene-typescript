@@ -8,6 +8,7 @@ import { ServiceBusConsumerApplication } from './ServiceBusConsumerApplication';
 import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
 import { ServiceBusConsumerMessageTopicGetter } from './ServiceBusConsumerMessageTopicGetter';
 import { addServiceBusConsumer } from './DependencyInjectionExtensions';
+import { addServiceBusDependencyHealthCheck } from './ServiceBusHealthCheckExtensions';
 
 /**
  * Port of Benzene.Azure.ServiceBus.Extensions (C# fluent extension method -> free function taking the
@@ -18,15 +19,14 @@ import { addServiceBusConsumer } from './DependencyInjectionExtensions';
  * Service Bus trigger, this package consumes an entity directly using {@link BenzeneServiceBusWorker} —
  * intended for long-running workers (e.g. `@benzene/self-host`) rather than Azure Functions.
  *
- * DIVERGENCE: the C# overload takes a `healthCheck` flag (default on) that auto-registers a peek-based
- * Service Bus dependency health check. The TypeScript port has no Azure Service Bus health-check package
- * yet, so that parameter and its registration are omitted (tracked in the README roadmap); wire a health
- * check manually once the package exists.
- *
  * @param app The worker startup to add the Service Bus consumer to.
  * @param config The entity to consume and the processing behaviour to use.
  * @param serviceBusClientFactory The factory used to create the underlying `ServiceBusClient`.
  * @param action Configures the inner Service Bus message pipeline.
+ * @param healthCheck When `true` (the default) a non-destructive Service Bus reachability check (a peek
+ * of the consumed entity, using the `Listen` claim the consumer holds) is auto-registered on the deep
+ * `healthcheck` layer via `@benzene/health-checks-azure-service-bus` — never a Kubernetes probe (a
+ * broker being unreachable is shared-fate; see `IDependencyHealthCheck`). Pass `false` to opt out.
  * @returns The worker startup, for chaining.
  */
 export function useServiceBus(
@@ -34,6 +34,7 @@ export function useServiceBus(
   config: BenzeneServiceBusConfig,
   serviceBusClientFactory: IServiceBusClientFactory,
   action: PipelineBuilderAction<ServiceBusConsumerContext>,
+  healthCheck = true,
 ): IBenzeneWorkerStartup {
   const topicPropertyKey =
     config.topicPropertyKey ?? ServiceBusConsumerMessageTopicGetter.DefaultTopicProperty;
@@ -48,6 +49,10 @@ export function useServiceBus(
     addBenzene(x);
     addServiceBusConsumer(x, topicPropertyKey);
   });
+
+  if (healthCheck) {
+    app.register((x) => addServiceBusDependencyHealthCheck(x, config, serviceBusClientFactory));
+  }
 
   const middlewarePipelineBuilder = app.create<ServiceBusConsumerContext>();
   action(middlewarePipelineBuilder);

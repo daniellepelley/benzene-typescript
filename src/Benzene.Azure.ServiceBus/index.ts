@@ -28,4 +28,5 @@ export * from './ServiceBusSettlement';
 export * from './ServiceBusSettlementDecision';
 export * from './ServiceBusSettlementHolder';
 export * from './DependencyInjectionExtensions';
+export * from './ServiceBusHealthCheckExtensions';
 export * from './Extensions';

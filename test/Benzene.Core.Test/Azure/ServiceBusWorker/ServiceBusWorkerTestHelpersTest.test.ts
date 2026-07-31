@@ -138,9 +138,17 @@ class ServiceBusOrdersStartUp implements BenzeneStartUp {
 
   configure(app: IBenzeneApplicationBuilder): void {
     useWorker(app, (workers) =>
-      useServiceBus(workers, { queueName: 'orders' }, noopClientFactory, (sb) => {
-        useMessageHandlers(sb, PlaceOrderHandler);
-      }),
+      useServiceBus(
+        workers,
+        { queueName: 'orders' },
+        noopClientFactory,
+        (sb) => {
+          useMessageHandlers(sb, PlaceOrderHandler);
+        },
+        // Opt out of the auto-wired health check: this test asserts routing only, and its client
+        // factory throws to prove no broker connection is made.
+        false,
+      ),
     );
   }
 }

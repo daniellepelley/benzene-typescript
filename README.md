@@ -51,7 +51,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Lambda.XRay` | `@benzene/aws-lambda-xray` | `Benzene.Aws.Lambda.XRay` (per-middleware X-Ray subsegments over `aws-xray-sdk-core`; recorder behind an injectable `IXRayRecorder` seam) |
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
-| `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; health-check deferred) |
+| `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
 | `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); dead-letter/`DrainOnRevoke` + health-check deferred) |
 | `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); health-check deferred) |
@@ -1061,10 +1061,13 @@ Ported (with tests):
   or rejects with no session available (a `ServiceBusError`, e.g. code `"SessionCannotBeLocked"`) is a
   normal "retry after a short backoff" case, not a fatal error; an unexpected error is logged and the slot
   keeps running. `stopAsync` signals the slots (AbortController), closes any open session receivers,
-  drains the loops, then disposes the client. Still **deferred** (retained for API parity, documented, and
-  fail-loud where applicable): `prefetchCount` (no `@azure/service-bus` receiver-option equivalent,
-  accepted but not plumbed); and the peek-based dependency health-check auto-wiring (no Azure Service Bus
-  health-check package ported yet). The emulator integration test is replaced by unit tests that drive the
+  drains the loops, then disposes the client. The peek-based dependency health-check **is auto-wired**:
+  `useServiceBus(..., healthCheck = true)` (the default) registers a `ServiceBusHealthCheck` (from
+  `@benzene/health-checks-azure-service-bus`) on the dependency category via `addDependencyHealthCheck`,
+  deduped by the consumed entity — a `ServiceBusClient` is created once from the factory and reused across
+  probes; pass `healthCheck: false` to opt out. Still **deferred** (retained for API parity, documented,
+  and fail-loud where applicable): `prefetchCount` (no `@azure/service-bus` receiver-option equivalent,
+  accepted but not plumbed). The emulator integration test is replaced by unit tests that drive the
   `receiver.subscribe` push path (and the session pump) over a fake client/receiver.
 - Standalone Event Hubs consumer (`@benzene/azure-event-hub`): the non-Functions Event Hubs **consumer**
   worker — `useEventHub(workerStartup, config, clientFactory, action)` registers a `BenzeneEventHubWorker`
