@@ -11,9 +11,19 @@ import { SqsMessageContext } from './SqsMessageContext';
  * `sqsMessage.messageAttributes[key].stringValue`.
  */
 export class SqsMessageTopicGetter implements IMessageTopicGetter<SqsMessageContext> {
+  /**
+   * The default message-attribute key the topic is read from (`topic`) — the spec's reserved topic
+   * name (wire-contracts.md §2). Port of the C# `SqsMessageTopicGetter.DefaultTopicAttribute` constant,
+   * which aliases `BenzeneWireNames.DefaultTopic`; the TS port has no `BenzeneWireNames` type yet, so the
+   * literal lives here (see README "Porting conventions").
+   */
+  static readonly DefaultTopicAttribute = 'topic';
+
   /** Returns the topic from the `topic` attribute, or a topic with a missing id if it is absent. */
   getTopic(context: SqsMessageContext): ITopic | undefined {
-    return new Topic(SqsMessageTopicGetter.getFromAttributes(context, 'topic'));
+    return new Topic(
+      SqsMessageTopicGetter.getFromAttributes(context, SqsMessageTopicGetter.DefaultTopicAttribute),
+    );
   }
 
   private static getFromAttributes(context: SqsMessageContext, key: string): string | undefined {

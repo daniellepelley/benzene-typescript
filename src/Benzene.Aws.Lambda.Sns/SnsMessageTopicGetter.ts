@@ -13,7 +13,15 @@ import { SnsUtils } from './SnsUtils';
  * `<missing>` id (C# `Constants.Missing`).
  */
 export class SnsMessageTopicGetter implements IMessageTopicGetter<SnsRecordContext> {
+  /**
+   * The default message-attribute key the topic is read from (`topic`) — the spec's reserved topic
+   * name (wire-contracts.md §2). Port of the C# `SnsMessageTopicGetter.DefaultTopicAttribute` constant,
+   * which aliases `BenzeneWireNames.DefaultTopic`; the TS port has no `BenzeneWireNames` type yet, so the
+   * literal lives here (see README "Porting conventions").
+   */
+  static readonly DefaultTopicAttribute = 'topic';
+
   getTopic(context: SnsRecordContext): ITopic | undefined {
-    return new Topic(SnsUtils.getFromAttributes(context, 'topic'));
+    return new Topic(SnsUtils.getFromAttributes(context, SnsMessageTopicGetter.DefaultTopicAttribute));
   }
 }
