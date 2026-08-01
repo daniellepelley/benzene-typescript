@@ -78,13 +78,15 @@ validation and whatever cross-cutting middleware (retry, correlation/trace heade
 the route — like any other `sendAsync`. The default publisher sends the event through
 `IBenzeneMessageSender`, so **every event topic must have a route**.
 
-> **Port status.** The .NET package ships broker route extensions (`.UseSns`, `.UseSqs`,
-> `.UseEventBridge`, ...) that plug a specific transport into an outbound route. Those are **not ported
-> yet** (see [Clients](../clients.md)); today an outbound route's terminal send is whatever
-> `IMiddleware<OutboundContext>` you add to it. Here that terminal middleware publishes to SNS with the
-> AWS SDK directly (as the [SNS Fan-Out](sns-fan-out.md) cookbook does on the publish side), and sets a
-> `VoidResult` acknowledgement on the context — event routes are fire-and-forget, so the publisher
-> expects a `VoidResult` back, not a typed response.
+> **Port status.** The broker route extensions (`useSns`, `useSqs`, `useEventBridge`, `useServiceBus`,
+> `useEventHub`, `useEventGrid`, `useQueueStorage`, `usePubSub`) that plug a specific transport into an
+> outbound route **are ported** — see the [Clients port-status table](../clients.md). In new code, prefer
+> the route extension: `useSns(route, topicArn, snsClient)` converts the route's terminal send to SNS (and
+> auto-wires a reachability check) in one line. The hand-rolled SNS-SDK middleware below predates those
+> extensions and is kept as an illustration of a fully custom terminal `IMiddleware<OutboundContext>` — it
+> publishes to SNS with the AWS SDK directly (as the [SNS Fan-Out](sns-fan-out.md) cookbook does on the
+> publish side) and sets a `VoidResult` acknowledgement on the context, since event routes are
+> fire-and-forget (the publisher expects a `VoidResult` back, not a typed response).
 
 ```ts
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';

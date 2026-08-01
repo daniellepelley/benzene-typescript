@@ -181,10 +181,12 @@ hit is wrapped with `BenzeneResult.ok(value)`.
 ### Health check
 
 `@benzene/cache-core` exposes `ICacheService.canConnectAsync()` (for `RedisCacheService`, a Redis
-`PING`) as the primitive a health check builds on. The health-checks abstraction itself
-(`@benzene/health-checks-core`) is ported, but the ready-made `CacheHealthCheck<TCacheService>` /
-`addCacheHealthCheck<TCacheService>()` wrapper the .NET library ships is not yet ported, so for now
-call `canConnectAsync()` directly from your own readiness probe.
+`PING`) as the primitive a health check builds on. The health-checks abstraction it would build on
+(`@benzene/health-checks-core`) **is** now ported, but the ready-made `CacheHealthCheck<TCacheService>` /
+`addCacheHealthCheck<TCacheService>()` helpers themselves are **not ported yet** (see the note at the top
+of `src/Benzene.Cache.Core/index.ts` and the README roadmap). Until they land, wrap `canConnectAsync()`
+in your own `IHealthCheck` (see [Health Checks](health-checks.md#example-a-custom-health-check-class)) —
+or call it directly from a readiness probe.
 
 ## Advanced Usage
 

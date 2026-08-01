@@ -93,7 +93,11 @@ export class ServiceBusHealthCheck implements IHealthCheck {
       });
     } finally {
       if (receiver !== undefined) {
-        await receiver.close();
+        // Close best-effort: a broken AMQP link after a failed peek can make `close()` itself reject, and
+        // an unguarded rejection here would escape `executeAsync` (a health check throwing instead of
+        // returning a classified result) and discard the `classify(...)` result on the failure path.
+        // Matches the guarded cleanup in the sibling RabbitMq / Kafka checks.
+        await receiver.close().catch(() => undefined);
       }
     }
   }

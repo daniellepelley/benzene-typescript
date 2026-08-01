@@ -53,7 +53,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
-| `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); dead-letter/`DrainOnRevoke` + health-check deferred) |
+| `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); metadata dependency health-check auto-wired via an explicit `IKafkaAdminClientFactory`; dead-letter/`DrainOnRevoke` deferred) |
 | `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); passive-declare dependency health-check auto-wired) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
 | `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
@@ -66,8 +66,8 @@ Mirrors the .NET repository:
 | `src/Benzene.GoogleCloud.Functions.PubSub` | `@benzene/google-cloud-functions-pubsub` | `Benzene.GoogleCloud.Functions.PubSub` (single-message CloudEvent trigger, on `@google-cloud/functions-framework`; `PresetTopic` override + registration-diagnostics deferred, as in the .NET package) |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
 | `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
-| `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; message-client/pipeline/health-check deferred) |
-| `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzene/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path; batch/standalone clients + health checks deferred) |
+| `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; reachability `AwsLambdaHealthCheck` ships (registered manually); high-level message-client/route pipeline + the health check's Active-invoke path deferred) |
+| `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzene/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path + auto-wired reachability health check per transport; batch/standalone clients deferred) |
 | `src/Benzene.Clients.Aws.StepFunctions` | `@benzene/clients-aws-step-functions` | `Benzene.Clients.Aws.StepFunctions` (outbound Step Functions client + reachability health check over `@aws-sdk/client-sfn`) |
 | `src/Benzene.Clients.Azure.ServiceBus` | `@benzene/clients-azure-service-bus` | `Benzene.Clients.Azure.ServiceBus` (outbound `OutboundContext` send path over `@azure/service-bus`; generic-context + batch clients deferred) |
 | `src/Benzene.Clients.Azure.EventHub` | `@benzene/clients-azure-event-hub` | `Benzene.Clients.Azure.EventHub` (outbound `OutboundContext` send path over `@azure/event-hubs`; generic-context + batch clients deferred) |
@@ -120,6 +120,8 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Sqs.TestHelpers` | `@benzene/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
 | `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzene/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
 | `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
+| `src/Benzene.RabbitMq.TestHelpers` | `@benzene/rabbitmq-test-helpers` | `Benzene.RabbitMq.TestHelpers`¶ |
+| `src/Benzene.Kafka.Core.TestHelpers` | `@benzene/kafka-core-test-helpers` | `Benzene.Kafka.Core.TestHelpers`¶ |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
@@ -207,14 +209,19 @@ The startup-host builder is dogfooded by `test/Benzene.Core.Test/Testing/Benzene
 AWS+Azure worked exemplars) and by the converted `ApiGatewayPipelineTest`/`AzureHttpPipelineTest`. Still not
 ported: an Azure Queue Storage builder (that transport itself isn't ported). The **standalone (non-Functions)
 consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
-`@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers` — kept one-per-C#-project
+`@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers`,
+`@benzene/rabbitmq-test-helpers`, `@benzene/kafka-core-test-helpers` — kept one-per-C#-project
 (unlike the consolidated `*-testing` packages, since each targets a distinct transport SDK, the very
 dependency the C# split isolates). They follow the same law: a native-message builder (`asSqsMessage` /
-`asAzureServiceBusMessage` / `asEventHubBenzeneMessage`) plus, for the two worker hosts, the same
-module-augmentation fluent specialization — `benzeneTestHost(StartUp).withServices(...).buildServiceBusWorkerHost()`
-/ `.buildEventHubWorkerHost()` — running a native message through the real `ServiceBusConsumerApplication`/
-`EventHubConsumerApplication` and returning its native settlement decision / recorded result (the SQS helper is
-a message builder only, faithful to its C# `.csproj`, which ships no worker host).
+`asAzureServiceBusMessage` / `asEventHubBenzeneMessage` / `asRabbitMqBenzeneMessage` / `asKafkaBenzeneMessage`)
+plus, for the four worker hosts, the same module-augmentation fluent specialization —
+`benzeneTestHost(StartUp).withServices(...).buildServiceBusWorkerHost()` / `.buildEventHubWorkerHost()` /
+`.buildRabbitMqWorkerHost()` / `.buildKafkaWorkerHost()` — running a native message through the real
+`ServiceBusConsumerApplication` / `EventHubConsumerApplication` / `RabbitMqApplication` / `KafkaApplication`
+and returning its native settlement decision / recorded result (the SQS helper is a message builder only,
+faithful to its C# `.csproj`, which ships no worker host). The `KafkaBenzeneTestHost` drops the C#
+`<TKey, TValue>` generics — the port's `KafkaApplication` erases them (kafkajs delivers a raw
+`EachMessagePayload`), matching the erasure already documented on `useKafka`.
 
 §§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
@@ -1160,10 +1167,19 @@ Ported (with tests):
   `IProducer.ProduceAsync` / `DeliveryResult<TKey,TValue>` / `PersistenceStatus.Persisted` →
   `producer.send({ topic, messages })` / `RecordMetadata[]` (persisted = every `errorCode === 0`); the
   send-side `useKafka` is re-exported as `useKafkaSend` to avoid clashing with the consumer worker's
-  `useKafka`. **Deferred** (not ported): the `KafkaDeadLetterOptions` retry-then-dead-letter
-  re-produce and `DrainOnRevoke` rebalance-draining (both lean on Confluent's manual `StoreOffset` /
-  `SetPartitionsRevokedHandler` seams kafkajs's higher-level push model doesn't expose in the same shape),
-  and the `KafkaHealthCheck` / `IKafkaAdminClientFactory` (the health-check domain). Tests drive the captured
+  `useKafka`. The **health-check** slice **is ported**: `KafkaHealthCheck` (a read-only
+  `admin.describeCluster` + `admin.fetchTopicMetadata` reachability probe verifying the brokers are
+  reachable and every subscribed topic exists, classified via the shared `HealthCheckError` policy — a
+  Kafka authorization type → persistent 403, anything else transient), `addKafkaHealthCheck` /
+  `addKafkaDependencyHealthCheck`, and `useKafka(..., adminClientFactory, healthCheck = true)`'s
+  auto-wiring. DIVERGENCE: C# reads the brokers from `config.ConsumerConfig` and reuses one admin client;
+  the TS `BenzeneKafkaConfig` holds no broker settings and a kafkajs `Consumer` gives no route to an
+  `Admin`, so a separate `IKafkaAdminClientFactory` (carrying the `Admin` factory **and** the
+  `bootstrapServers`) is passed to `useKafka` to enable the check, and a fresh `Admin` is
+  connected/disconnected per probe (the reused thing is the caller's `Kafka` client). **Deferred** (not
+  ported): the `KafkaDeadLetterOptions` retry-then-dead-letter re-produce and `DrainOnRevoke`
+  rebalance-draining (both lean on Confluent's manual `StoreOffset` / `SetPartitionsRevokedHandler` seams
+  kafkajs's higher-level push model doesn't expose in the same shape). Tests drive the captured
   `eachMessage` handler over a fake kafkajs consumer recording `commitOffsets`/`disconnect`; the send-side
   tests drive the message client over a fake kafkajs `Producer` asserting the produced record + status.
 - Standalone RabbitMQ consumer (`@benzene/rabbitmq`): the **consumer-worker slice only** of
@@ -1208,7 +1224,9 @@ Ported (with tests):
   the shared `HealthCheckError` policy — AMQP `403 access-refused` → persistent, `404 not-found` →
   transient; C#'s `CancellationToken` bound becomes a `Promise.race` timeout since amqplib takes no
   signal), `RabbitMqConnectionProvider` (one reused connection, a cheap channel per probe; C#'s
-  `IConnection.IsOpen` → tracking `close`/`error` events), `addRabbitMqHealthCheck` /
+  `IConnection.IsOpen` → tracking `close`/`error` events; C#'s `IAsyncDisposable` → `disposeAsync()`,
+  closing the one reused connection so a stopped worker's amqplib heartbeat timer no longer holds the
+  event loop open), `addRabbitMqHealthCheck` /
   `addRabbitMqDependencyHealthCheck`, and `useRabbitMq(..., healthCheck = true)`'s auto-wiring (opt-out
   with `false`). Tests drive the captured `channel.consume` callback over a fake amqplib channel/
   connection recording `ack`/`nack`/`cancel`/`close`; the send-side tests drive the message client over a

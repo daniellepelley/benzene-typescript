@@ -10,7 +10,7 @@ If you're new to Benzene, read [Getting Started](getting-started.md) first — i
 handler locally on Express in about five minutes. The handler you write there runs here unchanged; only
 the transport wiring differs.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene-dotnet).
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > The .NET original hosts Azure Functions on the isolated-worker model and uses a source generator to
 > emit the trigger classes. The Node v4 programming model already registers triggers with a plain
 > function call (`app.http(...)`, `app.serviceBusQueue(...)`, …), so the port leans on that native API
@@ -408,17 +408,21 @@ export function orderPlacedKafka(records: KafkaRecord[]): Promise<void> {
 
 ### Other triggers
 
-The .NET library's other Azure triggers are ported too, each in its own package following the same
-`use…` / `handle…` shape as the Service Bus and Event Hub sections above — register the trigger with
-`@azure/functions` and forward the host's binding data into a Benzene context:
+Beyond HTTP, Service Bus, Event Hub, and Kafka, the port also ships the remaining Azure Functions
+triggers. Each follows the identical `use*(app, (pipeline) => …)` shape as the sections above (the only
+things that change are the entry-point verb, the trigger's context type, and the host binding you declare
+in step 6), and each is tested the same way through `@benzene/azure-function-testing`:
 
-| Trigger | Package | Entry points |
-|---|---|---|
-| Cosmos DB Change Feed | `@benzene/azure-function-cosmos-db` | `useCosmosDbChangeFeed` / `handleCosmosDbChanges` |
-| Queue Storage | `@benzene/azure-function-queue-storage` | `useQueueStorage` / `handleQueueMessages` |
-| Blob Storage | `@benzene/azure-function-blob-storage` | `useBlob` / `handleBlob` |
-| Event Grid | `@benzene/azure-function-event-grid` | `useEventGrid` / `handleEventGridEvents` |
-| Timer | `@benzene/azure-function-timer` | `useTick` / `handleTimer` |
+| Trigger | Entry point | Context | Package |
+| --- | --- | --- | --- |
+| Cosmos DB Change Feed | `useCosmosDbChangeFeed` | `StreamContext<TDocument>` | `@benzene/azure-function-cosmos-db` |
+| Queue Storage | `useQueueStorage` | `QueueStorageContext` | `@benzene/azure-function-queue-storage` |
+| Blob Storage | `useBlobStorage` | `BlobStorageContext` | `@benzene/azure-function-blob-storage` |
+| Event Grid | `useEventGrid` | `EventGridContext` | `@benzene/azure-function-event-grid` |
+| Timer | `useTimerTrigger` | `TimerContext` | `@benzene/azure-function-timer` |
+
+See the [README package table](../README.md) for the full list and each package's own README for the
+trigger-specific binding.
 
 ## Correlation and tracing
 

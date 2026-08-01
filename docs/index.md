@@ -3,7 +3,7 @@
 Benzene is a hexagonal framework for services running in serverless environments, containers, or on
 physical servers. It supports multiple cloud providers and provides a unified programming model for
 message-based architectures. This is the **TypeScript port** of
-[Benzene](https://github.com/daniellepelley/benzene-dotnet) — you write a message handler once and host it
+[Benzene](https://github.com/daniellepelley/benzene) — you write a message handler once and host it
 unchanged on Express, AWS Lambda, or Azure Functions.
 
 > **Documentation in progress.** This is the growing TypeScript documentation set, ported from the .NET

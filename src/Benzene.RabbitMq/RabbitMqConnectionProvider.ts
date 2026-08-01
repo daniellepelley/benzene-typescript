@@ -12,6 +12,14 @@ import { IRabbitMqConnectionFactory } from './IRabbitMqConnectionFactory';
 export interface IRabbitMqConnectionProvider {
   /** Returns the reused connection, opening (or re-opening a dropped) one as needed. */
   getConnectionAsync(cancellationToken?: AbortSignal): Promise<ChannelModel>;
+
+  /**
+   * Closes the one reused connection. Port of C#'s `IAsyncDisposable.DisposeAsync`. An open amqplib
+   * connection keeps a heartbeat interval timer alive, which holds Node's event loop open; a host that
+   * has stopped consuming should call this so the process can exit cleanly. Optional so a bespoke
+   * provider need not implement it.
+   */
+  disposeAsync?(): Promise<void>;
 }
 
 /**
@@ -65,5 +73,17 @@ export class RabbitMqConnectionProvider implements IRabbitMqConnectionProvider {
     });
     this.connection = connection;
     return connection;
+  }
+
+  /**
+   * Closes the one reused connection, best-effort. Port of C#'s `IAsyncDisposable.DisposeAsync`. Safe to
+   * call more than once and safe to call when no connection was ever opened.
+   */
+  async disposeAsync(): Promise<void> {
+    if (this.connection !== undefined) {
+      await this.connection.close().catch(() => undefined);
+      this.connection = undefined;
+      this.open = false;
+    }
   }
 }

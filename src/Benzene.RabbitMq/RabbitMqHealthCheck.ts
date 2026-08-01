@@ -1,5 +1,4 @@
 /** Port of Benzene.RabbitMq.RabbitMqHealthCheck. */
-import { Channel } from 'amqplib';
 import {
   HealthCheckDependency,
   HealthCheckError,
@@ -40,14 +39,23 @@ export class RabbitMqHealthCheck implements IHealthCheck {
 
   async executeAsync(): Promise<IHealthCheckResult> {
     const dependencies = [new HealthCheckDependency('Queue', this.queueName)];
-    let channel: Channel | undefined;
 
     try {
       await this.withTimeout(async (signal) => {
         const connection = await this.connectionProvider.getConnectionAsync(signal);
-        channel = await connection.createChannel();
-        // Passive declare: read-only existence + reachability, no create/mutate.
-        await channel.checkQueue(this.queueName);
+        const channel = await connection.createChannel();
+        try {
+          // Passive declare: read-only existence + reachability, no create/mutate.
+          await channel.checkQueue(this.queueName);
+        } finally {
+          // Close the channel in the same async scope that opened it. amqplib's `createChannel`/
+          // `checkQueue` are not abortable, so a timeout in `withTimeout` rejects the *outer* await while
+          // this closure is still suspended; closing here (rather than in an outer `finally`) guarantees
+          // the channel is released once `createChannel`/`checkQueue` eventually settle, even after the
+          // outer timeout already returned a result — otherwise every timed-out probe leaks a channel. A
+          // channel-level exception (e.g. 404) has already closed the channel; close best-effort.
+          await channel.close().catch(() => undefined);
+        }
       });
 
       return HealthCheckResult.createInstance(true, this.type, { Queue: this.queueName }, dependencies);
@@ -62,11 +70,6 @@ export class RabbitMqHealthCheck implements IHealthCheck {
         statusCode,
         data: { Queue: this.queueName },
       });
-    } finally {
-      if (channel !== undefined) {
-        // A channel-level exception (e.g. 404) has already closed the channel; close best-effort.
-        await channel.close().catch(() => undefined);
-      }
     }
   }
 

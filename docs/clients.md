@@ -27,14 +27,29 @@ fan-out) is added as ordinary `IMiddleware<OutboundContext>` on that pipeline �
 model used everywhere else in Benzene (see [Middleware](middleware.md)), so there's no separate
 decorator mechanism to learn.
 
-> **Port status.** The .NET package ships transport route extensions (`.useSqs`, `.useSns`,
-> `.useServiceBus`, `.useEventHub`, …) that plug a specific broker into an outbound route. Those are
-> **not ported yet** — an outbound route's actual send is currently whatever `IMiddleware<OutboundContext>`
-> you add to it (custom middleware, or the parallel/trace-context helpers below). The one concrete
-> outbound transport that ships today is **HTTP**, via `@benzene/client-http` on the message-sender
-> path (see [HTTP](#http)). A low-level **AWS Lambda invoke** client also ships (see
-> [AWS Lambda](#aws-lambda)). See the [repository README package table](../README.md) for exactly
-> what's ported.
+> **Port status.** The .NET transport route extensions that plug a specific broker into an outbound
+> route — each `use*(route, …)` converting the route's terminal send to that transport — **are ported**
+> for the common brokers:
+>
+> | Transport | Route extension | Package |
+> | --- | --- | --- |
+> | AWS SNS | `useSns` | `@benzene/clients-aws-sns` |
+> | AWS SQS | `useSqs` | `@benzene/clients-aws-sqs` |
+> | AWS EventBridge | `useEventBridge` | `@benzene/clients-aws-eventbridge` |
+> | Azure Service Bus | `useServiceBus` | `@benzene/clients-azure-service-bus` |
+> | Azure Event Hub | `useEventHub` | `@benzene/clients-azure-event-hub` |
+> | Azure Event Grid | `useEventGrid` | `@benzene/clients-azure-event-grid` |
+> | Azure Queue Storage | `useQueueStorage` | `@benzene/clients-azure-queue-storage` |
+> | Google Cloud Pub/Sub | `usePubSub` | `@benzene/clients-google-cloud-pubsub` |
+> | HTTP | on the message-sender path | `@benzene/client-http` (see [HTTP](#http)) |
+>
+> Each also auto-wires a non-destructive reachability check for its target on the dependency category
+> (opt out with `healthCheck: false`). If a route has no broker extension, its terminal send is still
+> whatever `IMiddleware<OutboundContext>` you add to it. **Still deferred:** the high-level AWS Lambda
+> outbound route (`.useAwsLambda`) and Kafka/gRPC outbound route extensions — a low-level **AWS Lambda
+> invoke** client does ship (see [AWS Lambda](#aws-lambda)), and Kafka has a send-side message client
+> (`@benzene/kafka-core`'s `useKafkaSend`). See the [repository README package table](../README.md) for
+> exactly what's ported.
 
 ## Installation
 
@@ -272,10 +287,12 @@ object into `TResponse`. `BenzeneMessageClientRequest` is the standard Benzene m
 profile-authenticated `LambdaClient` for local development.
 
 > **Deferred.** The high-level `AwsLambdaBenzeneMessageClient` (whose `TResponse === Void`
-> fire-and-forget branch has no runtime equivalent under TypeScript's generic erasure), the outbound
-> route extension (`.useAwsLambda`), and the Lambda health check are not yet ported — see the
-> [README package table](../README.md). Kafka, EventBridge, and gRPC outbound clients are also not
-> ported yet.
+> fire-and-forget branch has no runtime equivalent under TypeScript's generic erasure) and its outbound
+> route extension (`.useAwsLambda`) are not yet ported — see the [README package table](../README.md).
+> The `AwsLambdaHealthCheck` reachability check *is* ported (its `HealthCheckMode.Active` invoke path,
+> which needs that high-level client, is not). The Kafka and EventBridge outbound clients are ported now
+> (`@benzene/kafka-core`'s `KafkaBenzeneMessageClient` / `useKafkaSend`, and
+> `@benzene/clients-aws-eventbridge`'s `useEventBridge`); the gRPC outbound client is not ported yet.
 
 ## Lower-level: the `IBenzeneMessageClient` decorator suite
 

@@ -4,7 +4,9 @@ import { IBenzeneWorkerStartup } from '@benzene/self-host';
 import { BenzeneKafkaConfig } from './BenzeneKafkaConfig';
 import { BenzeneKafkaWorker } from './BenzeneKafkaWorker';
 import { addKafkaConsumer } from './DependencyInjectionExtensions';
+import { IKafkaAdminClientFactory } from './IKafkaAdminClientFactory';
 import { IKafkaConsumerFactory } from './IKafkaConsumerFactory';
+import { addKafkaDependencyHealthCheck } from './KafkaHealthCheckExtensions';
 import { useBenzeneInvocation } from './KafkaMessage/BenzeneInvocationExtensions';
 import { KafkaApplication } from './KafkaMessage/KafkaApplication';
 import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
@@ -19,15 +21,27 @@ import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
  * `@benzene/self-host`).
  *
  * DEFERRED from the C# `UseKafka`: the `deadLetterOptions` parameter (retry-then-dead-letter re-produce)
- * and the auto-wired Kafka reachability `healthCheck` — the former leans on Confluent's manual offset
- * seams kafkajs does not expose the same way, and the latter is the health-check domain (out of scope
- * for this port). See the README porting-conventions bullet.
+ * leans on Confluent's manual offset seams kafkajs does not expose the same way.
+ *
+ * PORT DIVERGENCE — the auto-wired reachability `healthCheck`. C# builds the admin client from
+ * `config.ConsumerConfig`; the TypeScript config carries no broker settings and `consumerFactory` yields a
+ * `Consumer` (no route to an `Admin`), so the health check needs a separate {@link IKafkaAdminClientFactory}.
+ * Pass one to enable the check (auto-registered on the deep `healthcheck` layer via
+ * `@benzene/health-checks-core`); with no admin factory it is a no-op regardless of `healthCheck`. Set
+ * `healthCheck = false` to opt out even when a factory is supplied.
  *
  * @param app The worker startup to add the Kafka consumer to.
  * @param config The topics and processing behaviour to use.
  * @param consumerFactory The factory used to create the underlying kafkajs `Consumer` (which decides the
  *   brokers, group id, and authentication).
  * @param action Configures the inner Kafka message pipeline.
+ * @param adminClientFactory Optional admin-client + bootstrap-servers seam enabling the reachability
+ *   health check (see the divergence above).
+ * @param healthCheck **A no-op unless `adminClientFactory` is also supplied.** When `true` (the default)
+ *   AND an `adminClientFactory` is given, auto-registers the metadata reachability check; with no admin
+ *   factory the default-`true` flag registers nothing (unlike `useServiceBus` / `useRabbitMq`, whose
+ *   required worker factory already suffices — see the divergence above). Pass `false` to opt out even
+ *   when a factory is supplied.
  * @returns The worker startup, for chaining.
  */
 export function useKafka(
@@ -35,6 +49,8 @@ export function useKafka(
   config: BenzeneKafkaConfig,
   consumerFactory: IKafkaConsumerFactory,
   action: PipelineBuilderAction<KafkaRecordContext>,
+  adminClientFactory?: IKafkaAdminClientFactory,
+  healthCheck = true,
 ): IBenzeneWorkerStartup {
   // PORT DIVERGENCE: C# calls `AddBenzeneMessage()` here; under the port's type erasure that would
   // register `BenzeneMessageGetter` under the single `IMessageGetter` / `IMessageBodyBytesGetter`
@@ -46,6 +62,10 @@ export function useKafka(
     addBenzene(x);
     addKafkaConsumer(x);
   });
+
+  if (healthCheck && adminClientFactory !== undefined) {
+    app.register((x) => addKafkaDependencyHealthCheck(x, config, adminClientFactory));
+  }
 
   const middlewarePipelineBuilder = app.create<KafkaRecordContext>();
   useBenzeneInvocation(middlewarePipelineBuilder);

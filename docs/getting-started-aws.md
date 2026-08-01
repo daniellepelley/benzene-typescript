@@ -9,12 +9,14 @@ If you're brand new to Benzene, read [Getting Started](getting-started.md) first
 kind of service locally on Express in about five minutes. The message handler you write there runs
 unchanged on Lambda; only the entry point differs, and that's what this guide covers.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene-dotnet).
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
-> [Porting conventions](../README.md#porting-conventions) explain why. The .NET host model
-> (`AwsLambdaHost<TStartUp>` / `BenzeneStartUp`) has no port yet — the port uses the fluent
-> `InlineAwsLambdaStartUp` builder throughout, which is exactly what the runnable
-> [`examples/aws-lambda-functions`](../examples/aws-lambda-functions) uses.
+> [Porting conventions](../README.md#porting-conventions) explain why. The .NET **production host adapter**
+> (`AwsLambdaHost<TStartUp>` running a `BenzeneStartUp`) has no port yet — for production the port uses the
+> fluent `InlineAwsLambdaStartUp` builder throughout, which is exactly what the runnable
+> [`examples/aws-lambda-functions`](../examples/aws-lambda-functions) uses. (A `BenzeneStartUp` contract
+> and the `benzeneTestHost(...)` harness that boots one *do* exist, for testing — see
+> [Testing Benzene](testing-benzene.md).)
 
 ## Prerequisites
 
