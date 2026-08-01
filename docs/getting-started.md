@@ -55,6 +55,13 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 
 ## 2. Install the packages
 
+> **Pre-release.** The `@benzene/*` packages aren't published to npm yet, so the `npm install` below
+> won't resolve them from the public registry today. Until they're published, clone
+> [benzene-typescript](https://github.com/daniellepelley/benzene-typescript) and build your service
+> inside its npm workspace (every `@benzene/*` package resolves locally there), or add them as
+> `file:` dependencies pointing at your checkout. The command below is the package set you'll depend
+> on once they ship — the rest of this guide is unchanged either way.
+
 ```bash
 npm install @benzene/express @benzene/core-message-handlers @benzene/http @benzene/results \
   @benzene/abstractions @benzene/abstractions-message-handlers express

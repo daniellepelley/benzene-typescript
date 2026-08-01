@@ -650,6 +650,39 @@ next to its C# counterpart:
   string constant in a `.ts` file (`@benzene/spec-ui`'s `SpecUiPage`) — no I/O, works in any bundle. The
   page itself is written fresh as an idiomatic viewer (theme-aware, dependency-free, resolving `$ref`s
   against `components.schemas`) rather than transliterating the .NET HTML; same purpose, TS-native code.
+- **Conformance fixtures are vendored and run against real port code.** The language-neutral
+  conformance fixtures (`docs/specification/conformance/*.json`, owned by the cross-language benzene
+  repo) are vendored **byte-for-byte** into `test/Benzene.Core.Test/Conformance/fixtures/` with a
+  `SPEC_VERSION` file recording the source commit, mirroring the .NET port's `test/conformance-fixtures/`
+  snapshot. `ConformanceDriftTest` + the `conformance-drift-check` workflow fail if a vendored fixture
+  drifts from canonical. Each Core-level fixture is driven against the actual port behavior, not a
+  re-parse: `status-vocabulary` against `BenzeneResultStatus` + `BenzeneResultHttpMapper`;
+  `http-status-mapping` / `grpc-status-mapping` against `DefaultHttpStatusCodeMapper` /
+  `DefaultGrpcStatusCodeMapper` / `DefaultGrpcStatusReverseMapper`; `envelope-cases` through the real
+  `BenzeneMessage` pipeline (`addBenzene` + `addBenzeneMessage` + `useMessageHandlers` + the canonical
+  conformance handlers); `transport-metadata-cases` against each binding's default topic-key constant.
+  Two port shapes here differ from .NET and are recorded for that reason:
+  - **HTTP reverse mapping — `HttpStatusCode.Convert()` → `convertHttpStatusCode(number)`.** The .NET
+    reverse conformance rows run through `BenzeneResultExtensions.Convert(this HttpStatusCode)`. TS has no
+    `System.Net.HttpStatusCode` enum, so `@benzene/results` ports that overload as a free function taking
+    the numeric code (`convertHttpStatusCode(204) → deleted`). The mapping table is byte-identical; only
+    the argument type bends to the TS idiom. (Note this is a *distinct* mapper from the client-side
+    `BenzeneResultHttpMapper.mapBenzeneResultStatus`, which deliberately collapses `204 → ok`; the fixture
+    pins `Convert`, matching .NET.)
+  - **Reserved topic key — no `BenzeneWireNames` yet.** wire-contracts §2 / the fixture's
+    `defaultMetadataKeys` require the reserved names to be one injectable value; .NET realizes this as
+    `BenzeneWireNames`, and every binding constant aliases `BenzeneWireNames.DefaultTopic` (`"topic"`).
+    The TS port has **not** ported `BenzeneWireNames`, so each binding still carries its own default
+    constant (`SqsMessageTopicGetter.DefaultTopicAttribute`, `RabbitMqConstants.DefaultTopicHeader`, …).
+    The conformance test pins them all to the fixture default, but the .NET `TheDefaultsComeFromOneDefinition`
+    / `NamesAreOverridablePerService` guards have no analogue until `BenzeneWireNames` is ported — an open
+    port gap. As part of pinning, the two AWS **inbound** Lambda getters
+    (`SqsMessageTopicGetter`/`SnsMessageTopicGetter`) gained the `DefaultTopicAttribute = 'topic'` constant
+    the .NET originals expose (previously a hard-coded literal). The two AWS **outbound** raw converters
+    (`OutboundSqsContextConverter`/`OutboundSnsContextConverter`) still default to the pre-2026-07-27
+    `benzene-topic` — a real non-conformance the fixture exists to catch (a service would publish under a
+    key its own inbound getters don't route on); those two cells are `it.skip`-ped with the correct
+    assertion in place, pending a wire-behavior fix.
 
 ## Multi-language interoperability
 

@@ -64,6 +64,7 @@ own middleware:
 
 ```ts
 import { addBenzene } from '@benzene/core-message-handlers';
+import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { CorrelationExtensions } from '@benzene/diagnostics';
 import { ICorrelationId } from '@benzene/abstractions';
 import { IMessageHeadersGetter } from '@benzene/abstractions-messages';

@@ -3,7 +3,7 @@
 This page catalogs Benzene's general-purpose, transport-agnostic pipeline middleware — the building
 blocks you'll reach for on almost any pipeline, regardless of whether it's running on AWS Lambda,
 Azure Functions, Express, or a self-hosted worker. Transport-specific middleware (`useApiGateway`,
-`useSqs`, `useSns`, `useAwsKafka`, `useEventHub`, ...) is covered in the platform getting-started
+`useSqs`, `useSns`, `useKafka`, `useEventHub`, ...) is covered in the platform getting-started
 guides instead.
 
 Because TypeScript has no extension methods, the fluent `.Use*()` helpers C# defines on the pipeline
