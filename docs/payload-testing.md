@@ -225,12 +225,13 @@ topic, since it only ever sends its own envelopes. `CloudServiceProbeOptions` (`
 ## Not yet ported
 
 The .NET library also ships an HTTP `UseBenzeneMessage` endpoint (which dispatches a POSTed
-`BenzeneMessage` envelope at a running service), a browser *Try it* Spec UI, and a `benzene` CLI that
-generates per-topic / per-transport test-payload files for the Lambda Test Tool. Those are **.NET-only for
-now** — the TypeScript port covers payload testing through the in-process `@benzene/testing` helpers above
-rather than a hosted endpoint or CLI. To send a topic-addressed payload at a running instance today, drive
-the in-process message pipeline from a small script, or drop the `asSqs(...)` event on the real queue the
-topic is bound to.
+`BenzeneMessage` envelope at a running service) and a `benzene` CLI that generates per-topic /
+per-transport test-payload files for the Lambda Test Tool. Those are **.NET-only for now** — the
+TypeScript port covers payload testing through the in-process `@benzene/testing` helpers above rather
+than a hosted endpoint or CLI. To send a topic-addressed payload at a running instance today, drive the
+in-process message pipeline from a small script, or drop the `asSqs(...)` event on the real queue the
+topic is bound to. (The browser *Try it* Spec UI **is** ported — `@benzene/spec-ui`'s `useSpecUi` renders
+the `useSpec` document in-browser; see [Common Middleware](common-middleware.md#not-yet-ported).)
 
 ## Troubleshooting
 

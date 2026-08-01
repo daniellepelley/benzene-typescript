@@ -276,10 +276,15 @@ registry.
 
 ## Not ported (yet)
 
-- **Schema / OpenAPI generation.** `Benzene.FluentValidation`'s `IValidationSchemaBuilder`
-  (`FluentValidationSchemaBuilder`), which reflects over rules to describe them for documentation, has its
-  abstraction ported (`IValidationSchemaBuilder` and the `IValidationSchema` family live in
-  `@benzene/abstractions-validation`), but no adapter ships a concrete builder yet.
+- **Schema / OpenAPI generation via `IValidationSchemaBuilder`.** `Benzene.FluentValidation`'s
+  `IValidationSchemaBuilder` (`FluentValidationSchemaBuilder`) has only its abstraction ported
+  (`IValidationSchemaBuilder` and the `IValidationSchema` family live in `@benzene/abstractions-validation`);
+  no adapter ships a concrete builder for that specific shape yet. **Schema generation itself is delivered
+  through a different seam, though:** the Zod / Joi / Yup adapters each ship a concrete
+  `ITypeJsonSchemaSource` (`ZodJsonSchemaSource` / `JoiJsonSchemaSource` / `YupJsonSchemaSource`) that
+  converts the validation schema — rules included (`minLength`/`maxLength`/`pattern`/`enum`/`format`) — to
+  JSON Schema, which `@benzene/schema-openapi`'s `useSpec` publishes. So a validated handler's payload
+  schema is documented automatically; see [Serialization](serialization.md) and `@benzene/schema-openapi`.
 - **Custom string rule extensions.** FluentValidation's `Benzene.FluentValidation.Common` helpers
   (`IsGuid()`, `IsOneOf(...)`, `IsJson()`, ...) are not re-created — Zod, Joi, and Yup each provide these
   as native schema methods/refinements, so use the validator's own idioms.

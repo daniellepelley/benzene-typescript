@@ -622,18 +622,22 @@ useMessagePack(app);
 
 A few transport-agnostic .NET middleware have no TypeScript port today:
 
-- **`UseSpec`** (`Benzene.Schema.OpenApi`) — the OpenAPI/AsyncAPI spec endpoint. The port's
-  mesh-descriptor surface plays the equivalent role: `useMeshDescriptor(app, descriptor)`
-  (`@benzene/mesh-wire`) serves a language-neutral service descriptor on the reserved `mesh` topic,
-  and it's what `@benzene/codegen-client` and the mesh aggregator consume. See the README's
-  [Multi-language interoperability](../README.md#multi-language-interoperability) section.
 - **`UseCors`** (`Benzene.Http`) — CORS handling for HTTP transports is not yet ported.
 - **`UseJsonSchema`** (`Benzene.JsonSchema`) — superseded by the [validation](#validation) adapters.
 
-Vendor-specific tracing packages (`Benzene.Datadog`, `Benzene.Zipkin`, `Benzene.Aws.XRay`) have no
-port either — `@benzene/diagnostics` is built on `@opentelemetry/api`, so `useTimer(name)`,
-`useBenzeneMetrics`, and the automatic per-middleware spans export to any OpenTelemetry-compatible
-backend once you register an OpenTelemetry SDK in your process.
+The spec endpoint **is** ported: **`useSpec`** (`@benzene/schema-openapi`) serves the service's benzene
+spec document (topics + payload JSON Schemas) on the reserved `spec` topic, and **`useSpecUi`**
+(`@benzene/spec-ui`) renders it in-browser, Swagger-UI style. Only the `openapi`/`asyncapi` *output
+formats* remain unported (see that package's `index.ts` divergence note). The mesh-descriptor surface —
+`useMeshDescriptor(app, descriptor)` (`@benzene/mesh-wire`), consumed by `@benzene/codegen-client` and
+the mesh aggregator — is a related but distinct language-neutral descriptor; see the README's
+[Multi-language interoperability](../README.md#multi-language-interoperability) section.
+
+The vendor-specific tracing packages `Benzene.Datadog` and `Benzene.Zipkin` have no port —
+`@benzene/diagnostics` is built on `@opentelemetry/api`, so `useTimer(name)`, `useBenzeneMetrics`, and
+the automatic per-middleware spans export to any OpenTelemetry-compatible backend once you register an
+OpenTelemetry SDK in your process. (AWS X-Ray *is* available directly, via `@benzene/aws-lambda-xray`,
+as an alternative to the OpenTelemetry path.)
 
 ## See also
 

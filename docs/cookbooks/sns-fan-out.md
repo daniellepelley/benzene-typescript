@@ -36,8 +36,11 @@ npm install @benzene/aws-lambda-sns @benzene/aws-lambda-core @benzene/core-messa
   @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
 ```
 
-Publisher (whichever service raises the event). The TypeScript port does not (yet) ship an SNS outbound
-message client, so publish with the AWS SDK directly:
+Publisher (whichever service raises the event). Benzene ships an SNS outbound client —
+`@benzene/clients-aws-sns`'s `useSns` / `useSnsClient` (`SnsClientMiddleware`) — for publishing from
+inside a Benzene outbound-routing pipeline (see [Clients](../clients.md) and
+[Response as Event](response-as-event.md)). For a standalone publisher like the one below that isn't
+itself a Benzene pipeline, publish with the AWS SDK directly:
 
 ```bash
 npm install @aws-sdk/client-sns

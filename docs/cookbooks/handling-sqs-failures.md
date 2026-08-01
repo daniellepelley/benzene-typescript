@@ -230,7 +230,10 @@ With this wiring:
   batch item failure exactly as if there were no retry middleware at all.
 
 `@benzene/resilience` ships only this retry middleware — there is no circuit breaker, timeout, or
-bulkhead. If you need those, wrap `IPaymentGateway` with a resilience library of your own choosing.
+bulkhead. For those, reach for the sibling `@benzene/cockatiel` package, which adapts the
+[cockatiel](https://github.com/connor4312/cockatiel) resilience library (retry, circuit breaker,
+timeout, bulkhead, fallback) as pipeline middleware via `useResiliencePipeline` — see
+[Resilience](../resilience.md#beyond-retry).
 
 ### 3. Wire it into a deployable function
 
