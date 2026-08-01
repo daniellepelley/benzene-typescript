@@ -44,7 +44,7 @@ describe('outbound SQS client', () => {
     const input = commands[0]!.input as { QueueUrl: string; MessageBody: string; MessageAttributes: Record<string, { StringValue: string }> };
     expect(input.QueueUrl).toBe('https://sqs/payments');
     expect(JSON.parse(input.MessageBody)).toEqual({ orderId: 'o1' });
-    expect(input.MessageAttributes['benzene-topic']!.StringValue).toBe('payments:capture');
+    expect(input.MessageAttributes['topic']!.StringValue).toBe('payments:capture');
     expect(input.MessageAttributes['tenant']!.StringValue).toBe('acme');
   });
 });
@@ -62,7 +62,7 @@ describe('outbound SNS client', () => {
     const input = commands[0]!.input as { TopicArn: string; Message: string; MessageAttributes: Record<string, { StringValue: string }> };
     expect(input.TopicArn).toBe('arn:aws:sns:eu-west-1:0:order-placed');
     expect(JSON.parse(input.Message)).toEqual({ orderId: 'o2' });
-    expect(input.MessageAttributes['benzene-topic']!.StringValue).toBe('order:placed');
+    expect(input.MessageAttributes['topic']!.StringValue).toBe('order:placed');
   });
 });
 

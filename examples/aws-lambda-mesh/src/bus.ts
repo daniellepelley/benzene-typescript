@@ -75,7 +75,7 @@ export class MeshBus {
     body: string | undefined,
     transport: Transport,
   ): Promise<{ $metadata: { httpStatusCode: number } }> {
-    return this.deliver(attr(attrs, 'benzene-topic'), body, transport);
+    return this.deliver(attr(attrs, 'topic'), body, transport);
   }
 
   private async deliver(
