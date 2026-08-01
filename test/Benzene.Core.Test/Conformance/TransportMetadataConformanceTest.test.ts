@@ -10,14 +10,9 @@
  * `defaultMetadataKeys.topic`, inbound getters and outbound converters alike (an override that reached
  * only one direction would make a service send messages it cannot itself receive).
  *
- * Two documented divergences from the .NET test (see the port-gap notes below and the README
- * "Porting conventions" ledger):
- *   1. The port has no single `BenzeneWireNames` injectable, so the ".NET defaults come from one
- *      definition" guard has no analogue and each binding carries its own default constant.
- *   2. `@benzene/clients-aws-sqs` and `@benzene/clients-aws-sns` still default their topic attribute to
- *      the pre-2026-07-27 `benzene-topic`, which is a REAL non-conformance the fixture exists to catch;
- *      those two cells are `it.skip`-ped with the correct assertion in place, ready to un-skip once the
- *      converters are fixed to the reserved `topic` key.
+ * One documented divergence from the .NET test (see the README "Porting conventions" ledger): the port
+ * has no single `BenzeneWireNames` injectable, so the ".NET defaults come from one definition" guard has
+ * no analogue and each binding carries its own default constant — every one of which is pinned here.
  */
 import { describe, expect, it } from 'vitest';
 import { MessageVersionHeaders } from '@benzene/abstractions-messages';
@@ -57,6 +52,8 @@ const conformantTopicKeys: [string, string][] = [
   ['servicebus (outbound, raw)', OutboundServiceBusContextConverter.DefaultTopicProperty],
   ['eventhub (outbound, raw)', OutboundEventHubContextConverter.DefaultTopicProperty],
   ['pubsub (outbound, raw)', OutboundPubSubContextConverter.DefaultTopicAttribute],
+  ['sqs (outbound, raw)', OutboundSqsContextConverter.DefaultTopicAttribute],
+  ['sns (outbound, raw)', OutboundSnsContextConverter.DefaultTopicAttribute],
 ];
 
 describe('TransportMetadataConformanceTest', () => {
@@ -66,17 +63,6 @@ describe('TransportMetadataConformanceTest', () => {
         expect(actualKey).toBe(expectedTopicKey);
       });
     }
-
-    // KNOWN NON-CONFORMANCE (reported as a port gap): the outbound AWS SQS/SNS raw converters still
-    // default to the pre-2026-07-27 `benzene-topic`, so a TS service publishes the topic under a key
-    // a conformant peer - and the port's OWN inbound SQS/SNS getters (which read `topic`) - do not
-    // route on. The assertion below is the correct one; un-skip once the converters are fixed.
-    it.skip('sqs (outbound, raw) - BUG: defaults to benzene-topic, must be topic', () => {
-      expect(OutboundSqsContextConverter.DefaultTopicAttribute).toBe(expectedTopicKey);
-    });
-    it.skip('sns (outbound, raw) - BUG: defaults to benzene-topic, must be topic', () => {
-      expect(OutboundSnsContextConverter.DefaultTopicAttribute).toBe(expectedTopicKey);
-    });
   });
 
   it('carries the payload version under the spec default version key', () => {

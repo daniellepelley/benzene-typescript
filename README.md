@@ -678,11 +678,12 @@ next to its C# counterpart:
     / `NamesAreOverridablePerService` guards have no analogue until `BenzeneWireNames` is ported — an open
     port gap. As part of pinning, the two AWS **inbound** Lambda getters
     (`SqsMessageTopicGetter`/`SnsMessageTopicGetter`) gained the `DefaultTopicAttribute = 'topic'` constant
-    the .NET originals expose (previously a hard-coded literal). The two AWS **outbound** raw converters
-    (`OutboundSqsContextConverter`/`OutboundSnsContextConverter`) still default to the pre-2026-07-27
-    `benzene-topic` — a real non-conformance the fixture exists to catch (a service would publish under a
-    key its own inbound getters don't route on); those two cells are `it.skip`-ped with the correct
-    assertion in place, pending a wire-behavior fix.
+    the .NET originals expose (previously a hard-coded literal), and the two AWS **outbound** raw
+    converters (`OutboundSqsContextConverter`/`OutboundSnsContextConverter`) had their default corrected
+    from the pre-2026-07-27 `benzene-topic` to the reserved `topic` (matching the .NET
+    `BenzeneWireNames.DefaultTopic` alias), so a published message round-trips to the port's own inbound
+    getters and any conformant peer. Every inbound and outbound topic key is now pinned to the fixture
+    default.
 
 ## Multi-language interoperability
 

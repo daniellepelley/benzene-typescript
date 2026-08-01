@@ -14,7 +14,13 @@ import { SnsSendMessageContext } from './SnsSendMessageContext';
  * ride as message attributes (subscribers/filters can route on them).
  */
 export class OutboundSnsContextConverter implements IContextConverter<OutboundContext, SnsSendMessageContext> {
-  static readonly DefaultTopicAttribute = 'benzene-topic';
+  /**
+   * The default message-attribute key the topic is written to — the spec's reserved topic name (`topic`,
+   * wire-contracts.md §2), the same key the inbound `SnsMessageTopicGetter` reads, so a published message
+   * round-trips to a conformant subscriber. Port of the C#
+   * `OutboundSnsContextConverter.DefaultTopicAttribute`, which aliases `BenzeneWireNames.DefaultTopic`.
+   */
+  static readonly DefaultTopicAttribute = 'topic';
 
   private readonly serializer: ISerializer;
 

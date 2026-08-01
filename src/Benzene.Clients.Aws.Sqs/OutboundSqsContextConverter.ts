@@ -17,11 +17,14 @@ import { SqsSendMessageContext } from './SqsSendMessageContext';
  */
 export class OutboundSqsContextConverter implements IContextConverter<OutboundContext, SqsSendMessageContext> {
   /**
-   * The default message-attribute key the topic is written to. A single default, not a hard-coded value —
-   * pass a different key to interoperate with a consumer that routes on another attribute; keep it in sync
-   * with the consumer's attribute key.
+   * The default message-attribute key the topic is written to — the spec's reserved topic name (`topic`,
+   * wire-contracts.md §2), the same key the inbound `SqsMessageTopicGetter`/`SqsConsumerMessageTopicGetter`
+   * read, so a message published here round-trips to a conformant consumer. Port of the C#
+   * `OutboundSqsContextConverter.DefaultTopicAttribute`, which aliases `BenzeneWireNames.DefaultTopic`. A
+   * single default, not a hard-coded value — pass a different key to interoperate with a consumer that
+   * routes on another attribute; keep it in sync with the consumer's attribute key.
    */
-  static readonly DefaultTopicAttribute = 'benzene-topic';
+  static readonly DefaultTopicAttribute = 'topic';
 
   private readonly serializer: ISerializer;
 
