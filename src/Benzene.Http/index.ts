@@ -22,3 +22,7 @@ export * from './Routing/UrlMatcher';
 export * from './Routing/IRouteFinder';
 export * from './Routing/RouteFinder';
 export * from './Routing/RegistryHttpEndpointFinder';
+export * from './BenzeneMessage/BenzeneMessageHttpOptions';
+export * from './BenzeneMessage/IBenzeneMessageHttpEndpointInfo';
+export * from './BenzeneMessage/BenzeneMessageHttpMiddleware';
+export * from './BenzeneMessage/Extensions';
