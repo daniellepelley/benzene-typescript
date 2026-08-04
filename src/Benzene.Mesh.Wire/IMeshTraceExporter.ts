@@ -1,4 +1,5 @@
 /** Port of Benzene.Mesh.Wire.IMeshTraceExporter (and HttpMeshTraceExporter). */
+import { ServiceToken, serviceToken } from '@benzene/abstractions';
 import { MeshJson } from './MeshJson';
 import { MeshTopics } from './MeshTopics';
 import { MeshTraceBatch, MeshTraceEvent } from './MeshTraceEvent';
@@ -8,10 +9,17 @@ import { MeshTraceBatch, MeshTraceEvent } from './MeshTraceEvent';
  * non-blocking and lossy under backpressure (docs/specification/mesh.md §4's sender rules): no mesh
  * feed may ever fail, slow, or block the invocation it observed - the middleware additionally
  * shields the invocation from a throwing exporter.
+ *
+ * Carries a merged `ServiceToken` (the port convention for interfaces resolved from the container): the
+ * cloud-service wiring registers a framework- or user-supplied exporter as a singleton and realizes it for
+ * disposal (tail-flush on shutdown). The trace middleware itself still takes the exporter directly.
  */
 export interface IMeshTraceExporter {
   export(traceEvent: MeshTraceEvent): void;
 }
+
+export const IMeshTraceExporter: ServiceToken<IMeshTraceExporter> =
+  serviceToken<IMeshTraceExporter>('IMeshTraceExporter');
 
 /** A `fetch`-like function - the port of C# `HttpClient.PostAsync` (`HttpClient` -> injectable `fetch`). */
 export type TraceFetch = (url: string, init: RequestInit) => Promise<Response>;

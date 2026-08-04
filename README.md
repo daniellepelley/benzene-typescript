@@ -123,6 +123,7 @@ Mirrors the .NET repository:
 | `src/Benzene.RabbitMq.TestHelpers` | `@benzene/rabbitmq-test-helpers` | `Benzene.RabbitMq.TestHelpers`¶ |
 | `src/Benzene.Kafka.Core.TestHelpers` | `@benzene/kafka-core-test-helpers` | `Benzene.Kafka.Core.TestHelpers`¶ |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
+| `src/Benzene.CloudService` | `@benzene/cloud-service` | `Benzene.CloudService` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
 | `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
 | `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
@@ -1270,7 +1271,37 @@ Ported (with tests):
   `JSON.parse` + type guards; `RandomNumberGenerator` → Web-Crypto `getRandomValues` for the synthetic
   W3C `traceparent`. The 7-case unit test runs against a real `node:http` loopback server (mirroring the
   C# `HttpListener` approach); the C# integration test isn't ported (it wires a full `Benzene.AspNet.Core`
-  + `Benzene.CloudService` host, neither of which is ported yet).
+  host, which is not ported — the Express adapter plays that role — while `Benzene.CloudService` **is** now
+  ported, see below).
+- HTTP wire-envelope endpoint (`@benzene/http`'s `useBenzeneMessage`): port of `Benzene.Http.BenzeneMessage`
+  — a terminal HTTP middleware that dispatches a POSTed `{topic, headers, body}` envelope into a nested
+  `BenzeneMessage` pipeline and writes `{statusCode, headers, body}` (the HTTP equivalent of the direct
+  Lambda invoke path), the `/benzene/invoke` surface the Cloud Service Profile's R4 requires. C#'s four
+  `UseBenzeneMessage` overloads collapse to one `useBenzeneMessage` free function (options-or-source arg2,
+  action-or-prebuilt-builder source). **Divergence (load-bearing):** the C# inner pipeline shares the outer
+  transport's container because `IMessageGetter<TContext>` is keyed by the closed generic; TypeScript erases
+  that to one token and resolves last-registered-wins container-globally, so the `action` form builds the
+  inner pipeline over its **own** `DefaultBenzeneServiceContainer` (`addBenzeneMessage`) and dispatches
+  through that container's factory — the port's "one container per entry point" rule applied to nesting. The
+  pre-built-builder form runs as-is on the outer scope. `ITerminalMiddleware` marker → none (the port's
+  short-circuit is "don't call `next` on a match").
+- Cloud Service bundle (`@benzene/cloud-service`): port of `Benzene.CloudService` — the batteries-included
+  `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R8) in one
+  call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `healthcheck`
+  topic, the reserved `mesh` descriptor topic, and outbound mesh register/heartbeat/trace — over the same
+  `use*` builders, with a wiring-time `CloudServiceProfileReport` (R1–R8 self-assessment) stamped on the
+  descriptor's `profile` field and honestly reflecting any override (`withoutMesh()`, relocated paths).
+  **Divergences:** `MeshAnnouncer` uses the global `fetch` (Node 22) instead of `HttpClient.PostAsync` (no
+  new dependency, same adaptation as `HttpMeshTraceExporter`; `CancellationTokenSource` → `AbortController`;
+  the spec §6 "swallow every failure, never block an invocation" rule ports verbatim); `IAsyncDisposable` +
+  `IDisposable` → `disposeAsync()` + fire-and-forget `dispose()` (JS can't block on a promise, so C#'s
+  bounded `Wait(5s)` bridge becomes fire-and-forget); the eager-descriptor `ReflectionMessageHandlersFinder`
+  → `RegistryMessageHandlersFinder` (decorator metadata, since TS erases types), and the `volatile`/
+  double-checked lock drops (single-threaded runtime); because the envelope pipeline has its own container
+  (above), the mesh singletons are registered on the outer container and realized for disposal on the outer
+  pipeline only (closure-captured instances make this unobservable). The C# test suite is ported 1:1; the
+  two domain-routing tests wire the handler via `withHandlers(...)` (the eager path) rather than a
+  process-global assembly scan.
 - Express host adapter (`@benzene/express`) — **no C# counterpart to port.** `Benzene.AspNet.Core` is
   ASP.NET Core-specific; Express is the Node/JS host equivalent, so this is a new adapter built to the same
   *shape* (added under the "third-party integrations are adapted, not reimplemented" convention — Express

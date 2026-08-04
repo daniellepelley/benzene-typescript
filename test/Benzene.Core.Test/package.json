@@ -61,6 +61,7 @@
     "@benzene/clients-azure-service-bus": "0.1.0",
     "@benzene/clients-google-cloud-pubsub": "0.1.0",
     "@benzene/clients-health-checks": "0.1.0",
+    "@benzene/cloud-service": "0.1.0",
     "@benzene/cloud-service-probe": "0.1.0",
     "@benzene/codegen-client": "0.1.0",
     "@benzene/configuration-core": "0.1.0",
