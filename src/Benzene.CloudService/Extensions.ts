@@ -136,6 +136,16 @@ export function useBenzeneCloudService<TContext extends IHttpContext>(
   // immediately, before any traffic. Lazy path: the first invocation triggers registration instead.
   announcer?.ensureStarted(undefined);
 
+  // Realize the mesh disposables and (lazy-path) start the announcer on the OUTER pipeline, placed AHEAD of
+  // the invoke endpoint below. The endpoint short-circuits `POST {invokePath}` without calling `next`, and
+  // the envelope pipeline has its own container (so it can't realize the outer container's singletons), so
+  // this is the only place invoke-only traffic passes through the realize middleware — without it, a host
+  // that only ever receives `/benzene/invoke` never resolves the announcer/trace exporter and container
+  // shutdown never stops the announce loop or flushes the trace tail (C# realizes on the envelope pipeline's
+  // first middleware; the port moves it in front of the short-circuit on the outer pipeline instead).
+  realizeMeshDisposables(app);
+  useAnnouncerStart(app, announcer, descriptorSource);
+
   // The wire-envelope surface (R4) and, inside it, the mesh feeds (R6/R8): trace outermost so it sees every
   // invocation, then health and descriptor interception, then the app's own middleware, then the router.
   const options = new BenzeneMessageHttpOptions();
@@ -156,9 +166,8 @@ export function useBenzeneCloudService<TContext extends IHttpContext>(
   });
 
   // The HTTP-native surfaces: spec (R5) and health (R3) at their default-standard paths (R7), and the app's
-  // own HTTP-routed topics through the same registry (R2).
-  realizeMeshDisposables(app);
-  useAnnouncerStart(app, announcer, descriptorSource);
+  // own HTTP-routed topics through the same registry (R2). (`realizeMeshDisposables` / `useAnnouncerStart`
+  // are wired above, ahead of the invoke endpoint, so they cover invoke-only traffic too.)
   useSpec(app);
   useHealthCheck(app, HealthCheckConstants.defaultHealthCheckTopic, healthChecks);
   useHandlers(app, builder);

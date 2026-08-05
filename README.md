@@ -1278,14 +1278,16 @@ Ported (with tests):
   — a terminal HTTP middleware that dispatches a POSTed `{topic, headers, body}` envelope into a nested
   `BenzeneMessage` pipeline and writes `{statusCode, headers, body}` (the HTTP equivalent of the direct
   Lambda invoke path), the `/benzene/invoke` surface the Cloud Service Profile's R4 requires. C#'s four
-  `UseBenzeneMessage` overloads collapse to one `useBenzeneMessage` free function (options-or-source arg2,
-  action-or-prebuilt-builder source). **Divergence (load-bearing):** the C# inner pipeline shares the outer
-  transport's container because `IMessageGetter<TContext>` is keyed by the closed generic; TypeScript erases
-  that to one token and resolves last-registered-wins container-globally, so the `action` form builds the
-  inner pipeline over its **own** `DefaultBenzeneServiceContainer` (`addBenzeneMessage`) and dispatches
-  through that container's factory — the port's "one container per entry point" rule applied to nesting. The
-  pre-built-builder form runs as-is on the outer scope. `ITerminalMiddleware` marker → none (the port's
-  short-circuit is "don't call `next` on a match").
+  `UseBenzeneMessage` overloads collapse to one `useBenzeneMessage(app, [options,] action)` free function.
+  **Divergence (load-bearing):** the C# inner pipeline shares the outer transport's container because
+  `IMessageGetter<TContext>` is keyed by the closed generic; TypeScript erases that to one token and resolves
+  last-registered-wins container-globally, so the inner pipeline is built over its **own**
+  `DefaultBenzeneServiceContainer` (`addBenzeneMessage`) and dispatched through that container's factory — the
+  port's "one container per entry point" rule applied to nesting. **Only the `action` form is ported:** C#'s
+  pre-built-`IMiddlewarePipelineBuilder` overloads (which share one BenzeneMessage pipeline across the
+  Lambda-direct path and this endpoint) can't be dispatched through the outer HTTP container under erasure, so
+  they're deliberately dropped rather than shipped silently wrong — configure the inner pipeline inline.
+  `ITerminalMiddleware` marker → none (the port's short-circuit is "don't call `next` on a match").
 - Cloud Service bundle (`@benzene/cloud-service`): port of `Benzene.CloudService` — the batteries-included
   `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R8) in one
   call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `healthcheck`
@@ -1299,10 +1301,13 @@ Ported (with tests):
   bounded `Wait(5s)` bridge becomes fire-and-forget); the eager-descriptor `ReflectionMessageHandlersFinder`
   → `RegistryMessageHandlersFinder` (decorator metadata, since TS erases types), and the `volatile`/
   double-checked lock drops (single-threaded runtime); because the envelope pipeline has its own container
-  (above), the mesh singletons are registered on the outer container and realized for disposal on the outer
-  pipeline only (closure-captured instances make this unobservable). The C# test suite is ported 1:1; the
-  two domain-routing tests wire the handler via `withHandlers(...)` (the eager path) rather than a
-  process-global assembly scan.
+  (above), the mesh singletons are registered on the outer container and realized for disposal by an
+  outer-pipeline middleware placed **ahead of** the invoke endpoint (C# realizes on the envelope pipeline's
+  first middleware; the port can't, so it moves realization in front of the short-circuit on the outer
+  pipeline instead, so invoke-only traffic still triggers it). Functionally the announce loop / trace
+  exporter run via closure-captured locals; realization only governs container-driven disposal on shutdown.
+  The C# test suite is ported 1:1; the two domain-routing tests wire the handler via `withHandlers(...)`
+  (the eager path) rather than a process-global assembly scan.
 - Express host adapter (`@benzene/express`) — **no C# counterpart to port.** `Benzene.AspNet.Core` is
   ASP.NET Core-specific; Express is the Node/JS host equivalent, so this is a new adapter built to the same
   *shape* (added under the "third-party integrations are adapted, not reimplemented" convention — Express

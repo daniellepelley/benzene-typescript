@@ -14,7 +14,8 @@
  */
 export * from './CloudServicePaths';
 export * from './CloudServiceProfileReport';
-export * from './CloudServiceBuilder';
-export * from './CloudServiceDescriptorSource';
-export * from './MeshAnnouncer';
+// Only the configuration interface is public; the concrete `CloudServiceBuilder`, `MeshAnnouncer`, and
+// `CloudServiceDescriptorSource` are `internal sealed` in C# and used only within this package (as DI
+// tokens / locals in `Extensions.ts`), so they are not re-exported from the barrel.
+export type { ICloudServiceBuilder } from './CloudServiceBuilder';
 export * from './Extensions';
