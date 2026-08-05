@@ -92,6 +92,7 @@
     "@benzene/joi": "0.1.0",
     "@benzene/kafka-core": "0.1.0",
     "@benzene/mesh-aggregator": "0.1.0",
+    "@benzene/mesh-collector": "0.1.0",
     "@benzene/mesh-aws-lambda": "0.1.0",
     "@benzene/mesh-aws-s3": "0.1.0",
     "@benzene/mesh-azure-blob": "0.1.0",

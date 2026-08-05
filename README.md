@@ -105,6 +105,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
+| `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` (8 of 9 handlers; `mesh:issues` deferred pending the `MeshIssue` wire types) |
 | `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
 | `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
 | `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
@@ -1388,6 +1389,27 @@ Ported (with tests):
   drift/usage-attribution, AsyncAPI composition, artifact-store round-trip + traversal rejection,
   snapshot-report drift, annotations, and the two message handlers) — the usage-attribution topology tests
   feed the framework wire statuses (`BenzeneResultStatus.notFound` = `not-found`, matching .NET).
+- Mesh collector (`@benzene/mesh-collector`): the **push** side of the mesh (spec §4) — an ordinary Benzene
+  service whose handlers ingest `mesh:register` / `mesh:heartbeat` / `mesh:traces` into an in-memory
+  `MeshCollectorStore` (bounded trace ring, per-instance heartbeat state, wholesale provider-edge replacement
+  on re-register) and answer the `mesh:query:*` read models (`fleet`/`service`/`topic`/`trace`/`correlation`,
+  windowed by a Grafana/ISO `MeshTimeRangeResolver`). `IMeshFleetReadModel` makes the query data source
+  swappable: the in-memory store, or `CompositeMeshFleetReadModel` (traces from an `IMeshTraceSource`, stats
+  from an `IMeshUsageSource`) for a backend-composed plane; `CollectorUsageSource` bridges the collector's
+  own traffic to the aggregator's `usage.json`. `MeshCollectorHandlers.all` / `.queries` are handler-class
+  arrays a host binds to `MeshCollectorTopics` (the port of C#'s `[Message]` attribute, which has no TS
+  analog). Adaptations: `DateTimeOffset` → epoch-ms `number` (matching `@benzene/mesh-wire`); `Task<T?>` →
+  `Promise<T | undefined>` (`null` → `undefined`); C#'s `lock` dropped (single-threaded JS can't tear a
+  batch/read); a default-interface-member overload collapses to one optional-param method; `StringComparer.
+  Ordinal` → the shared `ordinalCompare` helper. **Deferred pending prerequisites** (reported, not faked, per
+  the port's stop-on-missing-prerequisite rule): the `mesh:issues` feed (`IssuesMessageHandler`,
+  `store.addIssues`, `FleetView.Issues`) — needs `MeshIssue` / `MeshIssueBatch` / `MeshTopics.Issues` in
+  `@benzene/mesh-wire`, so `MeshCollectorHandlers.all` carries **8** handlers, not 9; and threading a usage
+  *window* to the usage sources — needs `MeshUsageWindow` + an `IMeshUsageSource.fetchUsageAsync` param (a
+  breaking change to an already-published interface), so the composite still decides `countsWindowed` from
+  each source's *returned* window but can't ask a source to query over the picked one (the C# code ignored
+  the param anyway — behavior identical). Four C# test classes ported (33 tests: store, usage-source bridge,
+  composite window-honoring, time-range resolution).
 - Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
   to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
