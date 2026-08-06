@@ -36,6 +36,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Zod` | `@benzene/zod` | `Benzene.FluentValidation`† (Zod adapter) |
 | `src/Benzene.Joi` | `@benzene/joi` | `Benzene.FluentValidation`† (Joi adapter) |
 | `src/Benzene.Yup` | `@benzene/yup` | `Benzene.FluentValidation`† (Yup adapter) |
+| `src/Benzene.Ajv` | `@benzene/ajv` | `Benzene.JsonSchema` (ajv adapter; handler-level, supplied-schema — see below) |
 | `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
 | `src/Benzene.Cockatiel` | `@benzene/cockatiel` | `Benzene.Resilience.Polly`† (cockatiel adapter) |
 | `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
@@ -1769,10 +1770,21 @@ subsystem, they are left out and recorded here:
   `"Benzene"`, so they flow to whatever exporter a JS app configures **with no glue package at all** —
   wire OTel normally (e.g. a `NodeTracerProvider` + OTLP exporter) and Benzene's telemetry appears. (Filter
   or sample it by the instrumentation name `"Benzene"`.)
-- **`Benzene.JsonSchema`** — generates JSON Schema from CLR types via reflection; TypeScript erases types at
-  runtime, so there is nothing to reflect. The port instead derives JSON Schema from the runtime validation
-  schemas (`@benzene/zod` / `@benzene/joi` / `@benzene/yup` → `@benzene/schema-openapi`), the idiomatic TS
-  equivalent (see the "Type → JSON Schema" convention above).
+- **`Benzene.JsonSchema`** — ported as **`@benzene/ajv`** for its *validation* half, with two divergences.
+  (1) **Handler-level, not raw-body.** C#'s `JsonSchemaMiddleware` is a transport pipeline middleware that
+  evaluates the raw request *body* pre-deserialization (with `MissingBody`/`MalformedBody` results); the port
+  has no raw-body validation seam — validation is handler-level, on the deserialized `context.request`, via
+  `IValidationStatusMapper` — so `@benzene/ajv` mirrors the Zod/Joi/Yup adapters (a request class is
+  associated with a hand-authored JSON Schema via `registerJsonSchema`; `useAjvValidation(router)` wires the
+  middleware + status mapper + a spec/mesh `ITypeJsonSchemaSource`). ajv is the raw-JSON-Schema member of the
+  validation-adapter family — the faithful counterpart of the *distinct* `Benzene.JsonSchema` package, not a
+  fourth FluentValidation-style library — for validating against an externally-authored or shared JSON Schema
+  contract. (2) **No generate-from-type.** C#'s `DefaultJsonSchemaProvider` *generates* a schema by reflecting
+  over the request CLR type; TypeScript erases types at runtime, so that half has no port — schemas are
+  supplied explicitly (the counterpart of `SuppliedJsonSchemaCatalog`/`AddSuppliedJsonSchemas`), and a request
+  type with no registered schema is not validated. Spec/mesh schema generation for services that validate with
+  Zod/Joi/Yup still flows through those adapters → `@benzene/schema-openapi` (see the "Type → JSON Schema"
+  convention above); `@benzene/ajv` publishes its registered schemas to the same source.
 
 ## License
 
