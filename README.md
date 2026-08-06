@@ -114,6 +114,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
 | `src/Benzene.Mesh.Usage.ApplicationInsights` | `@benzene/mesh-usage-application-insights` | `Benzene.Mesh.Usage.ApplicationInsights` |
 | `src/Benzene.Mesh.Aws.S3` | `@benzene/mesh-aws-s3` | `Benzene.Mesh.Aws.S3` |
+| `src/Benzene.Mesh.GoogleCloud.Storage` | `@benzene/mesh-google-cloud-storage` | `Benzene.Mesh.GoogleCloud.Storage` |
 | `src/Benzene.Mesh.Discovery.Aws` | `@benzene/mesh-discovery-aws` | `Benzene.Mesh.Discovery.Aws` |
 | `src/Benzene.Mesh.Usage.CloudWatch` | `@benzene/mesh-usage-cloudwatch` | `Benzene.Mesh.Usage.CloudWatch` |
 | `src/Benzene.Mesh.Discovery.Kubernetes` | `@benzene/mesh-discovery-kubernetes` | `Benzene.Mesh.Discovery.Kubernetes` |
@@ -1515,6 +1516,16 @@ Ported (with tests):
     bucket, so a Lambda-hosted mesh persists its artifacts centrally; wired via `addMeshAggregatorWithS3`.
     `AWSSDK.S3` → `@aws-sdk/client-s3` (`GetObject` response stream → `Body.transformToString`,
     `AmazonS3Exception`/404 → a `NoSuchKey`/`$metadata.httpStatusCode === 404` check). No C# unit test (SDK-only).
+  - GCS artifact store (`@benzene/mesh-google-cloud-storage`): `GcsMeshArtifactStore` — an `IMeshArtifactStore`
+    over a Google Cloud Storage bucket, the Google Cloud analogue completing the S3/Azure-Blob artifact-store
+    trio, so a Cloud-Functions-hosted mesh persists its artifacts centrally; wired via
+    `addMeshAggregatorWithGcs` (an overloaded free function: an explicit `Storage` client, or ADC-built,
+    mirroring the C#'s two overloads). `Google.Cloud.Storage.V1` → `@google-cloud/storage` (the same package
+    `@benzene/clients-google-cloud-pubsub` uses for its GCP SDK); `UploadObjectAsync(bucket, key, "application/json", stream)`
+    → `bucket(b).file(k).save(Buffer, { contentType })`; `DownloadObjectAsync` → `file.download()` (`[Buffer]`);
+    `GoogleApiException` with `NotFound` → the GCS `ApiError` with `code === 404`. Store unit test added (6 tests:
+    key/prefix computation + 404→undefined + non-404 propagation) — the C# suite exercises the store only
+    indirectly through the aggregator.
   - AWS Lambda discovery (`@benzene/mesh-discovery-aws`): `AwsLambdaDiscoveryProvider` discovers services from
     tagged Lambda functions (paginated `ListFunctions` + bounded-concurrency `ListTags`) as `AwsLambdaInvoke`
     entries; `AWSSDK.Lambda` → `@aws-sdk/client-lambda`, the `SemaphoreSlim`+ordered-`WhenAll` tag reads → an

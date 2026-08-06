@@ -123,6 +123,7 @@
     "@benzene/xml": "0.1.0",
     "@benzene/yup": "0.1.0",
     "@benzene/zod": "0.1.0",
-    "@benzene/aws-lambda-xray": "0.1.0"
+    "@benzene/aws-lambda-xray": "0.1.0",
+    "@benzene/mesh-google-cloud-storage": "0.1.0"
   }
 }
