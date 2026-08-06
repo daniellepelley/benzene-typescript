@@ -22,9 +22,9 @@ import { RabbitMqWorker } from './RabbitMqWorker';
  * cancellation token from the delivery. The port has no ambient cancellation-token DI seam yet (matching
  * `useServiceBus`), so that middleware is not added.
  *
- * DEFERRED — outbound publish. The C# package also ships an outbound publish slice (`RabbitMqSendMessage/`:
- * `RabbitMqBenzeneMessageClient`, `RabbitMqClientMiddleware`, `.UseRabbitMq<T>(...)`). This port covers
- * the consumer-worker core only; the publish client is a tracked follow-up (see the README bullet).
+ * OUTBOUND PUBLISH — ported in the `RabbitMqSendMessage/` subdirectory (`RabbitMqBenzeneMessageClient`,
+ * `RabbitMqClientMiddleware`, `RabbitMqContextConverter`, `useRabbitMqClient`); this file is the
+ * consumer-worker entry point (`useRabbitMq`). See the README `@benzene/rabbitmq` bullet.
  *
  * @param app The worker startup to add the RabbitMQ consumer to.
  * @param config The queue to consume and the processing behaviour to use.
