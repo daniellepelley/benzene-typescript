@@ -99,6 +99,7 @@
     "@benzene/mesh-contracts": "0.1.0",
     "@benzene/mesh-discovery-aws": "0.1.0",
     "@benzene/mesh-fleet-jaeger": "0.1.0",
+    "@benzene/mesh-fleet-tempo": "0.1.0",
     "@benzene/mesh-discovery-azure": "0.1.0",
     "@benzene/mesh-discovery-kubernetes": "0.1.0",
     "@benzene/mesh-dispatch": "0.1.0",

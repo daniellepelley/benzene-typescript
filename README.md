@@ -107,6 +107,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
 | `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` |
 | `src/Benzene.Mesh.Fleet.Jaeger` | `@benzene/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
+| `src/Benzene.Mesh.Fleet.Tempo` | `@benzene/mesh-fleet-tempo` | `Benzene.Mesh.Fleet.Tempo` |
 | `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
 | `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
 | `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
@@ -1434,6 +1435,18 @@ Ported (with tests):
   `addJaegerFleetReadModel` registration. Divergence: `MeshTraceEvent.exceptionType` isn't mapped — that
   field doesn't exist in this snapshot of `@benzene/mesh-wire` (a pre-existing wire-port omission), so the
   one `benzene.exception.type` mapping and its C# test assertion are omitted. Seven C# scenarios ported.
+- Mesh Tempo fleet source (`@benzene/mesh-fleet-tempo`): the Grafana **Tempo** counterpart of the Jaeger
+  fleet source — an `IMeshTraceSource` answering the collector's trace/correlation/recent-flows read-models
+  from Tempo's **trace query** API (TraceQL `/api/search` + `/api/traces/{id}`), walking OTLP
+  `batches[].scopeSpans[].spans[]` in `TempoTraceMapper`. **Distinct from `@benzene/mesh-tracing-tempo`**
+  (below), which is the aggregator's Prometheus *service-graph topology* source; this is the collector's
+  trace-waterfall reader. Wired via `addTempoFleetReadModel(services, options)` into a
+  `CompositeMeshFleetReadModel`. Adaptations mirror the Jaeger sibling (`HttpClient` → injectable `fetch`;
+  `DateTimeOffset` → epoch-ms `number`, with `/api/search` `start`/`end` as epoch **seconds**; `TimeSpan`
+  options → ms `number`; `JsonDocument` → `JSON.parse` + `unknown` guards, OTLP wire keys verbatim;
+  assembly-scan DI → explicit registration; `MeshTraceEvent.exceptionType` omitted, the same wire-port
+  gap). Tempo-specific: span `startTimeUnixNano`/`endTimeUnixNano` (~1.5e18, beyond `Number.MAX_SAFE_INTEGER`)
+  are parsed with `BigInt` (matching C#'s `long`) before the integer nanos→ms reduction. Eight C# scenarios ported.
 - Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
   to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
