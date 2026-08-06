@@ -124,6 +124,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Testing` | `@benzene/testing` | `Benzene.Testing`¶ |
 | `src/Benzene.Aws.Lambda.TestHelpers` | `@benzene/aws-lambda-testing` | `Benzene.Aws.Lambda.*.TestHelpers`¶ |
 | `src/Benzene.Azure.Function.TestHelpers` | `@benzene/azure-function-testing` | `Benzene.Azure.Function.*.TestHelpers`¶ |
+| `src/Benzene.GoogleCloud.Functions.Http.TestHelpers` | `@benzene/google-cloud-functions-http-testing` | `Benzene.GoogleCloud.Functions.Http.TestHelpers` |
 | `src/Benzene.Aws.Sqs.TestHelpers` | `@benzene/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
 | `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzene/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
 | `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
@@ -200,8 +201,20 @@ ported**: `benzeneTestHost(StartUp)` (in `@benzene/testing`) boots a real app fr
 `.withServices((services) => ...)` overrides ANY registration (last-registration-wins over the port's
 first-party container), `.withConfiguration(...)` layers config, and a single transport specialization
 finishes it — `.buildAwsLambdaHost()` / `.buildAzureFunctionApp()` (in the transport `*-testing`
-packages). Send native events in with `host.sendEventAsync<TResponse>(asX(...))`; assert on the native
-response AND on egress via the first-party `FakeBenzeneMessageSender`. **Bends recorded here:** (3) AWS startups implement the
+packages), or `buildGoogleCloudFunctionHost(builder)` for GCP HTTP. Send native events in with
+`host.sendEventAsync<TResponse>(asX(...))`; assert on the native
+response AND on egress via the first-party `FakeBenzeneMessageSender`. The **Google Cloud Functions HTTP
+test host** (`@benzene/google-cloud-functions-http-testing`, porting
+`Benzene.GoogleCloud.Functions.Http.TestHelpers`) follows the same law with two GCP-specific bends: (a) its
+specialization is a **free function** `buildGoogleCloudFunctionHost(benzeneTestHost(StartUp).withServices(...))`
+rather than a fluent `.build*Host()` method (bend #4), because the GCF startup's `configure` receives the
+concrete `GoogleCloudFunctionApplicationBuilder`, not the host-neutral `IBenzeneApplicationBuilder`, so there
+is no neutral `this` to augment onto — the C# `BuildGoogleCloudFunctionHost` extension is likewise a plain
+method; and (b) since the Functions Framework is Express-shaped `(req, res)`, the C# `HttpContextBuilder`
+(one ASP.NET `DefaultHttpContext`) splits in two — `asGoogleCloudHttpRequest(httpBuilder(...))` builds the
+native `@google-cloud/functions-framework` `Request` (`method`/`url`/`path`/`headers`/`rawBody`), and
+`host.sendHttpAsync(request)` mints and captures the `Response` (`statusCode`/`setHeader`/`end`, the exact
+write surface `ExpressResponseAdapter.finalizeAsync` touches), returning `{ statusCode, headers, body }`. **Bends recorded here:** (3) AWS startups implement the
 **non-generic `BenzeneStartUp`** (`configure(app: IBenzeneApplicationBuilder)`, selecting the transport inside
 with `useAwsLambda(app, aws => …)`), matching the .NET reference's single app-builder shape; the generic
 `BenzeneStartUpOf<TAppBuilder>` (pinned by the `AzureFunctionStartUp` alias) is retained only for Azure, whose
