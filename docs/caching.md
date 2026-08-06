@@ -181,12 +181,21 @@ hit is wrapped with `BenzeneResult.ok(value)`.
 ### Health check
 
 `@benzene/cache-core` exposes `ICacheService.canConnectAsync()` (for `RedisCacheService`, a Redis
-`PING`) as the primitive a health check builds on. The health-checks abstraction it would build on
-(`@benzene/health-checks-core`) **is** now ported, but the ready-made `CacheHealthCheck<TCacheService>` /
-`addCacheHealthCheck<TCacheService>()` helpers themselves are **not ported yet** (see the note at the top
-of `src/Benzene.Cache.Core/index.ts` and the README roadmap). Until they land, wrap `canConnectAsync()`
-in your own `IHealthCheck` (see [Health Checks](health-checks.md#example-a-custom-health-check-class)) —
-or call it directly from a readiness probe.
+`PING`) as the primitive a health check builds on, and ships the ready-made `CacheHealthCheck` and
+`addCacheHealthCheck` helpers that wrap it:
+
+```ts
+import { addCacheHealthCheck } from '@benzene/cache-core';
+
+useHealthCheck(app, 'healthcheck', (checks) => addCacheHealthCheck(checks));
+```
+
+`addCacheHealthCheck` registers a check (`type: 'Cache'`) that resolves the registered `ICacheService`
+and reports `CanConnect` — healthy if `canConnectAsync()` returns `true`, `failed` otherwise or if it
+throws (with the failure's type name under `data.Error`, never its message). The C# generic
+`CacheHealthCheck<TCacheService>` / `addCacheHealthCheck<TCacheService>()` collapse to the single
+`ICacheService` token the port registers cache services under; the dependency label defaults to the
+concrete service's class name.
 
 ## Advanced Usage
 
