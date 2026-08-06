@@ -106,6 +106,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
 | `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` |
+| `src/Benzene.Mesh.Ui` | `@benzene/mesh-ui` | `Benzene.Mesh.Ui` (product HTML copied verbatim, read from disk not embedded) |
 | `src/Benzene.Mesh.Fleet.Jaeger` | `@benzene/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
 | `src/Benzene.Mesh.Fleet.Tempo` | `@benzene/mesh-fleet-tempo` | `Benzene.Mesh.Fleet.Tempo` |
 | `src/Benzene.Mesh.Fleet.Aws.XRay` | `@benzene/mesh-fleet-aws-xray` | `Benzene.Mesh.Fleet.Aws.XRay` |
@@ -657,6 +658,15 @@ next to its C# counterpart:
   string constant in a `.ts` file (`@benzene/spec-ui`'s `SpecUiPage`) — no I/O, works in any bundle. The
   page itself is written fresh as an idiomatic viewer (theme-aware, dependency-free, resolving `$ref`s
   against `components.schemas`) rather than transliterating the .NET HTML; same purpose, TS-native code.
+  **Exception — a large cross-language product UI is copied verbatim and read from disk, not inlined or
+  rewritten.** `@benzene/mesh-ui` (the Mesh Explorer) serves the mesh **product** pages `mesh-ui.html`
+  (~281KB) and `mesh-spec-ui.html`: these are the same UI every language port serves, so they must stay
+  byte-identical to the reference (rewriting them would fork the product), and `mesh-ui.html`'s embedded
+  client JS contains backticks and `${…}` so it cannot be a TS template literal. So the two files are copied
+  verbatim next to `MeshUiPage`/`MeshSpecUiPage` and read lazily/memoized from disk via
+  `readFileSync(new URL('./mesh-ui.html', import.meta.url), 'utf8')` — the port of C#'s `Lazy<string>` +
+  embedded-assembly-resource read. (The repo runs from source and `import.meta.url` resolves the co-located
+  asset in Node/vitest; a publish would include the `.html` by default.)
 - **Conformance fixtures are vendored and run against real port code.** The language-neutral
   conformance fixtures (`docs/specification/conformance/*.json`, owned by the cross-language benzene
   repo) are vendored **byte-for-byte** into `test/Benzene.Core.Test/Conformance/fixtures/` with a
@@ -1422,6 +1432,22 @@ Ported (with tests):
   | AdjustToUniversal)` — bare-datetime ISO strings are UTC on both planes, where `Date.parse` alone would
   read them as host-local; and the `(id, version)` Map keys use a NUL (`\u0000`) separator (collision-free, cf.
   the Tempo adapter's JSON-encoded tuple key) rather than a space.
+- Mesh Explorer UI (`@benzene/mesh-ui`): the fleet UI — transport-agnostic HTTP middleware serving two
+  self-contained product pages on any Benzene HTTP pipeline. `useMeshUi` serves the catalog/fleet viewer
+  (`mesh-ui.html`) over a mesh's `manifest.json`/`services/*.json` artifacts, optionally enriched with live
+  `mesh:query:*` data when an `envelopeUrl` (e.g. `/benzene/invoke`, a co-hosted `@benzene/mesh-collector`)
+  is passed; `useMeshSpecUi` serves the per-service spec viewer (`mesh-spec-ui.html`) that page links to.
+  Both drive the transport-neutral `IBenzeneResponseAdapter` directly (GET/HEAD on the configured path →
+  `text/html`, short-circuit; else `next`), mirroring `@benzene/spec-ui`'s `SpecUiMiddleware`. The one
+  deployment note: the primary target is a plain static file host next to the artifacts — the middleware is a
+  secondary convenience. **Divergence:** unlike `@benzene/spec-ui` (which inlines a freshly-rewritten page),
+  the two HTML files are the cross-language mesh **product** UI copied **verbatim** (byte-identical) and read
+  lazily from disk via `readFileSync(new URL('./mesh-ui.html', import.meta.url))` — `mesh-ui.html` is ~281KB
+  with embedded client JS containing backticks/`${…}`, so it can't be a TS template literal (see the
+  "Embedded UI assets" porting-conventions bullet). The `GetHtml` overloads → one `getHtml(manifestUrl?,
+  envelopeUrl?)` with `data-manifest-url`/`data-fleet-url` attribute injection (HTML-escaped); the two C#
+  ctors → one with an optional `envelopeUrl`. 18-test suite added (page injection/escaping + middleware
+  serve/pass-through, both pages).
 - Mesh Jaeger fleet source (`@benzene/mesh-fleet-jaeger`): an `IMeshTraceSource` (the collector's swappable
   trace plane) answering the fleet's trace read-models from a **Jaeger query service** — a trace by id
   (`/api/traces/{id}`), a `benzene.correlation-id` tag search, and recent flows. Jaeger's search needs a

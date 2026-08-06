@@ -106,6 +106,7 @@
     "@benzene/mesh-dispatch": "0.1.0",
     "@benzene/mesh-reporting": "0.1.0",
     "@benzene/mesh-tracing-tempo": "0.1.0",
+    "@benzene/mesh-ui": "0.1.0",
     "@benzene/mesh-usage-application-insights": "0.1.0",
     "@benzene/mesh-usage-cloudwatch": "0.1.0",
     "@benzene/mesh-wire": "0.1.0",
