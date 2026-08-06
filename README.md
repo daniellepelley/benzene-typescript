@@ -132,6 +132,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
 | `src/Benzene.RabbitMq.TestHelpers` | `@benzene/rabbitmq-test-helpers` | `Benzene.RabbitMq.TestHelpers`¶ |
 | `src/Benzene.Kafka.Core.TestHelpers` | `@benzene/kafka-core-test-helpers` | `Benzene.Kafka.Core.TestHelpers`¶ |
+| `src/Benzene.Grpc.TestHelpers` | `@benzene/grpc-test-helpers` | `Benzene.Grpc.TestHelpers` (the `TestServerCallContext` fake-call factory only; the live `GrpcTestHost` in-memory ASP.NET `TestServer` has no counterpart — see below) |
 | `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
 | `src/Benzene.CloudService` | `@benzene/cloud-service` | `Benzene.CloudService` |
 | `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
@@ -627,6 +628,20 @@ next to its C# counterpart:
   client calls; and **inbound-deadline / cancellation-token propagation** (`@benzene/grpc`'s
   `IGrpcServerCallAccessor` exposes no deadline, there is no ambient cancellation-token DI seam, and grpc-js
   `CallOptions` has no cancellation field — an explicit deadline can still be set via `GrpcContextConverter`).
+- **gRPC test helpers (`@benzene/grpc-test-helpers`).** Ports `Benzene.Grpc.TestHelpers` — a
+  `createServerUnaryCall({ request, metadata, method, cancelled, deadline })` factory that builds a minimal
+  hand-rolled grpc-js `ServerUnaryCall` exposing exactly the members Benzene reads (`request`, `metadata`,
+  `cancelled`, `getDeadline()`, `getPath()`), so `new GrpcContext(topic, createServerUnaryCall({ ... }))`
+  drives the whole unary bridge in a unit test with no live gRPC server or socket. **Adaptation**
+  (`TestServerCallContext` → `createServerUnaryCall`): .NET's `Grpc.Core.ServerCallContext` is a per-call
+  context distinct from the request; grpc-js has no such separate object (the call *is* the context), so the
+  helper fakes a `ServerUnaryCall` rather than a standalone context. **Non-port** (`GrpcTestHost` /
+  `BuildGrpcHost`): the C# also ships a live in-memory host over an ASP.NET Core `TestServer`
+  (`Benzene.AspNet.Core` + `Benzene.Grpc.AspNet` + a real `GrpcChannel`) — .NET-and-ASP.NET-specific
+  machinery `@benzene/grpc` deliberately replaced with a grpc-js `Server`; the port unit-tests the bridge
+  with the fake call above (as every other transport worker is tested) rather than binding a real socket, so
+  there is no `GrpcTestHost` counterpart (a live end-to-end test binds a grpc-js `Server` to an ephemeral
+  loopback port directly). The port's own gRPC suite consumes this factory.
 - **Google Cloud Functions: hosted on `@google-cloud/functions-framework`.** The Google Cloud lane ports
   three .NET packages onto Node's Functions Framework, which registers named handlers rather than being
   the entry point: `functions.http(name, (req, res) => ...)` and `functions.cloudEvent(name,

@@ -37,6 +37,7 @@ import {
   ReflectionGrpcMethodFinder,
   useGrpc,
 } from '@benzene/grpc';
+import { createServerUnaryCall } from '@benzene/grpc-test-helpers';
 
 /**
  * Vitest port of the core Benzene.Grpc unit + pipeline tests (GrpcMethodHandlerTest,
@@ -106,26 +107,8 @@ class AccessorAwareMessageHandler implements IMessageHandler<EchoRequest, EchoRe
   }
 }
 
-// ── Fake grpc-js ServerUnaryCall ─────────────────────────────────────────────────────────────────────
-
-interface FakeCallOptions {
-  request?: unknown;
-  metadata?: Metadata;
-  method?: string;
-  cancelled?: boolean;
-  deadline?: number | Date;
-}
-
-function createServerUnaryCall<TReq, TRes>(options: FakeCallOptions = {}): ServerUnaryCall<TReq, TRes> {
-  const method = options.method ?? '/benzene.test.TestService/Echo';
-  return {
-    request: options.request,
-    metadata: options.metadata ?? new Metadata(),
-    cancelled: options.cancelled ?? false,
-    getDeadline: () => options.deadline ?? Infinity,
-    getPath: () => method,
-  } as unknown as ServerUnaryCall<TReq, TRes>;
-}
+// The fake grpc-js ServerUnaryCall used throughout is now the shared `@benzene/grpc-test-helpers`
+// `createServerUnaryCall` (the port of C#'s `TestServerCallContext`), imported above.
 
 async function expectReject<T>(promise: Promise<T>): Promise<GrpcBenzeneError> {
   try {
