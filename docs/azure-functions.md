@@ -421,6 +421,11 @@ in step 6), and each is tested the same way through `@benzene/azure-function-tes
 | Event Grid | `useEventGrid` | `EventGridContext` | `@benzene/azure-function-event-grid` |
 | Timer | `useTimerTrigger` | `TimerContext` | `@benzene/azure-function-timer` |
 
+The Cosmos DB Change Feed row above is the Azure Functions `CosmosDBTrigger` adapter. For a long-running
+worker that consumes the change feed *outside* Functions — with manual per-batch checkpoint control — use
+the standalone `@benzene/azure-cosmos-db` consumer instead; see
+[Self-hosted worker](hosting.md#self-hosted-worker--inlineselfhostedstartup).
+
 See the [README package table](../README.md) for the full list and each package's own README for the
 trigger-specific binding.
 

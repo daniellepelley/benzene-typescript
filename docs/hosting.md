@@ -52,12 +52,16 @@ actively receives work (a broker poll loop) and keeps the process alive — no e
 invokes you, and no separate host is already listening. This is the one mode where how many events run
 *at once* is Benzene's own decision; see [Worker concurrency](#worker-concurrency).
 
-> **Not yet ported.** The .NET model also covers ASP.NET Core / Kestrel and gRPC hosts, the generic
-> `IHostedService` worker host (`Benzene.HostedService`), and ready-made broker consumers
-> (`BenzeneKafkaWorker`, `RabbitMqWorker`, the Azure Service Bus/Event Hub self-hosted workers). Of these,
-> only the platform-neutral worker *scaffolding* (`@benzene/self-host`) is ported — the concrete broker
-> consumers are not. Use Express in place of Kestrel, and supply your own `IBenzeneWorker` for a
-> self-hosted consumer (below).
+> **Not yet ported.** Two host shapes from the .NET model have no TypeScript equivalent: ASP.NET Core /
+> Kestrel (use Express in its place), and the generic `IHostedService` worker host
+> (`Benzene.HostedService`) — the .NET generic-host adapter that owns a worker process's start/stop
+> lifecycle; instead, drive the composite worker's `startAsync`/`stopAsync` from your own process
+> lifecycle (below). gRPC hosting *is* ported — `@benzene/grpc`'s `useGrpc` bridges a `@grpc/grpc-js`
+> `Server` into the same handler pipeline (the grpc-js `Server` replaces .NET's ASP.NET-hosted gRPC). And
+> on the self-hosted side, both the platform-neutral worker *scaffolding* (`@benzene/self-host`) **and**
+> the ready-made broker/stream consumers — SQS, Service Bus, Event Hub, RabbitMQ, Kafka, and the Cosmos DB
+> change feed — are ported, each added with a `use*` call on the worker startup. See
+> [Self-hosted worker](#self-hosted-worker--inlineselfhostedstartup) below.
 
 ## The shared handler
 
@@ -213,12 +217,128 @@ stops them together (see [`@benzene/self-host`'s `CompositeBenzeneWorker`](https
 `stopAsync(signal?)` (from `@benzene/abstractions-middleware`). Its poll loop receives broker messages
 and dispatches each one into a Benzene message pipeline, so the *same* `PlaceOrderHandler` runs here too.
 
-> **No ready-made broker consumer yet.** The .NET library ships Kafka, RabbitMQ, Service Bus, and Event
-> Hub self-hosted workers; the TypeScript port ships only the worker *scaffolding*
-> (`InlineSelfHostedStartUp`, the worker builder, `CompositeBenzeneWorker`, and
-> `BoundedConcurrentDispatcher` — see below). You supply the consumer loop that reads your broker and
-> dispatches into `useMessageHandlers`. Track the roadmap in the [README](../README.md#porting-status-and-roadmap) rather
-> than reaching for a broker worker that isn't there yet.
+#### Ready-made self-hosted consumers
+
+You rarely have to write that poll loop yourself. Each of the common brokers and change streams ships a
+ready-made consumer worker in its own package, added with a `use*` free function that takes the
+`configure` callback's worker startup (`IBenzeneWorkerStartup`) as its **first** argument — the same
+free-function-taking-the-builder-first shape as the transport `use*` functions on the other hosts. The
+call registers the consumer's services, builds its inner pipeline from the `action` you pass, and adds
+the worker to the composite:
+
+| Package | `use*` function | Transport | Inner pipeline |
+| --- | --- | --- | --- |
+| `@benzene/aws-sqs` | `useSqs(workers, config, clientFactory, action)` | `"sqs"` | `useMessageHandlers(...)` |
+| `@benzene/azure-service-bus` | `useServiceBus(workers, config, clientFactory, action)` | `"service-bus"` | `useMessageHandlers(...)` |
+| `@benzene/azure-event-hub` | `useEventHub(workers, config, processorClientFactory, action)` | `"event-hub"` | `useMessageHandlers(...)` |
+| `@benzene/rabbitmq` | `useRabbitMq(workers, config, connectionFactory, action)` | `"rabbitmq"` | `useMessageHandlers(...)` |
+| `@benzene/kafka-core` | `useKafka(workers, config, consumerFactory, action)` | `"kafka"` | `useMessageHandlers(...)` |
+| `@benzene/azure-cosmos-db` | `useCosmosDbChangeFeed(workers, config, processorFactory, action)` | `"cosmos-db"` | `useStream(...)` |
+
+The message-based consumers route by topic, so their `action` is the same
+`useMessageHandlers(pipeline, PlaceOrderHandler)` you write on every other host — the *same*
+`PlaceOrderHandler` runs unchanged. Only the first three arguments (the broker config and its client
+factory) are broker-specific; each factory is the seam where you hand in your own SDK client so the
+package prescribes nothing about your credentials or connection. Here's the SQS consumer, wired onto the
+worker startup:
+
+```ts
+// src/worker.ts
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { SqsClientFactory, useSqs } from '@benzene/aws-sqs';
+import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { PlaceOrderHandler } from './handlers.js';
+
+const worker = new InlineSelfHostedStartUp()
+  .configure((workers) =>
+    useSqs(
+      workers,
+      { queueUrl: process.env.QUEUE_URL!, maxNumberOfMessages: 10 },
+      new SqsClientFactory(new SQSClient({})),
+      (pipeline) => useMessageHandlers(pipeline, PlaceOrderHandler),
+    ),
+  )
+  .build();
+
+await worker.startAsync();
+process.on('SIGTERM', () => void worker.stopAsync());
+```
+
+The `use*` call registers Benzene's base services itself, so you don't need a `configureServices`
+`addBenzene` step for a worker that only hosts ready-made consumers. Register more than one — call
+`useSqs`, `useRabbitMq`, … in the same `configure` body, each chaining on the same `workers` — and
+`build()` composes them into one `CompositeBenzeneWorker` that starts and stops them together.
+
+#### Cosmos DB change feed — `useCosmosDbChangeFeed`
+
+The Cosmos DB change-feed consumer is the one stream (not message) transport here: changed documents
+carry no message envelope, so its pipeline is a **streaming** pipeline over the document type
+(`useStream(...)` from `@benzene/core-middleware`) rather than `useMessageHandlers`. This is the
+standalone worker — distinct from the Azure Functions `CosmosDBTrigger` adapter
+(`@benzene/azure-function-cosmos-db`, see [Azure Functions Setup](azure-functions.md)); reach for this
+one when you want a long-running `@benzene/self-host` worker with manual per-batch checkpoint control.
+
+Its third argument is an `ICosmosChangeFeedProcessorFactory<TDocument>` — the built-in
+`CosmosChangeFeedProcessorFactory` takes the monitored container and an
+`ICosmosChangeFeedCheckpointStore` (where the continuation-token checkpoint is persisted). The port
+ships `InMemoryCosmosChangeFeedCheckpointStore` for dev and tests; it is **not durable** (tokens live
+only for the process's lifetime, so a restart resumes from the config's `startFrom` rather than the last
+processed change), so a production worker supplies its own store backed by a Cosmos container, blob,
+table, etc.
+
+```ts
+// src/cosmos-worker.ts
+import { CosmosClient } from '@azure/cosmos';
+import { useStream } from '@benzene/core-middleware';
+import {
+  BenzeneCosmosChangeFeedConfig,
+  CosmosChangeFeedProcessorFactory,
+  InMemoryCosmosChangeFeedCheckpointStore,
+  useCosmosDbChangeFeed,
+} from '@benzene/azure-cosmos-db';
+import { InlineSelfHostedStartUp } from '@benzene/self-host';
+
+class OrderDocument {
+  orderId?: string;
+}
+
+const container = new CosmosClient(process.env.COSMOS_CONNECTION_STRING!)
+  .database('shop')
+  .container('orders');
+
+const worker = new InlineSelfHostedStartUp()
+  .configure((workers) =>
+    useCosmosDbChangeFeed<OrderDocument>(
+      workers,
+      new BenzeneCosmosChangeFeedConfig(),
+      new CosmosChangeFeedProcessorFactory<OrderDocument>(
+        container,
+        // Dev/test only — production needs a durable checkpoint store.
+        new InMemoryCosmosChangeFeedCheckpointStore(),
+      ),
+      (feed) =>
+        useStream<OrderDocument>(feed, async (documents: AsyncIterable<OrderDocument>) => {
+          for await (const document of documents) {
+            console.log('changed order', document.orderId);
+          }
+        }),
+    ),
+  )
+  .build();
+
+await worker.startAsync();
+process.on('SIGTERM', () => void worker.stopAsync());
+```
+
+For deletes and intermediate versions, `useCosmosDbAllVersionsChangeFeed(...)` is the
+all-versions-and-deletes sibling: its stream is over `CosmosChangeFeedItem<TDocument>` (current +
+previous + change type) instead of the bare document, and — being automatic-checkpoint only — its config
+is `BenzeneCosmosAllVersionsChangeFeedConfig`. It requires the caller to have configured container/account
+retention, otherwise deletes and intermediate versions don't surface.
+
+If none of the ready-made consumers fits your broker, you can still write your own `IBenzeneWorker` and
+register it with `workers.add((resolver) => …)`, exactly as the `OrdersConsumer` example above does.
 
 ## Two AWS deployment shapes
 
@@ -328,10 +448,12 @@ new BoundedConcurrentDispatcher<Message>(laneCount, handle, logger, {
   abandoning it, so a worker's `stopAsync` can drain gracefully.
 
 Node has no `System.Threading.Channels`, so the used subset is re-created in-package as a capacity-1
-single-reader `BoundedChannel`. The .NET broker configs that expose these knobs by name
-(`ConcurrentRequests`, `PreserveOrderPerPartition`, `PrefetchCount`, `DrainTimeout` on the Kafka/RabbitMQ/
-Service Bus/Event Hub workers) aren't ported, because their broker consumers aren't; wire the dispatcher
-into your own consumer directly.
+single-reader `BoundedChannel`. The [ready-made consumers](#ready-made-self-hosted-consumers) wire this
+dispatcher for you and surface its knobs on their configs — e.g. `concurrentRequests` and
+`preserveOrderPerPartition` on the Kafka config, `prefetchCount`/`concurrentRequests`/`drainTimeoutMs` on
+RabbitMQ, `maxConcurrentCalls`/`prefetchCount` on Service Bus — so you rarely touch
+`BoundedConcurrentDispatcher` directly. Reach for it only when you write your own `IBenzeneWorker`, where
+you hand each received item to it yourself.
 
 ## Testing
 
