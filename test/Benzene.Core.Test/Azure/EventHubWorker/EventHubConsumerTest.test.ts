@@ -281,4 +281,62 @@ describe('BenzeneEventHubWorker checkpoint / raise-on-failure', () => {
     // Only the 3rd event (reaching the interval) checkpoints.
     expect(checkpoints).toEqual([3]);
   });
+
+  async function processFailingEvent(
+    pipeline: IMiddlewarePipeline<EventHubConsumerContext>,
+    config: BenzeneEventHubConfig,
+  ): Promise<FakeConsumerClient> {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventHubConsumer(container);
+    const serviceResolverFactory = container.createServiceResolverFactory();
+
+    const client = new FakeConsumerClient();
+    const worker = new BenzeneEventHubWorker(
+      serviceResolverFactory,
+      new EventHubConsumerApplication(pipeline),
+      config,
+      { create: () => client as unknown as EventHubConsumerClient },
+    );
+    await worker.startAsync();
+    await client.handlers.processEvents(
+      [event({ sequenceNumber: 1 })],
+      partitionContext('0', () => {
+        /* checkpoint not expected */
+      }),
+    );
+    // initiateStop closes the subscription on a queued microtask; let it run.
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    return client;
+  }
+
+  it('stops the worker (closes the subscription) on a thrown handler exception when catchHandlerExceptions is off', async () => {
+    const throwing: IMiddlewarePipeline<EventHubConsumerContext> = {
+      handleAsync: () => Promise.reject(new Error('boom')),
+    };
+    const client = await processFailingEvent(throwing, { catchHandlerExceptions: false });
+    expect(client.closed).toBe(true);
+  });
+
+  it('stops the worker on an escalated failure result when raiseOnFailureStatus is on and catchHandlerExceptions is off', async () => {
+    const failing: IMiddlewarePipeline<EventHubConsumerContext> = {
+      handleAsync: (ctx) => {
+        ctx.messageResult = BenzeneResult.unexpectedError();
+        return Promise.resolve();
+      },
+    };
+    const client = await processFailingEvent(failing, {
+      raiseOnFailureStatus: true,
+      catchHandlerExceptions: false,
+    });
+    expect(client.closed).toBe(true);
+  });
+
+  it('keeps the subscription open on a handler exception when catchHandlerExceptions is on (default)', async () => {
+    const throwing: IMiddlewarePipeline<EventHubConsumerContext> = {
+      handleAsync: () => Promise.reject(new Error('boom')),
+    };
+    const client = await processFailingEvent(throwing, { catchHandlerExceptions: true });
+    expect(client.closed).toBe(false);
+  });
 });

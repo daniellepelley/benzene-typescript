@@ -6,7 +6,7 @@ import type {
   ReceiveMessageCommandInput,
   ReceiveMessageCommandOutput,
 } from '@aws-sdk/client-sqs';
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
+import { ILoggerFactory, IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
 import {
   addBenzene,
@@ -33,6 +33,7 @@ import {
   useSqs,
 } from '@benzene/aws-sqs';
 import { BenzeneWorkerBuilder, IBenzeneWorkerStartup } from '@benzene/self-host';
+import { FakeLoggerFactory } from '../../Logging/Helpers/FakeLoggerFactory';
 
 /**
  * Port of the C# Benzene.Aws.Sqs consumer tests (SqsConsumerAckModeTest, SqsConsumerMessageTopicGetterTest,
@@ -143,6 +144,29 @@ describe('SqsConsumerApplication (ack mode)', () => {
 
     expect(result.successfulMessages.map((m) => m.MessageId)).toEqual(['succeeds']);
     expect(result.failedMessages.map((m) => m.MessageId)).toEqual(['fails']);
+  });
+
+  it('never runs more than maxDegreeOfParallelism messages at once', async () => {
+    // Port of the C# SqsBatchFailureModeTest MaxDegreeOfParallelism bound (its own knob in the port,
+    // BoundedFanOut-backed). A concurrency-observing pipeline proves the ceiling is honoured.
+    let live = 0;
+    let maxObserved = 0;
+    const pipeline: IMiddlewarePipeline<SqsConsumerMessageContext> = {
+      async handleAsync(context) {
+        live += 1;
+        maxObserved = Math.max(maxObserved, live);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        live -= 1;
+        context.messageResult = BenzeneResult.ok();
+      },
+    };
+    const application = new SqsConsumerApplication(pipeline, { maxDegreeOfParallelism: 3 });
+
+    const messages = Array.from({ length: 15 }, (_v, i) => message(`ok-${i}`));
+    await application.handleAsync({ Messages: messages } as ReceiveMessageCommandOutput, createResolverFactory());
+
+    expect(maxObserved).toBeLessThanOrEqual(3);
+    expect(maxObserved).toBe(3);
   });
 
   it('PerMessage excludes a handler failure result from successful messages', async () => {
@@ -349,5 +373,161 @@ describe('SqsConsumer (poll loop)', () => {
 
     // A failed result is never deleted — no delete call is made at all for the single failing message.
     expect(deleteCalls).toBe(0);
+  });
+
+  it('survives a receive error, logs it, and keeps polling (backoff path)', async () => {
+    // The first poll throws a transient AWS error: it must be logged and the loop must continue
+    // (a lone failure retries immediately, no delay), then the next successful poll is handled + deleted.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    const loggerFactory = new FakeLoggerFactory();
+    container.addSingletonInstance(ILoggerFactory, loggerFactory);
+    const serviceResolverFactory = container.createServiceResolverFactory();
+
+    const builder = new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(container);
+    builder.useFn(async (context, next) => {
+      context.messageResult = BenzeneResult.ok();
+      await next();
+    });
+    const application = new SqsConsumerApplication(builder.build());
+
+    const controller = new AbortController();
+    const deletedEntries: DeleteMessageBatchCommandInput['Entries'][] = [];
+    let receiveCalls = 0;
+    const client: ISqsConsumerClient = {
+      receiveMessageAsync: (): Promise<ReceiveMessageCommandOutput> => {
+        receiveCalls++;
+        if (receiveCalls === 1) {
+          return Promise.reject(new Error('transient AWS failure'));
+        }
+        if (receiveCalls === 2) {
+          return Promise.resolve({
+            Messages: [{ MessageId: 'after-error', ReceiptHandle: 'r1', Body: 'hi' }],
+          } as ReceiveMessageCommandOutput);
+        }
+        controller.abort();
+        return Promise.resolve({ Messages: [], $metadata: {} } as ReceiveMessageCommandOutput);
+      },
+      deleteMessageBatchAsync: (req: DeleteMessageBatchCommandInput): Promise<DeleteMessageBatchCommandOutput> => {
+        deletedEntries.push(req.Entries);
+        return Promise.resolve({ Successful: [], Failed: [] } as unknown as DeleteMessageBatchCommandOutput);
+      },
+    };
+
+    const consumer = new SqsConsumer(
+      serviceResolverFactory,
+      application,
+      { queueUrl: 'q', maxNumberOfMessages: 10, waitTimeSeconds: 0 },
+      { create: () => client },
+    );
+
+    await consumer.startAsync(controller.signal);
+
+    // The loop survived the receive error: the message from the recovered poll was deleted...
+    expect(deletedEntries).toEqual([[{ Id: 'after-error', ReceiptHandle: 'r1' }]]);
+    // ...and the failure was logged rather than swallowed silently.
+    expect(loggerFactory.collector.entries.some((e) => e.message.includes('poll iteration'))).toBe(true);
+  });
+
+  it('WholeBatch deletes every message including one whose result failed (no throw)', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    const serviceResolverFactory = container.createServiceResolverFactory();
+
+    const builder = new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(container);
+    builder.useFn(async (context, next) => {
+      context.messageResult =
+        context.message.MessageId === 'bad' ? BenzeneResult.unexpectedError() : BenzeneResult.ok();
+      await next();
+    });
+    const application = new SqsConsumerApplication(builder.build(), {
+      ackMode: SqsConsumerAckMode.WholeBatch,
+    });
+
+    const controller = new AbortController();
+    const deletedIds: string[] = [];
+    let receiveCalls = 0;
+    const client: ISqsConsumerClient = {
+      receiveMessageAsync: (): Promise<ReceiveMessageCommandOutput> => {
+        receiveCalls++;
+        if (receiveCalls === 1) {
+          return Promise.resolve({
+            Messages: [
+              { MessageId: 'good', ReceiptHandle: 'r-good' },
+              { MessageId: 'bad', ReceiptHandle: 'r-bad' },
+            ],
+          } as ReceiveMessageCommandOutput);
+        }
+        controller.abort();
+        return Promise.resolve({ Messages: [], $metadata: {} } as ReceiveMessageCommandOutput);
+      },
+      deleteMessageBatchAsync: (req: DeleteMessageBatchCommandInput): Promise<DeleteMessageBatchCommandOutput> => {
+        for (const entry of req.Entries ?? []) {
+          deletedIds.push(entry.Id!);
+        }
+        return Promise.resolve({ Successful: [], Failed: [] } as unknown as DeleteMessageBatchCommandOutput);
+      },
+    };
+
+    const consumer = new SqsConsumer(
+      serviceResolverFactory,
+      application,
+      { queueUrl: 'q', maxNumberOfMessages: 10, waitTimeSeconds: 0 },
+      { create: () => client },
+      { ackMode: SqsConsumerAckMode.WholeBatch },
+    );
+
+    await consumer.startAsync(controller.signal);
+
+    // WholeBatch: a non-throwing failure result is still deleted along with the rest of the batch.
+    expect(deletedIds.sort()).toEqual(['bad', 'good']);
+  });
+
+  it('logs a warning when a batch delete partially fails (messages will be redelivered)', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    const loggerFactory = new FakeLoggerFactory();
+    container.addSingletonInstance(ILoggerFactory, loggerFactory);
+    const serviceResolverFactory = container.createServiceResolverFactory();
+
+    const builder = new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(container);
+    builder.useFn(async (context, next) => {
+      context.messageResult = BenzeneResult.ok();
+      await next();
+    });
+    const application = new SqsConsumerApplication(builder.build());
+
+    const controller = new AbortController();
+    let receiveCalls = 0;
+    const client: ISqsConsumerClient = {
+      receiveMessageAsync: (): Promise<ReceiveMessageCommandOutput> => {
+        receiveCalls++;
+        if (receiveCalls === 1) {
+          return Promise.resolve({
+            Messages: [{ MessageId: 'm1', ReceiptHandle: 'r1', Body: 'hi' }],
+          } as ReceiveMessageCommandOutput);
+        }
+        controller.abort();
+        return Promise.resolve({ Messages: [], $metadata: {} } as ReceiveMessageCommandOutput);
+      },
+      deleteMessageBatchAsync: (): Promise<DeleteMessageBatchCommandOutput> =>
+        // The call succeeds but the individual entry lands in Failed — the message was NOT removed.
+        Promise.resolve({
+          Successful: [],
+          Failed: [{ Id: 'm1' }],
+        } as unknown as DeleteMessageBatchCommandOutput),
+    };
+
+    const consumer = new SqsConsumer(
+      serviceResolverFactory,
+      application,
+      { queueUrl: 'q', maxNumberOfMessages: 10, waitTimeSeconds: 0 },
+      { create: () => client },
+    );
+
+    await consumer.startAsync(controller.signal);
+
+    const warned = loggerFactory.collector.entries.some((e) => e.message.includes('will be redelivered'));
+    expect(warned).toBe(true);
   });
 });

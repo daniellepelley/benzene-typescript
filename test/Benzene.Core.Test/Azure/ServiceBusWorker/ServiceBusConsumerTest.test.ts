@@ -242,7 +242,7 @@ class FakeClient {
 describe('BenzeneServiceBusWorker settlement (Explicit)', () => {
   async function runOneMessage(
     configurePipeline: (ctx: ServiceBusConsumerContext, resolver: IServiceResolver) => void,
-    ackMode = ServiceBusConsumerAckMode.Explicit,
+    ackMode: ServiceBusConsumerAckMode = ServiceBusConsumerAckMode.Explicit,
   ): Promise<FakeReceiver> {
     const container = new DefaultBenzeneServiceContainer();
     addBenzene(container);
@@ -317,5 +317,49 @@ describe('BenzeneServiceBusWorker settlement (Explicit)', () => {
       resolver.getService(ServiceBusSettlementHolder).override = ServiceBusSettlement.Defer;
     });
     expect(receiver.settled).toEqual([{ op: 'defer', messageId: 'm1' }]);
+  });
+
+  it('honours an explicit Abandon override even when the handler result is successful', async () => {
+    // The override must win over the outcome-based default (success→complete) — a distinct branch from
+    // the DeadLetter/Defer overrides already covered.
+    const receiver = await runOneMessage((ctx, resolver) => {
+      ctx.messageResult = BenzeneResult.ok();
+      resolver.getService(ServiceBusSettlementHolder).override = ServiceBusSettlement.Abandon;
+    });
+    expect(receiver.settled).toEqual([{ op: 'abandon', messageId: 'm1' }]);
+  });
+
+  it('abandons then rethrows when the handler throws under Explicit ack mode', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addServiceBusConsumer(container);
+    const serviceResolverFactory = container.createServiceResolverFactory();
+
+    const builder = new MiddlewarePipelineBuilder<ServiceBusConsumerContext>(container);
+    builder.useFn(() => Promise.reject(new Error('boom')));
+    const application = new ServiceBusConsumerApplication(builder.build());
+
+    const receiver = new FakeReceiver();
+    const worker = new BenzeneServiceBusWorker(
+      serviceResolverFactory,
+      application,
+      { queueName: 'q', ackMode: ServiceBusConsumerAckMode.Explicit },
+      { create: () => new FakeClient(receiver) as unknown as ServiceBusClient },
+    );
+
+    await worker.startAsync();
+    // The push handler surfaces the error to processError (rethrow), but the message was abandoned first.
+    await expect(receiver.processMessage(message({ messageId: 'm1' }))).rejects.toThrow('boom');
+    expect(receiver.settled).toEqual([{ op: 'abandon', messageId: 'm1' }]);
+    await worker.stopAsync();
+  });
+
+  it('does not settle manually under AutoComplete ack mode (the receiver settles from the handler)', async () => {
+    // Under AutoComplete the worker never calls complete/abandon/etc. itself — even a failure result is
+    // left to the receiver's autoCompleteMessages behaviour.
+    const receiver = await runOneMessage((ctx) => {
+      ctx.messageResult = BenzeneResult.unexpectedError();
+    }, ServiceBusConsumerAckMode.AutoComplete);
+    expect(receiver.settled).toEqual([]);
   });
 });

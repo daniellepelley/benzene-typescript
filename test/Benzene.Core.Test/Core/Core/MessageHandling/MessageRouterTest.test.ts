@@ -6,6 +6,7 @@ import {
   IMessageGetter,
   IMessageHandler,
   IMessageHandlerContext,
+  IMessageHandlerFactory,
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
   IMessageResult,
@@ -191,6 +192,31 @@ describe('MessageRouterTest', () => {
     expect(setter.result?.benzeneResult.errors).toEqual([
       'No handler found for topic does-not-exist',
     ]);
+  });
+
+  it('Route_HandlerFactoryReturnsNothing_ShortCircuitsWithNotFound_PreservingTheDefinition', async () => {
+    // A definition is found for the topic, but the factory can't create a handler (returns undefined).
+    // The router must short-circuit with notFound — and this branch carries the actual definition, not
+    // the empty one used when no definition was found at all.
+    // The interface types create() as non-nullable, but the router defends against a null return; force
+    // that branch with a factory that yields nothing for the found definition.
+    const nullFactory = { create: () => undefined } as unknown as IMessageHandlerFactory;
+    const setter = new CapturingResultSetter();
+    const router = new MessageRouter<TestContext>(
+      nullFactory,
+      buildMessageGetter(),
+      buildLookUp(),
+      new TestRequestMapper(),
+      setter,
+      new DefaultStatuses(),
+    );
+
+    await router.handleAsync(new TestContext('create-order', new Order()), () => Promise.resolve());
+
+    expect(setter.result?.benzeneResult.status).toBe(BenzeneResultStatus.notFound);
+    expect(setter.result?.benzeneResult.errors).toEqual(['No handler found for topic create-order']);
+    // The found definition is preserved on the result (distinguishing this from the unknown-topic path).
+    expect(setter.result?.messageHandlerDefinition?.handlerType).toBe(CreateOrderHandler);
   });
 
   it('Route_NeverCallsNext', async () => {

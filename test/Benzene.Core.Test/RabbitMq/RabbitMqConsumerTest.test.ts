@@ -395,4 +395,31 @@ describe('RabbitMqWorker', () => {
     expect(channel.closed).toBe(true);
     expect(connection.closed).toBe(true);
   });
+
+  it('tears down the channel and connection (and drains the dispatcher) when startAsync fails', async () => {
+    // The dispatcher's lane tasks start before the fallible connection/consume steps; a failure mid-start
+    // must tear everything back down (stopAsync) and rethrow, rather than leaking lanes and an open channel.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addRabbitMqConsumer(container);
+    const serviceResolverFactory = container.createServiceResolverFactory();
+
+    const channel = new FakeChannel();
+    channel.consume = () => Promise.reject(new Error('consume failed'));
+    const connection = new FakeConnection(channel);
+    const connectionFactory: IRabbitMqConnectionFactory = {
+      createConnectionAsync: () => Promise.resolve(connection as unknown as ChannelModel),
+    };
+    const worker = new RabbitMqWorker(
+      serviceResolverFactory,
+      new RabbitMqApplication(resultPipeline(true)),
+      baseConfig(),
+      connectionFactory,
+    );
+
+    await expect(worker.startAsync()).rejects.toThrow('consume failed');
+    // Teardown ran despite the failed start: the channel and connection were closed.
+    expect(channel.closed).toBe(true);
+    expect(connection.closed).toBe(true);
+  });
 });
