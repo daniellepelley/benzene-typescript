@@ -106,6 +106,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
 | `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` (8 of 9 handlers; `mesh:issues` deferred pending the `MeshIssue` wire types) |
+| `src/Benzene.Mesh.Fleet.Jaeger` | `@benzene/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
 | `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
 | `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
 | `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
@@ -1409,7 +1410,26 @@ Ported (with tests):
   breaking change to an already-published interface), so the composite still decides `countsWindowed` from
   each source's *returned* window but can't ask a source to query over the picked one (the C# code ignored
   the param anyway — behavior identical). Four C# test classes ported (33 tests: store, usage-source bridge,
-  composite window-honoring, time-range resolution).
+  composite window-honoring, time-range resolution). `MeshTimeRangeResolver` normalizes a zone-less ISO
+  date-time to UTC (appends `Z`) before `Date.parse`, matching C#'s `DateTimeOffset.TryParse(AssumeUniversal
+  | AdjustToUniversal)` — bare-datetime ISO strings are UTC on both planes, where `Date.parse` alone would
+  read them as host-local; and the `(id, version)` Map keys use a NUL (`\u0000`) separator (collision-free, cf.
+  the Tempo adapter's JSON-encoded tuple key) rather than a space.
+- Mesh Jaeger fleet source (`@benzene/mesh-fleet-jaeger`): an `IMeshTraceSource` (the collector's swappable
+  trace plane) answering the fleet's trace read-models from a **Jaeger query service** — a trace by id
+  (`/api/traces/{id}`), a `benzene.correlation-id` tag search, and recent flows. Jaeger's search needs a
+  `service` per query (no "all services" form), so correlation/recent-flows fan out across the configured
+  services or those discovered via `/api/services`, deduping the returned full traces by id; because Jaeger
+  returns full traces (not summaries), recent flows carry a real span count and failure flag without a second
+  fetch. Wired via `addJaegerFleetReadModel(services, options)`, composed into a `CompositeMeshFleetReadModel`
+  with the registered `IMeshUsageSource`s. Adaptations: `HttpClient` → an injectable `fetch` (`JaegerFetch`,
+  mirroring `@benzene/mesh-tracing-tempo`; the C# `AddSingleton<HttpClient>` is dropped); `DateTimeOffset` →
+  epoch-ms `number` (reconverted to Jaeger's microseconds for `start`/`end`); `TimeSpan` options →
+  millisecond `number` fields; `JsonDocument` → `JSON.parse` + `unknown` type guards, with the Jaeger/mesh
+  wire JSON keys (`traceID`/`spanID`/`benzene.*`) kept verbatim; assembly-scan DI → the explicit
+  `addJaegerFleetReadModel` registration. Divergence: `MeshTraceEvent.exceptionType` isn't mapped — that
+  field doesn't exist in this snapshot of `@benzene/mesh-wire` (a pre-existing wire-port omission), so the
+  one `benzene.exception.type` mapping and its C# test assertion are omitted. Seven C# scenarios ported.
 - Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
   to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
