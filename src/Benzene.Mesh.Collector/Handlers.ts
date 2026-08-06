@@ -11,11 +11,8 @@
  *   the reserved topic each handler answers is published as {@link MeshCollectorTopics} for the host's
  *   container wiring, mirroring how `@benzene/mesh-aggregator` supplies topics at registration time.
  * - The `mesh:query:*` topic constants live here rather than in `@benzene/mesh-wire`'s `MeshTopics` (which
- *   predates the query surface in this snapshot); the ingest topics (`register`/`heartbeat`/`traces`) are
- *   re-used from `MeshTopics`. Their string VALUES follow the wire-port's existing `mesh:` prefix.
- * - The `mesh:issues` handler is NOT ported (its `MeshIssue`/`MeshIssueBatch`/`MeshTopics.Issues`
- *   prerequisites do not exist in `@benzene/mesh-wire`), so `MeshCollectorHandlers.all` carries eight
- *   handlers, not nine.
+ *   predates the query surface in this snapshot); the ingest topics (`register`/`heartbeat`/`traces`/`issues`)
+ *   are re-used from `MeshTopics`. Their string VALUES follow the wire-port's existing `mesh:` prefix.
  * - `IBenzeneResult<T>` -> `IBenzeneResultOf<T>`; `Task<...>` -> `Promise<...>`; the C# `Type[]` handler
  *   lists -> arrays of handler constructors.
  */
@@ -23,6 +20,7 @@ import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
 import {
   MeshHeartbeat,
+  MeshIssueBatch,
   MeshServiceDescriptor,
   MeshTopics,
   MeshTraceBatch,
@@ -54,6 +52,7 @@ export const MeshCollectorTopics = {
   register: MeshTopics.register,
   heartbeat: MeshTopics.heartbeat,
   traces: MeshTopics.traces,
+  issues: MeshTopics.issues,
 
   /** Reads the whole known fleet (services, topics, recent flows). */
   queryFleet: 'mesh:query:fleet',
@@ -103,6 +102,21 @@ export class TracesMessageHandler implements IMessageHandler<MeshTraceBatch, Ack
 
   handleAsync(request: MeshTraceBatch): Promise<IBenzeneResultOf<Ack>> {
     return Promise.resolve(BenzeneResult.ok(ack(this.store.addEvents(request.events))));
+  }
+}
+
+/**
+ * Ingests an issue batch (spec §4.1): batch-level service required; a batch of any size, including empty (the
+ * feed's liveness assertion), is accepted; invalid entries are skipped.
+ */
+export class IssuesMessageHandler implements IMessageHandler<MeshIssueBatch, Ack> {
+  constructor(private readonly store: MeshCollectorStore) {}
+
+  handleAsync(request: MeshIssueBatch): Promise<IBenzeneResultOf<Ack>> {
+    if (request.service === undefined || request.service.length === 0) {
+      return Promise.resolve(BenzeneResult.badRequest<Ack>('service is required'));
+    }
+    return Promise.resolve(BenzeneResult.ok(ack(this.store.addIssues(request))));
   }
 }
 
@@ -184,15 +198,16 @@ export class CorrelationQueryMessageHandler implements IMessageHandler<Correlati
 }
 
 /**
- * The eight handlers to wire (the ingest trio + the five `mesh:query:*` reads). The C# `[Message]` attribute
- * has no TS equivalent, so a host binds each to its {@link MeshCollectorTopics} topic during registration.
- * The `mesh:issues` handler is not ported (see the file header).
+ * The nine handlers to wire (the ingest quartet - register/heartbeat/traces/issues - + the five
+ * `mesh:query:*` reads). The C# `[Message]` attribute has no TS equivalent, so a host binds each to its
+ * {@link MeshCollectorTopics} topic during registration.
  */
 export const MeshCollectorHandlers = {
   all: [
     RegisterMessageHandler,
     HeartbeatMessageHandler,
     TracesMessageHandler,
+    IssuesMessageHandler,
     FleetQueryMessageHandler,
     ServiceQueryMessageHandler,
     TopicQueryMessageHandler,

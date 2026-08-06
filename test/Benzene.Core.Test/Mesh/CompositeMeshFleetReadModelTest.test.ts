@@ -125,10 +125,12 @@ describe('CompositeMeshFleetReadModel', () => {
     const orders = fleet.services.filter((s) => s.service === 'orders-api');
     expect(orders.length).toBe(1);
     expect(orders[0].health).toBe(MeshHealth.unknown);
-    // Known only from traffic: no descriptor, no health feed, and no per-service counts.
+    // Known only from traffic: no descriptor, no health feed, no per-service counts, and (the composite
+    // plane has no mesh:issues ingest at all) no issue feed.
     expect(orders[0].missingFeeds).toContain('descriptor');
     expect(orders[0].missingFeeds).toContain('health');
     expect(orders[0].missingFeeds).toContain('stats');
+    expect(orders[0].missingFeeds).toContain('issues');
     expect(orders[0].invocations).toBe(0);
   });
 

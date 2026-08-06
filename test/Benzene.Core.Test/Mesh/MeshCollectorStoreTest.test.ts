@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CorrelationQueryMessageHandler, MeshCollectorStore } from '@benzene/mesh-collector';
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+import {
+  CorrelationQueryMessageHandler,
+  IssuesMessageHandler,
+  MeshCollectorStore,
+} from '@benzene/mesh-collector';
+import { MeshIssue, MeshIssueBatch, MeshTraceEvent } from '@benzene/mesh-wire';
 import { BenzeneResultStatus } from '@benzene/results';
 
 /**
@@ -26,6 +30,36 @@ function event(
   evt.durationMs = 1;
   evt.startedAt = startedAt;
   return evt;
+}
+
+function issue(
+  fingerprint: string,
+  topic: string,
+  count: number,
+  firstSeen: number,
+  lastSeen: number,
+  exemplars: string[] = [],
+  status = 'service-unavailable',
+  classification = 'exception',
+): MeshIssue {
+  const value = new MeshIssue();
+  value.fingerprint = fingerprint;
+  value.classification = classification;
+  value.service = 'orders';
+  value.topic = topic;
+  value.status = status;
+  value.count = count;
+  value.firstSeen = firstSeen;
+  value.lastSeen = lastSeen;
+  value.exemplarTraceIds = exemplars;
+  return value;
+}
+
+function batch(service: string, issues: MeshIssue[]): MeshIssueBatch {
+  const value = new MeshIssueBatch();
+  value.service = service;
+  value.issues = issues;
+  return value;
 }
 
 function corrEvent(
@@ -162,5 +196,90 @@ describe('MeshCollectorStore', () => {
     expect(ok.status).toBe(BenzeneResultStatus.ok);
     expect(ok.payload.correlationId).toBe('corr-1');
     expect(ok.payload.traces.length).toBe(1);
+  });
+
+  // ---- issue feed (mesh:issues), porting docs/specification/conformance/mesh-issue-cases.json ----
+
+  it('IssuesHandler_ServiceIsRequired_BadRequest', async () => {
+    const handler = new IssuesMessageHandler(new MeshCollectorStore());
+    const result = await handler.handleAsync(batch('', []));
+    expect(result.status).toBe(BenzeneResultStatus.badRequest);
+  });
+
+  it('IssuesHandler_EmptyBatch_IsTheLivenessAssertion', async () => {
+    const store = new MeshCollectorStore();
+    const handler = new IssuesMessageHandler(store);
+    const result = await handler.handleAsync(batch('orders', []));
+    expect(result.status).toBe(BenzeneResultStatus.ok);
+    expect(result.payload.accepted).toBe(0); // empty batch accepted, nothing merged
+  });
+
+  it('AddIssues_DeltaMergeByFingerprint_ObservableViaFleet', () => {
+    // Two flushes of the same fingerprint: counts sum (2+3=5), firstSeen=min, lastSeen=max, exemplars keep
+    // the newest, order preserved.
+    const store = new MeshCollectorStore();
+    const fp = 'aaaa1111aaaa1111aaaa1111aaaa1111';
+    expect(store.addIssues(batch('orders', [issue(fp, 'order:create', 2, 9_00, 9_05, ['trace-1'])]))).toBe(1);
+    expect(store.addIssues(batch('orders', [issue(fp, 'order:create', 3, 9_10, 9_15, ['trace-2'])]))).toBe(1);
+
+    const issues = store.fleet().issues;
+    expect(issues.length).toBe(1);
+    expect(issues[0].fingerprint).toBe(fp);
+    expect(issues[0].classification).toBe('exception');
+    expect(issues[0].service).toBe('orders');
+    expect(issues[0].topic).toBe('order:create');
+    expect(issues[0].status).toBe('service-unavailable');
+    expect(issues[0].count).toBe(5); // deltas merge by summation
+    expect(issues[0].firstSeen).toBe(9_00);
+    expect(issues[0].lastSeen).toBe(9_15);
+    expect(issues[0].exemplarTraceIds).toEqual(['trace-1', 'trace-2']);
+  });
+
+  it('AddIssues_InvalidEntriesAreSkipped_NeverRejected', () => {
+    // An entry missing its fingerprint is dropped silently; the well-formed sibling is still accepted.
+    const store = new MeshCollectorStore();
+    const good = 'bbbb2222bbbb2222bbbb2222bbbb2222';
+    const accepted = store.addIssues(
+      batch('orders', [
+        issue('', 'order:create', 1, 9_00, 9_00, [], 'bad-request', 'validation'),
+        issue(good, 'order:create', 1, 9_00, 9_00, [], 'bad-request', 'validation'),
+      ]),
+    );
+    expect(accepted).toBe(1);
+
+    const issues = store.fleet().issues;
+    expect(issues.length).toBe(1);
+    expect(issues[0].fingerprint).toBe(good);
+    expect(issues[0].count).toBe(1);
+  });
+
+  it('AddIssues_EntryMissingTopic_IsSkipped', () => {
+    const store = new MeshCollectorStore();
+    const accepted = store.addIssues(batch('orders', [issue('cccc3333cccc3333cccc3333cccc3333', '', 1, 9_00, 9_00)]));
+    expect(accepted).toBe(0);
+    expect(store.fleet().issues.length).toBe(0);
+  });
+
+  it('IssuesFeedAbsence_IsFlaggedOnlyWhenFailureNeedsExplaining', () => {
+    // A failing trace with no issue feed flags the gap; once even an empty liveness batch arrives, the gap
+    // clears (spec §4.1 failure-gated feed-absence derivation).
+    const store = new MeshCollectorStore();
+    const evt = event('4bf92f3577b34da6', '00f067aa0ba902b7', 'orders', 'order:create', Date.now(), 'service-unavailable');
+    store.addEvents([evt]);
+
+    let orders = store.fleet().services.find((s) => s.service === 'orders')!;
+    expect(orders.missingFeeds).toEqual(['descriptor', 'health', 'issues']);
+
+    store.addIssues(batch('orders', [])); // the empty liveness assertion marks the feed wired
+    orders = store.fleet().services.find((s) => s.service === 'orders')!;
+    expect(orders.missingFeeds).toEqual(['descriptor', 'health']);
+  });
+
+  it('IssuesFeedAbsence_NotFlaggedWhenNoFailure', () => {
+    // A healthy never-emitting service is indistinguishable from a healthy emitting one - no "issues" marker.
+    const store = new MeshCollectorStore();
+    store.addEvents([event('trace-1', 'span-1', 'orders', 'order:create', Date.now(), 'ok')]);
+    const orders = store.fleet().services.find((s) => s.service === 'orders')!;
+    expect(orders.missingFeeds).not.toContain('issues');
   });
 });

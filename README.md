@@ -105,7 +105,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
 | `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
 | `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
-| `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` (8 of 9 handlers; `mesh:issues` deferred pending the `MeshIssue` wire types) |
+| `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` |
 | `src/Benzene.Mesh.Fleet.Jaeger` | `@benzene/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
 | `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
 | `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
@@ -1402,15 +1402,19 @@ Ported (with tests):
   analog). Adaptations: `DateTimeOffset` → epoch-ms `number` (matching `@benzene/mesh-wire`); `Task<T?>` →
   `Promise<T | undefined>` (`null` → `undefined`); C#'s `lock` dropped (single-threaded JS can't tear a
   batch/read); a default-interface-member overload collapses to one optional-param method; `StringComparer.
-  Ordinal` → the shared `ordinalCompare` helper. **Deferred pending prerequisites** (reported, not faked, per
-  the port's stop-on-missing-prerequisite rule): the `mesh:issues` feed (`IssuesMessageHandler`,
-  `store.addIssues`, `FleetView.Issues`) — needs `MeshIssue` / `MeshIssueBatch` / `MeshTopics.Issues` in
-  `@benzene/mesh-wire`, so `MeshCollectorHandlers.all` carries **8** handlers, not 9; and threading a usage
-  *window* to the usage sources — needs `MeshUsageWindow` + an `IMeshUsageSource.fetchUsageAsync` param (a
-  breaking change to an already-published interface), so the composite still decides `countsWindowed` from
-  each source's *returned* window but can't ask a source to query over the picked one (the C# code ignored
-  the param anyway — behavior identical). Four C# test classes ported (33 tests: store, usage-source bridge,
-  composite window-honoring, time-range resolution). `MeshTimeRangeResolver` normalizes a zone-less ISO
+  Ordinal` → the shared `ordinalCompare` helper. The `mesh:issues` feed is fully ported: its wire types
+  (`MeshIssue` / `MeshIssueBatch` / `MeshIssueClassification` / `MeshIssueFingerprint` + `MeshTopics.issues`
+  = `'mesh:issues'`) land in `@benzene/mesh-wire` — the fingerprint is `node:crypto` SHA-256, first 16 bytes
+  lowercase-hex over `service|topic|version|classification|discriminator`, identical to the C# recipe so
+  issue dedup is cross-language stable — and in the collector `MeshCollectorHandlers.all` carries all **9**
+  handlers (register/heartbeat/traces/**issues** + the five `mesh:query:*` reads), with `store.addIssues` /
+  `FleetView.issues` / the per-service `issues` missing-feed marker wired. **One deferral remains**
+  (reported, not faked): threading a usage *window* to the usage sources — it needs `MeshUsageWindow` + an
+  `IMeshUsageSource.fetchUsageAsync` param (a breaking change to an already-published interface), so the
+  composite still decides `countsWindowed` from each source's *returned* window but can't ask a source to
+  query over the picked one (the C# code ignored the param anyway — behavior identical). C# test classes
+  ported (store incl. the issue-feed scenarios, usage-source bridge, composite window-honoring, time-range
+  resolution). `MeshTimeRangeResolver` normalizes a zone-less ISO
   date-time to UTC (appends `Z`) before `Date.parse`, matching C#'s `DateTimeOffset.TryParse(AssumeUniversal
   | AdjustToUniversal)` — bare-datetime ISO strings are UTC on both planes, where `Date.parse` alone would
   read them as host-local; and the `(id, version)` Map keys use a NUL (`\u0000`) separator (collision-free, cf.

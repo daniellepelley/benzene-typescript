@@ -17,4 +17,7 @@ export const MeshTopics = {
 
   /** A trace exporter's batched events to a collector (spec §4). */
   traces: 'mesh:traces',
+
+  /** An issue emitter's deduplicated failure signatures to a collector (spec §4.1). */
+  issues: 'mesh:issues',
 } as const;

@@ -25,6 +25,7 @@ export * from './MeshSchemaProvider';
 export * from './ValidationMeshSchemaProvider';
 export * from './MeshDescriptorFactory';
 export * from './MeshTraceEvent';
+export * from './MeshIssue';
 export * from './MeshSpan';
 export * from './IMeshStatusReader';
 export * from './IMeshTraceExporter';

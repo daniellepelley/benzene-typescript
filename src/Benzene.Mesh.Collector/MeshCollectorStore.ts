@@ -9,9 +9,6 @@
  * fails ingestion or a query: the §6 degradation rule, collector side.
  *
  * Divergences from the C# original:
- * - The `mesh:issues` feed (`AddIssues`, `FleetView.Issues`, the per-service "issues" missing-feed marker)
- *   is NOT ported: its `MeshIssue`/`MeshIssueBatch`/`MeshTopics.Issues` prerequisites do not yet exist in
- *   `@benzene/mesh-wire`. The store is the pre-issues collector.
  * - `DateTimeOffset` -> epoch-millisecond `number`; `DateTimeOffset.UtcNow` -> `Date.now()`.
  * - The C# `lock (_lock)` around every mutation/read is dropped: JS is single-threaded, so no batch can be
  *   torn by a concurrent one (the §6 "snapshot copy" concern the lock guarded does not arise).
@@ -21,7 +18,7 @@
  * - `StringComparer.Ordinal` ordering -> a local `ordinalCompare` (UTF-16 code-unit order, ordinal for the
  *   ASCII ids in play), the same helper `@benzene/mesh-aggregator` uses.
  */
-import { MeshHeartbeat, MeshServiceDescriptor, MeshTraceEvent } from '@benzene/mesh-wire';
+import { MeshHeartbeat, MeshIssue, MeshIssueBatch, MeshServiceDescriptor, MeshTraceEvent } from '@benzene/mesh-wire';
 import { BenzeneResultStatus } from '@benzene/results';
 import { IMeshFleetReadModel } from './IMeshFleetReadModel';
 import { MeshTimeRangeResolver, ResolvedWindow } from './MeshTimeRangeResolver';
@@ -51,6 +48,9 @@ class ServiceState {
   lastSeen = 0;
   invocations = 0;
   errors = 0;
+  // True once ANY mesh:issues batch (including an empty liveness batch) named this service - what lets "quiet
+  // wired feed" be distinguished from "feed not wired" (spec §4.1).
+  issueFeedSeen = false;
 }
 
 class TopicState {
@@ -66,8 +66,10 @@ const MaxFleetTraces = 20;
 
 export class MeshCollectorStore implements IMeshFleetReadModel {
   private readonly capacity: number;
+  private readonly maxIssues: number;
   private readonly services = new Map<string, ServiceState>();
   private readonly topics = new Map<string, TopicState>();
+  private readonly issues = new Map<string, MeshIssue>();
   private readonly ring: MeshTraceEvent[] = [];
   private next = 0;
 
@@ -77,8 +79,9 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
    */
   readonly startedAtUtc: number = Date.now();
 
-  constructor(maxTraceEvents = 4096) {
+  constructor(maxTraceEvents = 4096, maxIssues = 1024) {
     this.capacity = maxTraceEvents;
+    this.maxIssues = maxIssues;
   }
 
   /**
@@ -149,6 +152,73 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     return events.length;
   }
 
+  /**
+   * Ingests an issue batch (spec §4.1): fingerprint-keyed delta merge (`count += delta`, `firstSeen = min`,
+   * `lastSeen = max`, exemplars keep the newest ≤3, other fields latest-wins), bounded (evict oldest
+   * `lastSeen` when full). Invalid entries (no fingerprint or topic) are skipped, never rejected; an empty
+   * batch is the feed's liveness assertion and marks the service's issue feed as wired. Returns how many
+   * entries were accepted.
+   */
+  addIssues(batch: MeshIssueBatch): number {
+    this.ensureService(batch.service).issueFeedSeen = true;
+
+    let accepted = 0;
+    for (const incoming of batch.issues) {
+      if (incoming.fingerprint.length === 0 || incoming.topic.length === 0) {
+        continue; // skipped, never rejected (§6: no feed fails ingestion)
+      }
+
+      let issue = this.issues.get(incoming.fingerprint);
+      if (issue === undefined) {
+        if (this.issues.size >= this.maxIssues) {
+          // Evict the least recently observed issue - the least actionable one.
+          let oldest: MeshIssue | undefined;
+          for (const candidate of this.issues.values()) {
+            if (oldest === undefined || candidate.lastSeen < oldest.lastSeen) {
+              oldest = candidate;
+            }
+          }
+          if (oldest !== undefined) {
+            this.issues.delete(oldest.fingerprint);
+          }
+        }
+        issue = new MeshIssue();
+        issue.fingerprint = incoming.fingerprint;
+        issue.classification = incoming.classification;
+        issue.service = incoming.service;
+        issue.topic = incoming.topic;
+        issue.version = incoming.version;
+        issue.firstSeen = incoming.firstSeen;
+        issue.lastSeen = incoming.lastSeen;
+        this.issues.set(incoming.fingerprint, issue);
+      }
+
+      issue.count += incoming.count; // deltas merge by summation - restart-proof, no instance keying
+      if (incoming.firstSeen < issue.firstSeen) {
+        issue.firstSeen = incoming.firstSeen;
+      }
+      if (incoming.lastSeen > issue.lastSeen) {
+        issue.lastSeen = incoming.lastSeen;
+      }
+      issue.classification = incoming.classification.length === 0 ? issue.classification : incoming.classification;
+      issue.transport = incoming.transport ?? issue.transport;
+      issue.status = incoming.status.length === 0 ? issue.status : incoming.status;
+      issue.exceptionType = incoming.exceptionType ?? issue.exceptionType;
+      issue.resolutionHint = incoming.resolutionHint ?? issue.resolutionHint;
+      for (const exemplar of incoming.exemplarTraceIds) {
+        if (exemplar.length === 0 || issue.exemplarTraceIds.includes(exemplar)) {
+          continue;
+        }
+        issue.exemplarTraceIds.push(exemplar);
+        if (issue.exemplarTraceIds.length > 3) {
+          issue.exemplarTraceIds.shift(); // keep the newest
+        }
+      }
+      accepted++;
+    }
+    return accepted;
+  }
+
   fleet(range?: MeshTimeRange): FleetView {
     const window = MeshTimeRangeResolver.resolve(range, Date.now());
     const consumers = this.consumersByTopic();
@@ -163,6 +233,12 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     // Flows honor the window (ring filtered by trace start); the per-topic/service counts above are
     // cumulative-since-start and can't be sub-windowed - collectorWindow says so.
     view.traces = this.traceSummaries(MaxFleetTraces, window);
+    // The merged issue map, newest activity first. NOT window-filtered (a merged map, like the cumulative
+    // counts) - readers window on lastSeen client-side. Snapshot copies (JS is single-threaded, so no lock is
+    // needed, but the copy keeps a serialized view from reflecting a later ingest merge - the C# snapshot).
+    view.issues = [...this.issues.values()]
+      .sort((a, b) => b.lastSeen - a.lastSeen)
+      .map((x) => copyIssue(x));
     const w = this.collectorWindow(window);
     if (w !== undefined) {
       view.window = w;
@@ -413,6 +489,13 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     if (state.invocations === 0) {
       summary.missingFeeds.push('traces');
     }
+    // Feed-absence only matters when there's failure it should have explained: a service with failing traffic
+    // that has never sent a mesh:issues batch (not even the empty liveness one) is flagged; a healthy
+    // never-emitting service is indistinguishable from a healthy emitting one, and that's fine (spec §4.1 /
+    // drains-up 3.2 ruling).
+    if (!state.issueFeedSeen && state.errors > 0) {
+      summary.missingFeeds.push('issues');
+    }
     return summary;
   }
 
@@ -489,4 +572,24 @@ function compareTopicKeys(a: string, b: string): number {
 
 function ordinalCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// A defensive copy of a stored issue for the fleet view - the C# snapshot that keeps a view serialized outside
+// the (JS-absent) lock from tearing as a later ingest merges into the live map.
+function copyIssue(x: MeshIssue): MeshIssue {
+  const copy = new MeshIssue();
+  copy.fingerprint = x.fingerprint;
+  copy.classification = x.classification;
+  copy.service = x.service;
+  copy.topic = x.topic;
+  copy.version = x.version;
+  copy.transport = x.transport;
+  copy.status = x.status;
+  copy.exceptionType = x.exceptionType;
+  copy.count = x.count;
+  copy.firstSeen = x.firstSeen;
+  copy.lastSeen = x.lastSeen;
+  copy.exemplarTraceIds = [...x.exemplarTraceIds];
+  copy.resolutionHint = x.resolutionHint;
+  return copy;
 }

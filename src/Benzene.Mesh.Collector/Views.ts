@@ -7,11 +7,8 @@
  * omits them, exactly as `@benzene/mesh-wire` does. `DateTimeOffset`/`DateTimeOffset?` -> epoch-millisecond
  * `number`/`number | undefined` (the same choice `MeshTraceEvent.startedAt` makes in the wire port).
  * `List<T>`/`Dictionary<string,long>` -> arrays / `Record<string, number>`.
- *
- * Divergence from the .NET original: the `mesh:issues` feed (`FleetView.Issues`) is NOT ported - its
- * `MeshIssue`/`MeshIssueBatch` wire prerequisites do not exist in this snapshot of `@benzene/mesh-wire`.
  */
-import { MeshServiceDescriptor, MeshPlacement, MeshTraceEvent } from '@benzene/mesh-wire';
+import { MeshIssue, MeshServiceDescriptor, MeshPlacement, MeshTraceEvent } from '@benzene/mesh-wire';
 
 /** Health classification of a service, from its instances' latest heartbeats. */
 export const MeshHealth = {
@@ -39,6 +36,13 @@ export class FleetView {
   topics: TopicSummary[] = [];
 
   traces: TraceSummary[] = [];
+
+  /**
+   * The collector's merged issue map (spec §4.1), newest activity first - empty when the plane has no issue
+   * feed (additive; the fixtures' subset match ignores it). Not window-filtered (a merged map, like the
+   * cumulative counts): readers window on lastSeen.
+   */
+  issues: MeshIssue[] = [];
 
   /**
    * The time window this view answers, when the query carried one. Absent (`undefined`) when the query
