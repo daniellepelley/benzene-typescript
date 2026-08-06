@@ -23,9 +23,9 @@ type JsonObject = Record<string, unknown>;
  * reconcile. Jaeger's PascalCase-free JSON keys (`traceID`/`spanID`/`startTime`/...) are read as-is off the
  * wire; the mapped `MeshTraceEvent` members are camelCase.
  *
- * Divergence from the C# original: `MeshTraceEvent.exceptionType` (mapped from `benzene.exception.type`) is
- * NOT set - this snapshot of `@benzene/mesh-wire`'s `MeshTraceEvent` has no `exceptionType` field. `System.
- * Text.Json.JsonDocument` -> `JSON.parse` + `unknown` type guards; `DateTimeOffset` -> epoch-ms `number`.
+ * `System.Text.Json.JsonDocument` -> `JSON.parse` + `unknown` type guards; `DateTimeOffset` -> epoch-ms
+ * `number`. (`MeshTraceEvent.exceptionType`, from `benzene.exception.type`, IS carried - the field was added
+ * to `@benzene/mesh-wire` with the X-Ray port.)
  */
 export const JaegerTraceMapper = {
   /**
@@ -100,6 +100,9 @@ function mapTrace(trace: unknown): JaegerMappedTrace | undefined {
     event.topic = topic;
     event.topicVersion = tags['benzene.version'];
     event.status = tags['benzene.status'] ?? '';
+    // The failure's WHY (spec §3): the thrown exception's type name (benzene.exception.type), read when
+    // present; undefined for non-exception failures or spans predating the tag.
+    event.exceptionType = tags['benzene.exception.type'];
     event.correlationId = tags['benzene.correlation-id'];
     event.startedAt = microsToTime(getLong(span, 'startTime'));
     event.durationMs = getLong(span, 'duration') / 1000; // µs → ms

@@ -1433,9 +1433,9 @@ Ported (with tests):
   epoch-ms `number` (reconverted to Jaeger's microseconds for `start`/`end`); `TimeSpan` options →
   millisecond `number` fields; `JsonDocument` → `JSON.parse` + `unknown` type guards, with the Jaeger/mesh
   wire JSON keys (`traceID`/`spanID`/`benzene.*`) kept verbatim; assembly-scan DI → the explicit
-  `addJaegerFleetReadModel` registration. Divergence: `MeshTraceEvent.exceptionType` isn't mapped — that
-  field doesn't exist in this snapshot of `@benzene/mesh-wire` (a pre-existing wire-port omission), so the
-  one `benzene.exception.type` mapping and its C# test assertion are omitted. Seven C# scenarios ported.
+  `addJaegerFleetReadModel` registration. (`MeshTraceEvent.exceptionType`, from `benzene.exception.type`, is
+  mapped — the field was added to `@benzene/mesh-wire` with the X-Ray port, so the mapping and its C# test
+  assertion are now carried.) Seven C# scenarios ported.
 - Mesh Tempo fleet source (`@benzene/mesh-fleet-tempo`): the Grafana **Tempo** counterpart of the Jaeger
   fleet source — an `IMeshTraceSource` answering the collector's trace/correlation/recent-flows read-models
   from Tempo's **trace query** API (TraceQL `/api/search` + `/api/traces/{id}`), walking OTLP
@@ -1445,8 +1445,9 @@ Ported (with tests):
   `CompositeMeshFleetReadModel`. Adaptations mirror the Jaeger sibling (`HttpClient` → injectable `fetch`;
   `DateTimeOffset` → epoch-ms `number`, with `/api/search` `start`/`end` as epoch **seconds**; `TimeSpan`
   options → ms `number`; `JsonDocument` → `JSON.parse` + `unknown` guards, OTLP wire keys verbatim;
-  assembly-scan DI → explicit registration; `MeshTraceEvent.exceptionType` omitted, the same wire-port
-  gap). Tempo-specific: span `startTimeUnixNano`/`endTimeUnixNano` (~1.5e18, beyond `Number.MAX_SAFE_INTEGER`)
+  assembly-scan DI → explicit registration; `MeshTraceEvent.exceptionType` mapped from
+  `benzene.exception.type`, the field added to `@benzene/mesh-wire` with the X-Ray port). Tempo-specific:
+  span `startTimeUnixNano`/`endTimeUnixNano` (~1.5e18, beyond `Number.MAX_SAFE_INTEGER`)
   are parsed with `BigInt` (matching C#'s `long`) before the integer nanos→ms reduction. Eight C# scenarios ported.
 - Mesh AWS X-Ray fleet source (`@benzene/mesh-fleet-aws-xray`): the **AWS X-Ray** realisation of the
   trace-backed fleet reader (completing the trio with the Jaeger/Tempo siblings) — an `IMeshTraceSource`

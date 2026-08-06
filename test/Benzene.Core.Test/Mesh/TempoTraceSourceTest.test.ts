@@ -10,8 +10,8 @@ import { TempoFetch, TempoTraceSource, TempoTraceSourceOptions } from '@benzene/
  *
  * `HttpMessageHandler`/`HttpClient` -> a `fetch`-like router keyed by `request.RequestUri.PathAndQuery` (the
  * URL's `pathname + search`), so trace-by-id and search stub independently in one client. The C#
- * `evt.ExceptionType` assertion is dropped: this snapshot of `@benzene/mesh-wire`'s `MeshTraceEvent` has no
- * `exceptionType` field, so the mapper cannot set it.
+ * `evt.ExceptionType` assertion is preserved (the `exceptionType` field was added to `@benzene/mesh-wire`
+ * with the X-Ray port).
  */
 
 const TempoUrl = 'http://tempo:3200';
@@ -95,6 +95,7 @@ describe('TempoTraceSource', () => {
     expect(evt.topic).toBe('orders:create');
     expect(evt.topicVersion).toBe('v1');
     expect(evt.status).toBe('ok');
+    expect(evt.exceptionType).toBe('System.TimeoutException'); // the failure's WHY (spec §3), read when present
     expect(evt.service).toBe('orders-api');
     expect(evt.spanId).toBe('aabbccdd');
     expect(evt.parentSpanId).toBeUndefined(); // empty parentSpanId → undefined

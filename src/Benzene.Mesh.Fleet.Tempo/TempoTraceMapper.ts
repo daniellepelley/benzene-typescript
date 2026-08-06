@@ -18,12 +18,12 @@ type JsonObject = Record<string, unknown>;
  * shape.
  *
  * Divergences from the C# original:
- * - `MeshTraceEvent.exceptionType` (mapped from `benzene.exception.type` in the C# original) is NOT set -
- *   this snapshot of `@benzene/mesh-wire`'s `MeshTraceEvent` has no `exceptionType` field, so the mapper
- *   cannot carry it (the same omission the Jaeger port hit).
  * - `System.Text.Json.JsonDocument` -> `JSON.parse` + `unknown` type guards; `DateTimeOffset` -> epoch-ms
  *   `number`; span times are parsed as `bigint` (unix-nano exceeds `Number.MAX_SAFE_INTEGER`) before the
  *   nanos -> ms reduction, matching C#'s `long`.
+ *
+ * (`MeshTraceEvent.exceptionType`, from `benzene.exception.type`, IS carried - the field was added to
+ * `@benzene/mesh-wire` with the X-Ray port.)
  */
 export const TempoTraceMapper = {
   /**
@@ -75,6 +75,9 @@ export const TempoTraceMapper = {
         event.topic = topic;
         event.topicVersion = attributes['benzene.version'];
         event.status = attributes['benzene.status'] ?? '';
+        // The failure's WHY (spec §3): the thrown exception's type name (benzene.exception.type), read when
+        // present; undefined for non-exception failures or spans predating the tag.
+        event.exceptionType = attributes['benzene.exception.type'];
         event.correlationId = attributes['benzene.correlation-id'];
         event.startedAt = nanosToTime(getString(span, 'startTimeUnixNano'));
         event.durationMs = durationMs(span);

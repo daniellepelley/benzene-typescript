@@ -9,8 +9,8 @@ import { JaegerFetch, JaegerTraceSource, JaegerTraceSourceOptions } from '@benze
  * Jaeger's documented API shapes.
  *
  * `HttpMessageHandler`/`HttpClient` -> a `fetch`-like router; `request.RequestUri.PathAndQuery` -> the URL's
- * `pathname + search`. The C# `evt.ExceptionType` assertion is dropped: this snapshot of
- * `@benzene/mesh-wire`'s `MeshTraceEvent` has no `exceptionType` field, so the mapper cannot set it.
+ * `pathname + search`. The C# `evt.ExceptionType` assertion is preserved (the `exceptionType` field was added
+ * to `@benzene/mesh-wire` with the X-Ray port).
  */
 
 const JaegerUrl = 'http://jaeger:16686';
@@ -111,6 +111,7 @@ describe('JaegerTraceSource', () => {
     expect(evt.topic).toBe('orders:create');
     expect(evt.topicVersion).toBe('v1');
     expect(evt.status).toBe('ok');
+    expect(evt.exceptionType).toBe('System.TimeoutException'); // the failure's WHY (spec §3), read when present
     expect(evt.service).toBe('orders-api'); // from processes[p1].serviceName
     expect(evt.spanId).toBe('span-trace-1');
     expect(evt.parentSpanId).toBe('parent-1'); // from the CHILD_OF reference
