@@ -1,0 +1,14 @@
+{
+  "name": "@benzene/health-checks-typeorm",
+  "version": "0.1.0",
+  "description": "TypeScript port of Benzene.HealthChecks.EntityFramework (adapted to TypeORM)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/health-checks-core": "0.1.0",
+    "typeorm": "^1"
+  }
+}

@@ -88,6 +88,7 @@ Mirrors the .NET repository:
 | `src/Benzene.HealthChecks.DynamoDb` | `@benzene/health-checks-dynamodb` | `Benzene.HealthChecks.DynamoDb` (`DescribeTable` reachability check over `@aws-sdk/client-dynamodb`) |
 | `src/Benzene.HealthChecks.Azure.ServiceBus` | `@benzene/health-checks-azure-service-bus` | `Benzene.HealthChecks.Azure.ServiceBus` (`peekMessages` reachability check over `@azure/service-bus`) |
 | `src/Benzene.HealthChecks.Schema` | `@benzene/health-checks-schema` | `Benzene.HealthChecks.Schema` (provider-side contract-drift hash; `CodeGen.Core` hashing → `MeshHashing` over the schema-openapi doc) |
+| `src/Benzene.HealthChecks.TypeOrm` | `@benzene/health-checks-typeorm` | `Benzene.HealthChecks.EntityFramework` (TypeORM adapter — `DbContext` → `DataSource`; `CanConnectAsync`/`GetAppliedMigrationsAsync` → a `SELECT 1` probe + `MigrationExecutor`) |
 | `src/Benzene.Clients.HealthChecks` | `@benzene/clients-health-checks` | `Benzene.Clients.HealthChecks` |
 | `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
 | `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
@@ -1025,6 +1026,22 @@ Ported (with tests):
   form) + `MeshHashing.computeHash`; DIVERGENCE: C#'s `SchemaBuilder` reflects the CLR type, the TS one
   sources schemas from the registered `ITypeJsonSchemaSource`s, so the check additionally takes them
   (resolved from DI by `addSchemaHealthCheck`, the same seam `SpecBuilder`/the mesh use).
+- Database health checks (`@benzene/health-checks-typeorm`): ports `Benzene.HealthChecks.EntityFramework`
+  adapted to **TypeORM** — the structural EF Core analog (a `DataSource` in place of a `DbContext`, a
+  migrations table, a DB-agnostic applied-migrations API). `addDatabaseConnectionHealthCheck(builder,
+  dataSource)` verifies connectivity only; `addDatabaseHealthCheck(builder, dataSource, targetMigration)`
+  additionally verifies that `targetMigration` is the **last** applied migration (not merely present) —
+  reporting the same `CanConnect` / `AppliedMigrations` / `TargetMigration` / `MigrationMatch` /
+  `MigrationContains` / `Error` / `MigrationError` diagnostic shape as the .NET original, with error *types*
+  only (never messages — drivers may put connection details in them, and the result flows out with no
+  built-in authorization). **ADAPTATION:** EF's `DbContext.Database.CanConnectAsync()` /
+  `GetAppliedMigrationsAsync()` become an `ITypeOrmDatabase` seam (`canConnect()` via a `SELECT 1` probe,
+  `getAppliedMigrations()` via TypeORM's `MigrationExecutor`, re-sorted ascending so the "last applied"
+  semantics match EF) — the `DbContext.Database` analog, and the unit-test seam the C# gets from EF's
+  InMemory provider. Unlike EF's `CanConnectAsync` (which can return `false` without throwing), the probe
+  query either succeeds or throws, so a connection failure always carries an `Error`. The C# resolves
+  `TDbContext` from DI each run; the port has no DI token for an arbitrary `DataSource`, so the `add*`
+  helpers take it directly (the DynamoDb/SQS health-check convention).
 - Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
   convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
   alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the

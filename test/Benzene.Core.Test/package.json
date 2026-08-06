@@ -94,6 +94,7 @@
     "@benzene/health-checks-http": "0.1.0",
     "@benzene/health-checks-schema": "0.1.0",
     "@benzene/health-checks-tcp": "0.1.0",
+    "@benzene/health-checks-typeorm": "0.1.0",
     "@benzene/http": "0.1.0",
     "@benzene/idempotency": "0.1.0",
     "@benzene/joi": "0.1.0",
