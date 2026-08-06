@@ -10,16 +10,20 @@ In the .NET original, request validation ships as two packages — `Benzene.Flue
 `System.ComponentModel.DataAnnotations`). Neither wrapped library has a TypeScript existence, so per the
 port's **"third-party integrations are adapted, not reimplemented"** convention (see the README
 [Porting conventions](../README.md#porting-conventions)), they are re-created as adapters over the popular
-JavaScript validation libraries. This one page replaces both .NET docs.
+JavaScript validation libraries. This one page replaces both .NET docs, and also covers `@benzene/ajv` —
+the port of `Benzene.JsonSchema` to [ajv](https://www.npmjs.com/package/ajv), the standard JavaScript JSON
+Schema validator — which validates against a raw JSON Schema rather than a code-first schema object.
 
 The shared abstraction stays core (`@benzene/abstractions-validation`), and each validator gets its own
-adapter package, all three mirroring the `Benzene.FluentValidation` integration shape:
+adapter package, all four presenting the same register-a-schema / wire-into-the-router shape at the
+Benzene seam:
 
 | Package | Adapts | Register a schema | Wire into the router |
 |---|---|---|---|
 | [`@benzene/zod`](https://www.npmjs.com/package/zod) | Zod | `registerZodSchema` | `useZodValidation` |
 | [`@benzene/joi`](https://www.npmjs.com/package/joi) | Joi | `registerJoiSchema` | `useJoiValidation` |
 | [`@benzene/yup`](https://www.npmjs.com/package/yup) | Yup | `registerYupSchema` | `useYupValidation` |
+| [`@benzene/ajv`](https://www.npmjs.com/package/ajv) | JSON Schema | `registerJsonSchema` | `useAjvValidation` |
 
 Each adapter adds a single piece of per-handler middleware, `ValidationMiddleware<TRequest, TResponse>`,
 to the handler pipeline. For every request:
@@ -50,6 +54,8 @@ npm install @benzene/zod zod
 npm install @benzene/joi joi
 # or
 npm install @benzene/yup yup
+# or
+npm install @benzene/ajv ajv
 ```
 
 You can install more than one and mix them across services; a single router usually uses one.
@@ -120,6 +126,45 @@ registerYupSchema(CreateWidget, yup.object({ name: yup.string().max(10) }));
 useMessageHandlersWithRouter(app, (router) => useYupValidation(router), CreateWidgetHandler);
 ```
 
+### JSON Schema (ajv)
+
+`@benzene/ajv` is the raw-JSON-Schema member of the family. Reach for it when the contract you validate
+against is an externally-authored or shared JSON Schema document, rather than a code-first schema object
+you build in TypeScript. Register a hand-authored JSON Schema against the request class, and wire it in the
+same way:
+
+```ts
+import { registerJsonSchema, useAjvValidation } from '@benzene/ajv';
+
+registerJsonSchema(CreateWidget, {
+  type: 'object',
+  properties: { name: { type: 'string', maxLength: 10 } },
+  required: ['name'],
+});
+
+useMessageHandlersWithRouter(app, (router) => useAjvValidation(router), CreateWidgetHandler);
+```
+
+The schema is compiled once by [ajv](https://www.npmjs.com/package/ajv) at registration, so an invalid
+schema surfaces then rather than on the first request; a failing request yields one `validation-error`
+message per ajv error, each prefixed with the JSON Pointer of the failing value (e.g.
+`"/name: must NOT have more than 10 characters"`).
+
+Two things differ from the .NET `Benzene.JsonSchema` it ports (both recorded in the README
+[Porting conventions](../README.md#porting-conventions)):
+
+- **Handler-level, not raw-body.** It validates the already-deserialized `context.request` — exactly like
+  the Zod/Joi/Yup adapters — not the raw request body pre-deserialization the way .NET's
+  `JsonSchemaMiddleware` does. The port has no raw-body validation seam, so there are no
+  `MissingBody`/`MalformedBody` results; a malformed body fails earlier, during deserialization.
+- **No generate-from-type.** .NET generates a schema by reflecting over the request CLR type; TypeScript
+  erases types at runtime, so schemas are always supplied explicitly via `registerJsonSchema`. A request
+  type with no registered schema is simply not validated.
+
+Like the other adapters, `useAjvValidation` also registers an `ITypeJsonSchemaSource`
+(`AjvJsonSchemaSource`) that publishes the registered schema to the service's spec/mesh descriptor — since
+it is already JSON Schema, the schema is embedded as-is.
+
 `use<Lib>Validation(router)` does two things, mirroring `.UseFluentValidation()`:
 
 1. Registers a `DefaultValidationStatusMapper` as the `IValidationStatusMapper` if one isn't already
@@ -167,6 +212,12 @@ const registry = new ZodSchemaRegistry();
 registry.register(CreateWidget, z.object({ name: z.string().max(10) }));
 registry.get(CreateWidget); // the schema; does not affect the global registry
 ```
+
+`@benzene/ajv` follows the same registry pattern under different names: `registerJsonSchema(RequestClass,
+schema)` on the global registry, or a standalone `AjvSchemaRegistry` for tests. Its binding is **not**
+type-checked against the request class the way the code-first adapters' are — a JSON Schema is a runtime
+document, not a schema object carrying a static type — so a schema that doesn't match the request shape is
+caught at request time, not compile time.
 
 ## Where validation sits in the pipeline
 
@@ -262,17 +313,18 @@ is exported for manual wiring, and the `use...` helper will be added once a clie
 The three adapters are interchangeable at the Benzene seam — the difference is the validator you already
 know and the shape of its API:
 
-| | Zod | Joi | Yup |
-|---|---|---|---|
-| Schema builder | `z.object({ ... })` | `Joi.object({ ... })` | `yup.object({ ... })` |
-| Validation call | `schema.safeParse` (sync) | `schema.validate(..., { abortEarly: false })` (sync) | `await schema.validate(..., { abortEarly: false })` (async) |
-| Reports failure by | returning `{ success: false, error }` | returning `{ error }` | **throwing** a `ValidationError` |
-| Messages source | `error.issues[].message` | `error.details[].message` | `error.errors` (`string[]`) |
+| | Zod | Joi | Yup | JSON Schema (ajv) |
+|---|---|---|---|---|
+| Schema builder | `z.object({ ... })` | `Joi.object({ ... })` | `yup.object({ ... })` | a JSON Schema object (`{ type: 'object', ... }`) |
+| Validation call | `schema.safeParse` (sync) | `schema.validate(..., { abortEarly: false })` (sync) | `await schema.validate(..., { abortEarly: false })` (async) | `validate(request)` (sync, pre-compiled) |
+| Reports failure by | returning `{ success: false, error }` | returning `{ error }` | **throwing** a `ValidationError` | returning `false`, errors on `validate.errors` |
+| Messages source | `error.issues[].message` | `error.details[].message` | `error.errors` (`string[]`) | `errors[].instancePath` + `errors[].message` |
 
 The adapters normalize all of this: whichever you pick, a failure becomes a `validation-error` result
 carrying one message per issue, and the handler is skipped. Pick the library your team already uses; if
 you have no preference, Zod's static type inference pairs most naturally with the port's typed schema
-registry.
+registry, and `@benzene/ajv` fits best when the contract is a shared or externally-authored JSON Schema
+rather than something you'd hand-write in TypeScript.
 
 ## Not ported (yet)
 
@@ -280,10 +332,11 @@ registry.
   `IValidationSchemaBuilder` (`FluentValidationSchemaBuilder`) has only its abstraction ported
   (`IValidationSchemaBuilder` and the `IValidationSchema` family live in `@benzene/abstractions-validation`);
   no adapter ships a concrete builder for that specific shape yet. **Schema generation itself is delivered
-  through a different seam, though:** the Zod / Joi / Yup adapters each ship a concrete
-  `ITypeJsonSchemaSource` (`ZodJsonSchemaSource` / `JoiJsonSchemaSource` / `YupJsonSchemaSource`) that
-  converts the validation schema — rules included (`minLength`/`maxLength`/`pattern`/`enum`/`format`) — to
-  JSON Schema, which `@benzene/schema-openapi`'s `useSpec` publishes. So a validated handler's payload
+  through a different seam, though:** the Zod / Joi / Yup / ajv adapters each ship a concrete
+  `ITypeJsonSchemaSource` (`ZodJsonSchemaSource` / `JoiJsonSchemaSource` / `YupJsonSchemaSource` /
+  `AjvJsonSchemaSource`) that converts the validation schema — rules included
+  (`minLength`/`maxLength`/`pattern`/`enum`/`format`) — to JSON Schema (`AjvJsonSchemaSource` publishes the
+  registered schema as-is), which `@benzene/schema-openapi`'s `useSpec` publishes. So a validated handler's payload
   schema is documented automatically; see [Serialization](serialization.md) and `@benzene/schema-openapi`.
 - **Custom string rule extensions.** FluentValidation's `Benzene.FluentValidation.Common` helpers
   (`IsGuid()`, `IsOneOf(...)`, `IsJson()`, ...) are not re-created — Zod, Joi, and Yup each provide these

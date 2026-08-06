@@ -30,7 +30,8 @@ unchanged on Express, AWS Lambda, or Azure Functions.
   - [Sampling Strategies](sampling-strategies.md) — control how much tracing you keep in production
   - [Diagnosing Failures](diagnosing-failures.md) — a message failed in production; find out why across
     results, logs, traces, and metrics
-  - [Health Checks](health-checks.md) — liveness/readiness checks and the built-in disk/HTTP/TCP checks
+  - [Health Checks](health-checks.md) — liveness/readiness checks and the built-in disk/HTTP/TCP/database
+    checks
   - [Kubernetes Health Checks](kubernetes-health-checks.md) — wiring liveness/readiness probes for K8s
   - [Testing Benzene](testing-benzene.md) — test handlers in isolation and drive whole transport pipelines
     in-memory with vitest
@@ -45,8 +46,8 @@ unchanged on Express, AWS Lambda, or Azure Functions.
       Event Hub
 
 - **Integrations**
-  - [Validation](validation.md) — reject bad requests before they reach your handler, via the Zod, Joi, and
-    Yup adapters
+  - [Validation](validation.md) — reject bad requests before they reach your handler, via the Zod, Joi,
+    Yup, and JSON Schema (ajv) adapters
   - [Serialization & Media Formats](serialization.md) — JSON by default, plus the XML, MessagePack, and Avro
     adapters
   - [Schema Registry](schema-registry.md) — register and evolve message schemas across services

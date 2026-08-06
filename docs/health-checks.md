@@ -30,6 +30,7 @@ endpoint. For the Kubernetes liveness/readiness split built on top of this, see
 | `@benzene/health-checks-disk` | `DiskHealthCheck` / `addDiskSpaceCheck` — free space on a drive. |
 | `@benzene/health-checks-http` | `HttpPingHealthCheck` / `addHttpPing` — pings a downstream HTTP URL. |
 | `@benzene/health-checks-tcp` | `TcpHealthCheck` / `addTcpPing` — opens a TCP connection to a host/port. |
+| `@benzene/health-checks-typeorm` | `DatabaseConnectionHealthCheck` / `addDatabaseConnectionHealthCheck` and `DatabaseHealthCheck` / `addDatabaseHealthCheck` — connectivity (and applied-migration) checks over a TypeORM `DataSource`. |
 | `@benzene/health-checks-dynamodb` | `DynamoDbHealthCheck` / `addDynamoDbHealthCheck` — a read-only `DescribeTable` reachability probe for a DynamoDB table. |
 | `@benzene/health-checks-azure-service-bus` | `ServiceBusHealthCheck` / `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` — a read-only `peekMessages` reachability probe for a queue or a topic subscription. |
 | `@benzene/health-checks-schema` | `SchemaHealthCheck` / `addSchemaHealthCheck` — publishes a hash of the service's own message contract under the `schema` check, so a consumer can detect contract drift. |
@@ -39,6 +40,8 @@ endpoint. For the Kubernetes liveness/readiness split built on top of this, see
 npm install @benzene/health-checks
 # plus whichever built-in checks you need:
 npm install @benzene/health-checks-disk @benzene/health-checks-http @benzene/health-checks-tcp
+# ...a database check over your TypeORM data source:
+npm install @benzene/health-checks-typeorm typeorm
 # ...and the reachability/contract checks where you depend on those resources:
 npm install @benzene/health-checks-dynamodb @benzene/health-checks-azure-service-bus @benzene/health-checks-schema
 ```
@@ -50,10 +53,11 @@ Beyond the standalone check packages, several **consumer workers and client pack
 own dependency reachability check** for the resource they talk to — see
 [Dependency reachability checks](#dependency-reachability-checks) below.
 
-> **Porting note.** The .NET library also ships `Benzene.HealthChecks.EntityFramework`, a
-> `MemoryHealthCheck`, a `ShutdownReadinessHealthCheck`, a per-check `Timeout`/`IsNonCritical`
-> override, and a grpc.health.v1 bridge. Those have no TypeScript port yet — this doc only covers
-> what exists in `src/`. (The AWS/Azure/Kafka/RabbitMq reachability probes **are** ported now — see
+> **Porting note.** The .NET library also ships a `MemoryHealthCheck`, a `ShutdownReadinessHealthCheck`,
+> a per-check `Timeout`/`IsNonCritical` override, and a grpc.health.v1 bridge. Those have no TypeScript
+> port yet — this doc only covers what exists in `src/`. (`Benzene.HealthChecks.EntityFramework` **is**
+> ported now, as `@benzene/health-checks-typeorm` — see the [built-in checks](#built-in-health-checks)
+> below; so are the AWS/Azure/Kafka/RabbitMq reachability probes — see
 > [Dependency reachability checks](#dependency-reachability-checks).) See
 > [Not yet ported](#not-yet-ported).
 
@@ -326,6 +330,49 @@ useHealthCheck(app, 'healthcheck', (checks) =>
 > `ICancellationTokenAccessor` (resolved from DI by the factory) has no ported DI seam yet, so
 > `CancellationToken` becomes an optional `AbortSignal` on the `TcpHealthCheck` constructor;
 > `TcpHealthCheckFactory` / `addTcpPing` don't wire one up today.
+
+### `DatabaseConnectionHealthCheck` / `DatabaseHealthCheck` (`@benzene/health-checks-typeorm`)
+
+Two checks over a TypeORM [`DataSource`](https://typeorm.io/data-source) — the port of .NET's
+`Benzene.HealthChecks.EntityFramework`, with a `DataSource` standing in for EF Core's `DbContext`. Both
+take the data source directly (the port has no DI token for an arbitrary data source, so it is supplied to
+the `add*` helper the same way the DynamoDb check takes its table), plus an optional trailing `name` for
+the dependency label (defaulting to the data source's database name).
+
+`addDatabaseConnectionHealthCheck(builder, dataSource)` checks **connectivity only** — it probes
+reachability with a trivial `SELECT 1`; healthy if that succeeds, `failed` on any connection error.
+`type` is `'DatabaseConnection'`; `data` includes `CanConnect` and, on failure, `Error`. It attaches one
+`HealthCheckDependency('Database', name)`.
+
+`addDatabaseHealthCheck(builder, dataSource, targetMigration)` is stricter — healthy only if the database
+connects **and** `targetMigration` is the **last** applied migration (not merely present somewhere among
+applied migrations). A database that connects fine but is behind on migrations (or ahead of the expected
+one) reports unhealthy. `type` is `'Database'`; `data` includes `CanConnect`, `AppliedMigrations`,
+`TargetMigration`, `MigrationMatch` (the target is the last applied one — this drives pass/fail),
+`MigrationContains` (it's applied at all, regardless of position), `Error`, and `MigrationError` (the
+migration query's own failure type, if it threw — distinct from "connected but behind").
+
+```ts
+import { DataSource } from 'typeorm';
+import {
+  addDatabaseConnectionHealthCheck,
+  addDatabaseHealthCheck,
+} from '@benzene/health-checks-typeorm';
+
+const dataSource = new DataSource({ /* ...your TypeORM config... */ });
+
+useHealthCheck(app, 'healthcheck', (checks) => {
+  addDatabaseConnectionHealthCheck(checks, dataSource);               // reachable?
+  addDatabaseHealthCheck(checks, dataSource, 'Initial1700000000000'); // reachable AND on this migration?
+});
+```
+
+> **Port note.** EF's `Database.CanConnectAsync()` maps to a `SELECT 1` probe (TypeORM's `DataSource` has
+> no `CanConnectAsync`), and `GetAppliedMigrationsAsync()` to TypeORM's
+> `MigrationExecutor.getExecutedMigrations()`, re-sorted ascending so "last applied" matches EF. As
+> everywhere in the health checks, `Error`/`MigrationError` report the failure's **type** name only, never
+> its message — some database drivers put server addresses and credentials in exception text, and this
+> result can flow out to whatever reaches the health topic.
 
 ## Aggregation, timeouts, and the internal safety net
 
@@ -657,9 +704,6 @@ To register a dependency check yourself (a resource with no auto-wiring, or a be
 Several .NET health-check features have no TypeScript port today, and are deliberately omitted here
 rather than fabricated:
 
-- **`Benzene.HealthChecks.EntityFramework`** (`DatabaseConnectionHealthCheck<T>` /
-  `DatabaseHealthCheck<T>`) — write your own `IHealthCheck` against your data layer (see
-  [the example above](#example-a-custom-health-check-class)).
 - **`MemoryHealthCheck`** and **`ShutdownReadinessHealthCheck`** — the host-self-check and
   graceful-drain checks.
 - **Per-check configurable `timeout` / `isNonCritical`** — the port's timeout is a fixed 10s and the
