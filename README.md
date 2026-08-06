@@ -53,6 +53,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
 | `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
+| `src/Benzene.Azure.CosmosDb` | `@benzene/azure-cosmos-db` | `Benzene.Azure.CosmosDb` (standalone change-feed consumer worker; the **push-model** `ChangeFeedProcessor` has no `@azure/cosmos` equivalent, so the SDK processor/context/delegates/`ChangeFeedItem` are declared in-package and `CosmosChangeFeedProcessorFactory` drives the **pull-model** `getChangeFeedIterator` in a poll loop, persisting the continuation token through a caller-supplied `ICosmosChangeFeedCheckpointStore` as the checkpoint; distinct from the trigger-delivered `@benzene/azure-function-cosmos-db`) |
 | `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); metadata dependency health-check auto-wired via an explicit `IKafkaAdminClientFactory`; dead-letter/`DrainOnRevoke` deferred) |
 | `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); passive-declare dependency health-check auto-wired) |
 | `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
@@ -1175,6 +1176,48 @@ Ported (with tests):
   `withEventHubConfigDefaults`; `EventProcessorClient` → `EventHubConsumerClient` (the factory's created type,
   interface name kept). The emulator integration test is replaced by unit tests that drive the captured
   `processEvents` handler over a fake client with a checkpoint-recording `PartitionContext`.
+- Standalone Cosmos DB change-feed consumer (`@benzene/azure-cosmos-db`): the non-Functions Cosmos DB
+  Change Feed **consumer** worker — `useCosmosDbChangeFeed(workerStartup, config, processorFactory, action)`
+  registers a `BenzeneCosmosChangeFeedWorker` (`IBenzeneWorker`) that runs each delivered batch through a
+  **streaming** `StreamContext<TDocument>` pipeline (fan-in, transport `"cosmos-db"`), and
+  `useCosmosDbAllVersionsChangeFeed(...)` is the all-versions-and-deletes sibling streaming
+  `StreamContext<CosmosChangeFeedItem<TDocument>>` (current + previous + a Benzene-owned `CosmosChangeType`).
+  `BenzeneCosmosChangeFeedConfig` (`autoCheckpointOnSuccess` default `true`, `catchHandlerExceptions` default
+  `false` — deliberately the opposite of Event Hubs, as the change feed redelivers a failed batch natively) and
+  `BenzeneCosmosAllVersionsChangeFeedConfig` (only `catchHandlerExceptions`, since the all-versions path is
+  automatic-checkpoint only). Sibling of the trigger-delivered `@benzene/azure-function-cosmos-db`; intended for
+  `@benzene/self-host` workers. Divergences: **the change-feed-processor fork** — the .NET
+  `Microsoft.Azure.Cosmos` SDK's **push-model** `ChangeFeedProcessor` (automatic lease-container ownership,
+  cross-instance load balancing, batch-level manual/automatic checkpoint hooks) has **no** `@azure/cosmos`
+  counterpart; the JS SDK offers only a **pull-model** iterator
+  (`container.items.getChangeFeedIterator({ changeFeedMode, changeFeedStartFrom, maxItemCount })` →
+  `readNext()` pages with a `continuationToken`, `ChangeFeedMode.LatestVersion` /
+  `AllVersionsAndDeletes`). So the SDK's `ChangeFeedProcessor`, `ChangeFeedProcessorContext`, the
+  `Container.ChangeFeed*` handler delegates, `ChangeFeedItem<T>`/`ChangeFeedOperationType` — none of which
+  exist in `@azure/cosmos` — are **declared by this package** (`ChangeFeedProcessor.ts`), and the built-in
+  `CosmosChangeFeedProcessorFactory` realizes the "processor" by driving the pull iterator in a **poll loop**,
+  persisting the change feed's continuation token through a caller-supplied `ICosmosChangeFeedCheckpointStore`
+  as the checkpoint (which is what the .NET lease container did automatically — the JS pull iterator has no
+  lease/checkpoint store). Consequences of the fork: the factory takes a monitored container + checkpoint store
+  (not a *lease container* + processor/instance names — there is **no** lease-based cross-instance load
+  balancing, the subsystem the SDK doesn't provide; it is a single-consumer poll loop); progress advances
+  in-memory even when a batch isn't durably checkpointed, and a handler rejection rewinds the iterator to the
+  last persisted token so the batch is redelivered (at-least-once). `CosmosChangeFeedStreamCheckpointer` stays
+  faithful (it wraps a `() => Promise<void>` hook the factory wires to the continuation-token write).
+  `CosmosChangeFeedApplication` composes the ported `MiddlewareApplicationWithResult` directly, because the
+  result-producing (3-generic) `StreamMiddlewareApplication<TEvent, TItem, TResult>` — the C# base — was not
+  part of the `@benzene/core-middleware` port (only the 2-generic overload); the all-versions
+  `CosmosAllVersionsChangeFeedApplication` uses that 2-generic `StreamMiddlewareApplication` unchanged.
+  `CosmosChangeType`/`ChangeFeedOperationType` C# enums → frozen-object + union (`CosmosChangeType` keeps the
+  `0/1/2` values; `ChangeFeedOperationType` maps to the full-fidelity wire strings `"create"`/`"replace"`/
+  `"delete"`); the config classes gain an optional `Partial` constructor as the idiomatic stand-in for a C#
+  object initializer; `TDocument previous` (a C# `default`/`null`) → `TDocument | undefined`; `CancellationToken`
+  → optional `AbortSignal` (`OperationCanceledException` shutdown-guard → an `AbortError`/`OperationCanceledError`
+  name check); the C# default-interface `CreateAllVersionsAndDeletes` (which throws) → an exported
+  `createAllVersionsAndDeletesNotSupported()` free function a custom factory can delegate to, since a TS
+  interface can carry no method body. The emulator integration test is replaced by unit tests that drive the
+  captured change/error delegates over a faked processor factory (the C# tests' approach), plus a focused test
+  driving the real pull-loop factory over a fake container/iterator.
 - Standalone Kafka consumer (`@benzene/kafka-core`): the **consumer-worker slice only** of
   `Benzene.Kafka.Core`, on `kafkajs` — `useKafka(workerStartup, config, consumerFactory, action)` registers a
   `BenzeneKafkaWorker` (`IBenzeneWorker`) that consumes topics and runs each record through a
@@ -1711,13 +1754,6 @@ subsystem, they are left out and recorded here:
   `"Benzene"`, so they flow to whatever exporter a JS app configures **with no glue package at all** —
   wire OTel normally (e.g. a `NodeTracerProvider` + OTLP exporter) and Benzene's telemetry appears. (Filter
   or sample it by the instrumentation name `"Benzene"`.)
-- **`Benzene.Azure.CosmosDb`** — the standalone Change Feed consumer worker is built entirely on the .NET
-  SDK's **push-based Change Feed Processor** (lease-container ownership, cross-instance load balancing, the
-  batch-level manual-checkpoint hook). `@azure/cosmos` exposes only a **pull-model** change-feed iterator
-  with no processor/lease abstraction, so a faithful port would mean reimplementing the entire
-  lease-ownership + checkpoint-store subsystem the SDK doesn't provide — out of scope for a port. (The
-  shared streaming pipeline shape it uses — `StreamContext`/`StreamMiddlewareApplication` — *is* ported, so
-  the Azure Functions `CosmosDBTrigger` path in `@benzene/azure-function-cosmos-db` remains available.)
 - **`Benzene.JsonSchema`** — generates JSON Schema from CLR types via reflection; TypeScript erases types at
   runtime, so there is nothing to reflect. The port instead derives JSON Schema from the runtime validation
   schemas (`@benzene/zod` / `@benzene/joi` / `@benzene/yup` → `@benzene/schema-openapi`), the idiomatic TS

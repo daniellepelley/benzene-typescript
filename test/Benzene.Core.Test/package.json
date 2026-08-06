@@ -44,6 +44,7 @@
     "@benzene/azure-function-service-bus": "0.1.0",
     "@benzene/azure-function-testing": "0.1.0",
     "@benzene/azure-function-timer": "0.1.0",
+    "@benzene/azure-cosmos-db": "0.1.0",
     "@benzene/azure-service-bus": "0.1.0",
     "@benzene/azure-service-bus-test-helpers": "0.1.0",
     "@benzene/cache-core": "0.1.0",
