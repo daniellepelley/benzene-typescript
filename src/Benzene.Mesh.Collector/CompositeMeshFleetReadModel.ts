@@ -273,12 +273,15 @@ function servicesFromFlows(flows: readonly TraceSummary[]): ServiceSummary[] {
   });
 }
 
+// (topic, version) packed into one Map key. The NUL separator can't appear in a topic id or version, so the
+// pack is collision-free — matching `MeshCollectorStore`'s topicKey (a plain space would collide, e.g.
+// ("a b","c") vs ("a","b c")).
 function groupKey(topic: string, version: string): string {
-  return `${topic} ${version}`;
+  return `${topic}\u0000${version}`;
 }
 
 function parseGroupKey(key: string): { topic: string; version: string } {
-  const sep = key.indexOf(' ');
+  const sep = key.indexOf('\u0000');
   return { topic: key.substring(0, sep), version: key.substring(sep + 1) };
 }
 

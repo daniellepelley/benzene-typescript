@@ -88,8 +88,20 @@ function parseBound(value: string | undefined, now: number): number | undefined 
     return sign === '-' ? now - span : now + span;
   }
 
-  const absolute = Date.parse(value);
+  const absolute = Date.parse(normalizeIsoToUtc(value));
   return Number.isNaN(absolute) ? undefined : absolute;
+}
+
+/**
+ * Make a zone-less ISO **date-time** parse as UTC, matching the .NET resolver's
+ * `DateTimeOffset.TryParse(AssumeUniversal | AdjustToUniversal)`. `Date.parse` reads a zone-less date-time
+ * (`2026-07-24T10:00:00`) as host-**local**, so absent this it would drift by the deployment's UTC offset;
+ * appending `Z` pins it to UTC on both planes. Date-only forms (`2026-07-24`) are already UTC in `Date.parse`
+ * and zone-qualified forms (`…Z` / `…±hh:mm`) are left untouched; the relative `now±…` grammar never reaches here.
+ */
+function normalizeIsoToUtc(value: string): string {
+  const trimmed = value.trim();
+  return /T\d{2}:\d{2}/.test(trimmed) && !/(Z|[+-]\d{2}:?\d{2})$/.test(trimmed) ? `${trimmed}Z` : trimmed;
 }
 
 function parseDuration(s: string): number | undefined {

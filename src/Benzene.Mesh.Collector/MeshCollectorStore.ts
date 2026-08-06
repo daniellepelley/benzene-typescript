@@ -471,13 +471,13 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 }
 
 // A topic is keyed by (id, version). The ring/dictionary key packs both into one string so it can key a
-// JS Map (C#'s value-tuple dictionary key). ' ' cannot appear in a topic id or version.
+// JS Map (C#'s value-tuple dictionary key). The NUL (\u0000) separator can't appear in a topic id or version, so the key is collision-free.
 function topicKey(id: string, version: string): string {
-  return `${id} ${version}`;
+  return `${id}\u0000${version}`;
 }
 
 function parseTopicKey(key: string): { id: string; version: string } {
-  const sep = key.indexOf(' ');
+  const sep = key.indexOf('\u0000');
   return { id: key.substring(0, sep), version: key.substring(sep + 1) };
 }
 

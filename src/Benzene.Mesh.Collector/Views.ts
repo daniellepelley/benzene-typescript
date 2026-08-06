@@ -20,6 +20,10 @@ export const MeshHealth = {
   unknown: 'unknown',
 } as const;
 
+/** The health values a service row can carry (`'healthy' | 'degraded' | 'unknown'`) — the narrowed type of the
+ *  wire's `health` field. Additive DX over the wire's bare `string`; no wire change. */
+export type MeshHealthValue = (typeof MeshHealth)[keyof typeof MeshHealth];
+
 /** Acknowledges an ingest message: how many items were accepted. */
 export class Ack {
   accepted = 0;
@@ -61,7 +65,7 @@ export class ServiceSummary {
 
   instances = 0;
 
-  health: string = MeshHealth.unknown;
+  health: MeshHealthValue = MeshHealth.unknown;
 
   /**
    * When this service was last observed (epoch ms), or `undefined` when the plane carries no live-time
@@ -155,7 +159,7 @@ export class ServiceView {
 
   topics = 0;
 
-  health: string = MeshHealth.unknown;
+  health: MeshHealthValue = MeshHealth.unknown;
 
   lastSeen?: number;
 
