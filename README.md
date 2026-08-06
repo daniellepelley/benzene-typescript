@@ -125,6 +125,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Lambda.TestHelpers` | `@benzene/aws-lambda-testing` | `Benzene.Aws.Lambda.*.TestHelpers`¶ |
 | `src/Benzene.Azure.Function.TestHelpers` | `@benzene/azure-function-testing` | `Benzene.Azure.Function.*.TestHelpers`¶ |
 | `src/Benzene.GoogleCloud.Functions.Http.TestHelpers` | `@benzene/google-cloud-functions-http-testing` | `Benzene.GoogleCloud.Functions.Http.TestHelpers` |
+| `src/Benzene.GoogleCloud.Functions.PubSub.TestHelpers` | `@benzene/google-cloud-functions-pubsub-testing` | `Benzene.GoogleCloud.Functions.PubSub.TestHelpers` |
 | `src/Benzene.Aws.Sqs.TestHelpers` | `@benzene/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
 | `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzene/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
 | `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
@@ -214,7 +215,20 @@ method; and (b) since the Functions Framework is Express-shaped `(req, res)`, th
 (one ASP.NET `DefaultHttpContext`) splits in two — `asGoogleCloudHttpRequest(httpBuilder(...))` builds the
 native `@google-cloud/functions-framework` `Request` (`method`/`url`/`path`/`headers`/`rawBody`), and
 `host.sendHttpAsync(request)` mints and captures the `Response` (`statusCode`/`setHeader`/`end`, the exact
-write surface `ExpressResponseAdapter.finalizeAsync` touches), returning `{ statusCode, headers, body }`. **Bends recorded here:** (3) AWS startups implement the
+write surface `ExpressResponseAdapter.finalizeAsync` touches), returning `{ statusCode, headers, body }`.
+Its **Pub/Sub sibling** (`@benzene/google-cloud-functions-pubsub-testing`, porting
+`Benzene.GoogleCloud.Functions.PubSub.TestHelpers`) completes the GCP Functions testing pair on the same law:
+`buildGooglePubSubFunctionHost(builder)` (free function, same rationale), then `asPubSubEvent(messageBuilder(...))`
+or a fluent `new PubSubMessageBuilder().withTopic(...).withBody(...).build()` produces a native
+`MessagePublishedData` and `host.sendPubSubAsync(data)` dispatches it (fire-and-consume, `Promise<void>`;
+assert on egress via `FakeBenzeneMessageSender`). Bends: the protobuf `MessagePublishedData`/`PubsubMessage`
+(`Google.Events.Protobuf`) → the transport's structural CloudEvent-JSON `MessagePublishedData`, so the body
+is **base64-encoded into `message.data`** (what `PubSubMessageBodyGetter` decodes) where C# stored raw UTF-8
+in a protobuf `ByteString`; the topic rides the `"topic"` attribute (`PubSubMessageTopicGetter.DefaultTopicAttribute`)
+and headers ride as further attributes; C#'s inert `CloudEvent` envelope (minted only to satisfy the
+`ICloudEventFunction` signature) is dropped — the TS host holds the built `IEntryPointMiddlewareApplication`
+and calls `app.sendAsync(data)` directly, so **no cloudevents/functions-framework dependency** is pulled in;
+`Guid.NewGuid()` default message id → `crypto.randomUUID()`. **Bends recorded here:** (3) AWS startups implement the
 **non-generic `BenzeneStartUp`** (`configure(app: IBenzeneApplicationBuilder)`, selecting the transport inside
 with `useAwsLambda(app, aws => …)`), matching the .NET reference's single app-builder shape; the generic
 `BenzeneStartUpOf<TAppBuilder>` (pinned by the `AzureFunctionStartUp` alias) is retained only for Azure, whose

@@ -78,6 +78,7 @@
     "@benzene/google-cloud-functions-http": "0.1.0",
     "@benzene/google-cloud-functions-http-testing": "0.1.0",
     "@benzene/google-cloud-functions-pubsub": "0.1.0",
+    "@benzene/google-cloud-functions-pubsub-testing": "0.1.0",
     "@benzene/grpc": "0.1.0",
     "@benzene/grpc-client": "0.1.0",
     "@benzene/health-checks": "0.1.0",
