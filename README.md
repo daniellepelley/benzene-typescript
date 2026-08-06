@@ -108,6 +108,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` |
 | `src/Benzene.Mesh.Fleet.Jaeger` | `@benzene/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
 | `src/Benzene.Mesh.Fleet.Tempo` | `@benzene/mesh-fleet-tempo` | `Benzene.Mesh.Fleet.Tempo` |
+| `src/Benzene.Mesh.Fleet.Aws.XRay` | `@benzene/mesh-fleet-aws-xray` | `Benzene.Mesh.Fleet.Aws.XRay` |
 | `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
 | `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
 | `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
@@ -1447,6 +1448,27 @@ Ported (with tests):
   assembly-scan DI → explicit registration; `MeshTraceEvent.exceptionType` omitted, the same wire-port
   gap). Tempo-specific: span `startTimeUnixNano`/`endTimeUnixNano` (~1.5e18, beyond `Number.MAX_SAFE_INTEGER`)
   are parsed with `BigInt` (matching C#'s `long`) before the integer nanos→ms reduction. Eight C# scenarios ported.
+- Mesh AWS X-Ray fleet source (`@benzene/mesh-fleet-aws-xray`): the **AWS X-Ray** realisation of the
+  trace-backed fleet reader (completing the trio with the Jaeger/Tempo siblings) — an `IMeshTraceSource`
+  answering the collector's trace/correlation/recent-flows from X-Ray (`BatchGetTraces` by id,
+  `GetTraceSummaries` for correlation + recent-flows), with `XRaySegmentMapper` walking X-Ray's
+  segment-document JSON — Benzene attributes read whether X-Ray landed them as `annotations` (underscore
+  keys, `benzene_topic`) or `metadata` (dotted keys, possibly one namespace deep, `benzene.topic`).
+  Recent-flows rows are enriched via a bounded `BatchGetTraces` to show the pipeline-stamped
+  `benzene.service` (not X-Ray's infra `ServiceIds`), real ms start, and real span count, with per-row
+  fallback to the summary plane. Wired via `addXRayFleetReadModel(services, options?)` into a
+  `CompositeMeshFleetReadModel`. Adaptations: `IAmazonXRay` → the `@aws-sdk/client-xray` `XRayClient`
+  (`_xray.BatchGetTracesAsync(req)` → `xray.send(new BatchGetTracesCommand(input))`; the v3 SDK's PascalCase
+  shape members map ~1:1, `StartTime`/`EndTime` as JS `Date`); the C# container-registered default
+  `IAmazonXRay` → the factory constructs `new XRayClient({})` directly (no ambient AWS-client DI token), the
+  `addSqs*` pattern; `JsonDocument` → `JSON.parse` + `unknown` guards; `DateTimeOffset` → epoch-ms `number`
+  (an unparseable trace-id epoch falls back to `0`, the ordering analog of `DateTimeOffset.MinValue`);
+  `CancellationToken` → optional `AbortSignal` (threaded to `send` as `{ abortSignal }`); `Task.WhenAll` →
+  `Promise.all`; `StringComparer.Ordinal` → an ordinal compare. **Unlike the Jaeger/Tempo ports it does not
+  drop `exceptionType`**: this port adds the `exceptionType` field (spec §3 "the failure's WHY") to
+  `@benzene/mesh-wire`'s `MeshTraceEvent` — it was missing from the snapshot, an additive optional field so
+  `MeshJson.serialize` omits it when absent — and the mapper reads `benzene.exception.type` into it. All 17
+  C# scenarios ported.
 - Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
   to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
@@ -1507,9 +1529,8 @@ Ported (with tests):
     `IKubernetesServiceLister` seam, whose real implementation (`KubernetesApiServiceLister`) adapts the
     Kubernetes SDK to `@kubernetes/client-node`'s `CoreV1Api` (v1's single-param list methods); wired via
     `addMeshKubernetesDiscovery` (`KubeConfig.loadFromCluster`). Provider test class ported (8 tests).
-  Deferred: `Mesh.Fleet.Aws.XRay` needs `Mesh.Collector`, not yet ported. (`Mesh.Wire`'s ServiceDescriptor
-  path is now ported as `@benzene/mesh-wire`, with a pluggable schema provider in place of CLR reflection;
-  the collector and the trace/heartbeat feeds remain.)
+  (`Mesh.Fleet.Aws.XRay` is now ported as `@benzene/mesh-fleet-aws-xray` — see the mesh AWS X-Ray fleet
+  source above.)
 - AWS Lambda outbound client + its mesh integration:
   - Low-level Lambda client (`@benzene/clients-aws-lambda`): `AwsLambdaClient` (an `IAwsLambdaClient`) invokes
     a function synchronously (`RequestResponse`) or fire-and-forget (`Event`) via `@aws-sdk/client-lambda`,

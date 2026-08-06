@@ -25,6 +25,13 @@ export class MeshTraceEvent {
   /** The Benzene status verbatim; empty only when no downstream middleware produced a result. */
   status = '';
 
+  /**
+   * The failure's WHY (spec §3): the thrown exception's type name, stamped by the pipeline on the same
+   * topic-bearing span as {@link status}. `undefined` for non-exception failures or spans predating the tag
+   * (so `MeshJson.serialize` omits it - additive, no wire change for existing serialization).
+   */
+  exceptionType?: string;
+
   durationMs = 0;
 
   /** Epoch milliseconds (the port of C# `DateTimeOffset StartedAt`). */
