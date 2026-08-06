@@ -54,7 +54,11 @@ export class DataSourceTypeOrmDatabase implements ITypeOrmDatabase {
 /** Mirrors C#'s `ex.GetType().Name` — the constructor name of the thrown value (never its message). */
 export function errorName(error: unknown): string {
   if (error instanceof Error) {
-    return error.name;
+    // C#'s `GetType().Name` is the runtime *type* name; the JS analog is the constructor name, not
+    // `error.name` (a mutable label an `Error` subclass may leave as the inherited `"Error"`). For
+    // TypeORM's own errors the two coincide, but a hand-rolled `class FooError extends Error {}` that
+    // never sets `name` would otherwise be reported as `"Error"` instead of `"FooError"`.
+    return error.constructor?.name ?? error.name;
   }
   return typeof error;
 }

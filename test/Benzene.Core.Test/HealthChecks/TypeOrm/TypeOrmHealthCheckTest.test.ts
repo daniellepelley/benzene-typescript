@@ -54,6 +54,16 @@ describe('DatabaseConnectionHealthCheck', () => {
   it('has type DatabaseConnection', () => {
     expect(new DatabaseConnectionHealthCheck(new FakeDatabase(), 'orders').type).toBe('DatabaseConnection');
   });
+
+  it('records the error TYPE name (C# GetType().Name), not the inherited "Error", for a subclass', async () => {
+    // A subclass that never sets `.name` inherits "Error"; the check must still report its class name,
+    // matching C#'s `ex.GetType().Name`.
+    class ConnectionRefusedError extends Error {}
+    const database = new FakeDatabase({ connect: new ConnectionRefusedError('refused') });
+    const result = await new DatabaseConnectionHealthCheck(database, 'orders').executeAsync();
+
+    expect(result.data.Error).toBe('ConnectionRefusedError');
+  });
 });
 
 describe('DatabaseHealthCheck', () => {

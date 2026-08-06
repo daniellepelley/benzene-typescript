@@ -34,6 +34,7 @@ export * from './CosmosChangeFeedStreamCheckpointer';
 export * from './ChangeFeedProcessor';
 export * from './ICosmosChangeFeedProcessorFactory';
 export * from './CosmosChangeFeedProcessorFactory';
+export * from './InMemoryCosmosChangeFeedCheckpointStore';
 export * from './CosmosChangeFeedApplication';
 export * from './CosmosAllVersionsChangeFeedApplication';
 export * from './BenzeneCosmosChangeFeedWorker';

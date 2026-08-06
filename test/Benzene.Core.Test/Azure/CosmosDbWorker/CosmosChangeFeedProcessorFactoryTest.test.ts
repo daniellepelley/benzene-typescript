@@ -5,6 +5,7 @@ import {
   CosmosChangeFeedProcessorFactory,
   CosmosChangeFeedSource,
   ICosmosChangeFeedCheckpointStore,
+  InMemoryCosmosChangeFeedCheckpointStore,
 } from '@benzene/azure-cosmos-db';
 
 /**
@@ -242,5 +243,64 @@ describe('CosmosChangeFeedProcessorFactory (pull-iterator poll loop)', () => {
 
     expect(deliveredPage?.map((c) => c.current.id)).toEqual(['o1']);
     expect(store.tokens.get('lease-B')).toBe('token-9');
+  });
+
+  it('advances in-memory across a successful-but-uncheckpointed batch (no durable write until a checkpoint)', async () => {
+    // Net-new checkpoint/redelivery semantics: in manual mode a handler that succeeds WITHOUT
+    // checkpointing must not durably persist a token, yet the iterator must still move forward
+    // in-memory (the .NET "processor still moves forward in-memory within current ownership").
+    const store = new InMemoryCosmosChangeFeedCheckpointStore();
+    const source = fakeSource([
+      { result: [{ id: 'a' }], count: 1, statusCode: 200, continuationToken: 'token-1' },
+      { result: [{ id: 'b' }], count: 1, statusCode: 200, continuationToken: 'token-2' },
+      notModified,
+    ]);
+    const factory = new CosmosChangeFeedProcessorFactory<OrderDocument>(source, store, {
+      pollIntervalMs: 5,
+      leaseToken: 'lease-D',
+    });
+
+    const deliveries: string[] = [];
+    let resolveSecond: () => void;
+    const secondDelivery = new Promise<void>((resolve) => {
+      resolveSecond = resolve;
+    });
+    const processor = factory.create(
+      async (_context, changes, checkpointAsync) => {
+        deliveries.push(...changes.map((d) => d.id));
+        if (deliveries.length === 1) {
+          // First page: succeed but do NOT checkpoint — nothing durable should be written.
+          return;
+        }
+        await checkpointAsync(); // second page checkpoints (token-2)
+        resolveSecond();
+      },
+      () => Promise.resolve(),
+    );
+
+    await processor.startAsync();
+    await secondDelivery;
+    await processor.stopAsync();
+
+    // Both pages delivered in order (the iterator advanced in-memory past the uncheckpointed first
+    // page), and only the second page's token was ever persisted (token-1 was never written).
+    expect(deliveries).toEqual(['a', 'b']);
+    expect(await store.readContinuationToken('lease-D')).toBe('token-2');
+  });
+});
+
+describe('InMemoryCosmosChangeFeedCheckpointStore', () => {
+  it('reads undefined before any write, then reads back the last-written token per lease', async () => {
+    const store = new InMemoryCosmosChangeFeedCheckpointStore();
+
+    expect(await store.readContinuationToken('lease-A')).toBeUndefined();
+
+    await store.writeContinuationToken('lease-A', 'token-1');
+    await store.writeContinuationToken('lease-B', 'token-9');
+    await store.writeContinuationToken('lease-A', 'token-2'); // overwrites
+
+    expect(await store.readContinuationToken('lease-A')).toBe('token-2');
+    expect(await store.readContinuationToken('lease-B')).toBe('token-9');
+    expect(await store.readContinuationToken('lease-C')).toBeUndefined();
   });
 });

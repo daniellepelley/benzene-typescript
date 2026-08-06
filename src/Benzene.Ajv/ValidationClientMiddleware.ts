@@ -35,6 +35,10 @@ export class ValidationClientMiddleware<TRequest, TResponse>
 
     if (validate === undefined) {
       // No schema for this message type (or no message to key one off) — nothing to validate.
+      // Because the validator is keyed off the message instance's constructor, a null/undefined
+      // message resolves no validator and falls through here; the explicit "Request is null" guard
+      // below mirrors the C#/Zod structure for the case where a validator is somehow present
+      // without a message.
       await next();
       return;
     }

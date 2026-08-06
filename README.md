@@ -1041,7 +1041,9 @@ Ported (with tests):
   InMemory provider. Unlike EF's `CanConnectAsync` (which can return `false` without throwing), the probe
   query either succeeds or throws, so a connection failure always carries an `Error`. The C# resolves
   `TDbContext` from DI each run; the port has no DI token for an arbitrary `DataSource`, so the `add*`
-  helpers take it directly (the DynamoDb/SQS health-check convention).
+  helpers take it directly (the DynamoDb/SQS health-check convention). The `Error`/`MigrationError` type
+  name comes from the thrown value's **constructor name** (`error.constructor.name`), the JS analog of C#'s
+  `ex.GetType().Name` — not `error.name`, which an `Error` subclass may leave as the inherited `"Error"`.
 - Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
   convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
   alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the
@@ -1250,7 +1252,12 @@ Ported (with tests):
   `createAllVersionsAndDeletesNotSupported()` free function a custom factory can delegate to, since a TS
   interface can carry no method body. The emulator integration test is replaced by unit tests that drive the
   captured change/error delegates over a faked processor factory (the C# tests' approach), plus a focused test
-  driving the real pull-loop factory over a fake container/iterator.
+  driving the real pull-loop factory over a fake container/iterator. TS-only addition (no C# counterpart,
+  since the .NET lease container persists the checkpoint automatically): a batteries-included
+  `InMemoryCosmosChangeFeedCheckpointStore` reference `ICosmosChangeFeedCheckpointStore` (a `Map`-backed,
+  non-durable implementation) so tests/examples/local-dev are copy-paste-runnable — a production worker still
+  supplies a durable store (Cosmos container, blob, table, …), because the in-memory one starts empty on
+  restart and so resumes from `startFrom` rather than the last processed change.
 - Standalone Kafka consumer (`@benzene/kafka-core`): the **consumer-worker slice only** of
   `Benzene.Kafka.Core`, on `kafkajs` — `useKafka(workerStartup, config, consumerFactory, action)` registers a
   `BenzeneKafkaWorker` (`IBenzeneWorker`) that consumes topics and runs each record through a
