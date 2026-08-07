@@ -20,7 +20,8 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
   through to a dead-letter queue.
 - [SNS Fan-Out Pattern](sns-fan-out.md) — publish one event to an SNS topic and have several
   independently-deployed Lambda functions each process their own copy of it.
-- S3 Event Processing *(coming soon)*
+- [S3 Event Processing](s3-event-processing.md) — trigger a Lambda when an object is uploaded to an S3
+  bucket, route the record to a handler by its S3 event name, and read (or fetch) the object to process it.
 
 ### Reliability & Workflow
 
