@@ -1,0 +1,26 @@
+{
+  "name": "create-benzene",
+  "version": "0.1.0",
+  "description": "Scaffold a new Benzene TypeScript service — the `npm create benzene` project generator (the dotnet new equivalent for the Benzene TypeScript port)",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-benzene": "index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "index.js",
+    "templates"
+  ],
+  "keywords": [
+    "benzene",
+    "create",
+    "scaffold",
+    "template",
+    "aws",
+    "lambda",
+    "hexagonal"
+  ]
+}

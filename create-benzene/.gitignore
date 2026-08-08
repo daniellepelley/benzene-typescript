@@ -1,0 +1,3 @@
+# Verification output (generated sample projects); see scripts/verify.mjs
+.verify/
+node_modules/

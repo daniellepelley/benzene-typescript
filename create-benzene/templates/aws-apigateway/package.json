@@ -1,0 +1,33 @@
+{
+  "name": "__PROJECT_NAME__",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Benzene service on AWS Lambda, triggered by API Gateway HTTP requests",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/handler.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@benzene/abstractions": "^0.1.0",
+    "@benzene/abstractions-message-handlers": "^0.1.0",
+    "@benzene/abstractions-middleware": "^0.1.0",
+    "@benzene/core-message-handlers": "^0.1.0",
+    "@benzene/core-middleware": "^0.1.0",
+    "@benzene/dependencies": "^0.1.0",
+    "@benzene/http": "^0.1.0",
+    "@benzene/results": "^0.1.0",
+    "@benzene/aws-lambda-core": "^0.1.0",
+    "@benzene/aws-lambda-api-gateway": "^0.1.0"
+  },
+  "devDependencies": {
+    "@benzene/testing": "^0.1.0",
+    "@benzene/aws-lambda-testing": "^0.1.0",
+    "@types/aws-lambda": "^8.10",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.9"
+  }
+}

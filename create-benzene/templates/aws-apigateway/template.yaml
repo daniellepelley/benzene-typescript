@@ -1,0 +1,26 @@
+# Hand-checked AWS SAM template for a Benzene TypeScript service on API Gateway (HTTP API). Not run
+# through `sam validate` or deployed from the template — review before production use.
+#
+# This assumes a Node.js build that bundles src/handler.ts to the CodeUri below. Wire your own bundler
+# (esbuild/SAM esbuild BuildMethod) so the handler entry `src/handler.handler` resolves at runtime.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: __PROJECT_NAME__
+      Handler: src/handler.handler
+      CodeUri: ./
+      Events:
+        HttpApi:
+          Type: HttpApi
