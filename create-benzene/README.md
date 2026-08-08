@@ -41,6 +41,11 @@ pushes a message through the real pipeline.
 | `aws-apigateway` | AWS Lambda + API Gateway (HTTP) | request/response (`POST /hello` → topic `hello:world`) |
 | `aws-sqs` | AWS Lambda + SQS | fire-and-forget queue consumer (topic `hello:world`) |
 
+The templates themselves live in the repo's top-level [`../templates/`](../templates/README.md) folder —
+the single, canonical home, consistent with the .NET/Go/Python ports. This CLI is their *consumer*: edit
+the templates there, not here. (For the templates-vs-examples distinction, see
+[`../templates/README.md`](../templates/README.md).)
+
 ## Published-vs-local packages
 
 Generated projects reference the **real** `@benzene/*` npm package names at their published versions.
@@ -50,7 +55,14 @@ template's own README). This is a stated prerequisite of the templates, not a bu
 
 ## Design
 
-Follows the proven `create-vite` pattern: the starter templates are bundled as `templates/<id>/`
-directories inside this package, and the CLI copies one, renaming the `__PROJECT_NAME__` token and
-`_gitignore`, and writing a correct `package.json`. The CLI has **zero runtime dependencies** (Node
-built-ins only), so `npm create benzene` runs with no install step.
+Follows the proven `create-vite` pattern: the CLI copies one `templates/<id>/` directory into the new
+project, renaming the `__PROJECT_NAME__` token and `_gitignore`, and writing a correct `package.json`.
+The CLI has **zero runtime dependencies** (Node built-ins only), so `npm create benzene` runs with no
+install step.
+
+The starters have **one** canonical home: the repo's top-level [`../templates/`](../templates) folder.
+The CLI resolves them from there in a repo checkout; for publishing, the `prepack` script copies that
+folder into this package (an npm package can't ship files from outside its own directory) and `postpack`
+removes the copy — so the published tarball is self-contained while the sources stay un-duplicated. The
+in-package `create-benzene/templates/` path is therefore a **gitignored build artifact**; never edit or
+commit it.

@@ -1,3 +1,6 @@
 # Verification output (generated sample projects); see scripts/verify.mjs
 .verify/
 node_modules/
+
+# Build artifact: the top-level templates/ folder is copied here only at pack time (see scripts/bundle-templates.mjs)
+templates/

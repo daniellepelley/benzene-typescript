@@ -10,6 +10,10 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "prepack": "node scripts/bundle-templates.mjs",
+    "postpack": "node scripts/bundle-templates.mjs --clean"
+  },
   "files": [
     "index.js",
     "templates"

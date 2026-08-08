@@ -12,7 +12,17 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = path.join(__dirname, 'templates');
+
+// The starter templates live in the repo's top-level `templates/` folder — one home, consistent with
+// the .NET (`templates/`), Go (`templates/`) and Python (`templates/`) ports. This CLI is their
+// consumer, not their owner. Two resolutions cover both worlds:
+//   - In the repo (dev, `verify.mjs`, `npm create` from a checkout): use the sibling `../templates`.
+//   - In the published npm tarball: `prepack` (see package.json) copies that folder to `./templates`
+//     so the package is self-contained, since npm can't ship files from outside the package dir.
+// Prefer the bundled copy when present (published), else the canonical top-level folder (in-repo).
+const BUNDLED_TEMPLATES_DIR = path.join(__dirname, 'templates');
+const REPO_TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
+const TEMPLATES_DIR = fs.existsSync(BUNDLED_TEMPLATES_DIR) ? BUNDLED_TEMPLATES_DIR : REPO_TEMPLATES_DIR;
 
 // The token every template file uses where the generated project's npm package name should appear.
 const PROJECT_NAME_TOKEN = '__PROJECT_NAME__';
