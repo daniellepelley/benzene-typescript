@@ -1,0 +1,24 @@
+{
+  "name": "@benzene/aws-lambda",
+  "version": "0.1.0",
+  "description": "Umbrella package for building an AWS Lambda service: re-exports the AWS Lambda core + event-source transports and the common message-handler building blocks (ports Benzene.Aws.Lambda)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@benzene/aws-lambda-core": "0.1.0",
+    "@benzene/aws-lambda-api-gateway": "0.1.0",
+    "@benzene/aws-lambda-sqs": "0.1.0",
+    "@benzene/aws-lambda-sns": "0.1.0",
+    "@benzene/aws-lambda-dynamodb": "0.1.0",
+    "@benzene/aws-lambda-kinesis": "0.1.0",
+    "@benzene/aws-lambda-s3": "0.1.0",
+    "@benzene/aws-lambda-eventbridge": "0.1.0",
+    "@benzene/aws-lambda-kafka": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/results": "0.1.0",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0"
+  }
+}

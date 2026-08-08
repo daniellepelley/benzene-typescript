@@ -31,8 +31,7 @@ infrastructure, not something the TypeScript port generates or wires up.
 ## Installation
 
 ```bash
-npm install @benzene/aws-lambda-sqs @benzene/aws-lambda-core @benzene/core-message-handlers \
-  @benzene/resilience @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
+npm install @benzene/aws-lambda @benzene/resilience
 ```
 
 ## How Benzene reports partial batch failures

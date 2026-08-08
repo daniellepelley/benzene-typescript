@@ -48,7 +48,7 @@
     "@benzene/azure-service-bus-test-helpers": "0.1.0",
     "@benzene/cache-core": "0.1.0",
     "@benzene/cache-redis": "0.1.0",
-    "@benzene/client-http": "0.1.0",
+    "@benzene/clients-http": "0.1.0",
     "@benzene/clients": "0.1.0",
     "@benzene/clients-aws-eventbridge": "0.1.0",
     "@benzene/clients-aws-lambda": "0.1.0",

@@ -56,18 +56,17 @@ shape you want for a modern Lambda bundle.
 ## 2. Install the packages
 
 ```bash
-npm install @benzene/aws-lambda-core @benzene/aws-lambda-api-gateway \
-  @benzene/core-message-handlers @benzene/http @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers @benzene/abstractions-middleware
+npm install @benzene/aws-lambda @benzene/http
 npm install --save-dev typescript esbuild @types/aws-lambda
 ```
 
-`@benzene/aws-lambda-core` brings in the middleware pipeline, the message-handler infrastructure, the
-`InlineAwsLambdaStartUp` entry-point builder, and `toLambdaHandler`.
-`@benzene/aws-lambda-api-gateway` adds `useApiGateway` for handling HTTP requests via API Gateway. Add
-`@benzene/aws-lambda-sqs`, `@benzene/aws-lambda-sns`, `@benzene/aws-lambda-eventbridge`, or
-`@benzene/aws-lambda-kafka` the same way when your function needs those event sources (see
-[Supported event sources](#supported-event-sources)).
+`@benzene/aws-lambda` is the umbrella for building a Lambda service: one install brings in the
+middleware pipeline and message-handler infrastructure, the `InlineAwsLambdaStartUp` entry-point
+builder and `toLambdaHandler`, the results/handler building blocks, **and** every event-source
+transport — `useApiGateway`, `useSqs`, `useSns`, `useEventBridge`, `useKafka`, and the rest — so you
+don't add a package per event source (see [Supported event sources](#supported-event-sources)).
+`@benzene/http` adds the `httpEndpoint` helper for HTTP-shaped handlers. Prefer a narrower dependency
+set? Install the individual `@benzene/aws-lambda-*` packages instead.
 
 ## 3. Write a message handler
 
@@ -281,11 +280,7 @@ whichever async transport delivers it. Now you have a **deployment choice**.
 
 ### Model A — one Lambda function per transport (the default)
 
-Install the SQS transport and give it its own entry point:
-
-```bash
-npm install @benzene/aws-lambda-sqs
-```
+`useSqs` is already included in `@benzene/aws-lambda`. Give it its own entry point:
 
 ```ts
 // src/sqs.ts

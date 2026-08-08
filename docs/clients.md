@@ -41,7 +41,7 @@ decorator mechanism to learn.
 > | Azure Event Grid | `useEventGrid` | `@benzene/clients-azure-event-grid` |
 > | Azure Queue Storage | `useQueueStorage` | `@benzene/clients-azure-queue-storage` |
 > | Google Cloud Pub/Sub | `usePubSub` | `@benzene/clients-google-cloud-pubsub` |
-> | HTTP | on the message-sender path | `@benzene/client-http` (see [HTTP](#http)) |
+> | HTTP | on the message-sender path | `@benzene/clients-http` (see [HTTP](#http)) |
 >
 > Each also auto-wires a non-destructive reachability check for its target on the dependency category
 > (opt out with `healthCheck: false`). If a route has no broker extension, its terminal send is still
@@ -58,7 +58,7 @@ Install the core client package; add the HTTP and/or AWS Lambda packages as need
 | Package | What it adds |
 |---|---|
 | `@benzene/clients` | `IBenzeneMessageSender`, `OutboundContext`, `OutboundRoutingBuilder` / `addOutboundRouting`, the parallel fan-out (`useParallel`) and outbound W3C trace-context (`useW3CTraceContext`) middleware, and the lower-level `IBenzeneMessageClient` decorator suite (`ClientBuilder`, `withRetry`, `withCorrelationId`, `sendMessageAsync`). |
-| `@benzene/client-http` | Outbound HTTP building blocks over the Node `fetch` API — `useHttp` / `useHttpClient` / `useHttpClientToSend`, `HttpContextConverter`, `HttpClientMiddleware`. |
+| `@benzene/clients-http` | Outbound HTTP building blocks over the Node `fetch` API — `useHttp` / `useHttpClient` / `useHttpClientToSend`, `HttpContextConverter`, `HttpClientMiddleware`. |
 | `@benzene/clients-aws-lambda` | `AwsLambdaClient` — the low-level AWS Lambda invoke client, over `@aws-sdk/client-lambda`. |
 | `@benzene/clients-health-checks` | The consumer-side contract-drift health check (`ClientHealthCheck`, `addContractCheck`). |
 | `@benzene/resilience` | `useRetry` — retry-with-backoff around any pipeline stage; works on `OutboundContext` unmodified (see [Resilience](resilience.md)). |
@@ -224,13 +224,13 @@ built-in middleware.
 
 ## HTTP
 
-Package: `@benzene/client-http`. HTTP is the concrete outbound transport that ships today. It plugs
+Package: `@benzene/clients-http`. HTTP is the concrete outbound transport that ships today. It plugs
 into the **message-sender** path (`out(...)` from `@benzene/core-messages`), converting a
 message-shaped client context into an HTTP call over the Node global `fetch`:
 
 ```ts
 import { out } from '@benzene/core-messages';
-import { useHttpClientToSend } from '@benzene/client-http';
+import { useHttpClientToSend } from '@benzene/clients-http';
 
 out(builder, (senders) =>
   senders.createSenderWithResponse<CreateOrder, OrderCreated>((client) =>
