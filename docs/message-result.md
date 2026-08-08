@@ -78,10 +78,11 @@ BenzeneResult.setErrors(status, ...errors);         // custom status + error mes
 [Message Handlers](message-handlers.md)). When you don't pass `isSuccessful`, `set` derives it from the
 status via `BenzeneResultStatus.isSuccess(status)`.
 
-> **No `Is*()` / `.as<T>()` extension helpers.** The C# `BenzeneResultExtensions` (`.IsOk()`,
-> `.IsNotFound()`, `.As<TOutput>()`, `HttpStatusCode.Convert()`) have no port yet. To classify a result
+> **No `Is*()` / `.as<T>()` extension helpers.** The C# `BenzeneResultExtensions` classification/shape
+> helpers (`.IsOk()`, `.IsNotFound()`, `.As<TOutput>()`) have no port yet. To classify a result
 > in TypeScript, compare its `status` against `BenzeneResultStatus` or use the classification helpers
-> below.
+> below. (The reverse HTTP-status-code → result mapping — C# `HttpStatusCode.Convert()` — *is* ported,
+> as the free function `convertHttpStatusCode(code)` in `@benzene/results`.)
 
 ## `BenzeneResultStatus`
 
