@@ -32,8 +32,7 @@ subscribe independently. This cookbook covers:
 Each subscriber Lambda:
 
 ```bash
-npm install @benzene/aws-lambda-sns @benzene/aws-lambda-core @benzene/core-message-handlers \
-  @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
+npm install @benzene/aws-lambda
 ```
 
 Publisher (whichever service raises the event). Benzene ships an SNS outbound client —

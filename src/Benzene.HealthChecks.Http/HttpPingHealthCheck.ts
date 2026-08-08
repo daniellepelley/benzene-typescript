@@ -21,7 +21,7 @@ export const defaultPingFetch: PingFetch = (url) => fetch(url);
  *
  * HttpClient -> fetch adaptation: .NET injects an `HttpClient` and calls `GetAsync`. The port injects
  * a `fetch`-like function instead - defaulting to the Node global `fetch` (via {@link defaultPingFetch})
- * but accepting an injected one so tests can stub the transport, exactly as `@benzene/client-http`'s
+ * but accepting an injected one so tests can stub the transport, exactly as `@benzene/clients-http`'s
  * `HttpClientMiddleware` does. The transport moves to a trailing optional constructor argument (C#
  * had `(httpClient, url)`) so it can default to the global `fetch`.
  */

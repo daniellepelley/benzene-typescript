@@ -1,7 +1,7 @@
 {
-  "name": "@benzene/client-http",
+  "name": "@benzene/clients-http",
   "version": "0.1.0",
-  "description": "TypeScript port of Benzene.Client.Http (outbound HTTP client middleware over the fetch API)",
+  "description": "TypeScript port of Benzene.Clients.Http (outbound HTTP client middleware over the fetch API)",
   "license": "MIT",
   "type": "module",
   "main": "./index.ts",
