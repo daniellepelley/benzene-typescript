@@ -326,7 +326,7 @@ import { useSqs } from '@benzene/aws-lambda-sqs';
 import { messageBuilder } from '@benzene/testing';
 import { asSqs } from '@benzene/aws-lambda-testing';
 import { CapturePaymentHandler } from '../src/CapturePaymentHandler.js';
-import { IPaymentGateway } from '../src/PaymentGateway.js';
+import { IPaymentGateway, PaymentGatewayUnavailableError } from '../src/PaymentGateway.js';
 
 const fakeLambdaContext = {} as Context;
 
