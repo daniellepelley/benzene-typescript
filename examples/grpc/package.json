@@ -1,0 +1,21 @@
+{
+  "name": "@benzene-example/grpc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One greeter domain hosted on gRPC across all four RPC shapes (unary, server-, client-, bidi-streaming), with a Benzene gRPC message client",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/clients": "0.1.0",
+    "@benzene/dependencies": "0.1.0",
+    "@benzene/grpc": "0.1.0",
+    "@benzene/grpc-client": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}
