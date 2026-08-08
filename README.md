@@ -422,6 +422,40 @@ try {
 
 </details>
 
+## Scaffold a new service
+
+`create-benzene` is the TypeScript-ecosystem counterpart of .NET's `dotnet new benzene.*` template pack —
+`npm create benzene` generates a ready-to-run Benzene service so you don't hand-assemble the composition
+root each time. It lives in [`create-benzene/`](create-benzene/README.md); the CLI has **zero runtime
+dependencies** (Node built-ins only), so it runs with no install step.
+
+```bash
+# scaffold an AWS SQS service (note the `--` so npm forwards flags to the generator)
+npm create benzene@latest my-svc -- --template aws-sqs
+
+# equivalently, via npx (no `--` needed)
+npx create-benzene my-svc --template aws-apigateway
+```
+
+Run either with no `--template` (and no directory) to be prompted interactively.
+
+| Template | Hosts |
+|---|---|
+| `aws-apigateway` | AWS Lambda + API Gateway (HTTP) — a request/response handler (`POST /hello` → topic `hello:world`) |
+| `aws-sqs` | AWS Lambda + SQS — a fire-and-forget queue consumer (topic `hello:world`) |
+
+Each template gives you a complete, minimal service: a `StartUp` composition root, a demo handler with one
+injected service (an `IGreeter`), the Lambda handler entry (`src/handler.ts`), and — unless you pass
+`--no-tests` — a `vitest` component test that boots the app and pushes a message through the real pipeline.
+
+> **Heads-up:** a generated `package.json` references the **real** `@benzene/*` npm package names. Those
+> aren't published to the registry yet, so a fresh project can't `npm install` them from npm today — resolve
+> them from a local `benzene-typescript` workspace checkout instead (each template's own README explains
+> how). This is a stated prerequisite of the templates, not a bug in the generated code.
+
+See [`create-benzene/README.md`](create-benzene/README.md) for the full option list, the template layout,
+and the `create-vite`-style design.
+
 ## Porting conventions
 
 Rules applied consistently across the port, chosen to keep TypeScript code recognizable
