@@ -17,9 +17,9 @@ adapter package, all three mirroring the `Benzene.FluentValidation` integration 
 
 | Package | Adapts | Register a schema | Wire into the router |
 |---|---|---|---|
-| [`@benzene/zod`](https://www.npmjs.com/package/zod) | Zod | `registerZodSchema` | `useZodValidation` |
-| [`@benzene/joi`](https://www.npmjs.com/package/joi) | Joi | `registerJoiSchema` | `useJoiValidation` |
-| [`@benzene/yup`](https://www.npmjs.com/package/yup) | Yup | `registerYupSchema` | `useYupValidation` |
+| `@benzene/zod` | [Zod](https://www.npmjs.com/package/zod) | `registerZodSchema` | `useZodValidation` |
+| `@benzene/joi` | [Joi](https://www.npmjs.com/package/joi) | `registerJoiSchema` | `useJoiValidation` |
+| `@benzene/yup` | [Yup](https://www.npmjs.com/package/yup) | `registerYupSchema` | `useYupValidation` |
 
 Each adapter adds a single piece of per-handler middleware, `ValidationMiddleware<TRequest, TResponse>`,
 to the handler pipeline. For every request:
