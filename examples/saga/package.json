@@ -1,0 +1,18 @@
+{
+  "name": "@benzene-example/saga",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A user-signup distributed transaction over @benzene/saga that completes in full or rolls back in full, leaving no orphaned records",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "start": "node --experimental-strip-types src/main.ts"
+  },
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/results": "0.1.0",
+    "@benzene/saga": "0.1.0"
+  }
+}
