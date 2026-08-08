@@ -1,0 +1,20 @@
+{
+  "name": "@benzene-example/versioning",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One BenzeneMessage service dogfooding both versioning axes: handler-version dispatch and transparent payload casting with caster chaining",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/core-messages": "0.1.0",
+    "@benzene/core-middleware": "0.1.0",
+    "@benzene/core-versioning": "0.1.0",
+    "@benzene/dependencies": "0.1.0",
+    "@benzene/results": "0.1.0"
+  }
+}
