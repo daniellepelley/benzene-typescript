@@ -52,7 +52,7 @@ and `useLogResult` are pipeline-builder **members** (see
 [Common Middleware](common-middleware.md#uselogresult--uselogcontext)):
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { addDiagnostics, useW3CTraceContext, useBenzeneEnrichment } from '@benzene/diagnostics';
@@ -60,7 +60,6 @@ import { SqsMessageContext } from '@benzene/aws-lambda-sqs';
 
 const entryPoint = new InlineAwsLambdaStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     addDiagnostics(services); // span per middleware — marks failing spans Error, tagged benzene.*
   })
   .configure((app) =>

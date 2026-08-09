@@ -90,12 +90,7 @@ one entry point over the shared startup.
 **Lambda 1 — sends the customer a notification email:**
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { addBenzene, message, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useSns } from '@benzene/aws-lambda-sns';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IMessageHandler, message, useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useSns, BenzeneResult } from '@benzene/aws-lambda';
 import { IEmailService } from './EmailService.js';
 
 export class OrderPlacedMessage {
@@ -125,7 +120,6 @@ export class SendOrderConfirmationEmailHandler
 
 const entryPoint = new InlineAwsLambdaStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     services.addScoped(IEmailService, SesEmailService);
   })
   .configure((app) =>
@@ -178,8 +172,7 @@ A few things to know about `@benzene/aws-lambda-sns` from reading `SnsApplicatio
 in the TypeScript port (purely additive/opt-in):
 
 ```ts
-import { useSns } from '@benzene/aws-lambda-sns';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useSns, useMessageHandlers } from '@benzene/aws-lambda';
 
 useSns(
   app,
@@ -250,9 +243,7 @@ assert your handler ran (SNS is fire-and-forget, so the entry point returns `nul
 ```ts
 import { describe, expect, it } from 'vitest';
 import { Context, SNSEvent } from 'aws-lambda';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useSns } from '@benzene/aws-lambda-sns';
+import { useMessageHandlers, InlineAwsLambdaStartUp, useSns } from '@benzene/aws-lambda';
 import { messageBuilder } from '@benzene/testing';
 import { asSns } from '@benzene/aws-lambda-testing';
 import { SendOrderConfirmationEmailHandler } from '../src/SendOrderConfirmationEmailHandler.js';
@@ -272,7 +263,6 @@ describe('SendOrderConfirmationEmailHandler on SNS', () => {
 
     const entryPoint = new InlineAwsLambdaStartUp()
       .configureServices((services) => {
-        addBenzene(services);
         services.addScopedInstance(IEmailService, emailService);
       })
       .configure((app) =>
