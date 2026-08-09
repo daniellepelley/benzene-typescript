@@ -17,6 +17,11 @@ unchanged on Express, AWS Lambda, or Azure Functions.
 
 - **General**
   - [Getting Started](getting-started.md) — build and run your first Benzene service in about five minutes
+    - [AWS Lambda](getting-started-aws.md) — one function over API Gateway, SQS, SNS, EventBridge, and Kafka
+    - [Azure Functions](getting-started-azure.md) — HTTP, Service Bus, and Event Hub triggers
+    - [Google Cloud Functions](getting-started-google.md) — HTTP + Pub/Sub
+    - [gRPC](getting-started-grpc.md) — expose handlers over a gRPC server and call other services
+    - [Kafka](getting-started-kafka.md) — run your handlers as a self-hosted Kafka consumer-group worker
   - [Unified Hosting Model](hosting.md) — the same handler on Express, AWS Lambda, Azure Functions, or a
     self-hosted worker
   - [Message Handlers](message-handlers.md) — the components that process a message, and how they're
@@ -41,8 +46,19 @@ unchanged on Express, AWS Lambda, or Azure Functions.
     - [AWS Lambda Setup](getting-started-aws.md) — API Gateway, SQS, SNS, EventBridge, and Kafka, plus the
       one-function-per-transport vs composite deployment models
   - **Azure**
+    - [Azure Functions — getting started](getting-started-azure.md) — one set of handlers over HTTP, Service
+      Bus, and Event Hub triggers
     - [Azure Functions Setup](azure-functions.md) — the Azure Functions v4 model over HTTP, Service Bus, and
       Event Hub
+  - **Google Cloud**
+    - [Google Cloud Functions — getting started](getting-started-google.md) — one set of handlers over HTTP +
+      Pub/Sub
+
+- **Messaging**
+  - [Getting started with gRPC](getting-started-grpc.md) — expose handlers over a gRPC server and call other
+    services with the gRPC client binding
+  - [Getting started with Kafka](getting-started-kafka.md) — run your handlers as a self-hosted Kafka
+    consumer-group worker
 
 - **Integrations**
   - [Validation](validation.md) — reject bad requests before they reach your handler, via the Zod, Joi, and
