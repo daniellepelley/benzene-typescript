@@ -178,7 +178,6 @@ resolved, and it runs **before** the handler. Compose it alongside other per-han
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneMessageContext } from '@benzene/core-messages';
 import {
-  addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlersWithRouter,
@@ -187,7 +186,6 @@ import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { useZodValidation } from '@benzene/zod';
 
 const container = new DefaultBenzeneServiceContainer();
-addBenzene(container);
 addBenzeneMessage(container);
 
 const builder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);

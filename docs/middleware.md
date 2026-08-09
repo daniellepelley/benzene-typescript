@@ -85,13 +85,12 @@ live *downstream* of the builder (like `useMessageHandlers`) are free functions 
 you nest them rather than chaining a `.useMessageHandlers()` method:
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => {
     useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler));
     useSqs(app, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler));

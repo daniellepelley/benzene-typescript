@@ -231,7 +231,7 @@ Both pipelines share one startup. Each `useExceptionHandler` is scoped to the pi
 on, so each transport gets a callback tailored to its own response shape:
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
 import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda-api-gateway';
 import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
@@ -240,7 +240,6 @@ import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => {
     useApiGateway(app, (api) => {
       api.useExceptionHandler((context: ApiGatewayContext) => {

@@ -28,14 +28,13 @@ You then drive the generated event through a real app booted from its own `Benze
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { BenzeneStartUp } from '@benzene/testing';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { CreateOrderHandler } from './handlers.js';
 
 export class OrdersStartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
-    addBenzene(services);
     // register your real services here — a test overrides any of them via `.withServices(...)`
   }
 
@@ -188,7 +187,7 @@ transport-native response:
 // test/HelloPipeline.test.ts
 import { describe, expect, it } from 'vitest';
 import { Context, APIGatewayProxyResult } from 'aws-lambda';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { httpBuilder } from '@benzene/testing';
@@ -206,7 +205,6 @@ describe('hello pipeline (API Gateway)', () => {
   it('routes POST /hello to the handler and returns 200', async () => {
     const entryPoint = new InlineAwsLambdaStartUp()
       .configureServices((services) => {
-        addBenzene(services);
         // Register the fake against its token so the handler's `inject` resolves it.
         services.addScopedInstance(IGreetingService, fakeGreetings);
       })
@@ -227,7 +225,7 @@ describe('hello pipeline (API Gateway)', () => {
 
 The `.configureServices(...)` block is where you **override services**: register a fake instance
 against a token with `addScopedInstance` / `addSingletonInstance` (or a factory with
-`addScopedFactory`) after `addBenzene`, and it replaces whatever the real wiring registered — the
+`addScopedFactory`); registered after Benzene's baseline services, it replaces whatever the real wiring registered — the
 standard way to swap in mocks or point a dependency at a locally running component (a Docker database,
 say) without touching real configuration. This is the port's equivalent of the .NET
 `WithServices(...)` override.
@@ -238,14 +236,13 @@ Every AWS transport is driven the same way — only the builder and the response
 handler with no `@httpEndpoint`, fed by `asSqs`, reports partial-batch failures:
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { messageBuilder } from '@benzene/testing';
 import { asSqs } from '@benzene/aws-lambda-testing';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler)))
   .build();
 
@@ -274,7 +271,7 @@ per trigger — `handleHttpRequest`, `handleServiceBusMessages`, `handleEventHub
 Pair each with the matching `asAzure*` builder:
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
 import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
 import { httpBuilder } from '@benzene/testing';
@@ -282,7 +279,6 @@ import { asAzureHttpRequest } from '@benzene/azure-function-testing';
 
 const app = new InlineAzureFunctionStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     services.addScopedInstance(IGreetingService, fakeGreetings);
   })
   .configure((builder) => useAzureHttp(builder, (http) => useMessageHandlers(http, HelloWorldHandler)))
@@ -315,7 +311,6 @@ import { BenzeneMessageContext } from '@benzene/core-messages';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResultStatus } from '@benzene/results';
 import {
-  addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
@@ -326,7 +321,6 @@ import { messageBuilder, asBenzeneMessage } from '@benzene/testing';
 describe('hello via the message pipeline', () => {
   it('routes the topic and round-trips the payload', async () => {
     const container = new DefaultBenzeneServiceContainer();
-    addBenzene(container);
     addBenzeneMessage(container);
     container.addScopedInstance(IGreetingService, fakeGreetings);
 

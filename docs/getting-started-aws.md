@@ -74,11 +74,8 @@ Create `src/handlers.ts`. This is where your logic lives — the file you'd carr
 later moved to Express or Azure Functions:
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
+import { IBenzeneResultOf, IMessageHandler, message, BenzeneResult } from '@benzene/aws-lambda';
 import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -125,13 +122,10 @@ for `200`. The result carries success/failure status alongside the payload — s
 Create `src/index.ts`. This is the only file that knows it's running on Lambda:
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useApiGateway } from '@benzene/aws-lambda';
 import { PlaceOrderHandler } from './handlers.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))
   .build();
 
@@ -141,10 +135,10 @@ export const handler = toLambdaHandler(entryPoint);
 
 What each step does:
 
-- `new InlineAwsLambdaStartUp()` is the fluent entry-point builder. `configureServices(...)` registers
-  services on the container — `addBenzene(services)` registers Benzene's baseline services (though
-  `useMessageHandlers` now pulls that baseline in on its own, so this call is belt-and-braces) — and
-  `configure(...)` builds the event pipeline on an `AwsEventStreamContext`.
+- `new InlineAwsLambdaStartUp()` is the fluent entry-point builder; `configure(...)` builds the event
+  pipeline on an `AwsEventStreamContext`. There's also an optional `configureServices(...)` step for
+  registering your own services — you don't need one just to wire Benzene, since `useMessageHandlers`
+  pulls the baseline services in on its own.
 - `useApiGateway(app, (api) => …)` inserts the API Gateway transport, and inside it
   `useMessageHandlers(api, PlaceOrderHandler)` is the step that routes a matched request to its handler.
   Pass every handler class you want served.
@@ -284,13 +278,10 @@ whichever async transport delivers it. Now you have a **deployment choice**.
 
 ```ts
 // src/sqs.ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useSqs } from '@benzene/aws-lambda';
 import { NotifyWarehouseHandler } from './handlers.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, NotifyWarehouseHandler)))
   .build();
 
@@ -314,14 +305,10 @@ event-shape predicate matches and delegates:
 
 ```ts
 // src/index.ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { useMessageHandlers, compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler, useApiGateway, useSqs } from '@benzene/aws-lambda';
 import { PlaceOrderHandler, NotifyWarehouseHandler } from './handlers.js';
 
 const entryPoint = compositeAwsLambda((c) => {
-  c.configureServices((services) => addBenzene(services)); // runs against every route's container
   c.route(isApiGatewayEvent, (app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)));
   c.route(isSqsEvent,        (app) => useSqs(app, (sqs) => useMessageHandlers(sqs, NotifyWarehouseHandler)));
 });
@@ -372,7 +359,7 @@ send, or a queue fed by another system), call `usePresetTopic` before `useMessag
 every message on that queue to a fixed topic instead:
 
 ```ts
-import { usePresetTopic, useMessageHandlers } from '@benzene/core-message-handlers';
+import { usePresetTopic, useMessageHandlers } from '@benzene/aws-lambda';
 
 useSqs(app, (sqs) => {
   usePresetTopic(sqs, 'order:placed');
@@ -416,7 +403,7 @@ Reject bad payloads before they reach a handler by configuring a router around t
 `useMessageHandlersWithRouter` and a validation adapter such as `useZodValidation`:
 
 ```ts
-import { useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
+import { useMessageHandlersWithRouter } from '@benzene/aws-lambda';
 import { useZodValidation } from '@benzene/zod';
 
 useSqs(app, (sqs) =>
@@ -435,7 +422,6 @@ See [Validation](validation.md) for the Zod, Joi, and Yup adapters.
 ```ts
 new InlineAwsLambdaStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     services.addSingletonInstance(OrdersConfig, { tableName: process.env.ORDERS_TABLE ?? 'orders' });
   })
   .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))

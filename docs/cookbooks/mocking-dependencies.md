@@ -115,7 +115,7 @@ through the entry point, and assert on both the response and the spy:
 import { describe, expect, it, vi } from 'vitest';
 import { APIGatewayProxyResult, Context } from 'aws-lambda';
 import { BenzeneResult } from '@benzene/results';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { httpBuilder } from '@benzene/testing';
@@ -137,7 +137,6 @@ describe('GetOrderHandler', () => {
 
     const entryPoint = new InlineAwsLambdaStartUp()
       .configureServices((services) => {
-        addBenzene(services);
         // Register the fake against the SAME identifier the handler injects.
         services.addScopedInstance(IOrderService, orderService);
       })
