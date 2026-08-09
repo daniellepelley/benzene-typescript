@@ -6,8 +6,10 @@ then, if you want, take the exact same message handler to AWS Lambda or Azure Fu
 a line of it.
 
 If you already know you're deploying to a specific platform, you can jump straight to
-[AWS Lambda Setup](getting-started-aws.md) or [Azure Functions Setup](azure-functions.md) — but starting
-here first is the quickest way to see how Benzene fits together.
+[AWS Lambda](getting-started-aws.md), [Azure Functions](getting-started-azure.md),
+[Google Cloud Functions](getting-started-google.md), [gRPC](getting-started-grpc.md), or
+[Kafka](getting-started-kafka.md) — but starting here first is the quickest way to see how Benzene fits
+together.
 
 > **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
