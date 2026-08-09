@@ -247,6 +247,7 @@ inline middleware, the message router, and everything else — with no per-middl
 at startup:
 
 ```ts
+import { addBenzene } from '@benzene/core-message-handlers';
 import { addDiagnostics } from '@benzene/diagnostics';
 
 addBenzene(services);
