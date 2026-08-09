@@ -32,8 +32,7 @@ example below you'll also use `@benzene/results` (`ErrorPayload`, `BenzeneResult
 any HTTP-based transport package.
 
 ```bash
-npm install @benzene/core-message-handlers @benzene/aws-lambda-core \
-  @benzene/aws-lambda-api-gateway @benzene/aws-lambda-sqs @benzene/results
+npm install @benzene/aws-lambda
 ```
 
 ## What `useExceptionHandler` actually does
