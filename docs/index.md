@@ -7,8 +7,8 @@ message-based architectures. This is the **TypeScript port** of
 unchanged on Express, AWS Lambda, or Azure Functions.
 
 > **Documentation in progress.** This is the growing TypeScript documentation set, ported from the .NET
-> docs. The guides below are complete; more (the service mesh, schema/spec generation, and the rest of the
-> cookbook collection) are still being ported. For the complete API surface today, see the
+> docs. The guides below and the full [cookbook collection](cookbooks/README.md) are complete; a few areas
+> (the service mesh UI and usage feed) are still being ported. For the complete API surface today, see the
 > [repository README](https://github.com/daniellepelley/benzene-typescript#readme), and for runnable
 > projects covering every transport, the
 > [`examples/`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples) folder.
