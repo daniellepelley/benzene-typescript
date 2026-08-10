@@ -4,7 +4,12 @@
  * `BenzeneInterceptor`; here (there is no ASP.NET in Node) the grpc-js `Server` *is* the host and
  * `useGrpc` returns the bridge whose `to*Handler` methods ARE the service implementation.
  */
-import { Server, ServerCredentials, ServiceDefinition } from '@grpc/grpc-js';
+import {
+  Server,
+  ServerCredentials,
+  ServiceDefinition,
+  UntypedServiceImplementation,
+} from '@grpc/grpc-js';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { GrpcBenzeneBridge, useGrpc } from '@benzene/grpc';
 import { greeterServiceDefinition, GreeterMethods } from './greeter';
@@ -35,7 +40,7 @@ export function greeterBridge(): GrpcBenzeneBridge {
 }
 
 /** Maps the greeter {@link ServiceDefinition} onto the bridge — one `to*Handler` per RPC shape. */
-export function greeterImplementation(bridge: GrpcBenzeneBridge): Record<string, never> {
+export function greeterImplementation(bridge: GrpcBenzeneBridge): UntypedServiceImplementation {
   return {
     sayHello: bridge.toUnaryHandler<HelloRequest, HelloReply>(GreeterMethods.sayHello),
     sayHelloServerStream: bridge.toServerStreamingHandler<HelloRequest, HelloReply>(
@@ -48,18 +53,14 @@ export function greeterImplementation(bridge: GrpcBenzeneBridge): Record<string,
       GreeterMethods.sayHelloBidiStream,
     ),
     // The keys line up with `greeterServiceDefinition`; grpc-js matches on each method's `path`.
-  } as unknown as Record<string, never>;
+  };
 }
 
 /** Builds a grpc-js `Server` with the greeter service wired to the Benzene bridge (not yet bound). */
 export function createGreeterServer(): Server {
   const server = new Server();
   const bridge = greeterBridge();
-  server.addService(
-    greeterServiceDefinition as ServiceDefinition,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    greeterImplementation(bridge) as any,
-  );
+  server.addService(greeterServiceDefinition as ServiceDefinition, greeterImplementation(bridge));
   return server;
 }
 

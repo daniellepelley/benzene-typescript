@@ -1,6 +1,7 @@
 /**
- * The example's message handlers, written once. They register with a LOCAL registry; `startUp.ts` passes
- * them to `useMessageHandlers` explicitly. Each demonstrates a different trace shape:
+ * The example's message handlers, written once. `register: false` — they record their metadata but join
+ * no registry; `startUp.ts` passes them to `useMessageHandlers` explicitly. Each demonstrates a different
+ * trace shape:
  *
  *  - `greeting`     — trivial request/response: just the pipeline's span-per-middleware.
  *  - `order_create` — a deeper trace: a `Payment.Charge` span plus the `Warehouse.*` child spans from the
@@ -14,12 +15,10 @@
 import { SpanStatusCode } from '@opentelemetry/api';
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
+import { message } from '@benzene/core-message-handlers';
 import { BenzeneResult } from '@benzene/results';
 import { withSpan } from './exampleDiagnostics';
 import { IWarehouseService } from './warehouseService';
-
-export const registry = new MessageHandlersRegistry();
 
 export class GreetingRequest {
   name = 'world';
@@ -43,16 +42,14 @@ export class FailOrderRequest {
 
 const UNIT_PRICE = 9.99;
 
-@message('greeting', { registry, requestType: GreetingRequest, responseType: GreetingResponse })
+@message('greeting', { register: false, requestType: GreetingRequest, responseType: GreetingResponse })
 export class GreetingMessageHandler implements IMessageHandler<GreetingRequest, GreetingResponse> {
   handleAsync(request: GreetingRequest): Promise<IBenzeneResultOf<GreetingResponse>> {
-    const response = new GreetingResponse();
-    response.message = `Hello, ${request.name}!`;
-    return Promise.resolve(BenzeneResult.ok(response));
+    return Promise.resolve(BenzeneResult.ok<GreetingResponse>({ message: `Hello, ${request.name}!` }));
   }
 }
 
-@message('order_create', { registry, requestType: CreateOrderRequest, responseType: OrderReceipt })
+@message('order_create', { register: false, requestType: CreateOrderRequest, responseType: OrderReceipt })
 export class CreateOrderMessageHandler implements IMessageHandler<CreateOrderRequest, OrderReceipt> {
   static readonly inject = [IWarehouseService] as const;
   constructor(private readonly warehouse: IWarehouseService) {}
@@ -64,16 +61,16 @@ export class CreateOrderMessageHandler implements IMessageHandler<CreateOrderReq
 
     await this.warehouse.dispatchAsync(request.productId, request.quantity);
 
-    const receipt = new OrderReceipt();
-    receipt.orderId = Math.random().toString(16).slice(2, 10);
-    receipt.productId = request.productId;
-    receipt.quantity = request.quantity;
-    receipt.total = UNIT_PRICE * request.quantity;
-    return BenzeneResult.created(receipt);
+    return BenzeneResult.created<OrderReceipt>({
+      orderId: Math.random().toString(16).slice(2, 10),
+      productId: request.productId,
+      quantity: request.quantity,
+      total: UNIT_PRICE * request.quantity,
+    });
   }
 }
 
-@message('order_fail', { registry, requestType: FailOrderRequest, responseType: OrderReceipt })
+@message('order_fail', { register: false, requestType: FailOrderRequest, responseType: OrderReceipt })
 export class FailingOrderMessageHandler implements IMessageHandler<FailOrderRequest, OrderReceipt> {
   handleAsync(request: FailOrderRequest): Promise<IBenzeneResultOf<OrderReceipt>> {
     return withSpan('Payment.Charge', (span) => {

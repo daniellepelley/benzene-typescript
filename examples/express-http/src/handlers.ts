@@ -1,17 +1,15 @@
 /**
  * A plain Benzene HTTP order domain — the Node/Express analog of the .NET `Benzene.Example.Asp`. Each
  * handler declares its HTTP route with `@httpEndpoint` alongside its `@message` topic and knows nothing
- * about Express; `@benzene/express` routes the request. The handlers register with a LOCAL registry;
- * `orderService.ts` passes them explicitly.
+ * about Express; `@benzene/express` routes the request. `register: false` — the handlers record their
+ * metadata but join no registry; `orderService.ts` passes them to `useMessageHandlers` explicitly.
  */
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
+import { message } from '@benzene/core-message-handlers';
 import { httpEndpoint } from '@benzene/http';
 import { BenzeneResult } from '@benzene/results';
 import { IOrderStore } from './orderStore';
-
-export const registry = new MessageHandlersRegistry();
 
 export class CreateOrder {
   name?: string;
@@ -30,7 +28,7 @@ export class OrderList {
 
 /** `POST /orders` — create an order and return the confirmation (201). */
 @httpEndpoint('POST', '/orders')
-@message('order:create', { registry, requestType: CreateOrder, responseType: OrderDto })
+@message('order:create', { register: false, requestType: CreateOrder, responseType: OrderDto })
 export class CreateOrderHandler implements IMessageHandler<CreateOrder, OrderDto> {
   static readonly inject = [IOrderStore] as const;
   constructor(private readonly store: IOrderStore) {}
@@ -44,14 +42,13 @@ export class CreateOrderHandler implements IMessageHandler<CreateOrder, OrderDto
 
 /** `GET /orders` — list every order created so far. */
 @httpEndpoint('GET', '/orders')
-@message('order:list', { registry, requestType: ListOrders, responseType: OrderList })
+@message('order:list', { register: false, requestType: ListOrders, responseType: OrderList })
 export class ListOrdersHandler implements IMessageHandler<ListOrders, OrderList> {
   static readonly inject = [IOrderStore] as const;
   constructor(private readonly store: IOrderStore) {}
 
   handleAsync(): Promise<IBenzeneResultOf<OrderList>> {
-    const list = new OrderList();
-    list.orders = this.store.orders.map((o) => ({ id: o.id, name: o.name }));
-    return Promise.resolve(BenzeneResult.ok(list));
+    const orders = this.store.orders.map((o) => ({ id: o.id, name: o.name }));
+    return Promise.resolve(BenzeneResult.ok<OrderList>({ orders }));
   }
 }

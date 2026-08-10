@@ -595,7 +595,13 @@ next to its C# counterpart:
   registry; pass no classes to serve every `@message`-decorated class that has been imported into
   `MessageHandlersRegistry.global`. The per-decorator `registry` option redirects a handler's
   self-registration to a private `MessageHandlersRegistry`, used to isolate multiple handler sets
-  sharing one process (e.g. tests); application code normally needs neither. `importMessageHandlers(dir)`
+  sharing one process (e.g. tests); application code normally needs neither. The per-decorator
+  `register: false` option goes one step further: the decorator records the handler's `@message`
+  metadata (so `useMessageHandlers(app, Handler)` still discovers it from the explicit class list) but
+  joins **no** registry at all — used to keep an imported handler out of `MessageHandlersRegistry.global`
+  when discovery is purely the explicit `useMessageHandlers` list, so that importing a runnable example
+  (or a handler set exercised in a shared test process) never pollutes another module's global discovery.
+  `importMessageHandlers(dir)`
   recursively imports every module in a directory so decorated handlers are found automatically —
   the Node equivalent of assembly scanning. The `Dependency`/`Composite`/`Cache` finders and
   `MessageHandlersList` port unchanged, so discovery can be overridden the same way as in .NET.

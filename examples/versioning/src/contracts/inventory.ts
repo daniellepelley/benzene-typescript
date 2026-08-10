@@ -15,24 +15,24 @@
  */
 
 export class InventoryAdjustmentV1 {
-  sku: string | undefined;
+  sku?: string;
   delta = 0;
-  trace: string | undefined;
+  trace?: string;
 }
 
 export class InventoryAdjustmentV2 {
-  sku: string | undefined;
+  sku?: string;
   delta = 0;
-  trace: string | undefined;
+  trace?: string;
   /** Introduced in V2. The V1→V2 up-caster seeds it with a default. */
-  warehouseId: string | undefined;
+  warehouseId?: string;
 }
 
 export class InventoryAdjustmentV3 {
-  sku: string | undefined;
+  sku?: string;
   delta = 0;
-  trace: string | undefined;
-  warehouseId: string | undefined;
+  trace?: string;
+  warehouseId?: string;
   /** Introduced in V3 — the version the handler is written against. The V2→V3 up-caster seeds it. */
-  reason: string | undefined;
+  reason?: string;
 }

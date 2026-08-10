@@ -1,7 +1,7 @@
 /**
- * The versioning demo's handlers, written once. They register with a LOCAL registry (not the global one)
- * and `startUp.ts` passes them to `useMessageHandlers` explicitly, so importing this example never
- * pollutes another module's handler discovery.
+ * The versioning demo's handlers, written once. `register: false` — they record their metadata but join
+ * no registry; `startUp.ts` passes them to `useMessageHandlers` explicitly, so importing this example
+ * never pollutes another module's handler discovery.
  *
  * Mechanism A (handler-version dispatch): `order:create` has two handlers, one per version — the incoming
  * `benzene-version` picks which runs, and a producer that sends NO version gets the highest (v2).
@@ -10,7 +10,7 @@
  */
 import { IBenzeneResultOf } from '@benzene/abstractions';
 import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
+import { message } from '@benzene/core-message-handlers';
 import { BenzeneResult } from '@benzene/results';
 import {
   CreateOrderV1,
@@ -22,15 +22,13 @@ import { InventoryAdjustmentV3 } from './contracts/inventory';
 import { IProcessedLog } from './services/processedLog';
 import { Topics, Versions } from './topics';
 
-export const registry = new MessageHandlersRegistry();
-
 /**
  * Mechanism A — the V1 implementation of `order:create`. Registered for version `v1`; the router runs it
  * only when the incoming `benzene-version` is `v1`. Shares the topic with the V2 handler — two genuinely
  * different request shapes, two handlers, no casting between them.
  */
 @message(Topics.orderCreate, {
-  registry,
+  register: false,
   version: Versions.v1,
   requestType: CreateOrderV1,
   responseType: OrderAcceptedV1,
@@ -41,10 +39,12 @@ export class CreateOrderV1MessageHandler implements IMessageHandler<CreateOrderV
 
   handleAsync(request: CreateOrderV1): Promise<IBenzeneResultOf<OrderAcceptedV1>> {
     this.log.record(`order:create v1 | customer=${request.customerName} qty=${request.quantity}`);
-    const accepted = new OrderAcceptedV1();
-    accepted.orderId = 'order-1';
-    accepted.handledBy = 'CreateOrderV1MessageHandler';
-    return Promise.resolve(BenzeneResult.ok(accepted));
+    return Promise.resolve(
+      BenzeneResult.ok<OrderAcceptedV1>({
+        orderId: 'order-1',
+        handledBy: 'CreateOrderV1MessageHandler',
+      }),
+    );
   }
 }
 
@@ -54,7 +54,7 @@ export class CreateOrderV1MessageHandler implements IMessageHandler<CreateOrderV
  * sends no version at all — i.e. V2 is the topic's default handler.
  */
 @message(Topics.orderCreate, {
-  registry,
+  register: false,
   version: Versions.v2,
   requestType: CreateOrderV2,
   responseType: OrderAcceptedV2,
@@ -67,11 +67,13 @@ export class CreateOrderV2MessageHandler implements IMessageHandler<CreateOrderV
     this.log.record(
       `order:create v2 | customer=${request.firstName} ${request.lastName} qty=${request.quantity} currency=${request.currency}`,
     );
-    const accepted = new OrderAcceptedV2();
-    accepted.orderId = 'order-1';
-    accepted.handledBy = 'CreateOrderV2MessageHandler';
-    accepted.currency = request.currency;
-    return Promise.resolve(BenzeneResult.ok(accepted));
+    return Promise.resolve(
+      BenzeneResult.ok<OrderAcceptedV2>({
+        orderId: 'order-1',
+        handledBy: 'CreateOrderV2MessageHandler',
+        currency: request.currency,
+      }),
+    );
   }
 }
 
@@ -86,7 +88,7 @@ export class CreateOrderV2MessageHandler implements IMessageHandler<CreateOrderV
  * exists in every version and therefore survives the response downcast back to the caller's version.
  */
 @message(Topics.inventoryAdjust, {
-  registry,
+  register: false,
   requestType: InventoryAdjustmentV3,
   responseType: InventoryAdjustmentV3,
 })
@@ -100,14 +102,16 @@ export class AdjustInventoryMessageHandler
     this.log.record(
       `inventory:adjust v3 | sku=${request.sku} delta=${request.delta} warehouse=${request.warehouseId} reason=${request.reason}`,
     );
-    const response = new InventoryAdjustmentV3();
-    response.sku = request.sku;
-    response.delta = request.delta;
-    response.warehouseId = request.warehouseId;
-    response.reason = request.reason;
-    // Stamped by the (only) V3 handler; carries the chain-seeded values back out so even a V1 caller —
-    // whose response is downcast to V1 — can see that both hops of the upcast ran.
-    response.trace = `handled-on-v3;warehouse=${request.warehouseId};reason=${request.reason}`;
-    return Promise.resolve(BenzeneResult.ok(response));
+    return Promise.resolve(
+      BenzeneResult.ok<InventoryAdjustmentV3>({
+        sku: request.sku,
+        delta: request.delta,
+        warehouseId: request.warehouseId,
+        reason: request.reason,
+        // Stamped by the (only) V3 handler; carries the chain-seeded values back out so even a V1 caller —
+        // whose response is downcast to V1 — can see that both hops of the upcast ran.
+        trace: `handled-on-v3;warehouse=${request.warehouseId};reason=${request.reason}`,
+      }),
+    );
   }
 }

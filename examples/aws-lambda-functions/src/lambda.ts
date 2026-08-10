@@ -5,16 +5,14 @@
  */
 import { Handler } from 'aws-lambda';
 import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
 import { AwsEventStreamContext, InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
 
 export function lambdaHandler(
   configure: (app: IMiddlewarePipelineBuilder<AwsEventStreamContext>) => void,
 ): Handler {
-  const entryPoint = new InlineAwsLambdaStartUp()
-    .configureServices((services) => addBenzene(services))
-    .configure(configure)
-    .build();
+  // No `configureServices` needed: each function's `useMessageHandlers` registers the Benzene baseline
+  // (`addBenzene`) idempotently, so the pipeline is fully wired by `configure` alone.
+  const entryPoint = new InlineAwsLambdaStartUp().configure(configure).build();
 
   // `toLambdaHandler` returns the correctly-bound function AWS invokes; assigning
   // `entryPoint.functionHandlerAsync` directly would detach `this` and crash at the first invocation.

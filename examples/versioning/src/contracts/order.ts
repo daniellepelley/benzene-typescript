@@ -10,13 +10,13 @@
 
 /** V1 of the create-order request: a flat customer name. */
 export class CreateOrderV1 {
-  customerName: string | undefined;
+  customerName?: string;
   quantity = 0;
 }
 
 export class OrderAcceptedV1 {
-  orderId: string | undefined;
-  handledBy: string | undefined;
+  orderId?: string;
+  handledBy?: string;
 }
 
 /**
@@ -24,14 +24,14 @@ export class OrderAcceptedV1 {
  * shape, which is exactly when a second handler (rather than a caster) is the right tool.
  */
 export class CreateOrderV2 {
-  firstName: string | undefined;
-  lastName: string | undefined;
+  firstName?: string;
+  lastName?: string;
   quantity = 0;
-  currency: string | undefined;
+  currency?: string;
 }
 
 export class OrderAcceptedV2 {
-  orderId: string | undefined;
-  handledBy: string | undefined;
-  currency: string | undefined;
+  orderId?: string;
+  handledBy?: string;
+  currency?: string;
 }

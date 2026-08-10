@@ -3,7 +3,6 @@
  * per-trigger `configure` callback, returning the built `IAzureFunctionApp` the function callbacks
  * dispatch to via the `handle*` helpers.
  */
-import { addBenzene } from '@benzene/core-message-handlers';
 import {
   IAzureFunctionApp,
   IAzureFunctionAppBuilder,
@@ -11,8 +10,7 @@ import {
 } from '@benzene/azure-function-core';
 
 export function azureApp(configure: (app: IAzureFunctionAppBuilder) => void): IAzureFunctionApp {
-  return new InlineAzureFunctionStartUp()
-    .configureServices((services) => addBenzene(services))
-    .configure(configure)
-    .build();
+  // No `configureServices` needed: each trigger's `useMessageHandlers` registers the Benzene baseline
+  // (`addBenzene`) idempotently, so the app is fully wired by `configure` alone.
+  return new InlineAzureFunctionStartUp().configure(configure).build();
 }
