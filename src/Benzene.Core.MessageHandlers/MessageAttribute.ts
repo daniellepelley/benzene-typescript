@@ -22,6 +22,14 @@ export interface MessageOptions {
   responseType?: ServiceIdentifier<unknown>;
   /** Register with a specific registry instead of MessageHandlersRegistry.global. */
   registry?: MessageHandlersRegistry;
+  /**
+   * When `false`, the decorator records the handler's metadata (so `useMessageHandlers(app, Handler)`
+   * can still discover it from the explicit class list) but does NOT add it to any registry. Use this
+   * when a handler is discovered purely by being passed to `useMessageHandlers`, so that importing it
+   * — for example in a shared test process — does not pollute `MessageHandlersRegistry.global`.
+   * Defaults to `true` (the handler joins `registry` or the global registry).
+   */
+  register?: boolean;
 }
 
 export interface MessageMetadata {
@@ -47,7 +55,9 @@ export function message(
       requestType: options.requestType ?? VoidResult,
       responseType: options.responseType ?? VoidResult,
     });
-    (options.registry ?? MessageHandlersRegistry.global).register(target);
+    if (options.register !== false) {
+      (options.registry ?? MessageHandlersRegistry.global).register(target);
+    }
     return target;
   };
 }

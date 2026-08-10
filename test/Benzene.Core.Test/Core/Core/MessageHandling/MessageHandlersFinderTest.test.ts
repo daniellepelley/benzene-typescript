@@ -72,6 +72,28 @@ describe('MessageHandlersFinderTest', () => {
     );
   });
 
+  it('Message_RegisterFalse_RecordsMetadataButStaysOutOfGlobalRegistry', () => {
+    class UnregisteredHandler {}
+    message('register-false-topic', { register: false })(UnregisteredHandler);
+
+    // Not added to the global registry — importing it does not pollute the shared registry.
+    expect(MessageHandlersRegistry.global.getAll()).not.toContain(UnregisteredHandler);
+
+    // But still discoverable via the explicit class list, because the metadata was recorded.
+    const finder = new RegistryMessageHandlersFinder(UnregisteredHandler);
+    const definitions = finder.findDefinitions();
+    expect(definitions).toHaveLength(1);
+    expect(definitions[0].topic.id).toBe('register-false-topic');
+    expect(definitions[0].handlerType).toBe(UnregisteredHandler);
+  });
+
+  it('Message_RegisterOmitted_JoinsGlobalRegistry', () => {
+    class RegisteredHandler {}
+    message('register-default-topic', {})(RegisteredHandler);
+
+    expect(MessageHandlersRegistry.global.getAll()).toContain(RegisteredHandler);
+  });
+
   it('FindHandlers_SameTopicDifferentVersions_IsPermitted', () => {
     const registry = new MessageHandlersRegistry();
 
