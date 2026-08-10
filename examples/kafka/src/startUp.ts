@@ -10,7 +10,7 @@
  */
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { IKafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
 import { useWorker } from '@benzene/self-host';
 import { Kafka } from 'kafkajs';
@@ -37,7 +37,7 @@ export class KafkaOrdersStartUp implements BenzeneStartUp {
 
   configureServices(services: IBenzeneServiceContainer): void {
     services.addSingleton(IOrderStore, InMemoryOrderStore);
-    addBenzene(services);
+    // The Benzene baseline is ensured idempotently by useMessageHandlers (in `configure`).
   }
 
   configure(app: IBenzeneApplicationBuilder): void {

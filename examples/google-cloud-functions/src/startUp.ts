@@ -5,7 +5,7 @@
  * `GoogleCloudFunctionHost`) and by the component test (`buildGoogleCloudFunctionHost(benzeneTestHost(...))`).
  */
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import {
   GoogleCloudFunctionApplicationBuilder,
   GoogleCloudFunctionStartUp,
@@ -17,7 +17,7 @@ import { IOrderStore, InMemoryOrderStore } from './orderStore';
 export class GoogleCloudOrdersStartUp implements GoogleCloudFunctionStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
     services.addSingleton(IOrderStore, InMemoryOrderStore);
-    addBenzene(services);
+    // The Benzene baseline is ensured idempotently by useMessageHandlers (in `configure`).
   }
 
   configure(app: GoogleCloudFunctionApplicationBuilder): void {
