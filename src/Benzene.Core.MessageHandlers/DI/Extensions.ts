@@ -67,10 +67,12 @@ import { addMediaFormatNegotiation } from '../MediaFormats/DependencyInjectionEx
 import { JsonMediaFormat } from '../MediaFormats/JsonMediaFormat';
 import { MediaFormatNegotiator } from '../MediaFormats/MediaFormatNegotiator';
 import { MessageGetter } from '../MessageGetter';
+import { MessageHandlerCandidateTypes } from '../MessageHandlerCandidateTypes';
 import { MessageHandlerDefinitionIndex } from '../MessageHandlerDefinitionIndex';
 import { MessageHandlerDefinitionLookUp } from '../MessageHandlerDefinitionLookUp';
 import { MessageHandlerFactory } from '../MessageHandlerFactory';
 import { MessageHandlersList } from '../MessageHandlersList';
+import { MessageHandlersRegistry } from '../MessageHandlersRegistry';
 import { IDefaultStatuses } from '../MessageResult';
 import { MessageRouter } from '../MessageRouter';
 import { PipelineMessageHandlerWrapper } from '../PipelineMessageHandlerWrapper';
@@ -111,6 +113,26 @@ import { VersionSelector } from '../VersionSelector';
  * `new`-ing registrations).
  */
 export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  addBenzeneMessageHandling(services);
+
+  // The default in-process transport info. C# registers TransportNames.Benzene here (its doc comment
+  // loosely calls it "direct"); the port had drifted to the literal 'direct', which also disagreed with
+  // the 'benzene' tag BenzeneMessageApplication sets at runtime. Aligned back to TransportNames.Benzene.
+  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.Benzene));
+
+  return services;
+}
+
+/**
+ * Registers the request/response plumbing for the `BenzeneMessage` context (message extraction,
+ * result setting, response adaptation) without announcing a "benzene" wire endpoint via
+ * `ITransportInfo`. `addBenzeneMessage` calls this and then adds that announcement; a caller that
+ * dispatches `BenzeneMessageContext` some other way (e.g. `@benzene/clients-in-process`'s in-process
+ * dispatch, which never exposes a wire endpoint) calls this directly instead, and registers its own
+ * `ITransportInfo` under its own name.
+ * Port of C# `AddBenzeneMessageHandling` (`Benzene.Core.MessageHandlers/DI/Extensions.cs`).
+ */
+export function addBenzeneMessageHandling(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
   tryAddHeaderMessageVersionGetter<BenzeneMessageContext>(services);
   tryAddScoped(services, BenzeneMessageGetter);
   tryAddScopedFactory(services, IMessageGetter, (r) =>
@@ -163,11 +185,6 @@ export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneS
   tryAddScopedFactory(services, IResponsePayloadMapper, () =>
     new DefaultResponsePayloadMapper<BenzeneMessageContext>() as unknown as IResponsePayloadMapper<unknown>,
   );
-
-  // The default in-process transport info. C# registers TransportNames.Benzene here (its doc comment
-  // loosely calls it "direct"); the port had drifted to the literal 'direct', which also disagreed with
-  // the 'benzene' tag BenzeneMessageApplication sets at runtime. Aligned back to TransportNames.Benzene.
-  services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.Benzene));
 
   return services;
 }
@@ -289,12 +306,16 @@ export function addMessageHandlers(
 
   // Handlers arrive as varargs or a single array (or a mix); flatten to one discovery list.
   const handlers = handlerTypes.flat();
-  const registryFinder =
-    handlers.length > 0
-      ? new RegistryMessageHandlersFinder(...handlers)
-      : new RegistryMessageHandlersFinder();
-  const cacheMessageHandlersFinder = new CacheMessageHandlersFinder(registryFinder);
-  for (const handler of cacheMessageHandlersFinder.findDefinitions()) {
+
+  // Record this call's candidate types additively (NOT tryAdd - see MessageHandlerCandidateTypes),
+  // so the container-wide IMessageHandlersFinder singleton below is built at resolution time over
+  // the union of every addMessageHandlers(...) call's candidates, not just the first call's. Eagerly
+  // register this call's own handlers as scoped regardless (a handler shared across two calls just
+  // re-registers, harmlessly), matching the pre-existing per-call behaviour.
+  services.addSingletonInstance(MessageHandlerCandidateTypes, new MessageHandlerCandidateTypes(handlers));
+  const soloFinder =
+    handlers.length > 0 ? new RegistryMessageHandlersFinder(...handlers) : new RegistryMessageHandlersFinder();
+  for (const handler of new CacheMessageHandlersFinder(soloFinder).findDefinitions()) {
     services.addScoped(handler.handlerType);
   }
 
@@ -308,12 +329,26 @@ export function addMessageHandlers(
   tryAddSingletonFactory(
     services,
     IMessageHandlersFinder,
-    (r) =>
-      new CompositeMessageHandlersFinder(
-        cacheMessageHandlersFinder,
+    (r) => {
+      // Built lazily, at first resolution, over the deduped union of every addMessageHandlers(...)
+      // call's candidate types registered on this container so far - see
+      // MessageHandlerCandidateTypes for why a single call's finder can't simply be captured here.
+      // A no-arg call (empty candidate list) means "also include the global registry", matching
+      // RegistryMessageHandlersFinder's own no-args-supplied behaviour.
+      const candidates = r.getServices(MessageHandlerCandidateTypes);
+      const explicitTypes = candidates.flatMap((c) => c.types);
+      const includesGlobal = candidates.length === 0 || candidates.some((c) => c.types.length === 0);
+      const unionTypes = includesGlobal
+        ? [...new Set([...explicitTypes, ...MessageHandlersRegistry.global.getAll()])]
+        : explicitTypes;
+      const unionFinder =
+        unionTypes.length > 0 ? new RegistryMessageHandlersFinder(...unionTypes) : new RegistryMessageHandlersFinder();
+      return new CompositeMessageHandlersFinder(
+        new CacheMessageHandlersFinder(unionFinder),
         r.getService(MessageHandlersList),
         r.getService(DependencyMessageHandlersFinder),
-      ),
+      );
+    },
   );
   tryAddSingletonFactory(
     services,

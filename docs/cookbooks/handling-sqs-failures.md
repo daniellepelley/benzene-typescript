@@ -31,8 +31,7 @@ infrastructure, not something the TypeScript port generates or wires up.
 ## Installation
 
 ```bash
-npm install @benzene/aws-lambda-sqs @benzene/aws-lambda-core @benzene/core-message-handlers \
-  @benzene/resilience @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
+npm install @benzene/aws-lambda @benzene/resilience
 ```
 
 ## How Benzene reports partial batch failures
@@ -98,8 +97,7 @@ silently ignore the partial response. `useSqs` takes an optional `configure` cal
 `SqsOptions`:
 
 ```ts
-import { useSqs, SqsBatchFailureMode } from '@benzene/aws-lambda-sqs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useSqs, SqsBatchFailureMode, useMessageHandlers } from '@benzene/aws-lambda';
 
 useSqs(
   app,
@@ -126,10 +124,7 @@ plus `IMessageHandler<TRequest, TResponse>`. Whether the handler throws or retur
 are picked up by `SqsApplication` as shown above.
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IMessageHandler, message, BenzeneResult } from '@benzene/aws-lambda';
 import { IPaymentGateway, PaymentGatewayUnavailableError } from './PaymentGateway.js';
 
 export class OrderPaymentMessage {
@@ -202,8 +197,7 @@ example above to be retried in-process (rather than only relying on SQS's own re
 
 ```ts
 import { useRetry } from '@benzene/resilience';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
+import { useMessageHandlers, useSqs, SqsMessageContext } from '@benzene/aws-lambda';
 
 useSqs(app, (sqs) => {
   useRetry<SqsMessageContext>(sqs, {
@@ -241,16 +235,13 @@ The whole function is one entry point over the shared startup (identical to the
 [getting-started-aws.md](../getting-started-aws.md) shape):
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useSqs, SqsMessageContext } from '@benzene/aws-lambda';
 import { useRetry } from '@benzene/resilience';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
 import { CapturePaymentHandler } from './CapturePaymentHandler.js';
 import { StripePaymentGateway, IPaymentGateway } from './PaymentGateway.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     services.addScoped(IPaymentGateway, StripePaymentGateway);
   })
   .configure((app) =>
@@ -320,9 +311,7 @@ assert on the returned `batchItemFailures`.
 ```ts
 import { describe, expect, it } from 'vitest';
 import { Context, SQSEvent } from 'aws-lambda';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { useMessageHandlers, InlineAwsLambdaStartUp, useSqs } from '@benzene/aws-lambda';
 import { messageBuilder } from '@benzene/testing';
 import { asSqs } from '@benzene/aws-lambda-testing';
 import { CapturePaymentHandler } from '../src/CapturePaymentHandler.js';
@@ -339,7 +328,6 @@ describe('CapturePaymentHandler on SQS', () => {
 
     const entryPoint = new InlineAwsLambdaStartUp()
       .configureServices((services) => {
-        addBenzene(services);
         services.addScopedInstance(IPaymentGateway, gateway);
       })
       .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, CapturePaymentHandler)))

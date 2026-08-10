@@ -138,13 +138,12 @@ the function AWS invokes.
 
 ```ts
 // src/index.ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { PlaceOrderHandler } from './handlers.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))
   .build();
 
@@ -166,13 +165,12 @@ into it via the transport's `handle*` helper.
 ```ts
 // src/functions.ts
 import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
 import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
 import { PlaceOrderHandler } from './handlers.js';
 
 const httpApp = new InlineAzureFunctionStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => useAzureHttp(app, (http) => useMessageHandlers(http, PlaceOrderHandler)))
   .build();
 

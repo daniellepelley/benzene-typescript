@@ -279,7 +279,6 @@ requirePolicy(api, 'employees-only', (principal) => principal.hasClaim('departme
 // Or register once (in configureServices, or via api.register), reference by name from many pipelines:
 const entryPoint = new InlineAwsLambdaStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     addAuthorizationPolicy(services, 'mfa-required', (principal) =>
       principal.hasClaim((c) => c.type === 'amr' && c.value === 'mfa'),
     );

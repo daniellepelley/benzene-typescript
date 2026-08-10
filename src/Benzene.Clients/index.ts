@@ -14,7 +14,7 @@
  *   `HeadersBenzeneMessageClient`.
  * - Free-function extensions: `withRetry`, `withCorrelationId`, `sendMessageAsync` /
  *   `sendMessageNoResponseAsync`.
- * - Common: the HTTP-status -> `BenzeneResult` mapping used by `@benzene/client-http`.
+ * - Common: the HTTP-status -> `BenzeneResult` mapping used by `@benzene/clients-http`.
  *
  * NOT re-ported: `Benzene.Clients.JsonSerializer` (identical to the already-ported serializer in
  * `@benzene/core-message-handlers`); `Benzene.Clients.BenzeneClientRequest` is shipped locally

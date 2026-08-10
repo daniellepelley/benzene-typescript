@@ -130,14 +130,13 @@ handler dispatch:
 ```ts
 import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
-import { addBenzene, useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
+import { useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
 import { useResponseEvents } from '@benzene/response-events';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { registerOutboundRoutes } from './outbound.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
   .configureServices((services) => {
-    addBenzene(services);
     registerOutboundRoutes(services);
   })
   .configure((app) =>

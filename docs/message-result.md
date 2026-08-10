@@ -119,8 +119,11 @@ export const BenzeneResultStatus = {
 The string **values** are the normative cross-language wire vocabulary — lowercase-kebab-case and
 case-sensitive (`ok`, `not-found`, `validation-error`), identical to the .NET constants — so a
 TypeScript service and a .NET service (or a mesh aggregator) reading each other's responses classify
-statuses identically. The `isTransient` helper is the useful one when deciding whether a failure is worth
-retrying (a `503`/`429`/timeout) versus a permanent business failure (a `404`/`422`).
+statuses identically. This vocabulary is defined once for every language in the cross-language
+[Benzene spec (wire contracts — status vocabulary)](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/wire-contracts.md);
+the constants here are the TypeScript surface of it. The `isTransient` helper is the useful one when
+deciding whether a failure is worth retrying (a `503`/`429`/timeout) versus a permanent business
+failure (a `404`/`422`).
 
 ## Transport mapping
 

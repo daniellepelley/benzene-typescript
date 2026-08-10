@@ -122,7 +122,6 @@ import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-mess
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneResultStatus } from '@benzene/results';
 import {
-  addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
@@ -132,7 +131,6 @@ import { messageBuilder, asBenzeneMessage } from '@benzene/testing';
 import { CreateOrderHandler } from './src/CreateOrderHandler.js';
 
 const container = new DefaultBenzeneServiceContainer();
-addBenzene(container);
 addBenzeneMessage(container);
 
 const builder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
@@ -164,7 +162,7 @@ is exactly what AWS invokes:
 
 ```ts
 import { Context } from 'aws-lambda';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { httpBuilder } from '@benzene/testing';
@@ -172,7 +170,6 @@ import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
 import { CreateOrderHandler } from './src/CreateOrderHandler.js';
 
 const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
   .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
   .build();
 
@@ -244,7 +241,7 @@ the `useSpec` document in-browser; see [Common Middleware](common-middleware.md#
   builder (`asSqs(payload, { serializer })`); `asBenzeneMessage` takes the serializer as a bare second
   argument (`asBenzeneMessage(payload, serializer)`).
 - **A dependency needs replacing.** Register a fake against its token inside `.configureServices(...)`
-  after `addBenzene` when driving an `Inline*StartUp` entry point — see [Testing Benzene](testing-benzene.md).
+  after Benzene's baseline registrations when driving an `Inline*StartUp` entry point — see [Testing Benzene](testing-benzene.md).
 
 ## See Also
 

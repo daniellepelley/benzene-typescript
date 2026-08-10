@@ -3,6 +3,7 @@ export * from './CompositeMessageHandlersFinder';
 export * from './DependencyMessageHandlersFinder';
 export * from './ImportMessageHandlers';
 export * from './MessageAttribute';
+export * from './MessageHandlerCandidateTypes';
 export * from './MessageHandlerDefinition';
 export * from './HeaderMessageVersionGetter';
 export * from './MessageVersionHeaderNames';

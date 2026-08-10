@@ -50,6 +50,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Aws.Lambda.ApiGateway` | `@benzene/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
 | `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzene/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
 | `src/Benzene.Aws.Lambda.XRay` | `@benzene/aws-lambda-xray` | `Benzene.Aws.Lambda.XRay` (per-middleware X-Ray subsegments over `aws-xray-sdk-core`; recorder behind an injectable `IXRayRecorder` seam) |
+| `src/Benzene.Aws.Lambda` | `@benzene/aws-lambda` | `Benzene.Aws.Lambda` (umbrella: re-exports `aws-lambda-core` + the event-source transports + the message-handler building blocks so a Lambda service installs one package; references-only in C#, wildcard re-export here — the building-block re-exports are a TS-idiom bend, since npm consumers don't see transitive types the way .NET does) |
 | `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
 | `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
 | `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
@@ -67,7 +68,7 @@ Mirrors the .NET repository:
 | `src/Benzene.GoogleCloud.Functions.Http` | `@benzene/google-cloud-functions-http` | `Benzene.GoogleCloud.Functions.Http`◊ |
 | `src/Benzene.GoogleCloud.Functions.PubSub` | `@benzene/google-cloud-functions-pubsub` | `Benzene.GoogleCloud.Functions.PubSub` (single-message CloudEvent trigger, on `@google-cloud/functions-framework`; `PresetTopic` override + registration-diagnostics deferred, as in the .NET package) |
 | `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
-| `src/Benzene.Client.Http` | `@benzene/client-http` | `Benzene.Client.Http` |
+| `src/Benzene.Clients.Http` | `@benzene/clients-http` | `Benzene.Clients.Http` (renamed from `Benzene.Client.Http` — folded into the plural `Clients` family so the singular/plural split no longer collides in autocomplete; see the package-naming convention below) |
 | `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; reachability `AwsLambdaHealthCheck` ships (registered manually); high-level message-client/route pipeline + the health check's Active-invoke path deferred) |
 | `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzene/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path + auto-wired reachability health check per transport; batch/standalone clients deferred) |
 | `src/Benzene.Clients.Aws.StepFunctions` | `@benzene/clients-aws-step-functions` | `Benzene.Clients.Aws.StepFunctions` (outbound Step Functions client + reachability health check over `@aws-sdk/client-sfn`) |
@@ -77,6 +78,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Clients.Azure.QueueStorage` | `@benzene/clients-azure-queue-storage` | `Benzene.Clients.Azure.QueueStorage` (outbound `OutboundContext` send path over `@azure/storage-queue`; generic-context client + health check deferred) |
 | `src/Benzene.Clients.Azure.EventGrid` | `@benzene/clients-azure-event-grid` | `Benzene.Clients.Azure.EventGrid` (outbound `OutboundContext` send path over `@azure/eventgrid`, both CloudEvents + classic schemas; generic-context + batch clients deferred) |
 | `src/Benzene.Clients.GoogleCloud.PubSub` | `@benzene/clients-google-cloud-pubsub` | `Benzene.Clients.GoogleCloud.PubSub` (outbound `OutboundContext` publish path over `@google-cloud/pubsub`) |
+| `src/Benzene.Clients.InProcess` | `@benzene/clients-in-process` | `Benzene.Clients.InProcess` (named-pipeline registry + `useInProcess`/`useInProcessFanOut`; no boot-time route validation and Void-only responses, both PORT DIVERGENCEs documented in the package's `index.ts` — this port has no `IStartUpCheck` runner and no `TResponse` deserialization for any transport yet) |
 | `src/Benzene.Mesh.Aws.Lambda` | `@benzene/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
 | `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
 | `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |
@@ -474,6 +476,20 @@ next to its C# counterpart:
   is kept. One deliberate rename: `IDeferredRequestMapper`/`DeferredRequestMapper` →
   `IRequestMapperThunk`/`RequestMapperThunk` — a zero-arg deferred producer is idiomatically a
   "thunk" in TypeScript; same shape, TS-native spelling.
+- **Package naming — family vs platform (two rules, by package kind).** The estate deliberately
+  uses two orderings, and a new package follows the one for its kind:
+  1. **Hosting / transport adapters** are **platform-first**: `Benzene.<Platform>.<Runtime>.<Transport>`
+     (`@benzene/aws-lambda-sns`, `@benzene/azure-function-service-bus`) — the platform *is* the product.
+  2. **Cross-cutting product families** with a shared, platform-agnostic abstraction are **feature-first**:
+     `Benzene.<Family>.<Platform>.<Transport>` (`@benzene/clients-aws-sns`, `@benzene/mesh-aws-lambda`,
+     `@benzene/health-checks-azure-service-bus`) — the feature is the product; the platform is just which
+     backend fills it in, and the family's abstraction (`@benzene/clients`, `@benzene/mesh-contracts`)
+     has no single platform to lead with.
+  3. **Platform-agnostic** packages take **no platform segment** (`@benzene/core`, `@benzene/results`,
+     `@benzene/abstractions`).
+  This is why the outbound clients are `clients-aws-*` (feature-first), **not** `aws-clients-*`: they sit
+  with `mesh-*` and `health-checks-*`, not with the hosting adapters. Keep singular/plural consistent
+  within a family (hence `Benzene.Clients.Http`, not `Benzene.Client.Http`).
 - **Async scope disposal.** `IServiceResolver`/`IServiceResolverFactory` expose an **optional**
   `disposeAsync?()` alongside the required `dispose()`, mirroring .NET's `AsyncServiceScope` (whose
   interface is `IDisposable`, with async disposal feature-detected rather than mandated). Making it
@@ -1018,7 +1034,7 @@ Ported (with tests):
   + `useBenzeneInvocation` (per-invocation correlation context). The `Microsoft.Extensions.Hosting`
   generic-host runners (`AwsLambdaHost`, host-builder extensions) and the registration-diagnostics
   surface remain deferred (each transport ships an `Inline*StartUp` on the first-party container).
-- Outbound HTTP client (`@benzene/client-http` + `@benzene/clients` core): the client pipeline sends
+- Outbound HTTP client (`@benzene/clients-http` + `@benzene/clients` core): the client pipeline sends
   over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`, plus the full
   `Benzene.Clients` wrapper suite — retry, correlation-id and header-forwarding message-client
   decorators, their builders, and the client factory.

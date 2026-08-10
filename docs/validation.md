@@ -20,10 +20,10 @@ Benzene seam:
 
 | Package | Adapts | Register a schema | Wire into the router |
 |---|---|---|---|
-| [`@benzene/zod`](https://www.npmjs.com/package/zod) | Zod | `registerZodSchema` | `useZodValidation` |
-| [`@benzene/joi`](https://www.npmjs.com/package/joi) | Joi | `registerJoiSchema` | `useJoiValidation` |
-| [`@benzene/yup`](https://www.npmjs.com/package/yup) | Yup | `registerYupSchema` | `useYupValidation` |
-| [`@benzene/ajv`](https://www.npmjs.com/package/ajv) | JSON Schema | `registerJsonSchema` | `useAjvValidation` |
+| `@benzene/zod` | [Zod](https://www.npmjs.com/package/zod) | `registerZodSchema` | `useZodValidation` |
+| `@benzene/joi` | [Joi](https://www.npmjs.com/package/joi) | `registerJoiSchema` | `useJoiValidation` |
+| `@benzene/yup` | [Yup](https://www.npmjs.com/package/yup) | `registerYupSchema` | `useYupValidation` |
+| `@benzene/ajv` | [JSON Schema (ajv)](https://www.npmjs.com/package/ajv) | `registerJsonSchema` | `useAjvValidation` |
 
 Each adapter adds a single piece of per-handler middleware, `ValidationMiddleware<TRequest, TResponse>`,
 to the handler pipeline. For every request:
@@ -229,7 +229,6 @@ resolved, and it runs **before** the handler. Compose it alongside other per-han
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { BenzeneMessageContext } from '@benzene/core-messages';
 import {
-  addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlersWithRouter,
@@ -238,7 +237,6 @@ import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { useZodValidation } from '@benzene/zod';
 
 const container = new DefaultBenzeneServiceContainer();
-addBenzene(container);
 addBenzeneMessage(container);
 
 const builder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
