@@ -212,5 +212,6 @@ small, self-contained addition:
   SQS, SNS, EventBridge, Kafka) or [Azure Functions](azure-functions.md).
 - **Go deeper with recipes** — the [Cookbooks](cookbooks/README.md) cover real-world scenarios.
 
-For complete, runnable projects covering every transport, see the [`examples/`](../examples) folder in the
-repository.
+For a complete, runnable version of this Express service, see
+[`examples/express-http`](../examples/express-http); for projects covering every other transport, see the
+[`examples/`](../examples) folder in the repository.

@@ -1,7 +1,7 @@
 # Unified Hosting Model
 
 Benzene lets you write one message handler and run it, unchanged, on Express, AWS Lambda, Azure
-Functions, or a self-hosted worker process. Only the small piece of code that wires a transport to
+Functions, Google Cloud Functions, or a self-hosted worker process. Only the small piece of code that wires a transport to
 your handler changes between hosts — the handler itself never moves.
 
 > **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
@@ -28,18 +28,19 @@ Benzene separates *what your service does* from *how it's invoked*:
   into a transport-native response.
 
 Because only the transport pipeline changes between hosts, the handler runs unchanged everywhere. This
-page shows the *same* handler served four ways.
+page shows the *same* handler served five ways.
 
 ## Three ways Benzene starts
 
 Every host below falls into one of three execution models. Which one you're in determines who owns the
 process and whether anything is listening or polling.
 
-**1. Triggered (serverless)** — AWS Lambda, Azure Functions. Nothing runs until the platform invokes
-your code for a single event. There is no Benzene-owned process and nothing polls; the platform's own
-infrastructure (API Gateway, an SQS/Service Bus/Event Hub trigger, …) calls into a cold or warm instance
-per invocation. See [AWS Lambda Setup](getting-started-aws.md) and
-[Azure Functions Setup](azure-functions.md).
+**1. Triggered (serverless)** — AWS Lambda, Azure Functions, Google Cloud Functions. Nothing runs until
+the platform invokes your code for a single event. There is no Benzene-owned process and nothing polls;
+the platform's own infrastructure (API Gateway, an SQS/Service Bus/Event Hub trigger, an HTTP/Pub/Sub
+Cloud Function, …) calls into a cold or warm instance per invocation. See
+[AWS Lambda Setup](getting-started-aws.md), [Azure Functions Setup](azure-functions.md), and
+[Google Cloud Functions](getting-started-google.md).
 
 **2. Embedded in an existing host** — Express. A pre-existing, already-long-running listener owns the
 process and its own concurrency model: one incoming request is one async call. Benzene is just
@@ -100,7 +101,7 @@ export class PlaceOrderHandler implements IMessageHandler<PlaceOrder, OrderConfi
 `@httpEndpoint('POST', '/orders')` maps an HTTP method and path onto that same topic. See
 [Message Handlers](message-handlers.md) for the full picture.
 
-## The same handler on four hosts
+## The same handler on five hosts
 
 Every snippet below serves the exact `PlaceOrderHandler` above. Notice the shape is always the same:
 build a transport pipeline, and inside it call `useMessageHandlers(pipeline, PlaceOrderHandler)` — the
@@ -182,6 +183,26 @@ export function placeOrderHttp(request: HttpRequest): Promise<HttpResponseInit> 
 
 You then register `placeOrderHttp` with `app.http(...)` at module load. See
 [Azure Functions Setup](azure-functions.md) for registration, `host.json`, and non-HTTP triggers.
+
+### Google Cloud Functions — `GoogleCloudFunctionHost`
+
+Package: `@benzene/google-cloud-functions-http` (HTTP) and `@benzene/google-cloud-functions-pubsub`
+(Pub/Sub). Unlike the inline builders above, the Google host is the host-class shape: you pass a
+`StartUp` class to `GoogleCloudFunctionHost`, and it hands you the Functions Framework function to
+export.
+
+```ts
+import { GoogleCloudFunctionHost } from '@benzene/google-cloud-functions-http';
+import { OrdersStartUp } from './startUp';
+
+// `.httpFunction` is the `HttpFunction` the Functions Framework invokes.
+export const ordersFunction = new GoogleCloudFunctionHost(OrdersStartUp).httpFunction;
+```
+
+`OrdersStartUp` wires the pipeline the same way as every other host — `useHttp(app, (http) =>
+useMessageHandlers(http, PlaceOrderHandler))` in HTTP, or `usePubSub(...)` with
+`GooglePubSubFunctionHost` for a Pub/Sub-triggered function. See
+[Google Cloud Functions](getting-started-google.md) for the full walkthrough and deployment.
 
 ### Self-hosted worker — `InlineSelfHostedStartUp`
 
@@ -468,6 +489,7 @@ and `@benzene/aws-lambda-testing` / `@benzene/azure-function-testing` turn them 
   deployment shapes
 - [Azure Functions Setup](azure-functions.md) — the Azure Functions v4 model over HTTP, Service Bus, and
   Event Hub
+- [Google Cloud Functions](getting-started-google.md) — the `GoogleCloudFunctionHost` model over HTTP + Pub/Sub
 - [Message Handlers](message-handlers.md) — the handler contract, topics, and `@message`/`@httpEndpoint`
 - [Message Result](message-result.md) — `BenzeneResult.ok`/`.created` and the result envelope
 - [Middleware](middleware.md) and [Common Middleware](common-middleware.md) — what else composes into the pipeline

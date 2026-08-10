@@ -314,6 +314,7 @@ examples of both.
 
 ## See Also
 
+- [`examples/grpc`](../examples/grpc) — a runnable gRPC greeter across all four RPC shapes, with a client
 - [Getting Started](getting-started.md) — build the same handler locally on Express first
 - [Getting Started on AWS Lambda](getting-started-aws.md) — the same handlers, hosted on Lambda
 - [Message Handlers](message-handlers.md) — the handler contract, topics, and `@message`

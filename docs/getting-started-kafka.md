@@ -303,6 +303,7 @@ Keep the process alive (the SIGINT/SIGTERM handlers above), or await your own sh
 
 ## See Also
 
+- [`examples/kafka`](../examples/kafka) — a runnable Kafka consumer worker + producer
 - [Getting Started](getting-started.md) — build the same handler locally first
 - [AWS Lambda Setup](getting-started-aws.md) — the same handlers, triggered by MSK / self-managed Kafka
 - [Azure Functions Setup](getting-started-azure.md) — the same handlers, on the Azure Kafka trigger

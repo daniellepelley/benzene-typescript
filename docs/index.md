@@ -8,7 +8,9 @@ unchanged on Express, AWS Lambda, or Azure Functions.
 
 > **Documentation in progress.** This is the growing TypeScript documentation set, ported from the .NET
 > docs. The guides below and the full [cookbook collection](cookbooks/README.md) are complete; a few areas
-> (the service mesh UI and usage feed) are still being ported. For the complete API surface today, see the
+> (the service mesh UI and usage feed) are still being ported — for the mesh today, the
+> [`mesh-service`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples/mesh-service) example
+> is runnable. For the complete API surface today, see the
 > [repository README](https://github.com/daniellepelley/benzene-typescript#readme), and for runnable
 > projects covering every transport, the
 > [`examples/`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples) folder.
@@ -70,7 +72,8 @@ unchanged on Express, AWS Lambda, or Azure Functions.
   - [Rate Limiting](rate-limiting.md) — fixed-window, token-bucket, and payload-size limiting
 
 - **Clients & Resilience**
-  - [Clients](clients.md) — call other Benzene services with outbound routing, retries, and parallel fan-out
+  - [Clients](clients.md) — call other Benzene services with outbound routing, retries, parallel fan-out, and
+    the in-process transport (`@benzene/clients-in-process`) for the modular monolith
   - [Caching](caching.md) — the cache abstraction and the Redis-backed adapter
   - [Resilience](resilience.md) — retry-with-backoff around a pipeline stage
 

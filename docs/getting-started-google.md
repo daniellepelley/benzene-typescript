@@ -364,6 +364,8 @@ See [Testing Benzene](testing-benzene.md) for the full pattern.
 
 ## Next steps
 
+- **See the runnable example** — [`examples/google-cloud-functions`](../examples/google-cloud-functions)
+  hosts one order domain on Google Cloud Functions, with a component test.
 - **Add validation** — reject bad requests with the [Zod, Joi, or Yup adapters](validation.md).
 - **Run the same handlers elsewhere** — [AWS Lambda](getting-started-aws.md),
   [Azure Functions](azure-functions.md).

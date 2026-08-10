@@ -27,18 +27,20 @@ You then drive the generated event through a real app booted from its own `Benze
 // src/OrdersStartUp.ts
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneStartUp } from '@benzene/testing';
+import { BenzeneStartUp, BenzeneConfiguration } from '@benzene/testing';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { CreateOrderHandler } from './handlers.js';
 
 export class OrdersStartUp implements BenzeneStartUp {
-  configureServices(services: IBenzeneServiceContainer): void {
+  // `configuration` is the settings threaded into both methods (produced by an optional
+  // `getConfiguration()`); a test layers overrides on top with `.withConfiguration(...)`.
+  configureServices(services: IBenzeneServiceContainer, _configuration: BenzeneConfiguration): void {
     // register your real services here — a test overrides any of them via `.withServices(...)`
   }
 
-  configure(app: IBenzeneApplicationBuilder): void {
+  configure(app: IBenzeneApplicationBuilder, _configuration: BenzeneConfiguration): void {
     useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
   }
 }
