@@ -29,6 +29,12 @@ export const TransportNames = {
   ApiGateway: 'api-gateway',
   Grpc: 'grpc',
   Benzene: 'benzene',
+  /**
+   * The in-process transport (`@benzene/clients-in-process`): a topic dispatched straight to a
+   * handler registered in the same runtime, never over any wire. Matches .NET's
+   * `TransportNames.InProcess` (hyphenated, matching `service-bus`/`queue-storage`).
+   */
+  InProcess: 'in-process',
   Sqs: 'sqs',
   Sns: 'sns',
   S3: 's3',

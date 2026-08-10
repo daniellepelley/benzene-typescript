@@ -42,6 +42,7 @@ decorator mechanism to learn.
 > | Azure Queue Storage | `useQueueStorage` | `@benzene/clients-azure-queue-storage` |
 > | Google Cloud Pub/Sub | `usePubSub` | `@benzene/clients-google-cloud-pubsub` |
 > | HTTP | on the message-sender path | `@benzene/clients-http` (see [HTTP](#http)) |
+> | In-process (no wire) | `useInProcess` / `useInProcessFanOut` | `@benzene/clients-in-process` (see [In-process](#in-process)) |
 >
 > Each also auto-wires a non-destructive reachability check for its target on the dependency category
 > (opt out with `healthCheck: false`). If a route has no broker extension, its terminal send is still
@@ -293,6 +294,68 @@ profile-authenticated `LambdaClient` for local development.
 > which needs that high-level client, is not). The Kafka and EventBridge outbound clients are ported now
 > (`@benzene/kafka-core`'s `KafkaBenzeneMessageClient` / `useKafkaSend`, and
 > `@benzene/clients-aws-eventbridge`'s `useEventBridge`); the gRPC outbound client is not ported yet.
+
+## In-process
+
+Package: `@benzene/clients-in-process`. Not a wire transport at all — dispatches an outbound send
+straight to a handler registered in the *same runtime*, in the shared `BenzeneMessage` envelope every
+transport uses, without going over any wire (no SQS/SNS/HTTP/socket, not even loopback). It exists
+for the case where functionality that used to live in a different service has been moved into the
+caller's own service, and the topic that used to be sent over a real transport now has no reason to
+leave the process — see the cross-language [modular monolith
+pattern](https://github.com/daniellepelley/Benzene/blob/main/docs/patterns/modular-monolith.md) for
+the shape this is written toward: many in-process modules, each with its own pipeline, extracted to
+real services one route at a time.
+
+```ts
+import { addInProcessMessaging, useInProcess } from '@benzene/clients-in-process';
+
+// One or more named pipelines, each with its own handlers:
+addInProcessMessaging(services, (registry) => registry
+  .add('billing', (pipeline) => useMessageHandlers(pipeline, ChargeCardHandler))
+  .add('shipping', (pipeline) => useMessageHandlers(pipeline, ReserveStockHandler)));
+
+addOutboundRouting(services, (routing) => routing
+  .route('billing:charge', (pipeline) => useInProcess(pipeline, 'billing'))
+  .route('shipping:reserve', (pipeline) => useInProcess(pipeline, 'shipping')));
+```
+
+A single unnamed pipeline is sugar: `addInProcessMessaging(services, (registry) =>
+registry.add((pipeline) => useMessageHandlers(pipeline, OrderCreatedHandler)))` with
+`useInProcess(pipeline)` (no name) to route to it. `addInProcessMessaging(...)` may only be called
+**once** per container — register every module inside that one call; a second call throws
+`InProcessMessagingAlreadyRegisteredException` rather than silently shadowing the first.
+
+`useInProcessFanOut(pipeline, ...targets)` dispatches one send to several named pipelines
+concurrently (the in-monolith equivalent of one SNS topic fanning out to several subscribers). Each
+target is an `InProcessFanOutTarget(pipelineName, topic)` pair, **not just a pipeline name** — every
+named pipeline shares the same underlying handler registration for the whole container (Benzene's
+(topic, version) → at most one handler rule is process-wide, not per pipeline), so two targets
+reacting to what is conceptually one event must each dispatch under a topic of their own:
+
+```ts
+routing.route('order:created', (pipeline) => useInProcessFanOut(
+  pipeline,
+  new InProcessFanOutTarget('billing', 'billing:order-created'),
+  new InProcessFanOutTarget('shipping', 'shipping:order-created')));
+```
+
+Each target's failure (thrown or a non-success status) is isolated — logged, but does not fail the
+other targets or the caller, matching what a real SNS publish does (accepted once published, no
+visibility into subscriber outcomes). There is no in-process DLQ: a failed target's message is
+genuinely lost unless its own handler retries internally.
+
+> **PORT DIVERGENCES from .NET** (both documented in detail in `@benzene/clients-in-process`'s
+> `index.ts`):
+> 1. **No boot-time route validation.** .NET catches a route naming an unregistered pipeline at
+>    start-up; this port has no `IStartUpCheck`-equivalent runner at all yet (not specific to this
+>    package — no TypeScript transport has one), so the same mistake surfaces as
+>    `InProcessPipelineNotFoundException` at first send instead.
+> 2. **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed
+>    request/response; this port's outbound pipeline erases `TResponse` everywhere and has no
+>    deserialization mechanism for *any* transport yet (see the note in [Overview](#overview) and
+>    `ClientResultExtensions.ts`), so both `useInProcess` and `useInProcessFanOut` always produce a
+>    `VoidResult`, exactly like `useSqs`/`useSns` already do in this port.
 
 ## Lower-level: the `IBenzeneMessageClient` decorator suite
 
