@@ -272,7 +272,7 @@ message through.
 
 ## Troubleshooting
 
-### `BenzeneException: Unable to resolve type <name>`
+### `BenzeneException: Unable to resolve '<name>'. Register it on the container before it is resolved …`
 
 Nothing is registered for that identifier in the container used to build the factory. Confirm your
 registration ran (in `configureServices`, and after `addBenzene`) and that you registered against the

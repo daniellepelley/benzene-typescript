@@ -41,7 +41,12 @@ export class DefaultServiceResolver implements IServiceResolver {
   getService<T>(identifier: ServiceIdentifier<T>): T {
     const service = this.tryGetService(identifier);
     if (service === undefined) {
-      throw new BenzeneException(`Unable to resolve type ${serviceIdentifierName(identifier)}`);
+      const name = serviceIdentifierName(identifier);
+      throw new BenzeneException(
+        `Unable to resolve '${name}'. Register it on the container before it is resolved ` +
+          `(e.g. services.addSingleton(${name}, ...)), or check the 'static inject' list of the ` +
+          `class that depends on it.`,
+      );
     }
     return service;
   }
