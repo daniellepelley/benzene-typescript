@@ -32,6 +32,8 @@ infrastructure, not something the TypeScript port generates or wires up.
 
 ```bash
 npm install @benzene/aws-lambda @benzene/resilience
+# for the Testing section:
+npm install --save-dev @benzene/aws-lambda-testing
 ```
 
 ## How Benzene reports partial batch failures

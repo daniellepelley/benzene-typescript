@@ -32,6 +32,8 @@ generates.
 ```bash
 npm install @benzene/aws-lambda-s3 @benzene/aws-lambda-core @benzene/core-message-handlers \
   @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
+# for the Testing section:
+npm install --save-dev @benzene/aws-lambda-testing
 ```
 
 If your handler fetches the object's contents, also install the AWS SDK's S3 client:

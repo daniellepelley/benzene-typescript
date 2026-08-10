@@ -128,7 +128,7 @@ whatever response shape you want.
 ### 1. HTTP transport (API Gateway) — map to a 500 response
 
 ```ts
-import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda-api-gateway';
+import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { BenzeneResultStatus, ErrorPayload } from '@benzene/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
@@ -168,7 +168,7 @@ and write the body on that transport's response object.
 ### 2. SQS transport — report only the failed message
 
 ```ts
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
+import { useSqs, SqsMessageContext } from '@benzene/aws-lambda';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
@@ -232,9 +232,9 @@ on, so each transport gets a callback tailored to its own response shape:
 
 ```ts
 import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda-api-gateway';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
+import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda';
+import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda';
+import { useSqs, SqsMessageContext } from '@benzene/aws-lambda';
 import { BenzeneResultStatus, ErrorPayload } from '@benzene/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';

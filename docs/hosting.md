@@ -133,9 +133,11 @@ else falls through to the rest of the Express app, so it coexists cleanly with e
 
 ### AWS Lambda — `InlineAwsLambdaStartUp`
 
-Package: `@benzene/aws-lambda-core` (plus one transport package per event source). The fluent
-`InlineAwsLambdaStartUp` builds the pipeline once on cold start; `toLambdaHandler(entryPoint)` returns
-the function AWS invokes.
+Package: `@benzene/aws-lambda-core` (plus one transport package per event source) — or the
+`@benzene/aws-lambda` umbrella, which bundles the core and every event-source transport under one
+install and re-exports the granular names shown here (as [AWS Lambda Setup](getting-started-aws.md)
+uses). The fluent `InlineAwsLambdaStartUp` builds the pipeline once on cold start;
+`toLambdaHandler(entryPoint)` returns the function AWS invokes.
 
 ```ts
 // src/index.ts
@@ -193,7 +195,7 @@ export.
 
 ```ts
 import { GoogleCloudFunctionHost } from '@benzene/google-cloud-functions-http';
-import { OrdersStartUp } from './startUp';
+import { OrdersStartUp } from './startUp.js';
 
 // `.httpFunction` is the `HttpFunction` the Functions Framework invokes.
 export const ordersFunction = new GoogleCloudFunctionHost(OrdersStartUp).httpFunction;

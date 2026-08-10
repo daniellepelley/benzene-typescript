@@ -33,6 +33,8 @@ Each subscriber Lambda:
 
 ```bash
 npm install @benzene/aws-lambda
+# for the Testing section:
+npm install --save-dev @benzene/aws-lambda-testing
 ```
 
 Publisher (whichever service raises the event). Benzene ships an SNS outbound client —
