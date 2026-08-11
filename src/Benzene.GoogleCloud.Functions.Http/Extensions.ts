@@ -1,5 +1,5 @@
 /** Port of Benzene.GoogleCloud.Functions.Http — the UseHttp wiring (Benzene.AspNet.Core.BenzeneExtensions.UseHttp analog). */
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+import { IBenzeneApplicationBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
 import { MiddlewareApplication } from '@benzene/core-middleware';
 import { addExpress, ExpressContext } from '@benzene/express';
 import { Request } from '@google-cloud/functions-framework';
@@ -14,9 +14,16 @@ import { GoogleCloudFunctionApplicationBuilder } from './GoogleCloudFunctionAppl
  * is .NET-specific and unported; `@benzene/express` is its Node analog and the Functions Framework's
  * HTTP model is Express req/res, so this reuses Express's `addExpress` + `ExpressContext` machinery to
  * bridge into the Benzene HTTP pipeline (the same construction `@benzene/express`'s `benzene()`
- * middleware performs). Because the startup's `configure` is typed to receive the concrete
- * {@link GoogleCloudFunctionApplicationBuilder}, this takes it directly rather than doing C#'s
- * `is IAspApplicationBuilder` runtime narrowing.
+ * middleware performs).
+ *
+ * NEUTRAL-BUILDER SEAM: this now takes the unified `IBenzeneApplicationBuilder` (what a
+ * `BenzeneStartUp.configure(app)` receives) and narrows to the concrete
+ * {@link GoogleCloudFunctionApplicationBuilder} internally — the exact `useAwsLambda`/`useAzureFunctions`
+ * shape (`app is …` → `instanceof`), a NO-OP on any other builder (e.g. the Pub/Sub host's builder). So
+ * the unified `useGoogleCloud(app, g => useHttp(g, http => …))` and the legacy
+ * `configure(app: GoogleCloudFunctionApplicationBuilder)` both wire the SAME pipeline; a mis-paired verb
+ * (calling `useHttp` under the Pub/Sub host) leaves no HTTP pipeline, so the builder's `build()` throws
+ * its "No HTTP pipeline configured" error.
  *
  * Register `addExpress`, build the `ExpressContext` pipeline from `action`, then store a factory that —
  * per invocation — reads the raw body, maps the Functions Framework req/res into an `ExpressContext`,
@@ -24,14 +31,18 @@ import { GoogleCloudFunctionApplicationBuilder } from './GoogleCloudFunctionAppl
  * `ExpressResponseAdapter.finalizeAsync`). The startup's `configureServices` must have registered the
  * Benzene core (`addBenzene`), exactly as the AWS/Azure `use*` extensions expect.
  *
- * @param app The Google Cloud Functions application builder passed to the startup's `configure`.
+ * @param app The unified application builder passed to the startup's `configure` (via `useGoogleCloud`).
  * @param action Configures the HTTP middleware pipeline (e.g. `(http) => useMessageHandlers(http, ...)`).
  * @returns `app`, for chaining.
  */
 export function useHttp(
-  app: GoogleCloudFunctionApplicationBuilder,
+  app: IBenzeneApplicationBuilder,
   action: PipelineBuilderAction<ExpressContext>,
-): GoogleCloudFunctionApplicationBuilder {
+): IBenzeneApplicationBuilder {
+  if (!(app instanceof GoogleCloudFunctionApplicationBuilder)) {
+    return app;
+  }
+
   app.register((x) => addExpress(x));
   const pipeline = app.create<ExpressContext>();
   action(pipeline);

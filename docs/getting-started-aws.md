@@ -12,11 +12,12 @@ unchanged on Lambda; only the entry point differs, and that's what this guide co
 > **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why. The .NET **production host adapter**
-> (`AwsLambdaHost<TStartUp>` running a `BenzeneStartUp`) has no port yet — for production the port uses the
-> fluent `InlineAwsLambdaStartUp` builder throughout, which is exactly what the runnable
-> [`examples/aws-lambda-functions`](../examples/aws-lambda-functions) uses. (A `BenzeneStartUp` contract
-> and the `benzeneTestHost(...)` harness that boots one *do* exist, for testing — see
-> [Testing Benzene](testing-benzene.md).)
+> `AwsLambdaHost<TStartUp>` (running a canonical `BenzeneStartUp`) **is ported** — you write one `StartUp`
+> class and boot it with the one-liner `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
+> the same composition root the `benzeneTestHost(...)` test harness boots (see
+> [Testing Benzene](testing-benzene.md)), so what you test is what deploys. The terse fluent
+> `InlineAwsLambdaStartUp` builder remains as an advanced/terse alternative for inline tests and small
+> standalone hosts.
 
 ## Prerequisites
 
@@ -61,12 +62,13 @@ npm install --save-dev typescript esbuild @types/aws-lambda
 ```
 
 `@benzene/aws-lambda` is the umbrella for building a Lambda service: one install brings in the
-middleware pipeline and message-handler infrastructure, the `InlineAwsLambdaStartUp` entry-point
-builder and `toLambdaHandler`, the results/handler building blocks, **and** every event-source
-transport — `useApiGateway`, `useSqs`, `useSns`, `useEventBridge`, `useKafka`, and the rest — so you
-don't add a package per event source (see [Supported event sources](#supported-event-sources)).
-`@benzene/http` adds the `httpEndpoint` helper for HTTP-shaped handlers. Prefer a narrower dependency
-set? Install the individual `@benzene/aws-lambda-*` packages instead.
+middleware pipeline and message-handler infrastructure, the `AwsLambdaHost` production host (and the
+`useAwsLambda` selector), the results/handler building blocks, **and** every event-source transport —
+`useApiGateway`, `useSqs`, `useSns`, `useEventBridge`, `useKafka`, and the rest — so you don't add a
+package per event source (see [Supported event sources](#supported-event-sources)). `@benzene/http` adds
+the `httpEndpoint` helper for HTTP-shaped handlers. The canonical `BenzeneStartUp` contract lives in
+`@benzene/abstractions-middleware` (installed transitively). Prefer a narrower dependency set? Install
+the individual `@benzene/aws-lambda-*` packages instead.
 
 ## 3. Write a message handler
 
@@ -117,44 +119,70 @@ for `200`. The result carries success/failure status alongside the payload — s
 > **not** bind path/query segments onto a bodyless request, so this guide uses a `POST` body rather than
 > the .NET guide's `GET /hello/{name}`. Read values a client sends in the body.
 
-## 4. Wire up the Lambda entry point
+## 4. Write the composition root and the entry point
 
-Create `src/index.ts`. This is the only file that knows it's running on Lambda:
+Two small files. First `src/startUp.ts` — the composition root, the single place your service is wired.
+It implements the canonical `BenzeneStartUp` contract (the same shape on every cloud): `configureServices`
+registers the service graph, `configure` wires the transport pipeline(s). Inside `configure` you select
+AWS with `useAwsLambda(app, aws => …)`:
 
 ```ts
-import { useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useApiGateway } from '@benzene/aws-lambda';
+// src/startUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useAwsLambda, useApiGateway, useMessageHandlers } from '@benzene/aws-lambda';
 import { PlaceOrderHandler } from './handlers.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))
-  .build();
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    // Register your own services here — a component test can override any of them.
+    addBenzene(services);
+  }
 
-// `toLambdaHandler` returns the correctly-bound function AWS invokes.
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, PlaceOrderHandler)));
+  }
+}
 ```
 
-What each step does:
+Then `src/handler.ts` — the only file that knows it's running on Lambda, a single line:
 
-- `new InlineAwsLambdaStartUp()` is the fluent entry-point builder; `configure(...)` builds the event
-  pipeline on an `AwsEventStreamContext`. There's also an optional `configureServices(...)` step for
-  registering your own services — you don't need one just to wire Benzene, since `useMessageHandlers`
-  pulls the baseline services in on its own.
-- `useApiGateway(app, (api) => …)` inserts the API Gateway transport, and inside it
-  `useMessageHandlers(api, PlaceOrderHandler)` is the step that routes a matched request to its handler.
-  Pass every handler class you want served.
-- `build()` constructs the pipeline once, and `toLambdaHandler(entryPoint)` returns the function AWS
-  calls on each invocation.
+```ts
+// src/handler.ts
+import { AwsLambdaHost } from '@benzene/aws-lambda';
+import { StartUp } from './startUp.js';
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
+```
+
+What each piece does:
+
+- `StartUp implements BenzeneStartUp` — `configureServices(services, config)` registers your service
+  graph (`addBenzene` pulls in Benzene's baseline; `useMessageHandlers` also ensures it idempotently),
+  and `configure(app, config)` wires the pipeline. `useAwsLambda(app, aws => …)` scopes the wiring to
+  AWS; inside it `useApiGateway(aws, (api) => …)` inserts the API Gateway transport and
+  `useMessageHandlers(api, PlaceOrderHandler)` routes a matched request to its handler. Pass every
+  handler class you want served.
+- `new AwsLambdaHost(StartUp)` builds the pipeline once on cold start from that `StartUp` — the same
+  composition root a component test boots via `benzeneTestHost(StartUp).buildAwsLambdaHost()` — and
+  `.lambdaHandler` is the correctly-bound function AWS calls on each invocation.
 
 > **Export the bound handler — this is the one gotcha.** Always write:
 >
 > ```ts
-> export const handler = toLambdaHandler(entryPoint);
+> export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 > ```
 >
-> **Do not** write `export const handler = entryPoint.functionHandlerAsync`. It compiles — the method is
-> assignable to the handler type — but assigning the method detaches `this`, so the entry point loses its
-> pipeline and the function crashes at the first invocation. `toLambdaHandler` closes over `entryPoint`
-> and keeps `this` bound; use it every time.
+> **Do not** write `export const handler = host.functionHandlerAsync`. It compiles — the method is
+> assignable to the handler type — but assigning the method detaches `this`, so the host loses its
+> pipeline and the function crashes at the first invocation. `.lambdaHandler` closes over the host and
+> keeps `this` bound; use it every time.
+>
+> **Advanced/terse alternative.** For an inline test or a tiny standalone host you can skip the `StartUp`
+> class and use the fluent `InlineAwsLambdaStartUp` builder directly:
+> `const entryPoint = new InlineAwsLambdaStartUp().configure(app => useApiGateway(app, …)).build();`
+> then `export const handler = toLambdaHandler(entryPoint);`. The `AwsLambdaHost(StartUp)` one-liner is
+> the taught path because the same `StartUp` boots your component tests.
 
 ## 5. Test locally
 
@@ -171,7 +199,7 @@ import { describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
 import { httpBuilder } from '@benzene/testing';
 import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
-import { handler } from '../src/index.js';
+import { handler } from '../src/handler.js';
 
 const context = {} as Context;
 const noopCallback = () => undefined;
@@ -197,16 +225,16 @@ five transports.
 
 ## 6. Bundle and deploy
 
-Lambda's `nodejs22.x` runtime runs a single JavaScript file, so bundle `src/index.ts` and its
+Lambda's `nodejs22.x` runtime runs a single JavaScript file, so bundle `src/handler.ts` and its
 dependencies into one ESM file with [esbuild](https://esbuild.github.io/):
 
 ```bash
-npx esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 \
-  --outfile=dist/index.mjs --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
+npx esbuild src/handler.ts --bundle --platform=node --format=esm --target=node22 \
+  --outfile=dist/handler.mjs --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
 ```
 
-That produces `dist/index.mjs` exporting `handler`. Zip it (`cd dist && zip function.zip index.mjs`)
-and deploy with your tool of choice — the handler string is `index.handler`.
+That produces `dist/handler.mjs` exporting `handler`. Zip it (`cd dist && zip function.zip handler.mjs`)
+and deploy with your tool of choice — the handler string is `handler.handler`.
 
 A minimal AWS SAM `template.yaml`:
 
@@ -227,7 +255,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: place-order
-      Handler: index.handler
+      Handler: handler.handler
       CodeUri: dist/
       Events:
         HttpApi:
@@ -241,7 +269,7 @@ sam deploy --guided
 `sam deploy --guided` walks you through stack name and region on the first run, then remembers them in
 `samconfig.toml`. Once deployed, SAM prints the API Gateway URL — `POST` to `/orders` with a JSON body
 to confirm the handler responds. (If you prefer Serverless Framework or CDK, point the function's
-handler at the same `index.handler` and let it bundle with esbuild.)
+handler at the same `handler.handler` and let it bundle with esbuild.)
 
 ## 7. Add a second transport
 
@@ -274,18 +302,31 @@ whichever async transport delivers it. Now you have a **deployment choice**.
 
 ### Model A — one Lambda function per transport (the default)
 
-`useSqs` is already included in `@benzene/aws-lambda`. Give it its own entry point:
+`useSqs` is already included in `@benzene/aws-lambda`. Give it its own `StartUp` and entry point:
+
+```ts
+// src/sqsStartUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useAwsLambda, useSqs, useMessageHandlers } from '@benzene/aws-lambda';
+import { NotifyWarehouseHandler } from './handlers.js';
+
+export class SqsStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useSqs(aws, (sqs) => useMessageHandlers(sqs, NotifyWarehouseHandler)));
+  }
+}
+```
 
 ```ts
 // src/sqs.ts
-import { useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useSqs } from '@benzene/aws-lambda';
-import { NotifyWarehouseHandler } from './handlers.js';
+import { AwsLambdaHost } from '@benzene/aws-lambda';
+import { SqsStartUp } from './sqsStartUp.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, NotifyWarehouseHandler)))
-  .build();
-
-export const handler = toLambdaHandler(entryPoint);
+export const handler = new AwsLambdaHost(SqsStartUp).lambdaHandler;
 ```
 
 Bundle `src/sqs.ts` to its own file and deploy it as a second Lambda function, with an SQS event-source
@@ -343,8 +384,8 @@ A given function can wire up several sources; the incoming event's shape selects
 | Kinesis | `useKinesis` | `@benzene/aws-lambda-kinesis` |
 
 The [`examples/aws-lambda-functions`](../examples/aws-lambda-functions) project hosts one order domain on
-API Gateway, SQS, SNS, EventBridge, and Kafka — one function module per transport, each one line over a
-shared `lambdaHandler` helper.
+API Gateway, SQS, SNS, EventBridge, and Kafka — one function module per transport, each its own unified
+`BenzeneStartUp` booted by the `new AwsLambdaHost(StartUp).lambdaHandler` one-liner.
 
 ### SQS
 
@@ -415,27 +456,34 @@ See [Validation](validation.md) for the Zod, Joi, and Yup adapters.
 
 ## Configuration
 
-`InlineAwsLambdaStartUp` builds the pipeline once, on cold start. Read configuration inside
+`AwsLambdaHost` builds the pipeline once, on cold start. Register configuration inside your `StartUp`'s
 `configureServices` — in Lambda the natural source is the function's environment variables via
 `process.env`, which you set in the SAM template, console, or CDK/Terraform:
 
 ```ts
-new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
     services.addSingletonInstance(OrdersConfig, { tableName: process.env.ORDERS_TABLE ?? 'orders' });
-  })
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))
-  .build();
+  }
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, PlaceOrderHandler)));
+  }
+}
 ```
 
-> The .NET host's `GetConfiguration()` / `IConfiguration` abstraction has no port yet — read
-> `process.env` (or your own loader) directly for now.
+> Prefer the small `BenzeneConfiguration` key/value lookup (the second parameter) over reading
+> `process.env` inline when a component test needs to layer overrides — implement `getConfiguration(): {
+> get: (key) => process.env[key] }` on the `StartUp` and the test can override any key with
+> `benzeneTestHost(StartUp).withConfiguration({ ... })`. The port's `BenzeneConfiguration` stands in for
+> .NET's richer `IConfiguration`; see the [Porting conventions](../README.md#porting-conventions).
 
 ## Troubleshooting
 
 **Function crashes immediately / "cannot read properties of undefined".** You almost certainly wrote
-`export const handler = entryPoint.functionHandlerAsync`, which detaches `this`. Use
-`export const handler = toLambdaHandler(entryPoint)` — see [step 4](#4-wire-up-the-lambda-entry-point).
+`export const handler = host.functionHandlerAsync`, which detaches `this`. Use
+`export const handler = new AwsLambdaHost(StartUp).lambdaHandler` — see
+[step 4](#4-write-the-composition-root-and-the-entry-point).
 
 **Handler never called / 404 from API Gateway.** Check that `@httpEndpoint('METHOD', '/path')` matches
 the request exactly (method and path), and that the handler class was passed to `useMessageHandlers(...)`.
@@ -446,15 +494,15 @@ attribute (or the record's topic), not the body. Confirm the producer sets a `to
 `@message('...')` topic.
 
 **Two transports in one non-composite entry point clash.** Under type erasure two transports can't share
-one container. Give each transport its own `InlineAwsLambdaStartUp` (Model A) or use `compositeAwsLambda`
-(Model B) — don't call two `use…` transports inside a single `configure`.
+one container. Give each transport its own `StartUp` + `AwsLambdaHost` (Model A) or use
+`compositeAwsLambda` (Model B) — don't call two `use…` transports inside a single `configure`.
 
 **Bundle fails to load on Lambda (ESM / `require` errors).** Ensure you bundle with
 `--format=esm --platform=node --target=node22` and name the output `.mjs` (or set `"type":"module"` in a
 `package.json` shipped alongside it), so the `nodejs22.x` runtime loads it as an ES module.
 
-**Cold starts feel slow.** `build()` runs `configureServices`/`configure` once per execution
-environment, so cold-start cost is dominated by whatever `configureServices` does. Prefer lazy
+**Cold starts feel slow.** `new AwsLambdaHost(StartUp)` runs `configureServices`/`configure` once per
+execution environment, so cold-start cost is dominated by whatever `configureServices` does. Prefer lazy
 initialization inside your services over eager work (e.g. opening a DB connection) at construction time.
 
 ## See Also

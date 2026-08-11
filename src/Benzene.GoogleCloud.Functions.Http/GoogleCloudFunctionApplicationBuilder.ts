@@ -1,6 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.Http.GoogleCloudFunctionApplicationBuilder. */
 import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
 import { BenzeneApplicationBuilder } from '@benzene/core-middleware';
+import { GoogleCloudFunctionsPlatform } from '@benzene/google-cloud-functions-core';
 import { Request, Response } from '@google-cloud/functions-framework';
 
 /**
@@ -30,8 +31,13 @@ export type GoogleCloudFunctionRequestHandler = (req: Request, res: Response) =>
  * fully-configured resolver factory.
  */
 export class GoogleCloudFunctionApplicationBuilder extends BenzeneApplicationBuilder {
-  /** The platform identifier reported by the base `IBenzeneApplicationBuilder.platform`. */
-  static readonly platformName = 'GoogleCloudFunctions';
+  /**
+   * The platform identifier reported by the base `IBenzeneApplicationBuilder.platform`. Sourced from the
+   * shared {@link GoogleCloudFunctionsPlatform} constant so the neutral `useGoogleCloud(app, …)` seam (in
+   * `@benzene/google-cloud-functions-core`) can gate on it — this builder IS an `IBenzeneApplicationBuilder`
+   * (via `BenzeneApplicationBuilder`), the same one a unified `BenzeneStartUp.configure(app)` receives.
+   */
+  static readonly platformName = GoogleCloudFunctionsPlatform;
 
   private handlerFactory?: (
     serviceResolverFactory: IServiceResolverFactory,

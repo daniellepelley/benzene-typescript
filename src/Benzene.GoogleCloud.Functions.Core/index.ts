@@ -5,3 +5,4 @@
  * startup. Port of Benzene.GoogleCloud.Functions.Core; not a transport adapter itself.
  */
 export * from './GoogleCloudStartUpRunner';
+export * from './Extensions';

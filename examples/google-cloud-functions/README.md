@@ -16,10 +16,14 @@ Framework; each declares its HTTP route with `@httpEndpoint` alongside its Benze
 | `POST /orders` | `CreateOrderHandler` | create an order → `201` |
 | `GET /orders` | `ListOrdersHandler` | list every order created |
 
-[`src/startUp.ts`](src/startUp.ts) is the only file that touches request handling — it wires the handlers
-onto HTTP with `useHttp(...)` and never references the Functions Framework. [`src/function.ts`](src/function.ts)
-is the deploy entry: `GoogleCloudFunctionHost` turns that `StartUp` into a Functions Framework
-`HttpFunction` you register with `http('benzene', ordersFunction)`.
+[`src/startUp.ts`](src/startUp.ts) is the only file that touches request handling. It is the unified
+`BenzeneStartUp` — the SAME shape the AWS and Azure examples ship — selecting Google with
+`useGoogleCloud(app, g => useHttp(g, http => useMessageHandlers(http, …)))`, exactly where AWS writes
+`useAwsLambda(app, aws => …)` and Azure writes `useAzureFunctions(app, az => …)`; it never references the
+Functions Framework. [`src/function.ts`](src/function.ts) is the deploy entry: `GoogleCloudFunctionHost`
+turns that `StartUp` into a Functions Framework `HttpFunction` you register with
+`http('benzene', ordersFunction)` — the one-liner `new GoogleCloudFunctionHost(StartUp).httpFunction`,
+mirroring `new AwsLambdaHost(StartUp).lambdaHandler` / `new AzureFunctionHost(StartUp).httpFunction`.
 
 ## Deploy
 

@@ -1,10 +1,10 @@
 /**
  * `@benzene-example/aws-lambda-functions` - one order domain (`src/handlers.ts`) hosted on five AWS Lambda
- * transports (`src/functions/*`). Each function module exports the `handler` AWS invokes; they are
+ * transports (`src/functions/*`). Each function module ships its own unified `BenzeneStartUp` and exports
+ * the `handler` AWS invokes via the one-liner `new AwsLambdaHost(StartUp).lambdaHandler`; they are
  * re-exported here namespaced so the shared name doesn't clash. See `README.md`.
  */
 export * from './handlers';
-export { lambdaHandler } from './lambda';
 
 export * as apiGatewayFunction from './functions/apiGateway';
 export * as sqsFunction from './functions/sqs';

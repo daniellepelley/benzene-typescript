@@ -12,19 +12,27 @@ delivered the message — that is the whole point of Benzene.
 | `eventBridge.ts` | EventBridge | `NotifyWarehouseHandler` | `detail-type` → `order:placed` |
 | `kafka.ts` | Amazon MSK / Kafka | `NotifyWarehouseHandler` | record topic → `order:placed` |
 
-Each function module exports the `handler` AWS invokes:
+Each function module ships its own unified `BenzeneStartUp` and exports the `handler` AWS invokes via the
+one-liner `new AwsLambdaHost(StartUp).lambdaHandler` — the SAME composition-root shape on every cloud
+(compare [`../azure-functions`](../azure-functions) and [`../google-cloud-functions`](../google-cloud-functions)):
 
 ```ts
 // src/functions/sqs.ts
-export const handler = lambdaHandler((app) =>
-  useSqs(app, (sqs) => useMessageHandlers(sqs, NotifyWarehouseHandler)),
-);
+class SqsStartUp implements BenzeneStartUp {
+  configureServices(services) { addBenzene(services); }
+  configure(app) {
+    useAwsLambda(app, (aws) => useSqs(aws, (sqs) => useMessageHandlers(sqs, NotifyWarehouseHandler)));
+  }
+}
+
+export const handler = new AwsLambdaHost(SqsStartUp).lambdaHandler;
 ```
 
-`lambdaHandler` (see [`src/lambda.ts`](src/lambda.ts)) wires Benzene onto the container and returns
-`toLambdaHandler(entryPoint)` — the correctly-bound function AWS calls. **Do not** write
-`export const handler = entryPoint.functionHandlerAsync`: it compiles but detaches `this` and crashes
-at the first invocation.
+`new AwsLambdaHost(StartUp)` builds the pipeline once on module load (cold start) and `.lambdaHandler` is
+the correctly-bound function AWS calls. **Do not** write
+`export const handler = host.functionHandlerAsync`: it compiles but detaches `this` and crashes at the
+first invocation. `.lambdaHandler` is the pit of success. Only the `use<Transport>` line inside `configure`
+differs between the five modules — the handler, the host, and the boot are identical.
 
 ## Deploying
 

@@ -6,13 +6,21 @@ your handler changes between hosts — the handler itself never moves.
 
 > **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > The .NET original centres this model on a single `BenzeneStartUp` class run through per-platform
-> **production host adapters** (`AwsLambdaHost<TStartUp>`, `IHostBuilder.UseBenzene<TStartUp>()`).
-> **Those production host adapters have no port yet.** Instead each host exposes its own small fluent
-> entry-point builder (`InlineAwsLambdaStartUp`, `InlineAzureFunctionStartUp`, `InlineSelfHostedStartUp`)
-> or middleware factory (Express's `benzene(...)`), all built over the same platform-neutral
-> `IBenzeneApplicationBuilder` model described below. (The `BenzeneStartUp` contract itself *is* ported —
-> the `benzeneTestHost(...)` harness boots one to test a service from its own startup; see
-> [Testing Benzene](testing-benzene.md).) Where the shape differs, the README's
+> **production host adapters**. **Those `*Host<TStartUp>` production hosts ARE now ported for the three
+> serverless clouds** — `AwsLambdaHost<TStartUp>` (`@benzene/aws-lambda-core`),
+> `AzureFunctionHost<TStartUp>` (`@benzene/azure-function-core`), and `GoogleCloudFunctionHost<TStartUp>` /
+> `GooglePubSubFunctionHost<TStartUp>` (`@benzene/google-cloud-functions-*`). You write one `StartUp`
+> implementing the canonical `BenzeneStartUp` contract (from `@benzene/abstractions-middleware`) and boot
+> it with a **one-liner** — `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
+> `new AzureFunctionHost(StartUp).httpFunction`, `new GoogleCloudFunctionHost(StartUp).httpFunction` — the
+> SAME composition root a component test boots (`benzeneTestHost(StartUp)`), so what you test is what
+> deploys. This is the **recommended entry** for all three clouds.
+>
+> The terse fluent **inline builders** (`InlineAwsLambdaStartUp`, `InlineAzureFunctionStartUp`,
+> `InlineSelfHostedStartUp`) remain for inline tests and small standalone hosts — the advanced/terse
+> alternative, built over the same platform-neutral `IBenzeneApplicationBuilder` model described below.
+> Express is a middleware factory (`benzene(...)`); the self-hosted worker keeps its inline builder (no
+> `*Host` production adapter — it owns its own process lifecycle). Where a shape differs, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why.
 
 ## The through-line: one handler, many hosts
@@ -131,32 +139,53 @@ The Benzene middleware only responds to requests that match one of your `@httpEn
 else falls through to the rest of the Express app, so it coexists cleanly with existing routes. See
 [Getting Started](getting-started.md) for the full walkthrough.
 
-### AWS Lambda — `InlineAwsLambdaStartUp`
+### AWS Lambda — `AwsLambdaHost`
 
 Package: `@benzene/aws-lambda-core` (plus one transport package per event source) — or the
 `@benzene/aws-lambda` umbrella, which bundles the core and every event-source transport under one
 install and re-exports the granular names shown here (as [AWS Lambda Setup](getting-started-aws.md)
-uses). The fluent `InlineAwsLambdaStartUp` builds the pipeline once on cold start;
-`toLambdaHandler(entryPoint)` returns the function AWS invokes.
+uses). Like Azure and Google, the AWS host is the host-class shape: you write one `StartUp` class
+implementing the same `BenzeneStartUp` contract as every other host, pass it to `AwsLambdaHost`, and
+export its `.lambdaHandler`. Inside `configure`, select AWS with `useAwsLambda(app, aws => …)`:
 
 ```ts
-// src/index.ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+// src/startUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { PlaceOrderHandler } from './handlers.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))
-  .build();
-
-// `toLambdaHandler` returns the correctly-bound function AWS invokes.
-export const handler = toLambdaHandler(entryPoint);
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, PlaceOrderHandler)));
+  }
+}
 ```
 
-> **Export the bound handler.** Always write `export const handler = toLambdaHandler(entryPoint)`, never
-> `export const handler = entryPoint.functionHandlerAsync` — assigning the method detaches `this` and the
+```ts
+// src/handler.ts — the one-liner boot AWS invokes.
+import { AwsLambdaHost } from '@benzene/aws-lambda-core';
+import { StartUp } from './startUp.js';
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
+```
+
+The one-liner `new AwsLambdaHost(StartUp).lambdaHandler` boots the same `StartUp` a component test boots
+(`benzeneTestHost(StartUp).buildAwsLambdaHost()`), so what you test is what deploys.
+
+> **Export the bound handler.** Always write `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
+> never `export const handler = host.functionHandlerAsync` — assigning the method detaches `this` and the
 > pipeline is lost at the first invocation. See [AWS Lambda Setup](getting-started-aws.md).
+>
+> **`InlineAwsLambdaStartUp` still works.** The terse fluent inline builder remains for inline tests and
+> small standalone hosts (`new InlineAwsLambdaStartUp().configure(app => useApiGateway(app, …)).build()`
+> returns the entry point, wrapped with `toLambdaHandler(...)`). The `AwsLambdaHost` one-liner is the
+> taught path.
 
 ### Azure Functions — `AzureFunctionHost`
 
@@ -209,21 +238,40 @@ trigger reads the same way. You then register `placeOrderHttp` with `app.http(..
 ### Google Cloud Functions — `GoogleCloudFunctionHost`
 
 Package: `@benzene/google-cloud-functions-http` (HTTP) and `@benzene/google-cloud-functions-pubsub`
-(Pub/Sub). Unlike the inline builders above, the Google host is the host-class shape: you pass a
-`StartUp` class to `GoogleCloudFunctionHost`, and it hands you the Functions Framework function to
-export.
+(Pub/Sub). The same host-class shape as AWS and Azure: you write one `StartUp` implementing the same
+`BenzeneStartUp` contract, pass it to `GoogleCloudFunctionHost`, and export its `.httpFunction`. Inside
+`configure`, select Google with `useGoogleCloud(app, g => …)` — the exact counterpart of AWS's
+`useAwsLambda(app, aws => …)` and Azure's `useAzureFunctions(app, az => …)`:
 
 ```ts
+// src/startUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
+import { useHttp } from '@benzene/google-cloud-functions-http';
+import { PlaceOrderHandler } from './handlers.js';
+
+export class OrdersStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useGoogleCloud(app, (g) => useHttp(g, (http) => useMessageHandlers(http, PlaceOrderHandler)));
+  }
+}
+```
+
+```ts
+// src/function.ts — `.httpFunction` is the `HttpFunction` the Functions Framework invokes.
 import { GoogleCloudFunctionHost } from '@benzene/google-cloud-functions-http';
 import { OrdersStartUp } from './startUp.js';
 
-// `.httpFunction` is the `HttpFunction` the Functions Framework invokes.
 export const ordersFunction = new GoogleCloudFunctionHost(OrdersStartUp).httpFunction;
 ```
 
-`OrdersStartUp` wires the pipeline the same way as every other host — `useHttp(app, (http) =>
-useMessageHandlers(http, PlaceOrderHandler))` in HTTP, or `usePubSub(...)` with
-`GooglePubSubFunctionHost` for a Pub/Sub-triggered function. See
+For a Pub/Sub-triggered function, swap `useHttp` for `usePubSub` and `GoogleCloudFunctionHost` for
+`GooglePubSubFunctionHost` (`.cloudEventFunction`) — everything else is identical. See
 [Google Cloud Functions](getting-started-google.md) for the full walkthrough and deployment.
 
 ### Self-hosted worker — `InlineSelfHostedStartUp`
@@ -385,10 +433,12 @@ register it with `workers.add((resolver) => …)`, exactly as the `OrdersConsume
 
 On AWS you have a deployment choice that doesn't change the transport wiring inside `configure`:
 
-- **Model A — one Lambda function per transport (the default).** Each transport gets its own
-  `InlineAwsLambdaStartUp` and its own exported `handler`, deployed as a separate function with its own
-  trigger. This is the port's default because under TypeScript's type erasure two transports can't share
-  one DI container.
+- **Model A — one Lambda function per transport (the default).** Each transport gets its own `StartUp`
+  and its own exported `handler` (`new AwsLambdaHost(StartUp).lambdaHandler`), deployed as a separate
+  function with its own trigger. This is the port's default because under TypeScript's type erasure two
+  transports can't share one DI container. (The runnable
+  [`examples/aws-lambda-functions`](../examples/aws-lambda-functions) is exactly this — one domain, five
+  transports, each its own `StartUp` + host one-liner.)
 - **Model B — one Lambda function, several triggers (`compositeAwsLambda`).** One exported `handler`
   fronts several transports, each kept in its own isolated container/pipeline; an event-shape predicate
   (`isApiGatewayEvent`, `isSqsEvent`, …) picks the matching route per event.

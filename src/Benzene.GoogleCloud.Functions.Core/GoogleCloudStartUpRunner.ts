@@ -1,5 +1,6 @@
 /** Port of Benzene.GoogleCloud.Functions.Core.GoogleCloudStartUpRunner. */
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, emptyConfiguration } from '@benzene/abstractions-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 
 /**
@@ -15,12 +16,18 @@ import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
  * `IServiceCollection`/`IBenzeneServiceContainer` split collapses into the first-party
  * `DefaultBenzeneServiceContainer`, which is BOTH the registration target and the source of the resolver
  * factory — exactly as `InlineAwsLambdaStartUp` / `InlineAzureFunctionStartUp` are adapted for Node.
+ *
+ * The startup's optional `getConfiguration()` IS now read and threaded (as the AWS/Azure runners do), so a
+ * unified {@link BenzeneStartUp} — whose `configureServices`/`configure` take a {@link BenzeneConfiguration}
+ * — boots identically here. A startup that declares no `getConfiguration` gets {@link emptyConfiguration}.
  */
 export interface GoogleCloudBootstrapResult<TStartUp> {
   /** The constructed startup instance whose `configureServices`/`configure` the host will run. */
   readonly startUp: TStartUp;
   /** The service container to register services into and build the resolver factory from. */
   readonly container: IBenzeneServiceContainer;
+  /** The merged configuration threaded into `configureServices`/`configure`. */
+  readonly configuration: BenzeneConfiguration;
 }
 
 /**
@@ -43,11 +50,14 @@ export class GoogleCloudStartUpRunner {
    *
    * @param startUpFactory A no-argument constructor for the platform-neutral application definition to
    *   bootstrap — the port of C#'s `where TStartUp : BenzeneStartUp, new()` constraint.
-   * @returns The constructed startup and the container to configure it against.
+   * @returns The constructed startup, the container to configure it against, and its merged configuration.
    */
-  static bootstrap<TStartUp>(startUpFactory: new () => TStartUp): GoogleCloudBootstrapResult<TStartUp> {
+  static bootstrap<TStartUp extends { getConfiguration?(): BenzeneConfiguration }>(
+    startUpFactory: new () => TStartUp,
+  ): GoogleCloudBootstrapResult<TStartUp> {
     const startUp = new startUpFactory();
+    const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
     const container = new DefaultBenzeneServiceContainer();
-    return { startUp, container };
+    return { startUp, container, configuration };
   }
 }

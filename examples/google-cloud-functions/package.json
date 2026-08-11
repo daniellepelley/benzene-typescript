@@ -11,7 +11,9 @@
     "@google-cloud/functions-framework": "^3.5.1",
     "@benzene/abstractions": "0.1.0",
     "@benzene/abstractions-message-handlers": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
+    "@benzene/google-cloud-functions-core": "0.1.0",
     "@benzene/google-cloud-functions-http": "0.1.0",
     "@benzene/http": "0.1.0",
     "@benzene/results": "0.1.0"

@@ -2,6 +2,7 @@
 import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
 import { IEntryPointMiddlewareApplication } from '@benzene/abstractions-middleware';
 import { BenzeneApplicationBuilder } from '@benzene/core-middleware';
+import { GoogleCloudFunctionsPlatform } from '@benzene/google-cloud-functions-core';
 import { MessagePublishedData } from './MessagePublishedData';
 
 /**
@@ -16,8 +17,13 @@ import { MessagePublishedData } from './MessagePublishedData';
  * factory.
  */
 export class GooglePubSubFunctionApplicationBuilder extends BenzeneApplicationBuilder {
-  /** The platform identifier reported by the base `IBenzeneApplicationBuilder.platform`. */
-  static readonly platformName = 'GoogleCloudFunctions';
+  /**
+   * The platform identifier reported by the base `IBenzeneApplicationBuilder.platform`. Sourced from the
+   * shared {@link GoogleCloudFunctionsPlatform} constant so the neutral `useGoogleCloud(app, …)` seam can
+   * gate on it — this builder IS an `IBenzeneApplicationBuilder`, the one a unified
+   * `BenzeneStartUp.configure(app)` receives, with `usePubSub` doing the final concrete-builder narrow.
+   */
+  static readonly platformName = GoogleCloudFunctionsPlatform;
 
   private appFactory?: (
     serviceResolverFactory: IServiceResolverFactory,

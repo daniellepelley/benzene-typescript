@@ -1,19 +1,21 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.GooglePubSubFunctionHost. */
+import { IEntryPointMiddlewareApplication, BenzeneStartUpOf } from '@benzene/abstractions-middleware';
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IEntryPointMiddlewareApplication } from '@benzene/abstractions-middleware';
 import { GoogleCloudStartUpRunner } from '@benzene/google-cloud-functions-core';
 import { CloudEvent, CloudEventFunction } from '@google-cloud/functions-framework';
 import { MessagePublishedData } from './MessagePublishedData';
 import { GooglePubSubFunctionApplicationBuilder } from './GooglePubSubFunctionApplicationBuilder';
 
 /**
- * The startup shape a Google Cloud Functions Pub/Sub host boots from — the Node analog of C#'s
- * `BenzeneStartUp` as consumed by `GooglePubSubFunctionHost<TStartUp> where TStartUp : BenzeneStartUp`.
+ * The legacy, per-cloud startup shape a Google Cloud Functions Pub/Sub host booted from before the unified
+ * {@link BenzeneStartUp} — a minimal two-method contract with no configuration parameter, whose `configure`
+ * receives the concrete {@link GooglePubSubFunctionApplicationBuilder}.
  *
- * Minimal two-method contract (no configuration parameter), matching `GoogleCloudFunctionStartUp` and
- * `InlineAzureFunctionStartUp` — see the HTTP host's notes on the deferred generic-host `BenzeneStartUp`.
- * `configureServices` registers the service graph (call `addBenzene(...)`), and `configure` wires the
- * Pub/Sub pipeline against the {@link GooglePubSubFunctionApplicationBuilder} (call `usePubSub(app, ...)`).
+ * @deprecated Implement the unified {@link BenzeneStartUp} (`configure(app: IBenzeneApplicationBuilder,
+ * config)`) and select Google with `useGoogleCloud(app, g => usePubSub(g, …))`, exactly as AWS uses
+ * `useAwsLambda` and Azure uses `useAzureFunctions`. Retained (with `GooglePubSubFunctionHost` still
+ * accepting it) for backward compatibility; the neutral builder is a subtype of this contract's `configure`
+ * param, so nothing breaks.
  */
 export interface GooglePubSubFunctionStartUp {
   /** Registers the service graph. Port of C# `ConfigureServices`. */
@@ -32,6 +34,12 @@ export interface GooglePubSubFunctionStartUp {
  * functions.cloudEvent('benzene', host.cloudEventFunction);
  * ```
  *
+ * The `MyStartUp` here is the SAME unified {@link BenzeneStartUp} shape every other cloud ships — only its
+ * `configure` line differs (`useGoogleCloud(app, g => usePubSub(g, pubsub => …))`). The generic accepts
+ * BOTH the unified `BenzeneStartUp` and a legacy {@link GooglePubSubFunctionStartUp}, exactly as the HTTP
+ * host does (see its notes on the contravariant `BenzeneStartUpOf<GooglePubSubFunctionApplicationBuilder>`
+ * constraint and the settled keep-the-per-package-host decision).
+ *
  * Mirrors {@link GoogleCloudFunctionHost}'s bootstrap shape for the Pub/Sub CloudEvent trigger type
  * instead of HTTP: `GoogleCloudStartUpRunner.bootstrap(...)` → `configureServices` → `configure` →
  * `build`. Pub/Sub delivers EXACTLY ONE message per invocation, so this is a single-message trigger.
@@ -41,22 +49,24 @@ export interface GooglePubSubFunctionStartUp {
  * handler `(cloudEvent) => ...`, so this host EXPOSES that handler via {@link cloudEventFunction} rather
  * than being it (same rationale as the HTTP host / `toLambdaHandler`).
  */
-export class GooglePubSubFunctionHost<TStartUp extends GooglePubSubFunctionStartUp> {
+export class GooglePubSubFunctionHost<
+  TStartUp extends BenzeneStartUpOf<GooglePubSubFunctionApplicationBuilder>,
+> {
   private readonly app: IEntryPointMiddlewareApplication<MessagePublishedData>;
 
   /**
-   * Constructs `TStartUp`, runs its `configureServices`/`configure`, and builds the entry point
-   * application every invocation dispatches through.
+   * Constructs `TStartUp`, runs its `getConfiguration`/`configureServices`/`configure`, and builds the entry
+   * point application every invocation dispatches through.
    *
    * @param startUpFactory A no-argument constructor for the startup — the port of C#'s
    *   `where TStartUp : BenzeneStartUp, new()`.
    */
   constructor(startUpFactory: new () => TStartUp) {
-    const { startUp, container } = GoogleCloudStartUpRunner.bootstrap(startUpFactory);
+    const { startUp, container, configuration } = GoogleCloudStartUpRunner.bootstrap(startUpFactory);
     const appBuilder = new GooglePubSubFunctionApplicationBuilder(container);
 
-    startUp.configureServices(container);
-    startUp.configure(appBuilder);
+    startUp.configureServices(container, configuration);
+    startUp.configure(appBuilder, configuration);
 
     this.app = appBuilder.build(container.createServiceResolverFactory());
   }

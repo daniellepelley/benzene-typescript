@@ -215,10 +215,11 @@ response AND on egress via the first-party `FakeBenzeneMessageSender`. The **Goo
 test host** (`@benzene/google-cloud-functions-http-testing`, porting
 `Benzene.GoogleCloud.Functions.Http.TestHelpers`) follows the same law with two GCP-specific bends: (a) its
 specialization is a **free function** `buildGoogleCloudFunctionHost(benzeneTestHost(StartUp).withServices(...))`
-rather than a fluent `.build*Host()` method (bend #4), because the GCF startup's `configure` receives the
-concrete `GoogleCloudFunctionApplicationBuilder`, not the host-neutral `IBenzeneApplicationBuilder`, so there
-is no neutral `this` to augment onto — the C# `BuildGoogleCloudFunctionHost` extension is likewise a plain
-method; and (b) since the Functions Framework is Express-shaped `(req, res)`, the C# `HttpContextBuilder`
+rather than a fluent `.build*Host()` method (bend #4), matching the settled decision that Google keeps its
+per-package host shape (bend (9)): the test host's terminal step constructs the concrete
+`GoogleCloudFunctionApplicationBuilder` itself (a unified `BenzeneStartUp`'s `configure` takes the wider
+`IBenzeneApplicationBuilder`, but the concrete builder is a subtype, so `configure(appBuilder, config)` still
+type-checks), and the C# `BuildGoogleCloudFunctionHost` extension is likewise a plain method; and (b) since the Functions Framework is Express-shaped `(req, res)`, the C# `HttpContextBuilder`
 (one ASP.NET `DefaultHttpContext`) splits in two — `asGoogleCloudHttpRequest(httpBuilder(...))` builds the
 native `@google-cloud/functions-framework` `Request` (`method`/`url`/`path`/`headers`/`rawBody`), and
 `host.sendHttpAsync(request)` mints and captures the `Response` (`statusCode`/`setHeader`/`end`, the exact
@@ -235,17 +236,23 @@ in a protobuf `ByteString`; the topic rides the `"topic"` attribute (`PubSubMess
 and headers ride as further attributes; C#'s inert `CloudEvent` envelope (minted only to satisfy the
 `ICloudEventFunction` signature) is dropped — the TS host holds the built `IEntryPointMiddlewareApplication`
 and calls `app.sendAsync(data)` directly, so **no cloudevents/functions-framework dependency** is pulled in;
-`Guid.NewGuid()` default message id → `crypto.randomUUID()`. **Bends recorded here:** (3) AWS **and Azure** startups implement the
+`Guid.NewGuid()` default message id → `crypto.randomUUID()`. **Bends recorded here:** (3) AWS, Azure **and Google** startups implement the
 **non-generic `BenzeneStartUp`** (`configure(app: IBenzeneApplicationBuilder)`, selecting the transport inside
-with `useAwsLambda(app, aws => …)` / `useAzureFunctions(app, az => …)`), matching the .NET reference's single
-app-builder shape. Azure's neutral seam is `AzureFunctionApplicationBuilder` — a `BenzeneApplicationBuilder`
-that ALSO implements `IAzureFunctionAppBuilder`, so it is a drop-in for BOTH a unified
-`configure(app: IBenzeneApplicationBuilder)` (via `useAzureFunctions`, the `instanceof`-gated free function
-mirroring `useAwsLambda`) and a legacy `configure(app: IAzureFunctionAppBuilder)` (which receives it directly);
-the original `AzureFunctionAppBuilder` + the `BenzeneStartUpOf<TAppBuilder>` generic (pinned by the deprecated
-`AzureFunctionStartUp` alias) are retained for `InlineAzureFunctionStartUp` and existing Azure consumers.
-Either way `benzeneTestHost`/`.withServices`/`.withConfiguration` and the egress
-assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
+with `useAwsLambda(app, aws => …)` / `useAzureFunctions(app, az => …)` / `useGoogleCloud(app, g => …)`),
+matching the .NET reference's single app-builder shape. Azure's neutral seam is `AzureFunctionApplicationBuilder`
+— a `BenzeneApplicationBuilder` that ALSO implements `IAzureFunctionAppBuilder`, so it is a drop-in for BOTH a
+unified `configure(app: IBenzeneApplicationBuilder)` (via `useAzureFunctions`, the `instanceof`-gated free
+function mirroring `useAwsLambda`) and a legacy `configure(app: IAzureFunctionAppBuilder)` (which receives it
+directly); the original `AzureFunctionAppBuilder` + the `BenzeneStartUpOf<TAppBuilder>` generic (pinned by the
+deprecated `AzureFunctionStartUp` alias) are retained for `InlineAzureFunctionStartUp` and existing Azure
+consumers. Google's builders (`GoogleCloudFunctionApplicationBuilder`, `GooglePubSubFunctionApplicationBuilder`)
+are already `BenzeneApplicationBuilder`s (hence `IBenzeneApplicationBuilder`), so its seam is the free function
+`useGoogleCloud` in `@benzene/google-cloud-functions-core`; it gates on the shared `platform` constant rather
+than `instanceof` (that neutral core cannot import the two concrete builders — they live in the `-http`/`-pubsub`
+packages that depend on it), and `useHttp`/`usePubSub` do the final concrete-builder `instanceof` narrow (each a
+no-op on the other's builder) — see bend (9). Either way `benzeneTestHost`/`.withServices`/`.withConfiguration`
+and the egress assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name
+change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
 by module augmentation** (`declare module '@benzene/testing'` + a prototype assignment) so the
 `benzeneTestHost(...).withServices(...).buildAwsLambdaHost()` chain reads as in the reference while the
 neutral core keeps zero cloud imports — it lights up on importing the transport `*-testing` package, which
@@ -292,8 +299,27 @@ test host (see convention (4)), so a getter lights up only when its transport pa
 trigger registration always does) and core keeps zero transport imports. Kafka has no first-class
 `app.*` registration in `@azure/functions`, so it has no getter — dispatch through `host.app` with
 `handleKafkaEvents(host.app, …)`. Proven by `test/Benzene.Core.Test/Azure/Hosting/AzureFunctionHostTest.test.ts`
-and the converted `examples/azure-functions`. Converging Google onto the unified `BenzeneStartUp`, and
-sweeping the AWS/Google guides + the `hosting.md` intro note to the host one-liner, are the staged follow-ups.
+and the converted `examples/azure-functions`. (9) **Google is now converged onto the identical unified
+pattern**, with ONE settled maintainer decision that differs from Azure: Google KEEPS its per-package host
+classes (`GoogleCloudFunctionHost` / `GooglePubSubFunctionHost`) with their **in-package** native-handler
+getters (`.httpFunction` / `.cloudEventFunction`) rather than moving the getter onto a transport-agnostic core
+host by module augmentation — the `new XHost(StartUp).xFunction` API surface is already uniform across clouds,
+so only the builder + startup CONTRACT is neutralized, not the host location. Concretely: both Google builders
+now source their `platform` from a shared `GoogleCloudFunctionsPlatform` constant so the neutral
+`useGoogleCloud(app, g => …)` seam (in `@benzene/google-cloud-functions-core`, mirroring `useAwsLambda`/
+`useAzureFunctions` but `platform`-gated per bend (3)) can select them; `useHttp`/`usePubSub` widen to accept
+the neutral `IBenzeneApplicationBuilder` and `instanceof`-narrow internally; the two hosts widen their generic
+to `BenzeneStartUpOf<ConcreteBuilder>` so they accept BOTH the unified `BenzeneStartUp` and the (now
+`@deprecated`) legacy `GoogleCloudFunctionStartUp`/`GooglePubSubFunctionStartUp`, and the shared
+`GoogleCloudStartUpRunner.bootstrap` now threads the startup's optional `getConfiguration()` like the AWS/Azure
+runners. **End state: the SAME `StartUp` file shape across AWS/Azure/Google — `getConfiguration` /
+`configureServices` / `configure(app: IBenzeneApplicationBuilder, config)` — with only the `use<Cloud>` line
+differing, booted by a one-line `new XHost(StartUp).xFunction`.** Proven by
+`test/Benzene.Core.Test/GoogleCloud/Hosting/GoogleCloudFunctionHostTest.test.ts` and the converted
+`examples/google-cloud-functions`; the `examples/aws-lambda-functions` five-transport demo is likewise converted
+off the `InlineAwsLambdaStartUp` `lambda.ts` helper to per-transport `StartUp` + `new AwsLambdaHost(StartUp)`,
+and the `hosting.md` intro note + AWS/Google getting-started guides now teach the host one-liner (the inline
+builders documented as the terse/advanced alternative).
 The **standalone (non-Functions)
 consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
 `@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers`,
@@ -387,21 +413,33 @@ app.use(benzene((pipeline) => useMessageHandlers(pipeline, CreateOrderHandler)))
 app.listen(3000);
 ```
 
-…or host the **same handler** on **AWS Lambda** — `toLambdaHandler` returns the `handler` AWS
-invokes (use it rather than assigning the method, which would detach `this`):
+…or host the **same handler** on **AWS Lambda**. Write one `StartUp` (the canonical `BenzeneStartUp`
+contract — the SAME shape on every cloud) and boot it with the one-liner
+`new AwsLambdaHost(StartUp).lambdaHandler` (which returns the correctly-bound `handler` AWS invokes,
+rather than the method, which would detach `this`):
 
 ```ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
-  .build();
+class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
+  }
+}
 
-export const handler = toLambdaHandler(entryPoint);
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
+
+The same `StartUp` shape hosts on Azure (`new AzureFunctionHost(StartUp).httpFunction`) and Google
+(`new GoogleCloudFunctionHost(StartUp).httpFunction`) — only the `use<Cloud>` line inside `configure`
+differs. The terse `InlineAwsLambdaStartUp` builder remains for inline tests/advanced use.
 
 The same handler runs on every transport of both clouds — see
 [`examples/aws-lambda-functions`](examples/aws-lambda-functions) (one domain on API Gateway, SQS, SNS,

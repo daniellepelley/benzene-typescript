@@ -1,5 +1,6 @@
 /** Port of Benzene.GoogleCloud.Functions.Http.GoogleCloudFunctionHost. */
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUpOf } from '@benzene/abstractions-middleware';
 import { GoogleCloudStartUpRunner } from '@benzene/google-cloud-functions-core';
 import { HttpFunction, Request, Response } from '@google-cloud/functions-framework';
 import {
@@ -8,14 +9,16 @@ import {
 } from './GoogleCloudFunctionApplicationBuilder';
 
 /**
- * The startup shape a Google Cloud Functions HTTP host boots from — the Node analog of C#'s
- * `BenzeneStartUp` as consumed by `GoogleCloudFunctionHost<TStartUp> where TStartUp : BenzeneStartUp`.
+ * The legacy, per-cloud startup shape a Google Cloud Functions HTTP host booted from before the unified
+ * {@link BenzeneStartUp} — a minimal two-method contract with no configuration parameter, whose `configure`
+ * receives the concrete {@link GoogleCloudFunctionApplicationBuilder}.
  *
- * STARTUP-CONTRACT ADAPTATION: the port's platform-neutral generic-host `BenzeneStartUp` (with its
- * `IConfiguration` thread) is deferred (see the README's AWS/Azure host notes), so — matching
- * `InlineAzureFunctionStartUp` — this is a minimal two-method contract with no configuration parameter.
- * `configureServices` registers the service graph (call `addBenzene(...)`), and `configure` wires the
- * HTTP pipeline against the {@link GoogleCloudFunctionApplicationBuilder} (call `useHttp(app, ...)`).
+ * @deprecated Implement the unified {@link BenzeneStartUp} (`configure(app: IBenzeneApplicationBuilder,
+ * config)`) and select Google with `useGoogleCloud(app, g => useHttp(g, …))`, exactly as AWS uses
+ * `useAwsLambda` and Azure uses `useAzureFunctions`. This is the SAME `StartUp` shape across every cloud,
+ * booted here by `new GoogleCloudFunctionHost(StartUp).httpFunction`. Retained (with `GoogleCloudFunctionHost`
+ * still accepting it) for backward compatibility; the neutral builder is a subtype of this contract's
+ * `configure` param, so nothing breaks.
  */
 export interface GoogleCloudFunctionStartUp {
   /** Registers the service graph. Port of C# `ConfigureServices`. */
@@ -34,9 +37,24 @@ export interface GoogleCloudFunctionStartUp {
  * functions.http('benzene', host.httpFunction);
  * ```
  *
- * Mirrors `Benzene.Aws.Lambda.Core.AwsLambdaHost<TStartUp>` / the .NET
- * `GoogleCloudFunctionHost<TStartUp>` bootstrap shape: `GoogleCloudStartUpRunner.bootstrap(...)` →
- * `configureServices` → `configure` → `build`.
+ * The `MyStartUp` here is the SAME unified {@link BenzeneStartUp} an AWS/Azure service ships — only its
+ * `configure` line differs (`useGoogleCloud(app, g => useHttp(g, http => useMessageHandlers(http, …)))`) —
+ * booted by this one-liner exactly as `new AwsLambdaHost(StartUp).lambdaHandler` /
+ * `new AzureFunctionHost(StartUp).httpFunction`. The runner threads the startup's optional
+ * `getConfiguration()` through `configureServices`/`configure`, so the config path matches the other clouds.
+ *
+ * Mirrors `Benzene.Aws.Lambda.Core.AwsLambdaHost<TStartUp>` / the .NET `GoogleCloudFunctionHost<TStartUp>`
+ * bootstrap shape: `GoogleCloudStartUpRunner.bootstrap(...)` → `configureServices` → `configure` → `build`.
+ * The generic accepts BOTH the unified `BenzeneStartUp` (whose `configure` takes the wider
+ * `IBenzeneApplicationBuilder`) and a legacy {@link GoogleCloudFunctionStartUp} (whose `configure` takes the
+ * concrete builder) — the neutral builder is a subtype of both, and `configure` is contravariant in its
+ * builder, so either is assignable to `BenzeneStartUpOf<GoogleCloudFunctionApplicationBuilder>`.
+ *
+ * HOST-CLASS DECISION (settled with the maintainer): unlike Azure — where the native-handler getter is added
+ * to a transport-agnostic core host by module augmentation — Google KEEPS its per-package host classes
+ * (`GoogleCloudFunctionHost` / `GooglePubSubFunctionHost`) with their in-package getters. The
+ * `new XHost(StartUp).xFunction` API surface is already uniform across clouds; only the builder + startup
+ * CONTRACT is neutralized here, not the host location.
  *
  * SDK-MODEL ADAPTATION: the .NET host IS the entry point (it implements the Functions Framework's
  * `IHttpFunction` and AWS/Google reflection-invoke its `HandleAsync`). Node's Functions Framework
@@ -44,22 +62,24 @@ export interface GoogleCloudFunctionStartUp {
  * {@link httpFunction} rather than being it — the same shape as `toLambdaHandler` for AWS, and it avoids
  * the detached-`this` trap of passing the method directly.
  */
-export class GoogleCloudFunctionHost<TStartUp extends GoogleCloudFunctionStartUp> {
+export class GoogleCloudFunctionHost<
+  TStartUp extends BenzeneStartUpOf<GoogleCloudFunctionApplicationBuilder>,
+> {
   private readonly handler: GoogleCloudFunctionRequestHandler;
 
   /**
-   * Constructs `TStartUp`, runs its `configureServices`/`configure`, and builds the request handler
-   * every invocation dispatches through.
+   * Constructs `TStartUp`, runs its `getConfiguration`/`configureServices`/`configure`, and builds the
+   * request handler every invocation dispatches through.
    *
    * @param startUpFactory A no-argument constructor for the startup — the port of C#'s
    *   `where TStartUp : BenzeneStartUp, new()`.
    */
   constructor(startUpFactory: new () => TStartUp) {
-    const { startUp, container } = GoogleCloudStartUpRunner.bootstrap(startUpFactory);
+    const { startUp, container, configuration } = GoogleCloudStartUpRunner.bootstrap(startUpFactory);
     const appBuilder = new GoogleCloudFunctionApplicationBuilder(container);
 
-    startUp.configureServices(container);
-    startUp.configure(appBuilder);
+    startUp.configureServices(container, configuration);
+    startUp.configure(appBuilder, configuration);
 
     this.handler = appBuilder.build(container.createServiceResolverFactory());
   }

@@ -10,7 +10,7 @@ import {
   TransportNames,
 } from '@benzene/abstractions-message-handlers';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+import { IBenzeneApplicationBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
 import {
   addHeaderMessageVersionGetter,
   addMediaFormatNegotiation,
@@ -92,25 +92,33 @@ export function addGooglePubSub(
  * Configures the Pub/Sub middleware pipeline a Google Cloud Functions Pub/Sub trigger dispatches
  * through, and registers the entry point application that runs it.
  *
- * Port of C# `UsePubSub(this IBenzeneApplicationBuilder, ...)`. Because the startup's `configure` is
- * typed to receive the concrete {@link GooglePubSubFunctionApplicationBuilder}, this takes it directly
- * rather than doing C#'s `is GooglePubSubFunctionApplicationBuilder` runtime narrowing. Registers the
- * Pub/Sub services, builds the per-message `PubSubContext` pipeline from `action`, then adds a
+ * Port of C# `UsePubSub(this IBenzeneApplicationBuilder, ...)`. Takes the unified
+ * `IBenzeneApplicationBuilder` (what a `BenzeneStartUp.configure(app)` receives) and narrows to the
+ * concrete {@link GooglePubSubFunctionApplicationBuilder} internally — the `useAwsLambda`/`useAzureFunctions`
+ * shape (`app is …` → `instanceof`), a NO-OP on any other builder (e.g. the HTTP host's builder). So the
+ * unified `useGoogleCloud(app, g => usePubSub(g, pubsub => …))` and the legacy
+ * `configure(app: GooglePubSubFunctionApplicationBuilder)` both wire the SAME pipeline; a mis-paired verb
+ * leaves no Pub/Sub pipeline, so the builder's `build()` throws its "No Pub/Sub pipeline configured" error.
+ * Registers the Pub/Sub services, builds the per-message `PubSubContext` pipeline from `action`, then adds a
  * single-message `PubSubMiddlewareApplication` (wrapped in an `EntryPointMiddlewareApplication`) over it.
  * The startup's `configureServices` must have registered the Benzene core (`addBenzene`).
  *
- * @param app The Pub/Sub application builder passed to the startup's `configure`.
+ * @param app The unified application builder passed to the startup's `configure` (via `useGoogleCloud`).
  * @param action Configures the Pub/Sub middleware pipeline (e.g. `(pubsub) => useMessageHandlers(pubsub, ...)`).
  * @param configure Optionally configures `PubSubOptions` (e.g. `catchExceptions` / `raiseOnFailureStatus`).
  * @param topicAttributeKey The message attribute the topic is read from. Defaults to `"topic"`.
  * @returns `app`, for chaining.
  */
 export function usePubSub(
-  app: GooglePubSubFunctionApplicationBuilder,
+  app: IBenzeneApplicationBuilder,
   action: PipelineBuilderAction<PubSubContext>,
   configure?: (options: PubSubOptions) => void,
   topicAttributeKey: string = PubSubMessageTopicGetter.DefaultTopicAttribute,
-): GooglePubSubFunctionApplicationBuilder {
+): IBenzeneApplicationBuilder {
+  if (!(app instanceof GooglePubSubFunctionApplicationBuilder)) {
+    return app;
+  }
+
   app.register((x) => addGooglePubSub(x, topicAttributeKey));
   const pipeline = app.create<PubSubContext>();
   action(pipeline);
