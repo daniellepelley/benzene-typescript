@@ -237,26 +237,33 @@ The whole function is one entry point over the shared startup (identical to the
 [getting-started-aws.md](../getting-started-aws.md) shape):
 
 ```ts
-import { useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useSqs, SqsMessageContext } from '@benzene/aws-lambda';
+// src/startUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers, AwsLambdaHost, useAwsLambda, useSqs, SqsMessageContext } from '@benzene/aws-lambda';
 import { useRetry } from '@benzene/resilience';
 import { CapturePaymentHandler } from './CapturePaymentHandler.js';
 import { StripePaymentGateway, IPaymentGateway } from './PaymentGateway.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
     services.addScoped(IPaymentGateway, StripePaymentGateway);
-  })
-  .configure((app) =>
-    useSqs(app, (sqs) => {
-      useRetry<SqsMessageContext>(sqs, {
-        shouldRetryContext: (context) => context.isSuccessful === false,
-      });
-      useMessageHandlers(sqs, CapturePaymentHandler);
-    }),
-  )
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) => {
+        useRetry<SqsMessageContext>(sqs, {
+          shouldRetryContext: (context) => context.isSuccessful === false,
+        });
+        useMessageHandlers(sqs, CapturePaymentHandler);
+      }),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 ### 4. Let genuinely-failed messages flow to SQS, then to a DLQ
@@ -307,19 +314,29 @@ together rather than independently.
 ## Testing
 
 The package's own test suite (`test/Benzene.Core.Test/Aws/Sqs/SqsPipelineTest.test.ts`) is the best
-reference for exercising this without a real queue: build the entry point, feed it an `SQSEvent`, and
-assert on the returned `batchItemFailures`.
+reference for exercising this without a real queue: boot a `StartUp` through `benzeneTestHost(...)`, feed
+it an `SQSEvent`, and assert on the returned `batchItemFailures`.
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { Context, SQSEvent } from 'aws-lambda';
-import { useMessageHandlers, InlineAwsLambdaStartUp, useSqs } from '@benzene/aws-lambda';
-import { messageBuilder } from '@benzene/testing';
+import { SQSEvent } from 'aws-lambda';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers, useAwsLambda, useSqs } from '@benzene/aws-lambda';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
 import { asSqs } from '@benzene/aws-lambda-testing';
 import { CapturePaymentHandler } from '../src/CapturePaymentHandler.js';
 import { IPaymentGateway, PaymentGatewayUnavailableError } from '../src/PaymentGateway.js';
 
-const fakeLambdaContext = {} as Context;
+// A minimal composition root — just the handler on SQS (no retry) — to isolate the failure report.
+class SqsStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useSqs(aws, (sqs) => useMessageHandlers(sqs, CapturePaymentHandler)));
+  }
+}
 
 describe('CapturePaymentHandler on SQS', () => {
   it('reports a failed message so SQS redelivers just that one', async () => {
@@ -328,21 +345,19 @@ describe('CapturePaymentHandler on SQS', () => {
       captureAsync: () => Promise.reject(new PaymentGatewayUnavailableError()),
     };
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => {
-        services.addScopedInstance(IPaymentGateway, gateway);
-      })
-      .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, CapturePaymentHandler)))
-      .build();
+    // Boot the StartUp, overriding IPaymentGateway with the fake (last-registration-wins).
+    const host = benzeneTestHost(SqsStartUp)
+      .withServices((services) => services.addScopedInstance(IPaymentGateway, gateway))
+      .buildAwsLambdaHost();
 
     // asSqs turns a message builder into a native SQSEvent; the topic becomes the `topic` attribute.
     const event = asSqs(
       messageBuilder('order:payment-capture', { orderId: '42', amount: 100 }),
     ) as SQSEvent;
 
-    const response = (await entryPoint.functionHandlerAsync(event, fakeLambdaContext)) as {
+    const response = await host.sendEventAsync<{
       batchItemFailures: { itemIdentifier: string }[];
-    };
+    }>(event);
 
     expect(response.batchItemFailures).toHaveLength(1);
   });

@@ -103,30 +103,41 @@ npm install @benzene/azure-function-event-hub @benzene/azure-function-core \
 Event Hub events carry no routable topic of their own, so — under the Functions trigger — Benzene reads a
 **message envelope** from each event body: the small JSON wrapper `{ "topic": …, "headers": …, "body": … }`
 any producer can send (the same envelope shape used for AWS SQS/SNS). `useBenzeneMessage` bridges into a
-direct-message pipeline that routes on the envelope's own topic. Reusing the `azureApp` helper from
-[Azure Functions Setup, step 4](../azure-functions.md#4-build-the-benzene-app), create `src/functions.ts`:
+direct-message pipeline that routes on the envelope's own topic. Write a `StartUp` (the composition root
+from [Azure Functions Setup, step 4](../azure-functions.md#4-write-a-startup)), selecting Azure with
+`useAzureFunctions(app, az => …)`. Create `src/startUp.ts`:
 
 ```ts
-import { InvocationContext } from '@azure/functions';
-import type { ReceivedEventData } from '@azure/event-hubs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { handleEventHub, useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
-import { azureApp } from './azureApp.js';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAzureFunctions } from '@benzene/azure-function-core';
+import { useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
 import { TelemetryReadingHandler } from './handlers.js';
 
-const eventHubApp = azureApp((app) =>
-  useEventHub(app, (eh) =>
-    useBenzeneMessage(eh, (msg) => useMessageHandlers(msg, TelemetryReadingHandler)),
-  ),
-);
+export class EventHubStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAzureFunctions(app, (az) =>
+      useEventHub(az, (eh) => useBenzeneMessage(eh, (msg) => useMessageHandlers(msg, TelemetryReadingHandler))),
+    );
+  }
+}
+```
+
+Then boot it and expose the trigger handler. Importing `@benzene/azure-function-event-hub` lights up the
+host's `.eventHubFunction` getter. Create `src/functions.ts`:
+
+```ts
+import { AzureFunctionHost } from '@benzene/azure-function-core';
+import '@benzene/azure-function-event-hub';
+import { EventHubStartUp } from './startUp.js';
 
 /** Event Hub trigger (batched): each event routes by its embedded envelope topic. */
-export function telemetryEventHub(
-  events: ReceivedEventData[],
-  _context: InvocationContext,
-): Promise<void> {
-  return handleEventHub(eventHubApp, ...events);
-}
+export const telemetryEventHub = new AzureFunctionHost(EventHubStartUp).eventHubFunction;
 ```
 
 Register it (`src/registrations.ts`):
@@ -191,11 +202,13 @@ producer set are all on that object, but none flow into the handler's request au
 add your own middleware to the Event Hub pipeline, **before** `useBenzeneMessage`:
 
 ```ts
+import { useAzureFunctions } from '@benzene/azure-function-core';
 import { useEventHub, useBenzeneMessage, EventHubContext } from '@benzene/azure-function-event-hub';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
 
-const eventHubApp = azureApp((app) =>
-  useEventHub(app, (eh) => {
+// Inside your StartUp's `configure(app, config)`:
+useAzureFunctions(app, (az) =>
+  useEventHub(az, (eh) => {
     eh.useFn(async (context: EventHubContext, next) => {
       const schemaVersion = context.eventData.properties?.['schema-version'];
       if (schemaVersion !== undefined && String(schemaVersion) !== '2') {
@@ -220,12 +233,9 @@ Turn a `messageBuilder` into a native event whose body is a serialized Benzene e
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { messageBuilder } from '@benzene/testing';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
 import { asEventHubBenzeneMessage } from '@benzene/azure-function-testing';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { handleEventHub, useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
-import { TelemetryReadingHandler } from '../src/handlers.js';
+import { EventHubStartUp } from '../src/startUp.js';
 import { ITelemetryStore } from '../src/TelemetryStore.js';
 
 describe('TelemetryReadingHandler on Event Hub', () => {
@@ -235,31 +245,26 @@ describe('TelemetryReadingHandler on Event Hub', () => {
       recordAsync: (deviceId) => { recorded.push(deviceId); return Promise.resolve(); },
     };
 
-    const app = new InlineAzureFunctionStartUp()
-      .configureServices((services) => {
-        addBenzene(services);
-        services.addScopedInstance(ITelemetryStore, store);
-      })
-      .configure((builder) =>
-        useEventHub(builder, (eh) =>
-          useBenzeneMessage(eh, (msg) => useMessageHandlers(msg, TelemetryReadingHandler)),
-        ),
-      )
-      .build();
+    // Boot the same StartUp you deploy, overriding ITelemetryStore with the fake (last-registration-wins).
+    const host = benzeneTestHost(EventHubStartUp)
+      .withServices((services) => services.addScopedInstance(ITelemetryStore, store))
+      .buildAzureFunctionApp();
 
-    await handleEventHub(
-      app,
+    // A non-HTTP payload is dispatched fire-and-forget; an array exercises the batched trigger.
+    await host.sendEventAsync([
       asEventHubBenzeneMessage(messageBuilder('telemetry:reading', { deviceId: 'sensor-1', value: 21.5 })),
       asEventHubBenzeneMessage(messageBuilder('telemetry:reading', { deviceId: 'sensor-2', value: 22.0 })),
-    );
+    ]);
 
     expect(recorded.sort()).toEqual(['sensor-1', 'sensor-2']);
   });
 });
 ```
 
-`handleEventHub` takes a rest parameter, so pass a whole batch to exercise the concurrent fan-out — exactly
-as `test/Benzene.Core.Test/Azure/EventHub/EventHubPipelineTest.test.ts` does.
+The host dispatches the batch fire-and-forget through `handleEventHub` (which takes a rest parameter), so
+pass a whole batch — an array — to exercise the concurrent fan-out, exactly as
+`test/Benzene.Core.Test/Azure/EventHub/EventHubPipelineTest.test.ts` does. In production the same wiring
+boots with `new AzureFunctionHost(EventHubStartUp).eventHubFunction`.
 
 ### 6. Batching and checkpointing are the runtime's job — and why poison events are hard
 
@@ -412,5 +417,5 @@ time, invisibly — unless you've wired logging/diagnostics (`addDiagnostics()` 
 - [Service Bus Message Handling](service-bus-handling.md) — the analogous cookbook for Service Bus
 - [Cosmos DB Change Feed Processing](cosmos-change-feed-processing.md) — the other Azure fan-in stream
 - [Message Handlers](../message-handlers.md) — `@message`, handler discovery, and the Benzene message envelope
-- [Testing Benzene](../testing-benzene.md) — `InlineAzureFunctionStartUp` and the Azure test helpers
+- [Testing Benzene](../testing-benzene.md) — `benzeneTestHost(...).buildAzureFunctionApp()` and the Azure test helpers
 - [Azure Event Hubs host.json reference](https://learn.microsoft.com/azure/azure-functions/functions-bindings-event-hubs) — the runtime-side batching/checkpointing settings this cookbook references

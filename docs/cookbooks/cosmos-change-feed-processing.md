@@ -243,33 +243,59 @@ npm install @benzene/azure-function-cosmos-db @benzene/azure-function-core \
   @benzene/core-middleware @benzene/core-message-handlers @benzene/abstractions @azure/functions
 ```
 
-`useCosmosDbChangeFeed<TDocument>(app, action)` configures the pipeline; `handleCosmosDbChanges<TDocument>(app,
-documents)` dispatches the batch. Reusing the `azureApp` helper from
-[Azure Functions Setup, step 4](../azure-functions.md#4-build-the-benzene-app), create `src/functions.ts`:
+`useCosmosDbChangeFeed<TDocument>(az, action)` configures the pipeline; `handleCosmosDbChanges<TDocument>(host.app,
+documents)` dispatches the batch. Write a `StartUp` (the composition root from
+[Azure Functions Setup, step 4](../azure-functions.md#4-write-a-startup)), selecting Azure with
+`useAzureFunctions(app, az => …)`. Create `src/startUp.ts`:
+
+```ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene } from '@benzene/core-message-handlers';
+import { useStream } from '@benzene/core-middleware';
+import { useAzureFunctions } from '@benzene/azure-function-core';
+import { useCosmosDbChangeFeed } from '@benzene/azure-function-cosmos-db';
+import { OrderDocument } from './OrderDocument.js';
+
+export class ChangeFeedStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAzureFunctions(app, (az) =>
+      useCosmosDbChangeFeed<OrderDocument>(az, (feed) =>
+        useStream<OrderDocument>(feed, async (documents: AsyncIterable<OrderDocument>) => {
+          for await (const order of documents) {
+            console.log('changed order', order.id, order.status);
+          }
+        }),
+      ),
+    );
+  }
+}
+```
+
+Then boot it and expose the trigger handler. Unlike Service Bus and Event Hub, Cosmos DB has **no
+`.cosmosDbFunction` host getter** (the same as the Kafka trigger — the change feed's `host.json` binding
+has no first-class `@azure/functions` registration helper), so dispatch through the host's built `app` with
+`handleCosmosDbChanges(host.app, …)`. Create `src/functions.ts`:
 
 ```ts
 import { InvocationContext } from '@azure/functions';
-import { useStream } from '@benzene/core-middleware';
-import { handleCosmosDbChanges, useCosmosDbChangeFeed } from '@benzene/azure-function-cosmos-db';
-import { azureApp } from './azureApp.js';
+import { AzureFunctionHost } from '@benzene/azure-function-core';
+import { handleCosmosDbChanges } from '@benzene/azure-function-cosmos-db';
+import { ChangeFeedStartUp } from './startUp.js';
 import { OrderDocument } from './OrderDocument.js';
 
-const changeFeedApp = azureApp((app) =>
-  useCosmosDbChangeFeed<OrderDocument>(app, (feed) =>
-    useStream<OrderDocument>(feed, async (documents: AsyncIterable<OrderDocument>) => {
-      for await (const order of documents) {
-        console.log('changed order', order.id, order.status);
-      }
-    }),
-  ),
-);
+const changeFeedHost = new AzureFunctionHost(ChangeFeedStartUp);
 
 /** Cosmos DB change-feed trigger: the whole batch arrives as one ordered stream. */
 export function ordersChangeFeed(
   documents: OrderDocument[],
   _context: InvocationContext,
 ): Promise<void> {
-  return handleCosmosDbChanges<OrderDocument>(changeFeedApp, documents);
+  return handleCosmosDbChanges<OrderDocument>(changeFeedHost.app, documents);
 }
 ```
 
@@ -307,14 +333,16 @@ control is the self-hosted worker's domain (Part A).
 
 ### 3. Testing the trigger
 
-Build the app inline and hand it a list — no Cosmos emulator needed, exactly as
-`test/Benzene.Core.Test/Azure/CosmosDb/CosmosDbChangeFeedPipelineTest.test.ts` does:
+Boot a `StartUp` into an `AzureFunctionHost` and hand its built app a list — no Cosmos emulator needed,
+exactly as `test/Benzene.Core.Test/Azure/CosmosDb/CosmosDbChangeFeedPipelineTest.test.ts` does:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { useStream } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene } from '@benzene/core-message-handlers';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+import { useStream } from '@benzene/core-middleware';
+import { AzureFunctionHost, useAzureFunctions } from '@benzene/azure-function-core';
 import { handleCosmosDbChanges, useCosmosDbChangeFeed } from '@benzene/azure-function-cosmos-db';
 import { OrderDocument } from '../src/OrderDocument.js';
 
@@ -322,20 +350,27 @@ describe('orders change feed', () => {
   it('delivers the batch as one ordered stream in a single run', async () => {
     const collected: (string | undefined)[] = [];
 
-    const app = new InlineAzureFunctionStartUp()
-      .configureServices((services) => addBenzene(services))
-      .configure((builder) =>
-        useCosmosDbChangeFeed<OrderDocument>(builder, (feed) =>
-          useStream<OrderDocument>(feed, async (documents: AsyncIterable<OrderDocument>) => {
-            for await (const order of documents) {
-              collected.push(order.id);
-            }
-          }),
-        ),
-      )
-      .build();
+    // A local composition root so its stream pipeline closes over `collected`.
+    class ChangeFeedStartUp implements BenzeneStartUp {
+      configureServices(services: IBenzeneServiceContainer): void {
+        addBenzene(services);
+      }
+      configure(app: IBenzeneApplicationBuilder): void {
+        useAzureFunctions(app, (az) =>
+          useCosmosDbChangeFeed<OrderDocument>(az, (feed) =>
+            useStream<OrderDocument>(feed, async (documents: AsyncIterable<OrderDocument>) => {
+              for await (const order of documents) {
+                collected.push(order.id);
+              }
+            }),
+          ),
+        );
+      }
+    }
 
-    await handleCosmosDbChanges<OrderDocument>(app, [
+    // Cosmos DB has no `.cosmosDbFunction` host getter (like Kafka) — dispatch through the built app.
+    const host = new AzureFunctionHost(ChangeFeedStartUp);
+    await handleCosmosDbChanges<OrderDocument>(host.app, [
       Object.assign(new OrderDocument(), { id: 'order-1', status: 'paid' }),
       Object.assign(new OrderDocument(), { id: 'order-2', status: 'shipped' }),
     ]);
@@ -363,5 +398,5 @@ put a de-duplication check in front of them — see [Idempotency](idempotency.md
 - [Event Hub Stream Processing](event-hub-processing.md) — the other Azure fan-in stream
 - [Service Bus Message Handling](service-bus-handling.md) — routing by topic instead of streaming
 - [Idempotency](idempotency.md) — de-duplication for non-idempotent side effects
-- [Testing Benzene](../testing-benzene.md) — `InlineAzureFunctionStartUp` and pipeline tests
+- [Testing Benzene](../testing-benzene.md) — `benzeneTestHost(...).buildAzureFunctionApp()` and pipeline tests
 - [Azure Cosmos DB change feed](https://learn.microsoft.com/azure/cosmos-db/change-feed) — the platform feature this cookbook consumes

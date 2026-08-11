@@ -196,9 +196,11 @@ scoped resolver, so it binds the correct per-message `IOrdersDb`:
 
 ```ts
 // index.ts
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
+import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
 import { addOutboundRouting } from '@benzene/clients';
 import { IResponseEventPublisher, useResponseEvents } from '@benzene/response-events';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
@@ -208,26 +210,29 @@ import { IOrdersDb } from './db.js';
 import { registerOrdersDb } from './registerOrdersDb.js'; // your scoped IOrdersDb registration
 import { registerOrderEventsRoute } from './outbound.js'; // routes 'order:created' (see below)
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
     registerOrdersDb(services); // services.addScoped(IOrdersDb, ...)
     registerOrderEventsRoute(services); // addOutboundRouting(... 'order:created' ...)
     services.addScoped(IResponseEventPublisher, OutboxResponseEventPublisher); // outbox behind the seam
-  })
-  .configure((app) =>
-    useSqs(app, (sqs) => {
-      sqs.use((resolver) => new UnitOfWorkMiddleware<SqsMessageContext>(resolver.getService(IOrdersDb)));
-      useMessageHandlersWithRouter(
-        sqs,
-        (router) => useResponseEvents(router, (events) => events.map('order:create', 'order:created')),
-        CreateOrderHandler,
-      );
-    }),
-  )
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) => {
+        sqs.use((resolver) => new UnitOfWorkMiddleware<SqsMessageContext>(resolver.getService(IOrdersDb)));
+        useMessageHandlersWithRouter(
+          sqs,
+          (router) => useResponseEvents(router, (events) => events.map('order:create', 'order:created')),
+          CreateOrderHandler,
+        );
+      }),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 ## Step 5 — the relay

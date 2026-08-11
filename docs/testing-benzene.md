@@ -74,8 +74,8 @@ and the `as*` builder change; everything else is identical. The worked exemplars
 > recorded in the [README](../README.md#porting-conventions): the neutral `BenzeneStartUp` is generic over
 > its app-builder type (the per-transport app-builder unification is still deferred), and the `Build*`
 > extension is a fluent method added by module augmentation. You can still drive a transport directly via
-> its `Inline*StartUp` entry point (as some low-level unit tests below do) when you want to bypass a startup
-> class entirely.
+> its `Inline*StartUp` entry point when you want to bypass a startup class entirely (see
+> [Notes and limitations](#notes-and-limitations)).
 
 ## Installation
 
@@ -181,43 +181,56 @@ entry point's handler. This is the closest a test gets to a live invocation.
 
 ### AWS Lambda
 
-`InlineAwsLambdaStartUp` builds an entry point whose `functionHandlerAsync(event, context)` is exactly
-what AWS invokes. Feed it an `asApiGatewayRequest(...)` (or `asSqs`, `asSns`, …) event and assert the
+Boot your `StartUp` with `benzeneTestHost(StartUp).buildAwsLambdaHost()` — the same construction a
+deployed host performs — and push a native event through `host.sendEventAsync(...)`. First the production
+composition root wiring `HelloWorldHandler` on API Gateway:
+
+```ts
+// src/HelloStartUp.ts — the same composition root you deploy.
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { HelloWorldHandler } from './HelloWorldHandler.js';
+
+export class HelloStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+    // register your real IGreetingService here — the test overrides it below
+  }
+
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, HelloWorldHandler)));
+  }
+}
+```
+
+Feed the booted host an `asApiGatewayRequest(...)` (or `asSqs`, `asSns`, …) event and assert the
 transport-native response:
 
 ```ts
 // test/HelloPipeline.test.ts
 import { describe, expect, it } from 'vitest';
-import { Context, APIGatewayProxyResult } from 'aws-lambda';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { httpBuilder } from '@benzene/testing';
+import { APIGatewayProxyResult } from 'aws-lambda';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
 import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
-import { HelloWorldHandler } from '../src/HelloWorldHandler.js';
+import { HelloStartUp } from '../src/HelloStartUp.js';
 import { IGreetingService } from '../src/GreetingService.js';
 
 const fakeGreetings: IGreetingService = {
   greetAsync: (name) => Promise.resolve(`Hello ${name}!`),
 };
 
-const fakeLambdaContext = {} as Context;
-
 describe('hello pipeline (API Gateway)', () => {
   it('routes POST /hello to the handler and returns 200', async () => {
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => {
-        // Register the fake against its token so the handler's `inject` resolves it.
-        services.addScopedInstance(IGreetingService, fakeGreetings);
-      })
-      .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, HelloWorldHandler)))
-      .build();
+    // Boot the SAME StartUp you deploy, overriding IGreetingService with the fake.
+    const host = benzeneTestHost(HelloStartUp)
+      .withServices((services) => services.addScopedInstance(IGreetingService, fakeGreetings))
+      .buildAwsLambdaHost();
 
     const event = asApiGatewayRequest(httpBuilder('POST', '/hello', { name: 'Ada' }));
-    const response = (await entryPoint.functionHandlerAsync(
-      event,
-      fakeLambdaContext,
-    )) as APIGatewayProxyResult;
+    const response = await host.sendEventAsync<APIGatewayProxyResult>(event);
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({ message: 'Hello Ada!' });
@@ -225,12 +238,11 @@ describe('hello pipeline (API Gateway)', () => {
 });
 ```
 
-The `.configureServices(...)` block is where you **override services**: register a fake instance
-against a token with `addScopedInstance` / `addSingletonInstance` (or a factory with
-`addScopedFactory`); registered after Benzene's baseline services, it replaces whatever the real wiring registered — the
-standard way to swap in mocks or point a dependency at a locally running component (a Docker database,
-say) without touching real configuration. This is the port's equivalent of the .NET
-`WithServices(...)` override.
+`.withServices(...)` is where you **override services**: register a fake instance against a token with
+`addScopedInstance` / `addSingletonInstance` (or a factory with `addScopedFactory`). It runs **after** the
+startup's own `configureServices`, so it replaces whatever the real wiring registered — the standard way
+to swap in mocks or point a dependency at a locally running component (a Docker database, say) without
+touching real configuration. This is the port's equivalent of the .NET `WithServices(...)` override.
 
 ### Queue and event transports
 
@@ -238,21 +250,28 @@ Every AWS transport is driven the same way — only the builder and the response
 handler with no `@httpEndpoint`, fed by `asSqs`, reports partial-batch failures:
 
 ```ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
-import { messageBuilder } from '@benzene/testing';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
 import { asSqs } from '@benzene/aws-lambda-testing';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => useSqs(app, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler)))
-  .build();
+class ProcessOrderStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useSqs(aws, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler)));
+  }
+}
+
+const host = benzeneTestHost(ProcessOrderStartUp).buildAwsLambdaHost();
 
 // `numberOfMessages` emits N identical records; the topic rides the `topic` message attribute.
 const event = asSqs(messageBuilder('order:process', { orderId: '42' }), { numberOfMessages: 2 });
-const response = (await entryPoint.functionHandlerAsync(event, fakeLambdaContext)) as {
-  batchItemFailures: { itemIdentifier: string }[];
-};
+const response = await host.sendEventAsync<{ batchItemFailures: { itemIdentifier: string }[] }>(event);
 
 expect(response.batchItemFailures).toEqual([]); // both records succeeded
 ```
@@ -268,34 +287,48 @@ for every AWS builder driven end to end.
 
 ### Azure Functions
 
-`InlineAzureFunctionStartUp` builds an `IAzureFunctionApp` that already exposes typed dispatch helpers
-per trigger — `handleHttpRequest`, `handleServiceBusMessages`, `handleEventHub`, `handleKafkaEvents`.
-Pair each with the matching `asAzure*` builder:
+Boot your `StartUp` with `benzeneTestHost(StartUp).buildAzureFunctionApp()` and push native trigger
+payloads through `host.sendEventAsync(...)` — an HTTP request returns the response; a fire-and-forget
+trigger (Service Bus / Event Hub / Kafka) resolves to `void`. Only the `.buildAwsLambdaHost()` →
+`.buildAzureFunctionApp()` line and the `as*` builder change from the AWS test; select Azure inside the
+`StartUp` with `useAzureFunctions(app, az => …)`:
 
 ```ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
-import { httpBuilder } from '@benzene/testing';
+import { HttpResponseInit } from '@azure/functions';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAzureFunctions } from '@benzene/azure-function-core';
+import { useAzureHttp } from '@benzene/azure-function-http';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
 import { asAzureHttpRequest } from '@benzene/azure-function-testing';
 
-const app = new InlineAzureFunctionStartUp()
-  .configureServices((services) => {
-    services.addScopedInstance(IGreetingService, fakeGreetings);
-  })
-  .configure((builder) => useAzureHttp(builder, (http) => useMessageHandlers(http, HelloWorldHandler)))
-  .build();
+class HelloAzureStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAzureFunctions(app, (az) => useAzureHttp(az, (http) => useMessageHandlers(http, HelloWorldHandler)));
+  }
+}
 
-const response = await handleHttpRequest(app, asAzureHttpRequest(httpBuilder('POST', '/hello', { name: 'Ada' })));
+const host = benzeneTestHost(HelloAzureStartUp)
+  .withServices((services) => services.addScopedInstance(IGreetingService, fakeGreetings))
+  .buildAzureFunctionApp();
+
+const response = await host.sendEventAsync<HttpResponseInit>(
+  asAzureHttpRequest(httpBuilder('POST', '/hello', { name: 'Ada' })),
+);
 
 expect(response.status).toBe(200);
 expect(JSON.parse(response.body as string)).toEqual({ message: 'Hello Ada!' });
 ```
 
 Service Bus, Event Hub, and Kafka work identically — send an `asAzureServiceBusMessage(...)`,
-`asEventHubBenzeneMessage(...)`, or `asAzureKafkaEvent(...)` through the corresponding `handle*` helper.
-Event Hub carries a Benzene message envelope, so its handler is wired under `useBenzeneMessage` inside
-`useEventHub`. See
+`asEventHubBenzeneMessage(...)`, or `asAzureKafkaEvent(...)` (as a single payload or an array) through
+`host.sendEventAsync(...)`; they dispatch fire-and-forget and resolve to `void`, so assert on a faked
+egress client. Event Hub carries a Benzene message envelope, so its handler is wired under
+`useBenzeneMessage` inside `useEventHub`. See
 [`test/Benzene.Core.Test/Testing/AzureFunctionTestingTest.test.ts`](../test/Benzene.Core.Test/Testing/AzureFunctionTestingTest.test.ts)
 for all four triggers.
 

@@ -80,25 +80,30 @@ function taking the pipeline builder first (the port's shape for what C# writes 
 method) and returns the builder for chaining:
 
 ```ts
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
+import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
 import { useResiliencePipeline } from '@benzene/cockatiel';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
-  })
-  .configure((app) =>
-    useSqs(app, (sqs) => {
-      useResiliencePipeline<SqsMessageContext>(sqs, policy); // <-- circuit breaker + timeout here
-      useMessageHandlers(sqs, ProcessOrderHandler);
-    }),
-  )
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) => {
+        useResiliencePipeline<SqsMessageContext>(sqs, policy); // <-- circuit breaker + timeout here
+        useMessageHandlers(sqs, ProcessOrderHandler);
+      }),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 `useResiliencePipeline` is fully generic, like every other Benzene middleware, so it works on any pipeline

@@ -277,20 +277,25 @@ import { addAuthorizationPolicy, requirePolicy } from '@benzene/auth-core';
 requirePolicy(api, 'employees-only', (principal) => principal.hasClaim('department', 'engineering'));
 
 // Or register once (in configureServices, or via api.register), reference by name from many pipelines:
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addAuthorizationPolicy(services, 'mfa-required', (principal) =>
       principal.hasClaim((c) => c.type === 'amr' && c.value === 'mfa'),
     );
-  })
-  .configure((app) =>
-    useApiGateway(app, (api) => {
-      useOAuth2Bearer(api, oauth2Options);
-      requirePolicy(api, 'mfa-required'); // resolved from DI by name, per message
-      useMessageHandlers(api, TransferFundsHandler);
-    }),
-  )
-  .build();
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useApiGateway(aws, (api) => {
+        useOAuth2Bearer(api, oauth2Options);
+        requirePolicy(api, 'mfa-required'); // resolved from DI by name, per message
+        useMessageHandlers(api, TransferFundsHandler);
+      }),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 For anything more involved than a predicate, implement `IAuthorizationPolicy` (a `name` plus
