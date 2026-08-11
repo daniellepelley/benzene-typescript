@@ -53,6 +53,9 @@ export * from './Common/ClientResultExtensions';
 // fan-out to several transports at once. `validateOutboundRouting` (assembly-reflection over generated-
 // client contracts) stays deferred - see the README roadmap.
 export * from './IBenzeneMessageSender';
+export * from './Batch/IBenzeneBatchMessageClient';
+export * from './Batch/BatchSendResult';
+export * from './Batch/BatchSend';
 export * from './OutboundContext';
 export * from './OutboundRoutingBuilder';
 export * from './OutboundRoutingTopics';
