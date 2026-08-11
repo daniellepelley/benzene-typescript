@@ -8,10 +8,11 @@
  * — reads to route and rehydrate headers). The egress counterpart of those consumer packages.
  *
  * PORT SCOPE (matching the `@benzene/clients-aws-*` siblings): the `OutboundContext` send path only; the
- * generic `IBenzeneClientContext<T,Void>` converter, standalone `ServiceBusBenzeneMessageClient`, and
- * native `ServiceBusBatchMessageClient` are deferred.
+ * generic `IBenzeneClientContext<T,Void>` converter and the standalone `ServiceBusBenzeneMessageClient` are
+ * deferred; the native `ServiceBusBatchMessageClient` IS now ported.
  */
 export * from './ServiceBusSendMessageContext';
 export * from './ServiceBusClientMiddleware';
 export * from './OutboundServiceBusContextConverter';
+export * from './ServiceBusBatchMessageClient';
 export * from './Extensions';

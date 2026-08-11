@@ -9,6 +9,7 @@
   "dependencies": {
     "@azure/event-hubs": "^6",
     "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-messages": "0.1.0",
     "@benzene/abstractions-middleware": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/clients": "0.1.0",

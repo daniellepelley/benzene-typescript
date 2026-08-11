@@ -8,10 +8,11 @@
  * `@benzene/azure-event-hub` / `@benzene/azure-function-event-hub` consumer packages.
  *
  * PORT SCOPE (matching the `@benzene/clients-*` siblings): the `OutboundContext` send path only; the
- * generic `IBenzeneClientContext<T,Void>` converter, standalone `EventHubBenzeneMessageClient`, and
- * native `EventHubBatchMessageClient` are deferred.
+ * generic `IBenzeneClientContext<T,Void>` converter and the standalone `EventHubBenzeneMessageClient` are
+ * deferred; the native `EventHubBatchMessageClient` IS now ported.
  */
 export * from './EventHubSendMessageContext';
 export * from './EventHubClientMiddleware';
 export * from './OutboundEventHubContextConverter';
+export * from './EventHubBatchMessageClient';
 export * from './Extensions';

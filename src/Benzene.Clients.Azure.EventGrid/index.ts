@@ -7,11 +7,12 @@
  * CloudEvent `type` (or the classic event `subject`/`eventType`), the routed message its `data`.
  *
  * PORT SCOPE (matching the `@benzene/clients-*` siblings): the `OutboundContext` send path only; the
- * generic `IBenzeneClientContext<T,Void>` converters, standalone `EventGridBenzeneMessageClient`, and
- * native `EventGridBatchMessageClient` are deferred.
+ * generic `IBenzeneClientContext<T,Void>` converters and the standalone `EventGridBenzeneMessageClient` are
+ * deferred; the native `EventGridBatchMessageClient` IS now ported.
  */
 export * from './EventGridSendMessageContext';
 export * from './EventGridClientMiddleware';
 export * from './OutboundEventGridContextConverter';
 export * from './OutboundEventGridEventSchemaContextConverter';
+export * from './EventGridBatchMessageClient';
 export * from './Extensions';
