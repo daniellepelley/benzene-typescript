@@ -10,4 +10,6 @@ export * from './AwsLambdaMiddlewareRouter';
 export * from './IAwsEntryPointBuilder';
 export * from './InlineAwsLambdaStartUp';
 export * from './AwsLambdaApplicationBuilder';
+export * from './AwsLambdaStartUpRunner';
+export * from './AwsLambdaHost';
 export * from './BenzeneInvocationExtensions';

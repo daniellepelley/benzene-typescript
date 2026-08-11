@@ -204,7 +204,8 @@ so there is no dependency to isolate — the idiomatic shape is one `@benzene/aw
 (`{ serializer?, numberOfMessages? }`), consistent across every builder. There is a builder for every
 ported transport; the DynamoDB one ships a small AttributeValue marshaller (the inverse of the adapter's
 `DynamoDbAttributeValueConverter`). The `BenzeneTestHost`/`BenzeneTestHostBuilder` **startup-host is now
-ported**: `benzeneTestHost(StartUp)` (in `@benzene/testing`) boots a real app from its `BenzeneStartUp`,
+ported**: `benzeneTestHost(StartUp)` (in `@benzene/testing`) boots a real app from its `BenzeneStartUp`
+(the contract itself now lives in `@benzene/abstractions-middleware` — see the "Unified startup host" note),
 `.withServices((services) => ...)` overrides ANY registration (last-registration-wins over the port's
 first-party container), `.withConfiguration(...)` layers config, and a single transport specialization
 finishes it — `.buildAwsLambdaHost()` / `.buildAzureFunctionApp()` (in the transport `*-testing`
@@ -248,7 +249,33 @@ a test always does for its `as*` builder; (5) `FakeBenzeneMessageSender` (the eg
 example re-declares as a local helper) is promoted into `@benzene/testing` so adopters get it first-party.
 The startup-host builder is dogfooded by `test/Benzene.Core.Test/Testing/BenzeneTestHostTest.test.ts` (the
 AWS+Azure worked exemplars) and by the converted `ApiGatewayPipelineTest`/`AzureHttpPipelineTest`. Still not
-ported: an Azure Queue Storage builder (that transport itself isn't ported). The **standalone (non-Functions)
+ported: an Azure Queue Storage builder (that transport itself isn't ported).
+
+**Unified startup host.** A production deployment now boots from the SAME `BenzeneStartUp` a component test
+boots — one composition root, `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`, mirroring
+Google's existing `new GoogleCloudFunctionHost(StartUp).httpFunction`. Two decisions record the shape:
+(6) **the canonical `BenzeneStartUp` contract + its `BenzeneConfiguration` moved from `@benzene/testing`
+to `@benzene/abstractions-middleware`** (the neutral hosting-abstractions package, alongside `IStartUp`
+and `IBenzeneApplicationBuilder`), so a **production** host — `@benzene/aws-lambda-core`'s new
+`AwsLambdaHost<TStartUp>` — can consume the very contract the test host does without depending on the
+testing package. `@benzene/testing` re-exports both unchanged, so every existing
+`import { BenzeneStartUp, BenzeneConfiguration } from '@benzene/testing'` keeps working. This is the TS
+counterpart of .NET's `Benzene.Microsoft.Dependencies.BenzeneStartUp : IStartUp<IServiceCollection,
+IConfiguration, IBenzeneApplicationBuilder>` — an **interface** (no abstract base ceremony), with
+`getConfiguration` **optional** (a host treats its absence as `emptyConfiguration`, so a startup reading
+only `process.env` need not declare it; `IStartUp.GetConfiguration()` is required). (7) **`AwsLambdaHost
+<TStartUp>` is the .NET host's SDK-model adaptation** already applied to Google: the .NET host *is* the
+Lambda entry point (AWS reflection-invokes its `FunctionHandlerAsync`), but Node invokes an exported
+`handler` function, so the TS host **exposes** the bound handler via a `.lambdaHandler` getter (through
+`toLambdaHandler`, avoiding the detached-`this` trap) rather than being it — exactly like
+`GoogleCloudFunctionHost.httpFunction`; `functionHandlerAsync`/`dispose` remain for fidelity and direct
+testing. The AWS boot sequence lives once in `AwsLambdaStartUpRunner` (mirroring Google's
+`GoogleCloudStartUpRunner`): the host's `bootstrap` and the test host's `buildAwsLambdaHost` both dispatch
+its `buildEntryPoint`, so a component test boots byte-for-byte what deploys. This retires the template's
+hand-built `handler.ts` and moves `InlineAwsLambdaStartUp` off the taught path (kept for inline
+tests/samples). Proven by `test/Benzene.Core.Test/Aws/Hosting/AwsLambdaHostTest.test.ts` and by the
+`aws-apigateway` template. Azure's `AzureFunctionHost<TStartUp>` and converging Google onto the unified
+`BenzeneStartUp` are the staged follow-ups. The **standalone (non-Functions)
 consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
 `@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers`,
 `@benzene/rabbitmq-test-helpers`, `@benzene/kafka-core-test-helpers` — kept one-per-C#-project
@@ -718,9 +745,11 @@ next to its C# counterpart:
   — Node has no `IConfiguration` and the `IServiceCollection`/container split collapses into the
   first-party container, matching how `InlineAwsLambdaStartUp`/`InlineAzureFunctionStartUp` are adapted.
   Each host takes a startup constructor (`new GoogleCloudFunctionHost(MyStartUp)`), the port of C#'s
-  `Host<TStartUp> where TStartUp : BenzeneStartUp, new()`; the startup contract is the minimal
-  `configureServices`/`configure` shape (no config param), since the generic-host `BenzeneStartUp` is
-  deferred port-wide. **HTTP** (`@benzene/google-cloud-functions-http`): the .NET reuses
+  `Host<TStartUp> where TStartUp : BenzeneStartUp, new()`. Google's host still takes the minimal
+  `GoogleCloudFunctionStartUp` (`configureServices`/`configure`, no config param); the canonical unified
+  `BenzeneStartUp` (with its `BenzeneConfiguration` thread) is now ported and consumed by AWS's
+  `AwsLambdaHost<TStartUp>` (see the "Unified startup host" footnote) — converging Google onto it is a
+  follow-up. **HTTP** (`@benzene/google-cloud-functions-http`): the .NET reuses
   `Benzene.AspNet.Core`'s `IAspApplicationBuilder`/`UseHttp` without a live ASP.NET pipeline; that stack
   is unported and `@benzene/express` is its Node analog, and the Functions Framework's HTTP signature is
   itself Express req/res — so `useHttp` reuses `@benzene/express`'s `ExpressContext` + `addExpress`
@@ -1037,9 +1066,13 @@ Ported (with tests):
     response and one fire-and-forget entry point (the normal case). A missing entry point throws a
     self-diagnosing error naming what is registered and the `use*()` to wire.
 - Host/invocation layer: `IBenzeneApplicationBuilder`/`BenzeneApplicationBuilder`, `BenzeneInvocation`
-  + `useBenzeneInvocation` (per-invocation correlation context). The `Microsoft.Extensions.Hosting`
-  generic-host runners (`AwsLambdaHost`, host-builder extensions) and the registration-diagnostics
-  surface remain deferred (each transport ships an `Inline*StartUp` on the first-party container).
+  + `useBenzeneInvocation` (per-invocation correlation context), and the **`BenzeneStartUp` host base**:
+  the production `AwsLambdaHost<TStartUp>` (`@benzene/aws-lambda-core`) is ported alongside the existing
+  `GoogleCloudFunctionHost<TStartUp>`, so a deployment is the one-liner
+  `export const handler = new AwsLambdaHost(StartUp).lambdaHandler` (see the "Unified startup host"
+  footnote below). The `Microsoft.Extensions.Hosting` custom-runtime loop (`AwsLambdaBootstrap`,
+  host-builder extensions), warm-up/start-up-checks, and the registration-diagnostics surface remain
+  deferred; `InlineAwsLambdaStartUp` stays for fluent inline tests/samples.
 - Outbound HTTP client (`@benzene/clients-http` + `@benzene/clients` core): the client pipeline sends
   over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`, plus the full
   `Benzene.Clients` wrapper suite — retry, correlation-id and header-forwarding message-client

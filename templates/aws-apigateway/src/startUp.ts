@@ -1,5 +1,9 @@
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import {
+  BenzeneConfiguration,
+  BenzeneStartUp,
+  IBenzeneApplicationBuilder,
+} from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
 import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
@@ -7,30 +11,23 @@ import { DefaultGreeter, IGreeter } from './greeter';
 import { HelloWorldMessageHandler } from './helloWorldMessageHandler';
 
 /**
- * A minimal, platform-neutral configuration lookup — the TypeScript counterpart of the role .NET's
- * `IConfiguration` plays for `BenzeneStartUp`. The component test layers overrides on top with
- * `.withConfiguration(...)`.
- */
-export interface Configuration {
-  get(key: string): string | undefined;
-}
-
-/**
  * The composition root. `StartUp` is the single place your service is wired: `configureServices`
  * registers the service graph, `configure` wires the transport pipeline(s). The SAME `StartUp` is booted
- * both by the real Lambda host (`src/handler.ts`) and by the component test
- * (`benzeneTestHost(StartUp).buildAwsLambdaHost()`), so what the test exercises is exactly what deploys.
+ * both by the real Lambda host (`new AwsLambdaHost(StartUp)` in `src/handler.ts`) and by the component
+ * test (`benzeneTestHost(StartUp).buildAwsLambdaHost()`), so what the test exercises is exactly what
+ * deploys.
  *
- * Fidelity note: .NET derives from a `BenzeneStartUp` base class; the platform-neutral host base
- * (`AwsLambdaHost<TStartUp>`) is still being ported, so this is a plain class with the same
- * `configureServices`/`configure` shape — structurally the contract `benzeneTestHost(...)` expects.
+ * `BenzeneStartUp` is the platform-neutral contract every Benzene host boots from — the same shape on
+ * every cloud. `configure` receives the unified `IBenzeneApplicationBuilder`; you choose the transport(s)
+ * inside it with `useAwsLambda(app, aws => …)`. Configuration is the small `BenzeneConfiguration`
+ * key/value lookup (the component test layers overrides on top with `.withConfiguration(...)`).
  */
-export class StartUp {
-  getConfiguration(): Configuration {
+export class StartUp implements BenzeneStartUp {
+  getConfiguration(): BenzeneConfiguration {
     return { get: (key) => process.env[key] };
   }
 
-  configureServices(services: IBenzeneServiceContainer, _configuration: Configuration): void {
+  configureServices(services: IBenzeneServiceContainer, _configuration: BenzeneConfiguration): void {
     // Register your application services here — a test can override any of them (see `test/`).
     // `IGreeter` is the demo handler's one dependency.
     services.addSingleton(IGreeter, DefaultGreeter);
@@ -42,7 +39,7 @@ export class StartUp {
 
   // This is the one place that's specific to API Gateway — add `useSqs(aws, ...)` / `useSns(aws, ...)`
   // alongside `useApiGateway(...)` if this function should also handle other AWS event sources.
-  configure(app: IBenzeneApplicationBuilder, _configuration: Configuration): void {
+  configure(app: IBenzeneApplicationBuilder, _configuration: BenzeneConfiguration): void {
     useAwsLambda(app, (aws) =>
       useApiGateway(aws, (api) => useMessageHandlers(api, HelloWorldMessageHandler)),
     );

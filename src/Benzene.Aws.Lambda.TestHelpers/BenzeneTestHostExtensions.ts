@@ -15,8 +15,7 @@
  * caller to wrap it — folding the wrap in matches the `host.sendEventAsync(...)` shape).
  */
 import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaApplicationBuilder, AwsLambdaEntryPoint } from '@benzene/aws-lambda-core';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { AwsLambdaStartUpRunner } from '@benzene/aws-lambda-core';
 import { BenzeneTestHostBuilder } from '@benzene/testing';
 import { AwsLambdaBenzeneTestHost } from './AwsLambdaBenzeneTestHost';
 
@@ -41,15 +40,11 @@ BenzeneTestHostBuilder.prototype.buildAwsLambdaHost = function buildAwsLambdaHos
   this: BenzeneTestHostBuilder<IBenzeneApplicationBuilder>,
 ): AwsLambdaBenzeneTestHost {
   return this.build(({ startUp, container, configuration }) => {
-    const eventPipeline = new MiddlewarePipelineBuilder<AwsEventStreamContext>(container);
-    // The unified app builder is what a `configure(app)` receives; `useAwsLambda(app, aws => …)` unwraps
-    // `app.eventPipeline` as `aws`, so the entry point is built from that one pipeline.
-    const appBuilder = new AwsLambdaApplicationBuilder(eventPipeline, container);
-    startUp.configure(appBuilder, configuration);
-    const entryPoint = new AwsLambdaEntryPoint(
-      eventPipeline.build(),
-      container.createServiceResolverFactory(),
-    );
+    // Dispatch the `configure` → build-entry-point step through the SAME shared runner the production
+    // `AwsLambdaHost` uses, so the test host boots byte-for-byte what deploys. The neutral test builder
+    // has already constructed the startup, run `configureServices`, and applied any `withServices`
+    // overrides on `container`; this finishes the boot.
+    const entryPoint = AwsLambdaStartUpRunner.buildEntryPoint(startUp, container, configuration);
     return new AwsLambdaBenzeneTestHost(entryPoint);
   });
 };

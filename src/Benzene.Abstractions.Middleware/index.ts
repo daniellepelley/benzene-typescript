@@ -12,4 +12,6 @@ export * from './Hosting/IBenzeneInvocation';
 export * from './Hosting/IBenzeneInvocationAccessor';
 export * from './Hosting/IBenzeneApplicationBuilder';
 export * from './Hosting/IStartUp';
+export * from './Hosting/BenzeneConfiguration';
+export * from './Hosting/BenzeneStartUp';
 export * from './Hosting/IBenzeneWorker';
