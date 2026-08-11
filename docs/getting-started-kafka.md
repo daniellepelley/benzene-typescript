@@ -16,6 +16,14 @@ you write there runs unchanged here; only the host differs, and that's what this
 > than consuming a broker directly. Where the port diverges from .NET (the config bag holds no broker
 > settings; the caller builds the kafkajs `Consumer`), the code comments and this guide call it out.
 
+**Worth using even if Kafka is the only transport this service ever has.** Unlike HTTP, where Express
+already gives you routing for free (see
+[Why not just Express?](getting-started.md#why-not-just-express)), kafkajs's `consumer.run` on its own
+hands you a raw record and stops — dispatching on whatever identifies its type, and every cross-cutting
+concern (validation, retries, structured logging) is code you'd otherwise write yourself in the
+`eachMessage` callback. `useKafka` + the middleware pipeline is that missing layer, for Kafka
+specifically — the same reasoning applies to `@benzene/aws-sqs`, this port's self-hosted SQS poller.
+
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and npm

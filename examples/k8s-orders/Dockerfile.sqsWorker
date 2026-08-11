@@ -1,0 +1,14 @@
+# Build context MUST be the repo root (npm workspaces resolve @benzene/* packages from src/* via
+# symlinks the root install creates - this example's package.json depends on them by workspace version,
+# not a published npm version):
+#   docker build -f examples/k8s-orders/Dockerfile.sqsWorker -t k8s-orders-sqs-worker .
+FROM node:22-alpine
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY src ./src
+COPY examples/k8s-orders ./examples/k8s-orders
+RUN npm install
+
+# A worker has no inbound listener - no PORT/EXPOSE.
+CMD ["npx", "tsx", "examples/k8s-orders/src/sqsWorker.ts"]

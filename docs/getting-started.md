@@ -196,6 +196,23 @@ The handler in the middle never touched an Express `req`/`res`. Swap the transpo
 `src/index.ts` for an AWS Lambda or Azure Functions one and the same handler runs there — that's the
 portability Benzene's hexagonal design buys you.
 
+## Why not just Express?
+
+Worth asking honestly: `app.post('/hello', (req, res) => { ... })` does the same job as this guide's
+five steps in a handful of lines, no `@benzene/express` import. For an HTTP-only service that never
+talks to anything else, that's a fair trade — Express already gives HTTP its own routing and
+middleware, and you don't need Benzene to get it.
+
+The payoff shows up the moment this same handler needs a **second** entry point — a queue another
+team publishes to, a Kafka topic, a batch job that used to call this endpoint but really just wants
+to drop a message. A bare Express route has no answer for that; you'd write a second, separate
+handler and keep both in sync by hand. With Benzene the handler above doesn't change at all: the
+self-hosted `@benzene/aws-sqs` or `@benzene/kafka-core` worker points at the *same*
+`HelloWorldHandler`, because it was never written against Express's `req`/`res` in the first place —
+see [Getting Started: Kubernetes](getting-started-kubernetes.md) for that running as three independent
+Kubernetes Deployments from one handler. If HTTP genuinely is and always will be the only way in,
+reach for Express (or Fastify, or Koa) directly instead — you'll write less code, not more.
+
 ## Next steps
 
 Now that you have a service running, layer on the cross-cutting concerns and platforms you need — each is a

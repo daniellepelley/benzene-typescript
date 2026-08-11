@@ -11,7 +11,9 @@ it into your own service.
 
 Each example is a workspace package under `@benzene-example/*`, written transport-agnostically (handlers
 know nothing about what delivered the message), with a component test under
-`test/Benzene.Core.Test/Examples/` that boots the real `StartUp` and drives it through the front door.
+`test/Benzene.Core.Test/Examples/` that boots the real `StartUp` and drives it through the front door —
+`k8s-orders` below is the one exception, since it's about deployment topology rather than a feature to
+component-test, and each of its three entry points is exercised by actually running it (see its README).
 
 | Example | Shows |
 |---|---|
@@ -21,6 +23,7 @@ know nothing about what delivered the message), with a component test under
 | [`express-http`](express-http) | A standalone **Express** HTTP server (the non-Lambda hosting analog) |
 | [`google-cloud-functions`](google-cloud-functions) | Hosting the domain on **Google Cloud Functions** |
 | [`grpc`](grpc) | A **gRPC** greeter across all four RPC shapes, plus a client |
+| [`k8s-orders`](k8s-orders) | One handler as **three independent Kubernetes Deployments** — HTTP, SQS, Kafka |
 | [`kafka`](kafka) | A **Kafka** consumer worker + producer |
 | [`mesh-service`](mesh-service) | A Benzene **mesh** service end to end |
 | [`opentelemetry`](opentelemetry) | Pipeline tracing via `@benzene/diagnostics` spans |
