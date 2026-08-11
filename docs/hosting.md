@@ -158,33 +158,53 @@ export const handler = toLambdaHandler(entryPoint);
 > `export const handler = entryPoint.functionHandlerAsync` — assigning the method detaches `this` and the
 > pipeline is lost at the first invocation. See [AWS Lambda Setup](getting-started-aws.md).
 
-### Azure Functions — `InlineAzureFunctionStartUp`
+### Azure Functions — `AzureFunctionHost`
 
-Package: `@benzene/azure-function-core` (plus one transport package per trigger type).
-`InlineAzureFunctionStartUp` builds an `IAzureFunctionApp` that dispatches an incoming request to the
-matching handler; a trigger callback registered with the `@azure/functions` v4 API forwards each payload
-into it via the transport's `handle*` helper.
+Package: `@benzene/azure-function-core` (plus one transport package per trigger type). Like Google, the
+Azure host is the host-class shape: you write one `StartUp` class implementing the same
+`BenzeneStartUp` contract as every other host, pass it to `AzureFunctionHost`, and it hands you the
+native-trigger handler to register with the `@azure/functions` v4 API. Inside `configure`, select Azure
+with `useAzureFunctions(app, az => …)` — the exact counterpart of AWS's `useAwsLambda(app, aws => …)`:
 
 ```ts
-// src/functions.ts
-import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
+// src/startUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAzureFunctions } from '@benzene/azure-function-core';
+import { useAzureHttp } from '@benzene/azure-function-http';
 import { PlaceOrderHandler } from './handlers.js';
 
-const httpApp = new InlineAzureFunctionStartUp()
-  .configure((app) => useAzureHttp(app, (http) => useMessageHandlers(http, PlaceOrderHandler)))
-  .build();
-
-/** HTTP trigger: `POST /orders` returns an order confirmation. */
-export function placeOrderHttp(request: HttpRequest): Promise<HttpResponseInit> {
-  return handleHttpRequest(httpApp, request);
+export class HttpStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAzureFunctions(app, (az) => useAzureHttp(az, (http) => useMessageHandlers(http, PlaceOrderHandler)));
+  }
 }
 ```
 
-You then register `placeOrderHttp` with `app.http(...)` at module load. See
+```ts
+// src/functions.ts — importing the HTTP package lights up the host's `.httpFunction` getter.
+import { AzureFunctionHost } from '@benzene/azure-function-core';
+import '@benzene/azure-function-http';
+import { HttpStartUp } from './startUp.js';
+
+/** The `@azure/functions` HTTP handler to register with `app.http(...)`. */
+export const placeOrderHttp = new AzureFunctionHost(HttpStartUp).httpFunction;
+```
+
+The one-liner `new AzureFunctionHost(StartUp).httpFunction` boots the same `StartUp` a component test
+boots (`benzeneTestHost(StartUp).buildAzureFunctionApp()`), so what you test is what deploys. Each
+trigger package adds its own getter — `.serviceBusFunction` (`@benzene/azure-function-service-bus`),
+`.eventHubFunction` (`@benzene/azure-function-event-hub`) — over its `handle*` dispatch, so a fire-and-forget
+trigger reads the same way. You then register `placeOrderHttp` with `app.http(...)` at module load. See
 [Azure Functions Setup](azure-functions.md) for registration, `host.json`, and non-HTTP triggers.
+
+> **`InlineAzureFunctionStartUp` still works.** The fluent inline builder remains for inline tests and
+> small standalone hosts (`new InlineAzureFunctionStartUp().configure(app => useAzureHttp(app, …)).build()`
+> returns the `IAzureFunctionApp` directly). The `AzureFunctionHost` one-liner is the taught path.
 
 ### Google Cloud Functions — `GoogleCloudFunctionHost`
 

@@ -13,6 +13,7 @@ export * from './AzureHttpMessageMessageHandlerResultSetter';
 export * from './AzureHttpApplication';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
+export * from './AzureFunctionHostExtensions';
 
 // DEFERRED: AspNetRegistrations.cs (registration diagnostics via RegistrationsBase / RegistrationCheck)
 // — the same registration-diagnostics surface deferred for the AWS SqsRegistrations and Azure

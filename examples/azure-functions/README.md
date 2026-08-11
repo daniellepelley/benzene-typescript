@@ -5,23 +5,26 @@ One order domain, **hosted on three Azure Functions triggers**. The handlers in
 ([`examples/aws-lambda-functions`](../aws-lambda-functions)) — the same handler runs on both clouds
 unchanged, which is the whole point of Benzene.
 
-| Callback (`src/functions.ts`) | Azure trigger | Handler | Routes by |
-|---|---|---|---|
-| `placeOrderHttp` | HTTP | `PlaceOrderHandler` | method + route (`POST /orders`) → topic `order:place` |
-| `orderPlacedServiceBus` | Service Bus (batched) | `NotifyWarehouseHandler` | `topic` application property → `order:placed` |
-| `orderPlacedEventHub` | Event Hub (batched) | `NotifyWarehouseHandler` | the BenzeneMessage envelope's topic → `order:placed` |
+| Handler (`src/functions.ts`) | StartUp (`src/startUp.ts`) | Azure trigger | Handler | Routes by |
+|---|---|---|---|---|
+| `placeOrderHttp` | `HttpStartUp` | HTTP | `PlaceOrderHandler` | method + route (`POST /orders`) → topic `order:place` |
+| `orderPlacedServiceBus` | `ServiceBusStartUp` | Service Bus (batched) | `NotifyWarehouseHandler` | `topic` application property → `order:placed` |
+| `orderPlacedEventHub` | `EventHubStartUp` | Event Hub (batched) | `NotifyWarehouseHandler` | the BenzeneMessage envelope's topic → `order:placed` |
 
-Each callback dispatches its trigger's payload into a Benzene app via the transport's `handle*` helper,
-e.g.:
+Each trigger is a `BenzeneStartUp` — the same contract as the AWS Lambda example's — booted with the
+one-liner `new AzureFunctionHost(StartUp)`, whose native-trigger getter is the exported handler:
 
 ```ts
-const serviceBusApp = azureApp((app) =>
-  useServiceBus(app, (sb) => useMessageHandlers(sb, NotifyWarehouseHandler)),
-);
-
-export function orderPlacedServiceBus(messages: ServiceBusReceivedMessage[]): Promise<void> {
-  return handleServiceBusMessages(serviceBusApp, ...messages);
+// src/startUp.ts — select Azure with useAzureFunctions, exactly as AWS selects it with useAwsLambda
+export class ServiceBusStartUp implements BenzeneStartUp {
+  configureServices(services) { addBenzene(services); }
+  configure(app) {
+    useAzureFunctions(app, (az) => useServiceBus(az, (sb) => useMessageHandlers(sb, NotifyWarehouseHandler)));
+  }
 }
+
+// src/functions.ts — one-liner boot; `.serviceBusFunction` lights up on importing the transport package
+export const orderPlacedServiceBus = new AzureFunctionHost(ServiceBusStartUp).serviceBusFunction;
 ```
 
 The idiomatic Azure Functions v4 registrations that bind these to real triggers are in
@@ -29,7 +32,7 @@ The idiomatic Azure Functions v4 registrations that bind these to real triggers 
 `app.eventHub(...)` shape the host loads:
 
 ```ts
-app.http('placeOrder', { methods: ['POST'], route: 'orders', handler: (r) => placeOrderHttp(r) });
+app.http('placeOrder', { methods: ['POST'], route: 'orders', handler: placeOrderHttp });
 ```
 
 (That module registers with the `@azure/functions` runtime on import, so it is loaded by the host, not

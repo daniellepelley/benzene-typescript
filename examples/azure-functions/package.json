@@ -12,6 +12,7 @@
     "@azure/service-bus": "^7",
     "@azure/event-hubs": "^6",
     "@benzene/abstractions": "0.1.0",
+    "@benzene/abstractions-middleware": "0.1.0",
     "@benzene/abstractions-message-handlers": "0.1.0",
     "@benzene/core-message-handlers": "0.1.0",
     "@benzene/http": "0.1.0",

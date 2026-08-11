@@ -235,12 +235,16 @@ in a protobuf `ByteString`; the topic rides the `"topic"` attribute (`PubSubMess
 and headers ride as further attributes; C#'s inert `CloudEvent` envelope (minted only to satisfy the
 `ICloudEventFunction` signature) is dropped — the TS host holds the built `IEntryPointMiddlewareApplication`
 and calls `app.sendAsync(data)` directly, so **no cloudevents/functions-framework dependency** is pulled in;
-`Guid.NewGuid()` default message id → `crypto.randomUUID()`. **Bends recorded here:** (3) AWS startups implement the
+`Guid.NewGuid()` default message id → `crypto.randomUUID()`. **Bends recorded here:** (3) AWS **and Azure** startups implement the
 **non-generic `BenzeneStartUp`** (`configure(app: IBenzeneApplicationBuilder)`, selecting the transport inside
-with `useAwsLambda(app, aws => …)`), matching the .NET reference's single app-builder shape; the generic
-`BenzeneStartUpOf<TAppBuilder>` (pinned by the `AzureFunctionStartUp` alias) is retained only for Azure, whose
-per-transport application-builder unification is still deferred — so an Azure startup's `configure` still
-takes the Azure app builder. Either way `benzeneTestHost`/`.withServices`/`.withConfiguration` and the egress
+with `useAwsLambda(app, aws => …)` / `useAzureFunctions(app, az => …)`), matching the .NET reference's single
+app-builder shape. Azure's neutral seam is `AzureFunctionApplicationBuilder` — a `BenzeneApplicationBuilder`
+that ALSO implements `IAzureFunctionAppBuilder`, so it is a drop-in for BOTH a unified
+`configure(app: IBenzeneApplicationBuilder)` (via `useAzureFunctions`, the `instanceof`-gated free function
+mirroring `useAwsLambda`) and a legacy `configure(app: IAzureFunctionAppBuilder)` (which receives it directly);
+the original `AzureFunctionAppBuilder` + the `BenzeneStartUpOf<TAppBuilder>` generic (pinned by the deprecated
+`AzureFunctionStartUp` alias) are retained for `InlineAzureFunctionStartUp` and existing Azure consumers.
+Either way `benzeneTestHost`/`.withServices`/`.withConfiguration` and the egress
 assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
 by module augmentation** (`declare module '@benzene/testing'` + a prototype assignment) so the
 `benzeneTestHost(...).withServices(...).buildAwsLambdaHost()` chain reads as in the reference while the
@@ -274,8 +278,23 @@ testing. The AWS boot sequence lives once in `AwsLambdaStartUpRunner` (mirroring
 its `buildEntryPoint`, so a component test boots byte-for-byte what deploys. This retires the template's
 hand-built `handler.ts` and moves `InlineAwsLambdaStartUp` off the taught path (kept for inline
 tests/samples). Proven by `test/Benzene.Core.Test/Aws/Hosting/AwsLambdaHostTest.test.ts` and by the
-`aws-apigateway` template. Azure's `AzureFunctionHost<TStartUp>` and converging Google onto the unified
-`BenzeneStartUp` are the staged follow-ups. The **standalone (non-Functions)
+`aws-apigateway` template. (8) **`AzureFunctionHost<TStartUp>` (`@benzene/azure-function-core`)** brings
+Azure to the identical shape, over the shared `AzureFunctionStartUpRunner` (the Azure `AwsLambdaStartUpRunner`:
+its `bootstrap` and the test host's `buildAzureFunctionApp` both dispatch its `buildEntryPoint`). One
+SDK-model difference from AWS is recorded: AWS Lambda has ONE event-sniffing entry point, so `AwsLambdaHost`
+owns a single `.lambdaHandler`; the `@azure/functions` v4 model is **per-trigger**, and each trigger's payload
+adaptation lives in its own transport package. So the core host stays transport-agnostic (it exposes the built
+`IAzureFunctionApp` as `.app` plus the two neutral `handleAsync*` dispatch methods), and **each transport
+package ADDS the native-handler getter it owns** — `@benzene/azure-function-http` adds `.httpFunction`,
+`-service-bus` adds `.serviceBusFunction`, `-event-hub` adds `.eventHubFunction` — via the SAME
+`declare module` + prototype pattern the `*-testing` packages use to add `buildAzureFunctionApp` to the neutral
+test host (see convention (4)), so a getter lights up only when its transport package is imported (which a
+trigger registration always does) and core keeps zero transport imports. Kafka has no first-class
+`app.*` registration in `@azure/functions`, so it has no getter — dispatch through `host.app` with
+`handleKafkaEvents(host.app, …)`. Proven by `test/Benzene.Core.Test/Azure/Hosting/AzureFunctionHostTest.test.ts`
+and the converted `examples/azure-functions`. Converging Google onto the unified `BenzeneStartUp`, and
+sweeping the AWS/Google guides + the `hosting.md` intro note to the host one-liner, are the staged follow-ups.
+The **standalone (non-Functions)
 consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
 `@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers`,
 `@benzene/rabbitmq-test-helpers`, `@benzene/kafka-core-test-helpers` — kept one-per-C#-project

@@ -1,40 +1,26 @@
 /**
- * The three function callbacks the Azure Functions host invokes, one per trigger. Each dispatches its
- * trigger's payload into a Benzene app (built once, at module load) via the transport's `handle*` helper.
+ * The three trigger handlers the Azure Functions host invokes, one per trigger — each the native-trigger
+ * getter of an `AzureFunctionHost` booted once, at module load, from its `BenzeneStartUp` in `startUp.ts`.
+ * This is the one-liner boot: `new AzureFunctionHost(StartUp).httpFunction` replaces the hand-built
+ * `azureApp(...)` assembly, reading identically to the AWS example's `new AwsLambdaHost(StartUp).lambdaHandler`.
+ *
  * The idiomatic `app.http(...)`/`app.serviceBusQueue(...)`/`app.eventHub(...)` registrations that bind
  * these to real triggers live in `registrations.ts`.
  */
-import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import type { ServiceBusReceivedMessage } from '@azure/service-bus';
-import type { ReceivedEventData } from '@azure/event-hubs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
-import { handleServiceBusMessages, useServiceBus } from '@benzene/azure-function-service-bus';
-import { handleEventHub, useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
-import { azureApp } from './azureApp';
-import { NotifyWarehouseHandler, PlaceOrderHandler } from './handlers';
-
-const httpApp = azureApp((app) => useAzureHttp(app, (http) => useMessageHandlers(http, PlaceOrderHandler)));
-const serviceBusApp = azureApp((app) =>
-  useServiceBus(app, (sb) => useMessageHandlers(sb, NotifyWarehouseHandler)),
-);
-// Event Hub events carry a serialized BenzeneMessage envelope, so the inner pipeline routes on the
-// envelope's own topic via `useBenzeneMessage`.
-const eventHubApp = azureApp((app) =>
-  useEventHub(app, (eh) => useBenzeneMessage(eh, (msg) => useMessageHandlers(msg, NotifyWarehouseHandler))),
-);
+import { AzureFunctionHost } from '@benzene/azure-function-core';
+// Importing the transport packages lights up the host's native-trigger getters
+// (`.httpFunction`/`.serviceBusFunction`/`.eventHubFunction`) — the same import each trigger needs anyway
+// for its `use*` wiring in `startUp.ts`.
+import '@benzene/azure-function-http';
+import '@benzene/azure-function-service-bus';
+import '@benzene/azure-function-event-hub';
+import { EventHubStartUp, HttpStartUp, ServiceBusStartUp } from './startUp';
 
 /** HTTP trigger (request/response): `POST /orders` returns an order confirmation. */
-export function placeOrderHttp(request: HttpRequest): Promise<HttpResponseInit> {
-  return handleHttpRequest(httpApp, request);
-}
+export const placeOrderHttp = new AzureFunctionHost(HttpStartUp).httpFunction;
 
 /** Service Bus trigger (batched): each message routes by its `topic` application property. */
-export function orderPlacedServiceBus(messages: ServiceBusReceivedMessage[]): Promise<void> {
-  return handleServiceBusMessages(serviceBusApp, ...messages);
-}
+export const orderPlacedServiceBus = new AzureFunctionHost(ServiceBusStartUp).serviceBusFunction;
 
 /** Event Hub trigger (batched): each event routes by its embedded topic. */
-export function orderPlacedEventHub(events: ReceivedEventData[]): Promise<void> {
-  return handleEventHub(eventHubApp, ...events);
-}
+export const orderPlacedEventHub = new AzureFunctionHost(EventHubStartUp).eventHubFunction;

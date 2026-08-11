@@ -9,6 +9,7 @@ export * from './ServiceBusOptions';
 export * from './ServiceBusMessageProcessingException';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
+export * from './AzureFunctionHostExtensions';
 
 // DEFERRED: ServiceBusRegistrations.cs (registration diagnostics via RegistrationsBase /
 // RegistrationCheck) — the same registration-diagnostics surface deferred for the AWS SqsRegistrations.

@@ -4,6 +4,7 @@ export * from './EventHubApplication';
 export * from './BenzeneMessageEventHubHandler';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
+export * from './AzureFunctionHostExtensions';
 
 // MESSAGE-TYPE ADAPTATION: the .NET `Azure.Messaging.EventHubs.EventData` maps to the ecosystem-native
 // `ReceivedEventData` from `@azure/event-hubs` (the read side of that SDK). The Event Hub package is
