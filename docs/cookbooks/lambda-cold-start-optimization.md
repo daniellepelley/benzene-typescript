@@ -57,7 +57,7 @@ export const handler = async (event, context) => {
 Keep `build()` at module scope. `toLambdaHandler(entryPoint)` closes over the built entry point and
 returns the correctly-bound function AWS invokes — and it's also the fix for the classic detached-`this`
 bug: never `export const handler = entryPoint.functionHandlerAsync` (it compiles, but assigning the method
-detaches `this` and the pipeline is lost). See [AWS Lambda Setup](../getting-started-aws.md#4-wire-up-the-lambda-entry-point).
+detaches `this` and the pipeline is lost). See [AWS Lambda Setup](../getting-started-aws.md#4-write-the-composition-root-and-the-entry-point).
 
 ### 2. Keep `configureServices` cheap — defer expensive initialization to first use
 
