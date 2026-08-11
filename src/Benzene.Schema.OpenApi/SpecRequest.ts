@@ -1,9 +1,9 @@
 /** Port of Benzene.Schema.OpenApi.SpecRequest. */
 
 /**
- * The request payload of the `spec` topic: which document `type` (only `benzene` is produced by this port —
- * the `openapi`/`asyncapi` output formats are not ported yet) and `format`. Both optional; a bare invoke
- * yields the default benzene JSON document.
+ * The request payload of the `spec` topic: which document `type` (`benzene` (default), `openapi`, or
+ * `asyncapi`) and `format`. Both optional; a bare invoke yields the default benzene document. Every format
+ * is serialised as JSON, so `format` is currently informational (the C# `yaml` output is not ported).
  */
 export class SpecRequest {
   type?: string;

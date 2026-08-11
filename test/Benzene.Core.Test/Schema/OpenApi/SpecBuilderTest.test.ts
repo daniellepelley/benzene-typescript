@@ -14,7 +14,7 @@ import {
 import { IMessageDefinition, IMessageDefinitionFinder, IMessageSendersFinder } from '@benzene/abstractions-messages';
 import { IHttpEndpointDefinition, IHttpEndpointFinder } from '@benzene/http';
 import { registerZodSchema, ZodJsonSchemaSource } from '@benzene/zod';
-import { SpecBuilder, SpecMessageHandler, SpecRequest } from '@benzene/schema-openapi';
+import { AsyncApiSpecOptions, SpecBuilder, SpecMessageHandler, SpecRequest } from '@benzene/schema-openapi';
 import {
   FileSystemMeshArtifactStore,
   IMeshServiceSource,
@@ -38,9 +38,14 @@ class OrderPlaced {
   orderId?: string;
 }
 
+class GetOrder {
+  id?: string;
+}
+
 registerZodSchema(CreateOrder, z.object({ orderId: z.string().min(1) }));
 registerZodSchema(OrderConfirmation, z.object({ orderId: z.string() }));
 registerZodSchema(OrderPlaced, z.object({ orderId: z.string() }));
+registerZodSchema(GetOrder, z.object({ id: z.string() }));
 
 function handlerDef(topic: string, requestType: unknown, responseType: unknown): IMessageHandlerDefinition {
   return { topic: { id: topic, version: '' }, requestType, responseType, handlerType: class {} } as unknown as IMessageHandlerDefinition;
@@ -59,6 +64,7 @@ interface ResolverConfig {
   httpEndpoints?: IHttpEndpointDefinition[];
   transports?: string[];
   applicationName?: string;
+  asyncApiResponseTopicSuffix?: string;
 }
 
 function fakeResolver(config: ResolverConfig): IServiceResolver {
@@ -75,6 +81,11 @@ function fakeResolver(config: ResolverConfig): IServiceResolver {
       if (id === ITransportsInfo && config.transports) return { transports: config.transports } as T;
       if (id === IApplicationInfo && config.applicationName) {
         return { name: config.applicationName, description: '', version: '1.0.0' } as T;
+      }
+      if (id === AsyncApiSpecOptions && config.asyncApiResponseTopicSuffix) {
+        const options = new AsyncApiSpecOptions();
+        options.responseTopicSuffix = config.asyncApiResponseTopicSuffix;
+        return options as T;
       }
       return undefined;
     },
@@ -142,6 +153,143 @@ describe('SpecBuilder (benzene document)', () => {
     expect(result.isSuccessful).toBe(true);
     const doc = JSON.parse(result.payload.content) as { requests: { topic: string }[] };
     expect(doc.requests[0]!.topic).toBe('orders:create');
+  });
+});
+
+describe('SpecBuilder (openapi document)', () => {
+  it('builds a real OpenAPI 3.0 document — paths, operations, $ref request/response bodies and error responses', () => {
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({
+        sources: [new ZodJsonSchemaSource()],
+        handlers: [
+          handlerDef('orders:create', CreateOrder, OrderConfirmation),
+          handlerDef('orders:get', GetOrder, OrderConfirmation),
+        ],
+        httpEndpoints: [httpDef('POST', '/orders', 'orders:create'), httpDef('GET', '/orders/{id}', 'orders:get')],
+        applicationName: 'orders-api',
+      }),
+      new SpecRequest('openapi'),
+    );
+    const doc = JSON.parse(json) as {
+      openapi: string;
+      info?: { title?: string; version?: string };
+      paths: Record<string, Record<string, {
+        parameters?: { name: string; in: string; required: boolean; schema: Record<string, unknown> }[];
+        requestBody?: { content: Record<string, { schema: Record<string, unknown> }> };
+        responses: Record<string, { description: string; content?: Record<string, { schema: Record<string, unknown> }> }>;
+      }>>;
+      components: { schemas: Record<string, Record<string, unknown>> };
+    };
+
+    expect(doc.openapi).toBe('3.0.1');
+    expect(doc.info?.title).toBe('orders-api');
+
+    // POST /orders — request body + 200 response are $refs into components; the min-length rule survived.
+    const post = doc.paths['/orders']!.post!;
+    expect(post.requestBody!.content['application/json']!.schema).toEqual({ $ref: '#/components/schemas/CreateOrder' });
+    expect(post.responses['200']!.content!['application/json']!.schema).toEqual({
+      $ref: '#/components/schemas/OrderConfirmation',
+    });
+    expect(doc.components.schemas['CreateOrder']).toMatchObject({
+      properties: { orderId: { type: 'string', minLength: 1 } },
+    });
+
+    // Every operation carries the standard error responses, referencing a shared ErrorPayload schema.
+    expect(post.responses['400']!.content!['application/json']!.schema).toEqual({
+      $ref: '#/components/schemas/ErrorPayload',
+    });
+    expect(Object.keys(post.responses)).toEqual(
+      expect.arrayContaining(['200', '400', '401', '403', '404', '422', '500', '503']),
+    );
+    expect(doc.components.schemas['ErrorPayload']).toMatchObject({ type: 'object' });
+
+    // GET /orders/{id} — a path parameter, and no request body on a GET.
+    const get = doc.paths['/orders/{id}']!.get!;
+    expect(get.parameters).toEqual([{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }]);
+    expect(get.requestBody).toBeUndefined();
+  });
+
+  it('serves the openapi document through the SpecMessageHandler on the spec topic', async () => {
+    const resolver = fakeResolver({
+      sources: [new ZodJsonSchemaSource()],
+      handlers: [handlerDef('orders:create', CreateOrder, OrderConfirmation)],
+      httpEndpoints: [httpDef('POST', '/orders', 'orders:create')],
+    });
+    const result = await new SpecMessageHandler(resolver).handleAsync(new SpecRequest('openapi'));
+    const doc = JSON.parse(result.payload.content) as { openapi: string; paths: Record<string, unknown> };
+    expect(doc.openapi).toBe('3.0.1');
+    expect(Object.keys(doc.paths)).toContain('/orders');
+  });
+});
+
+describe('SpecBuilder (asyncapi document)', () => {
+  it('builds a real AsyncAPI 3.0 document — receive-with-reply for handlers, send for broadcasts', () => {
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({
+        sources: [new ZodJsonSchemaSource()],
+        handlers: [handlerDef('orders:create', CreateOrder, OrderConfirmation)],
+        senders: [messageDef('order:placed', OrderPlaced)],
+        applicationName: 'orders-api',
+      }),
+      new SpecRequest('asyncapi'),
+    );
+    const doc = JSON.parse(json) as {
+      asyncapi: string;
+      id: string;
+      defaultContentType: string;
+      info?: { title?: string };
+      channels: Record<string, { address: string; messages: Record<string, { payload: Record<string, unknown> }> }>;
+      operations: Record<string, {
+        action: string;
+        channel: { $ref: string };
+        messages: { $ref: string }[];
+        reply?: { channel: { $ref: string }; messages: { $ref: string }[] };
+      }>;
+      components: { schemas: Record<string, Record<string, unknown>> };
+    };
+
+    expect(doc.asyncapi).toBe('3.0.0');
+    expect(doc.id).toBe('urn:benzene:service:orders-api');
+    expect(doc.defaultContentType).toBe('application/json');
+
+    // The topic ':' is illegal in an AsyncAPI map key, so it is sanitised while the address is preserved.
+    expect(doc.channels['orders_create']!.address).toBe('orders:create');
+    expect(doc.channels['orders_create_response']!.address).toBe('orders:create:response');
+    expect(doc.channels['orders_create']!.messages['CreateOrder']!.payload).toEqual({
+      $ref: '#/components/schemas/CreateOrder',
+    });
+
+    // A handler is a `receive` with a native `reply` pointing at the response channel.
+    const receive = doc.operations['orders_create']!;
+    expect(receive.action).toBe('receive');
+    expect(receive.channel.$ref).toBe('#/channels/orders_create');
+    expect(receive.messages[0]!.$ref).toBe('#/channels/orders_create/messages/CreateOrder');
+    expect(receive.reply!.channel.$ref).toBe('#/channels/orders_create_response');
+    expect(receive.reply!.messages[0]!.$ref).toBe('#/channels/orders_create_response/messages/OrderConfirmation');
+
+    // A broadcast/sender is a `send`, no reply.
+    const send = doc.operations['order_placed']!;
+    expect(send.action).toBe('send');
+    expect(send.reply).toBeUndefined();
+    expect(doc.channels['order_placed']!.address).toBe('order:placed');
+
+    expect(doc.components.schemas['CreateOrder']).toBeDefined();
+    expect(doc.components.schemas['OrderConfirmation']).toBeDefined();
+    expect(doc.components.schemas['OrderPlaced']).toBeDefined();
+  });
+
+  it('honours a custom response-topic suffix', () => {
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({
+        sources: [new ZodJsonSchemaSource()],
+        handlers: [handlerDef('orders:create', CreateOrder, OrderConfirmation)],
+        applicationName: 'orders-api',
+        asyncApiResponseTopicSuffix: 'reply',
+      }),
+      new SpecRequest('asyncapi'),
+    );
+    const doc = JSON.parse(json) as { channels: Record<string, { address: string }> };
+    expect(doc.channels['orders_create_reply']!.address).toBe('orders:create:reply');
   });
 });
 

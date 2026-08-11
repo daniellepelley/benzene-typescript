@@ -4,6 +4,7 @@ import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handler
 import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
 import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
 import { RawStringMessage } from '@benzene/core-messages';
+import { AsyncApiSpecOptions } from './AsyncApi/AsyncApiSpecOptions';
 import { Constants } from './Constants';
 import { SpecCache } from './SpecCache';
 import { SpecMessageHandler } from './SpecMessageHandler';
@@ -38,4 +39,22 @@ export function useSpec<TContext>(
  */
 export function spec<TContext>(topic: string = Constants.DefaultSpecTopic): Capability<TContext> {
   return capability<TContext>((builder) => useSpec(builder, topic));
+}
+
+/**
+ * Overrides the suffix used to name a handled topic's reply channel in the generated AsyncAPI document
+ * (default `response`, i.e. `<topic>:response`). For example, passing `"reply"` makes a handler on
+ * `shipping:get-all` reply on `shipping:get-all:reply`. Port of the C# `SetAsyncApiResponseTopicSuffix`
+ * container extension, taking the pipeline builder first (as `useSpec` does).
+ */
+export function setAsyncApiResponseTopicSuffix<TContext>(
+  app: IMiddlewarePipelineBuilder<TContext>,
+  responseTopicSuffix: string,
+): IMiddlewarePipelineBuilder<TContext> {
+  app.register((container) => {
+    const options = new AsyncApiSpecOptions();
+    options.responseTopicSuffix = responseTopicSuffix;
+    container.addSingletonInstance(AsyncApiSpecOptions, options);
+  });
+  return app;
 }
