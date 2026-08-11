@@ -1,8 +1,7 @@
-import { ISerializer, VoidResult } from '@benzene/abstractions';
+import { ISerializer } from '@benzene/abstractions';
 import { IContextConverter } from '@benzene/abstractions-middleware';
 import { JsonSerializer } from '@benzene/core-message-handlers';
-import { OutboundContext } from '@benzene/clients';
-import { BenzeneResult } from '@benzene/results';
+import { BenzeneMessageClientResponse, OutboundContext } from '@benzene/clients';
 import { buildInProcessRequest } from './InProcessRequestBuilder';
 import { InProcessSendMessageContext } from './InProcessSendMessageContext';
 
@@ -12,20 +11,16 @@ import { InProcessSendMessageContext } from './InProcessSendMessageContext';
  * registered via `addInProcessMessaging`, without going over any wire transport.
  * Port of Benzene.Clients.InProcess.InProcessContextConverter.
  *
- * PORT DIVERGENCE from .NET: the .NET converter maps the dispatched handler's response onto
- * `OutboundContext.Response` as a raw `BenzeneMessageClientResponse` envelope, which
- * `DefaultBenzeneMessageSender` then deserializes into the caller's requested `TResponse` once it
- * knows that type. The TypeScript port's `IContextConverter<TContextIn, TContextOut>` and
- * `DefaultBenzeneMessageSender.sendAsync<TRequest, TResponse>` have no equivalent mechanism -
- * `TResponse` is erased everywhere in the outbound pipeline, and no converter in this port (SQS, SNS,
- * ...) produces a genuinely `TResponse`-typed result; every one of them, this one included, always
- * produces a fixed `VoidResult`. This is not a shortcoming specific to this converter - it is the
- * existing constraint every TS outbound transport already has (see `Benzene.Clients/Common/
- * ClientResultExtensions.ts`'s own note that the `AsBenzeneResult`/`BenzeneMessageClientResponse`
- * deserialization suite is deferred). A topic routed here must be sent via
- * `IBenzeneMessageSender.sendAsync<TRequest, VoidResult>` for the response to mean anything -
- * requesting a different `TResponse` is undetectable at runtime (the same erasure caveat
- * `OutboundResponseTypeMismatchException` already documents for SQS/SNS), not a hard error.
+ * Like .NET, this maps the dispatched handler's response onto `OutboundContext.response` as a raw
+ * {@link BenzeneMessageClientResponse} envelope, which `DefaultBenzeneMessageSender` then deserializes into
+ * the caller's requested `TResponse`. So `sendAsync<TRequest, TResponse>` through an in-process route returns
+ * the handler's real, typed response — not the `VoidResult` earlier revisions produced.
+ *
+ * DIVERGENCE: the response body is recovered structurally (`JSON.parse` + a cast), since TypeScript has no
+ * runtime `TResponse` to reconstruct — the same mechanism the HTTP client uses. A body that doesn't match
+ * `TResponse` yields a mis-shaped object rather than an error; compose a validator on the response if that
+ * matters. (Fire-and-forget transports like SQS/SNS have no response body and correctly still return
+ * `VoidResult`.)
  */
 export class InProcessContextConverter implements IContextConverter<OutboundContext, InProcessSendMessageContext> {
   private readonly serializer: ISerializer;
@@ -39,7 +34,11 @@ export class InProcessContextConverter implements IContextConverter<OutboundCont
   }
 
   mapResponseAsync(contextIn: OutboundContext, contextOut: InProcessSendMessageContext): Promise<void> {
-    contextIn.response = BenzeneResult.set<VoidResult>(contextOut.response.statusCode, new VoidResult());
+    // The dispatched handler's response is a serialized BenzeneMessage envelope; leave it raw for
+    // DefaultBenzeneMessageSender to deserialize into the caller's TResponse — the one frame that still has
+    // that type. (Previously collapsed to a fixed VoidResult, discarding the handler's real response.)
+    const response = contextOut.response;
+    contextIn.response = new BenzeneMessageClientResponse(response.statusCode, response.body, response.headers);
     return Promise.resolve();
   }
 }

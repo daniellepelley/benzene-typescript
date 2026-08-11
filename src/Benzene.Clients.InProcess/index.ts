@@ -11,20 +11,19 @@
  * for the shape this is written toward: many in-process modules, each with its own pipeline,
  * extracted to real services one route at a time.
  *
- * ## PORT DIVERGENCE from .NET (documented in detail on the affected symbol)
+ * ## Typed responses & boot-time validation (both now ported)
  *
- * **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed
- * request/response, deserializing the dispatched handler's response into the caller's requested
- * `TResponse` (`DefaultBenzeneMessageSender`'s generic `BenzeneMessageClientResponse` fallback).
- * This port's outbound pipeline erases `TResponse` everywhere and has no such deserialization
- * mechanism for *any* transport yet (see `Benzene.Clients/Common/ClientResultExtensions.ts`'s own
- * note that it is deferred) - so both `useInProcess` and `useInProcessFanOut` always produce a
- * `VoidResult`, exactly like `useSqs`/`useSns` already do in this port. See `InProcessContextConverter`.
+ * **Typed responses.** `useInProcess(name)` returns the dispatched handler's real, typed response:
+ * `InProcessContextConverter` leaves the response envelope on the context and
+ * `DefaultBenzeneMessageSender` deserializes its body into the caller's `TResponse`
+ * (`sendAsync<TRequest, TResponse>`), the same structural `JSON.parse` mechanism the HTTP client uses. So
+ * an in-process route is no longer Void-only. `useInProcessFanOut`, being a broadcast to several targets,
+ * stays `VoidResult` — as does every fire-and-forget transport (`useSqs`/`useSns`), which has no response
+ * body to type. See `InProcessContextConverter`.
  *
- * Boot-time route validation, by contrast, IS now ported: `InProcessRouteStartUpCheck` (registered by the
- * first `useInProcess`/`useInProcessFanOut` call) fails start-up if a route names a pipeline nothing
- * registered — the same mistake that was previously only an `InProcessPipelineNotFoundException` at first
- * send.
+ * **Boot-time route validation.** `InProcessRouteStartUpCheck` (registered by the first
+ * `useInProcess`/`useInProcessFanOut` call) fails start-up if a route names a pipeline nothing registered —
+ * the mistake that was previously only an `InProcessPipelineNotFoundException` at first send.
  */
 export * from './DependencyInjectionExtensions';
 export * from './DuplicateInProcessFanOutTargetException';

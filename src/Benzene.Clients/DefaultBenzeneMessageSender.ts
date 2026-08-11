@@ -1,5 +1,8 @@
-import { IBenzeneResultOf, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneResultOf, ISerializer, IServiceResolver } from '@benzene/abstractions';
 import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { JsonSerializer } from '@benzene/core-message-handlers';
+import { BenzeneMessageClientResponse } from './BenzeneMessageClientResponse';
+import { asBenzeneResult } from './Common/ClientResultExtensions';
 import { IBenzeneMessageSender } from './IBenzeneMessageSender';
 import { OutboundContext } from './OutboundContext';
 import { OutboundResponseTypeMismatchException } from './OutboundResponseTypeMismatchException';
@@ -35,9 +38,17 @@ export class DefaultBenzeneMessageSender implements IBenzeneMessageSender {
     const context = new OutboundContext(topic, request, headers);
     await pipeline.handleAsync(context, this.serviceResolver);
 
-    // Erasure: TResponse is not observable at runtime, so (unlike the .NET `context.Response is
-    // IBenzeneResult<TResponse>` check) the port can only verify the route produced *an* IBenzeneResult,
-    // then returns it typed as requested. See OutboundResponseTypeMismatchException.
+    // A response-bearing transport (in-process; an HTTP message client) leaves a raw envelope; deserialize
+    // its body into TResponse here — the one frame that still has TResponse in scope. The body is recovered
+    // structurally (JSON.parse + cast); there is no runtime type to validate against.
+    if (context.response instanceof BenzeneMessageClientResponse) {
+      const serializer = this.serviceResolver.tryGetService(ISerializer) ?? new JsonSerializer();
+      return asBenzeneResult<TResponse>(context.response, serializer);
+    }
+
+    // A fire-and-forget transport (SQS, SNS, …) set a VoidResult (or any IBenzeneResult) directly. TResponse
+    // is not observable at runtime, so the port can only verify the route produced *an* IBenzeneResult and
+    // returns it typed as requested. See OutboundResponseTypeMismatchException.
     if (!isBenzeneResult(context.response)) {
       throw new OutboundResponseTypeMismatchException(topic);
     }

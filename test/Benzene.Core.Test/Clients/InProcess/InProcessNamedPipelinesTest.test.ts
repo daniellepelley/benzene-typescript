@@ -28,9 +28,9 @@ import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
  * wrong - a second top-level call, a duplicate name within one call, a route naming a pipeline
  * nothing registered.
  *
- * Assertions check dispatch via a side-effect (a shared `calls` array), not `result.payload`: this
- * port's in-process route is Void-only (see `InProcessContextConverter`'s PORT DIVERGENCE note), so
- * a handler's real return value never round-trips to the caller here the way it does in .NET.
+ * Most assertions check dispatch via a side-effect (a shared `calls` array); the "typed response" describe
+ * below additionally proves the handler's real return value now round-trips to the caller (via the
+ * `BenzeneMessageClientResponse` envelope `InProcessContextConverter` sets), the way it does in .NET.
  */
 
 // A private registry so decorating these handlers does not leak into MessageHandlersRegistry.global
@@ -226,5 +226,54 @@ describe('InProcessRouteStartUpCheck (boot-time route validation)', () => {
     expect(() =>
       bootWith((routing) => routing.route('billing:echo', (p) => useInProcess(p, 'billing')), container),
     ).not.toThrow();
+  });
+});
+
+describe('useInProcess (typed responses)', () => {
+  it("round-trips the handler's real response to the caller, typed", async () => {
+    calls = [];
+    const container = new DefaultBenzeneServiceContainer();
+    addInProcessMessaging(container, (registryBuilder) =>
+      registryBuilder.add('billing', (pipeline) => useMessageHandlers(pipeline, EchoHandler)),
+    );
+
+    const sender = senderFor(
+      (routing) => routing.route('billing:echo', (pipeline) => useInProcess(pipeline, 'billing')),
+      container,
+    );
+
+    // EchoHandler returns `echo:<request>` — no longer collapsed to VoidResult.
+    const result = await sender.sendAsync<string, string>('billing:echo', 'hello');
+
+    expect(result.isSuccessful).toBe(true);
+    expect(result.status).toBe(BenzeneResultStatus.ok);
+    expect(result.payload).toBe('echo:hello');
+    expect(calls).toEqual(['billing:hello']); // the handler really ran
+  });
+
+  it('round-trips an object response', async () => {
+    const solo = new MessageHandlersRegistry();
+
+    @message('orders:get', { registry: solo })
+    class GetOrderHandler implements IMessageHandler<{ id: string }, { id: string; total: number }> {
+      handleAsync(request: { id: string }): Promise<IBenzeneResultOf<{ id: string; total: number }>> {
+        return Promise.resolve(BenzeneResult.ok({ id: request.id, total: 42 }));
+      }
+    }
+
+    const container = new DefaultBenzeneServiceContainer();
+    addInProcessMessaging(container, (registryBuilder) =>
+      registryBuilder.add('orders', (pipeline) => useMessageHandlers(pipeline, GetOrderHandler)),
+    );
+
+    const sender = senderFor(
+      (routing) => routing.route('orders:get', (pipeline) => useInProcess(pipeline, 'orders')),
+      container,
+    );
+
+    const result = await sender.sendAsync<{ id: string }, { id: string; total: number }>('orders:get', { id: 'o1' });
+
+    expect(result.isSuccessful).toBe(true);
+    expect(result.payload).toEqual({ id: 'o1', total: 42 });
   });
 });

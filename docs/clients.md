@@ -133,15 +133,19 @@ export class OutboundContext {
 }
 ```
 
-The terminal middleware of a route is expected to perform the send and set an `IBenzeneResult` on
-`context.response`; `sendAsync` reads it back. If a route produces no `IBenzeneResult`,
-`sendAsync` throws `OutboundResponseTypeMismatchException`.
+The terminal middleware of a route either sets an `IBenzeneResult` on `context.response` directly (a
+fire-and-forget transport sets a `VoidResult`), **or** leaves a raw `BenzeneMessageClientResponse` envelope
+for `sendAsync` to deserialize into the caller's `TResponse` — the path a response-bearing transport
+(in-process; an HTTP message client) takes. If a route produces neither, `sendAsync` throws
+`OutboundResponseTypeMismatchException`.
 
-> **Erasure note.** The .NET sender also throws `OutboundResponseTypeMismatchException` when the route
-> produced an `IBenzeneResult<T>` of a *different* `T` than the caller's `TResponse`. TypeScript erases
-> `TResponse`, so the port can only verify the route produced *an* `IBenzeneResult`, then returns it typed
-> as requested — the finer mismatch is undetectable. Because a no-response handler resolves to a
-> `VoidResult`, route a send-only topic through `sendAsync<TRequest, VoidResult>`.
+> **Erasure note.** For a response-bearing transport the body is deserialized into `TResponse` structurally
+> (`JSON.parse` + a cast) — there is no runtime `TResponse` to validate against, so a body that doesn't match
+> yields a mis-shaped object rather than an error (compose a validator on the response if that matters). And
+> the .NET sender's finer check — `OutboundResponseTypeMismatchException` when the route produced an
+> `IBenzeneResult<T>` of a *different* `T` — is not reproducible, since the port cannot observe `T`. A
+> send-only topic (no response body) resolves to a `VoidResult`; route it through
+> `sendAsync<TRequest, VoidResult>`.
 
 Registering the same topic twice throws `DuplicateOutboundRouteException` — each topic gets exactly
 one route.
@@ -351,12 +355,11 @@ genuinely lost unless its own handler retries internally.
 > under the shared start-up-check switch — `addBenzeneStartUpChecks(container, BenzeneStartUpCheckMode.Advisory)`
 > logs instead of failing, `.Disabled` turns every check off.
 >
-> **PORT DIVERGENCE from .NET** (documented in detail in `@benzene/clients-in-process`'s `index.ts`):
-> **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed request/response;
-> this port's outbound pipeline erases `TResponse` everywhere and has no deserialization mechanism for *any*
-> transport yet (see the note in [Overview](#overview) and `ClientResultExtensions.ts`), so both
-> `useInProcess` and `useInProcessFanOut` always produce a `VoidResult`, exactly like `useSqs`/`useSns`
-> already do in this port.
+> **Typed responses** are ported for the single-target `useInProcess(name)`: it returns the dispatched
+> handler's real, typed response — `sendAsync<TRequest, TResponse>` deserializes the response envelope's body
+> into `TResponse` (structurally; see the [Erasure note](#wiring-routes-outboundroutingbuilder) above).
+> `useInProcessFanOut` is a broadcast to several targets, so it stays `VoidResult`, as does every
+> fire-and-forget transport (`useSqs`/`useSns`) that has no response body to type.
 
 ## Lower-level: the `IBenzeneMessageClient` decorator suite
 

@@ -78,7 +78,7 @@ Mirrors the .NET repository:
 | `src/Benzene.Clients.Azure.QueueStorage` | `@benzene/clients-azure-queue-storage` | `Benzene.Clients.Azure.QueueStorage` (outbound `OutboundContext` send path over `@azure/storage-queue`; generic-context client + health check deferred) |
 | `src/Benzene.Clients.Azure.EventGrid` | `@benzene/clients-azure-event-grid` | `Benzene.Clients.Azure.EventGrid` (outbound `OutboundContext` send path + native batch client over `@azure/eventgrid`, both CloudEvents + classic schemas; generic-context client deferred) |
 | `src/Benzene.Clients.GoogleCloud.PubSub` | `@benzene/clients-google-cloud-pubsub` | `Benzene.Clients.GoogleCloud.PubSub` (outbound `OutboundContext` publish path over `@google-cloud/pubsub`) |
-| `src/Benzene.Clients.InProcess` | `@benzene/clients-in-process` | `Benzene.Clients.InProcess` (named-pipeline registry + `useInProcess`/`useInProcessFanOut`; boot-time route validation ported via `InProcessRouteStartUpCheck`, Void-only responses remain a PORT DIVERGENCE — no `TResponse` deserialization for any transport yet) |
+| `src/Benzene.Clients.InProcess` | `@benzene/clients-in-process` | `Benzene.Clients.InProcess` (named-pipeline registry + `useInProcess`/`useInProcessFanOut`; boot-time route validation via `InProcessRouteStartUpCheck`; single-target `useInProcess` returns the handler's typed response (structural `JSON.parse` into `TResponse`), fan-out stays `VoidResult`) |
 | `src/Benzene.Mesh.Aws.Lambda` | `@benzene/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
 | `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
 | `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |

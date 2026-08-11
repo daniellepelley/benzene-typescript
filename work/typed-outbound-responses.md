@@ -1,6 +1,11 @@
 # Design note: typed outbound responses (the `TResponse` question)
 
-Status: **proposal** · Scope: `@benzene/clients` + `@benzene/clients-in-process` (+ opt-in for HTTP)
+Status: **implemented (in-process cut, Option A)** · Scope: `@benzene/clients` + `@benzene/clients-in-process`
+
+> Implemented: `asBenzeneResult<TResponse>` (reusing the existing `BenzeneMessageClientResponse` envelope),
+> the envelope-aware `DefaultBenzeneMessageSender`, and the in-process converter now returns the handler's
+> typed response. HTTP already had typed responses; the standalone-client wiring (open question 1) and
+> error-payload bodies (open question 2) remain as written below.
 
 This note specs how to give the outbound send path a real `TResponse` — the change that would let
 `IBenzeneMessageSender.sendAsync<TRequest, TResponse>` and the standalone `IBenzeneMessageClient` return a

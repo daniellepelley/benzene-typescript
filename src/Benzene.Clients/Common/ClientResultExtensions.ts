@@ -1,5 +1,6 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf, ISerializer } from '@benzene/abstractions';
 import { BenzeneResult } from '@benzene/results';
+import { BenzeneMessageClientResponse } from '../BenzeneMessageClientResponse';
 import { BenzeneResultHttpMapper } from './BenzeneResultHttpMapper';
 
 /**
@@ -16,9 +17,8 @@ import { BenzeneResultHttpMapper } from './BenzeneResultHttpMapper';
  * carries the deserialized payload (as the `Convert<T>(payload)` runtime path does), so an outbound
  * send round-trips its response body.
  *
- * The .NET `ClientResultExtensions` (`BenzeneResultExtensions.AsBenzeneResult`) additionally reads a
- * `BenzeneMessageClientResponse` (part of the deferred client-wrapper suite) and its error-payload
- * body; that overload is deferred with the rest of that suite.
+ * The `BenzeneMessageClientResponse` overload — reading the raw envelope and deserializing its body into
+ * `TResponse` — is {@link asBenzeneResult} below.
  */
 export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneResultOf<T> {
   const code = String(statusCode);
@@ -49,4 +49,32 @@ export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneRe
     default:
       return BenzeneResult.unexpectedError<T>(`Status code ${statusCode} not mapped`);
   }
+}
+
+/**
+ * Deserializes a raw {@link BenzeneMessageClientResponse} envelope into an `IBenzeneResultOf<TResponse>`:
+ * on a success status the body is deserialized into `TResponse` (structurally — `JSON.parse` + a cast, the
+ * same mechanism the HTTP client uses; there is no runtime type to validate against, so a body that doesn't
+ * match `TResponse` yields a mis-shaped object rather than an error). A failure status yields a payload-less
+ * failure result. Port of the deferred `BenzeneResultExtensions.AsBenzeneResult<TResponse>` overload.
+ *
+ * The envelope's `statusCode` may be a Benzene result status (`"ok"`, `"not-found"`) or a numeric HTTP code;
+ * both are normalized via {@link BenzeneResultHttpMapper.normalizeStatus}.
+ */
+export function asBenzeneResult<TResponse>(
+  response: BenzeneMessageClientResponse,
+  serializer: ISerializer,
+): IBenzeneResultOf<TResponse> {
+  const status = BenzeneResultHttpMapper.normalizeStatus(response.statusCode);
+  if (status === undefined) {
+    return BenzeneResult.unexpectedError<TResponse>(`Status code ${response.statusCode} not mapped`);
+  }
+
+  if (BenzeneResultHttpMapper.isSuccessStatus(status)) {
+    const payload = response.body === '' ? undefined : serializer.deserialize<TResponse>(response.body);
+    return BenzeneResult.set<TResponse>(status, payload as TResponse, true);
+  }
+
+  // Failure: payload-less, matching convertStatusCode (the error-payload body is not surfaced in this cut).
+  return BenzeneResult.set<TResponse>(status, undefined, false);
 }
