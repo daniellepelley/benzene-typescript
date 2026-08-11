@@ -625,10 +625,12 @@ A few transport-agnostic .NET middleware have no TypeScript port today:
 - **`UseCors`** (`Benzene.Http`) — CORS handling for HTTP transports is not yet ported.
 - **`UseJsonSchema`** (`Benzene.JsonSchema`) — superseded by the [validation](#validation) adapters.
 
-The spec endpoint **is** ported: **`useSpec`** (`@benzene/schema-openapi`) serves the service's benzene
-spec document (topics + payload JSON Schemas) on the reserved `spec` topic, and **`useSpecUi`**
-(`@benzene/spec-ui`) renders it in-browser, Swagger-UI style. Only the `openapi`/`asyncapi` *output
-formats* remain unported (see that package's `index.ts` divergence note). The mesh-descriptor surface —
+The spec endpoint **is** ported: **`useSpec`** (`@benzene/schema-openapi`) serves the service's spec
+document (topics + payload JSON Schemas) on the reserved `spec` topic in three formats — the default
+`benzene` event-service document, real `openapi` (OpenAPI 3.0), and real `asyncapi` (AsyncAPI 3.0),
+selected by the spec request's `type` — and **`useSpecUi`** (`@benzene/spec-ui`) renders it in-browser,
+Swagger-UI style. Every format is emitted as JSON (the C# YAML output is not ported; see that package's
+`index.ts` divergence note). The mesh-descriptor surface —
 `useMeshDescriptor(app, descriptor)` (`@benzene/mesh-wire`), consumed by `@benzene/codegen-client` and
 the mesh aggregator — is a related but distinct language-neutral descriptor; see the README's
 [Multi-language interoperability](../README.md#multi-language-interoperability) section.

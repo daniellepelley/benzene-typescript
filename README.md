@@ -103,7 +103,7 @@ Mirrors the .NET repository:
 | `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
 | `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
 | `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
-| `src/Benzene.Schema.OpenApi` | `@benzene/schema-openapi` | `Benzene.Schema.OpenApi` (benzene format only; schema from validators, not reflection) |
+| `src/Benzene.Schema.OpenApi` | `@benzene/schema-openapi` | `Benzene.Schema.OpenApi` (benzene + openapi + asyncapi formats, JSON only; schema from validators, not reflection) |
 | `src/Benzene.Spec.Ui` | `@benzene/spec-ui` | `Benzene.Spec.Ui` (explorer page inlined as a string, not an embedded resource) |
 | `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
 | `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
@@ -346,8 +346,10 @@ TypeScript service's descriptor generate an identical, fully typed client. A bes
 schemas). `Benzene.Schema.OpenApi`'s **`benzene` spec document** IS ported (`@benzene/schema-openapi`:
 `useSpec` serves `{ requests, events, transports?, components.schemas }` with payload schemas stored once and
 referenced by `$ref`, sourced from the `ITypeJsonSchemaSource` validators rather than CLR reflection — see
-the "Type → JSON Schema" convention). Not ported: that package's `openapi`/`asyncapi` output formats,
-generated examples, schema-compatibility checking, and test-payloads handler; the `Benzene.CodeGen.Core`
+the "Type → JSON Schema" convention). The **`openapi`** (OpenAPI 3.0) and **`asyncapi`** (AsyncAPI 3.0)
+output formats are also ported — `SpecBuilder` dispatches on the spec request's `type` — emitted as JSON
+(the C# YAML output needs no equivalent). Not ported: generated examples, schema-compatibility checking,
+and the test-payloads handler; the `Benzene.CodeGen.Core`
 reflection plumbing, `Microsoft.OpenApi`, the C#-target type builder, and the generated health-check/hash/
 outbound-routing-contract extras, which are .NET-client-infrastructure specific.
 
