@@ -8,9 +8,16 @@ import {
   InProcessDispatcherRegistry,
   InProcessMessagingAlreadyRegisteredException,
   InProcessPipelineNotFoundException,
+  MissingInProcessPipelineException,
   useInProcess,
 } from '@benzene/clients-in-process';
-import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
+import {
+  BenzeneStartUpCheckException,
+  message,
+  MessageHandlersRegistry,
+  runStartUpChecks,
+  useMessageHandlers,
+} from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
 
@@ -124,8 +131,10 @@ describe('addInProcessMessaging / useInProcess (named pipelines)', () => {
     const container = new DefaultBenzeneServiceContainer();
     addInProcessMessaging(container, (registryBuilder) => registryBuilder.add('billing', (p) => useMessageHandlers(p)));
 
-    // "shipping" is routed to but never registered - a typo, or a forgotten registration. This port
-    // has no boot-time check (see index.ts's PORT DIVERGENCE note), so this is the only diagnostic.
+    // "shipping" is routed to but never registered - a typo, or a forgotten registration. The boot-time
+    // InProcessRouteStartUpCheck catches this when a host boots through its StartUpRunner; senderFor builds
+    // the factory directly (no runner), so here the runtime backstop is what fires. See the boot-time-check
+    // test below for the start-up path.
     const sender = senderFor(
       (routing) => routing.route('shipping:charge', (pipeline) => useInProcess(pipeline, 'shipping')),
       container,
@@ -178,5 +187,44 @@ describe('addInProcessMessaging / useInProcess (named pipelines)', () => {
     const result = await sender.sendAsync<string, VoidResult>('billing:missing', 'hello');
 
     expect(result.status).toBe(BenzeneResultStatus.notFound);
+  });
+});
+
+describe('InProcessRouteStartUpCheck (boot-time route validation)', () => {
+  // The runner (runStartUpChecks) is what every host's StartUpRunner calls; drive it directly here.
+  function bootWith(configure: (routing: OutboundRoutingBuilder) => void, container: DefaultBenzeneServiceContainer): void {
+    addOutboundRouting(container, configure);
+    runStartUpChecks(container.createServiceResolverFactory());
+  }
+
+  it('fails start-up when a route names a pipeline nothing registered', () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addInProcessMessaging(container, (registryBuilder) => registryBuilder.add('billing', (p) => useMessageHandlers(p)));
+
+    let thrown: unknown;
+    try {
+      bootWith((routing) => routing.route('shipping:charge', (p) => useInProcess(p, 'shipping')), container);
+    } catch (error) {
+      thrown = error;
+    }
+    // The runner reports every failed check as a BenzeneStartUpCheckException, keeping the check's own
+    // MissingInProcessPipelineException as the cause.
+    expect(thrown).toBeInstanceOf(BenzeneStartUpCheckException);
+    expect((thrown as BenzeneStartUpCheckException).failedChecks).toContain('in-process-routes');
+    expect((thrown as Error).message).toContain("'shipping'");
+    expect((thrown as Error).message).toContain("'billing'");
+
+    const cause = (thrown as { cause?: unknown }).cause;
+    expect(cause).toBeInstanceOf(MissingInProcessPipelineException);
+    expect((cause as MissingInProcessPipelineException).missingNames).toEqual(['shipping']);
+  });
+
+  it('passes start-up when every routed pipeline name is registered', () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addInProcessMessaging(container, (registryBuilder) => registryBuilder.add('billing', (p) => useMessageHandlers(p)));
+
+    expect(() =>
+      bootWith((routing) => routing.route('billing:echo', (p) => useInProcess(p, 'billing')), container),
+    ).not.toThrow();
   });
 });

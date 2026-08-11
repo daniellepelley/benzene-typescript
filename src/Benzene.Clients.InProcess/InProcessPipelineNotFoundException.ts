@@ -3,10 +3,9 @@
  * registered via `addInProcessMessaging`.
  * Port of Benzene.Clients.InProcess.InProcessPipelineNotFoundException.
  *
- * PORT DIVERGENCE from .NET: there this is the runtime backstop for a mistake `InProcessRouteStartUpCheck`
- * already catches at start-up. The TypeScript port has no `IStartUpCheck`-equivalent boot-time
- * validation runner (see the package's top-level doc comment), so here this exception is the *only*
- * line of defense, not a backstop for one - it fires on the first dispatch to an unregistered name.
+ * As in .NET, this is the runtime backstop for a mistake `InProcessRouteStartUpCheck` already catches at
+ * start-up: it fires on the first dispatch to an unregistered name only if start-up checks were softened or
+ * disabled (`addBenzeneStartUpChecks(..., Advisory | Disabled)`); otherwise the boot-time check fails first.
  */
 export class InProcessPipelineNotFoundException extends Error {
   /** The pipeline name that was requested but never registered. */

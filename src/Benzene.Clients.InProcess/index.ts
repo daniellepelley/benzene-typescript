@@ -11,21 +11,20 @@
  * for the shape this is written toward: many in-process modules, each with its own pipeline,
  * extracted to real services one route at a time.
  *
- * ## PORT DIVERGENCES from .NET (both documented in detail on the affected symbols)
+ * ## PORT DIVERGENCE from .NET (documented in detail on the affected symbol)
  *
- * 1. **No boot-time route validation.** .NET's `InProcessRouteStartUpCheck` catches a
- *    `useInProcess(name)`/`useInProcessFanOut(...)` route naming an unregistered pipeline at
- *    start-up. This port has no `IStartUpCheck`-equivalent runner at all (not just for this
- *    package - no transport in the TypeScript port has one), so the same mistake surfaces as
- *    `InProcessPipelineNotFoundException` at first send instead. See `InProcessPipelineNotFoundException`.
- * 2. **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed
- *    request/response, deserializing the dispatched handler's response into the caller's requested
- *    `TResponse` (`DefaultBenzeneMessageSender`'s generic `BenzeneMessageClientResponse` fallback).
- *    This port's outbound pipeline erases `TResponse` everywhere and has no such deserialization
- *    mechanism for *any* transport yet (see `Benzene.Clients/Common/ClientResultExtensions.ts`'s own
- *    note that it is deferred) - so both `useInProcess` and `useInProcessFanOut` always produce a
- *    `VoidResult`, exactly like `useSqs`/`useSns` already do in this port. See
- *    `InProcessContextConverter`.
+ * **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed
+ * request/response, deserializing the dispatched handler's response into the caller's requested
+ * `TResponse` (`DefaultBenzeneMessageSender`'s generic `BenzeneMessageClientResponse` fallback).
+ * This port's outbound pipeline erases `TResponse` everywhere and has no such deserialization
+ * mechanism for *any* transport yet (see `Benzene.Clients/Common/ClientResultExtensions.ts`'s own
+ * note that it is deferred) - so both `useInProcess` and `useInProcessFanOut` always produce a
+ * `VoidResult`, exactly like `useSqs`/`useSns` already do in this port. See `InProcessContextConverter`.
+ *
+ * Boot-time route validation, by contrast, IS now ported: `InProcessRouteStartUpCheck` (registered by the
+ * first `useInProcess`/`useInProcessFanOut` call) fails start-up if a route names a pipeline nothing
+ * registered — the same mistake that was previously only an `InProcessPipelineNotFoundException` at first
+ * send.
  */
 export * from './DependencyInjectionExtensions';
 export * from './DuplicateInProcessFanOutTargetException';
@@ -40,4 +39,7 @@ export * from './InProcessMessagingAlreadyRegisteredException';
 export * from './InProcessMessagingBuilder';
 export * from './InProcessPipelineNotFoundException';
 export * from './InProcessRequestBuilder';
+export * from './InProcessRouteReference';
+export * from './InProcessRouteStartUpCheck';
+export * from './MissingInProcessPipelineException';
 export * from './InProcessSendMessageContext';

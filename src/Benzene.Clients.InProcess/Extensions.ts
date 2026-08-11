@@ -1,4 +1,4 @@
-import { ISerializer, IServiceResolverFactory, ILoggerFactory } from '@benzene/abstractions';
+import { ISerializer, IServiceResolverFactory, ILoggerFactory, IStartUpCheck } from '@benzene/abstractions';
 import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
 import { OutboundContext } from '@benzene/clients';
 import { InProcessClientMiddleware } from './InProcessClientMiddleware';
@@ -7,7 +7,25 @@ import { InProcessDispatcherRegistry } from './InProcessDispatcherRegistry';
 import { InProcessFanOutClientMiddleware } from './InProcessFanOutClientMiddleware';
 import { InProcessFanOutTarget } from './InProcessFanOutTarget';
 import { InProcessMessagingBuilder } from './InProcessMessagingBuilder';
+import { InProcessRouteReference } from './InProcessRouteReference';
+import { InProcessRouteStartUpCheck } from './InProcessRouteStartUpCheck';
 import { DuplicateInProcessFanOutTargetException } from './DuplicateInProcessFanOutTargetException';
+
+/**
+ * Records a `useInProcess(name)` reference and registers the boot-time route check (once), so a route naming
+ * an unregistered pipeline fails start-up via {@link InProcessRouteStartUpCheck} instead of surfacing as an
+ * `InProcessPipelineNotFoundException` at first send.
+ */
+function recordInProcessRoute(app: IMiddlewarePipelineBuilder<OutboundContext>, pipelineName: string): void {
+  app.register((container) => {
+    container.addSingletonFactory(InProcessRouteReference, () => new InProcessRouteReference(pipelineName));
+    // Register the check once (guarded by its own class token) and expose it in the IStartUpCheck collection.
+    if (!container.isTypeRegistered(InProcessRouteStartUpCheck)) {
+      container.addSingletonFactory(InProcessRouteStartUpCheck, () => new InProcessRouteStartUpCheck());
+      container.addSingletonFactory(IStartUpCheck, (resolver) => resolver.getService(InProcessRouteStartUpCheck));
+    }
+  });
+}
 
 /**
  * Converts an outbound route pipeline (`OutboundRoutingBuilder.route`) to dispatch straight to the
@@ -20,15 +38,15 @@ import { DuplicateInProcessFanOutTargetException } from './DuplicateInProcessFan
  * `InProcessMessagingBuilder.DefaultName` - the single-pipeline `addInProcessMessaging` shape
  * (`registry.add(configure)` with no name) registers under that name.
  *
- * PORT DIVERGENCE from .NET: no boot-time validation runs here. The TypeScript port has no
- * `IStartUpCheck`-equivalent runner (see the package's top-level doc comment in `index.ts`), so a
- * `name` nothing registered surfaces as `InProcessPipelineNotFoundException` at first send, not at
- * start-up.
+ * Boot-time validation: the referenced `name` is recorded so {@link InProcessRouteStartUpCheck} fails
+ * start-up if nothing registered a pipeline under it — a typo or forgotten `addInProcessMessaging(...)` is
+ * caught at INIT instead of surfacing as `InProcessPipelineNotFoundException` at first send.
  */
 export function useInProcess(
   app: IMiddlewarePipelineBuilder<OutboundContext>,
   name: string = InProcessMessagingBuilder.DefaultName,
 ): IMiddlewarePipelineBuilder<OutboundContext> {
+  recordInProcessRoute(app, name);
   return app.convert(new InProcessContextConverter(), (builder) =>
     builder.use((resolver) =>
       new InProcessClientMiddleware(
@@ -73,6 +91,7 @@ export function useInProcessFanOut(
       throw new DuplicateInProcessFanOutTargetException(target.topic);
     }
     seenTopics.add(target.topic);
+    recordInProcessRoute(app, target.pipelineName);
   }
 
   return app.use((resolver) =>
