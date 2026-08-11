@@ -618,6 +618,43 @@ useMessagePack(app);
 
 ---
 
+## Start-up checks
+
+**Package:** `@benzene/core-message-handlers`
+
+Boot-time wiring checks run once during host initialization — before any message is handled — so a
+wiring bug fails INIT rather than surfacing as a failure on the message path later. Every host runs them
+from its `StartUpRunner`; because the AWS/Azure test hosts boot through the same runner, the same bug is
+also a red unit test. Checks are registered as a collection (the `IStartUpCheck` token) and run by
+`runStartUpChecks(factory)`.
+
+`addBenzene()` registers two:
+
+- **`duplicate-topic`** — two different handlers claiming the same topic and version; **throws**.
+- **`empty-handler-registry`** — handler dispatch was wired but no handlers were discovered (usually the
+  wrong module passed to `addMessageHandlers(...)`); **logs a warning** (a probe- or collector-only
+  deployable legitimately has zero handlers).
+
+Other packages contribute their own: `@benzene/clients-in-process` adds **`in-process-routes`**, which
+fails start-up when a `useInProcess(name)` route names a pipeline nothing registered.
+
+One switch governs all of them:
+
+```ts
+import { addBenzeneStartUpChecks, BenzeneStartUpCheckMode } from '@benzene/core-message-handlers';
+
+// Log check failures instead of failing start-up…
+addBenzeneStartUpChecks(container, BenzeneStartUpCheckMode.Advisory);
+// …or turn every check off.
+addBenzeneStartUpChecks(container, BenzeneStartUpCheckMode.Disabled);
+```
+
+**Divergence:** the .NET `pipeline-resolution` and `terminal-middleware` checks need a pipeline-descriptor
+feed the port doesn't have yet, and `outbound-routing` needs `validateOutboundRouting` (itself not ported),
+so those three are deferred; `.WarmUp()` is likewise not ported.
+
+---
+
 ## Not yet ported
 
 A few transport-agnostic .NET middleware have no TypeScript port today:

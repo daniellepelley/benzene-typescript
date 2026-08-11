@@ -345,17 +345,18 @@ other targets or the caller, matching what a real SNS publish does (accepted onc
 visibility into subscriber outcomes). There is no in-process DLQ: a failed target's message is
 genuinely lost unless its own handler retries internally.
 
-> **PORT DIVERGENCES from .NET** (both documented in detail in `@benzene/clients-in-process`'s
-> `index.ts`):
-> 1. **No boot-time route validation.** .NET catches a route naming an unregistered pipeline at
->    start-up; this port has no `IStartUpCheck`-equivalent runner at all yet (not specific to this
->    package — no TypeScript transport has one), so the same mistake surfaces as
->    `InProcessPipelineNotFoundException` at first send instead.
-> 2. **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed
->    request/response; this port's outbound pipeline erases `TResponse` everywhere and has no
->    deserialization mechanism for *any* transport yet (see the note in [Overview](#overview) and
->    `ClientResultExtensions.ts`), so both `useInProcess` and `useInProcessFanOut` always produce a
->    `VoidResult`, exactly like `useSqs`/`useSns` already do in this port.
+> **Boot-time route validation** is ported: a route naming a pipeline nothing registered fails start-up
+> (`InProcessRouteStartUpCheck` → `MissingInProcessPipelineException`) when a host boots through its
+> `StartUpRunner`, rather than surfacing as an `InProcessPipelineNotFoundException` at first send. It runs
+> under the shared start-up-check switch — `addBenzeneStartUpChecks(container, BenzeneStartUpCheckMode.Advisory)`
+> logs instead of failing, `.Disabled` turns every check off.
+>
+> **PORT DIVERGENCE from .NET** (documented in detail in `@benzene/clients-in-process`'s `index.ts`):
+> **Void-only responses.** .NET's single-target `useInProcess(name)` supports real typed request/response;
+> this port's outbound pipeline erases `TResponse` everywhere and has no deserialization mechanism for *any*
+> transport yet (see the note in [Overview](#overview) and `ClientResultExtensions.ts`), so both
+> `useInProcess` and `useInProcessFanOut` always produce a `VoidResult`, exactly like `useSqs`/`useSns`
+> already do in this port.
 
 ## Lower-level: the `IBenzeneMessageClient` decorator suite
 
