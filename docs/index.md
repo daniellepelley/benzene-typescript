@@ -24,6 +24,7 @@ unchanged on Express, AWS Lambda, or Azure Functions.
     - [Google Cloud Functions](getting-started-google.md) — HTTP + Pub/Sub
     - [gRPC](getting-started-grpc.md) — expose handlers over a gRPC server and call other services
     - [Kafka](getting-started-kafka.md) — run your handlers as a self-hosted Kafka consumer-group worker
+    - [Kubernetes](getting-started-kubernetes.md) — one handler hosted over HTTP, SQS, and Kafka from a single process and Deployment
   - [Unified Hosting Model](hosting.md) — the same handler on Express, AWS Lambda, Azure Functions, or a
     self-hosted worker
   - [Message Handlers](message-handlers.md) — the components that process a message, and how they're
