@@ -1,13 +1,12 @@
 /**
- * The SQS leg: a long-running worker process polling one queue, dispatching every message to the same
- * `PlaceOrderHandler` `api.ts` exposes over HTTP. `useSqs` wires the SQS message getters and
- * `useMessageHandlers` routes each poll batch to `PlaceOrderHandler` by its `@message('order-place')`
- * — the same handler import as every other leg, wired explicitly (this port has no reflection-based
- * handler discovery).
+ * The SQS leg: a poller that shares the process `app.ts` starts, polling one queue and dispatching
+ * every message to the same `PlaceOrderHandler` the HTTP leg exposes. `useSqs` wires the SQS message
+ * getters and `useMessageHandlers` routes each poll batch to `PlaceOrderHandler` by its
+ * `@message('order-place')` — the same handler import as every other leg, wired explicitly (this port
+ * has no reflection-based handler discovery).
  *
- * Run with:
- *
- *     QUEUE_URL=http://localhost:4566/000000000000/orders-in npm run start:sqs-worker -w @benzene-example/k8s-orders
+ * Exports `buildSqsWorker()` only — see `app.ts` for how it's started (fire-and-forget, never awaited
+ * inline: `startAsync` is this worker's own poll loop and does not resolve until stopped).
  */
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SqsClientFactory, useSqs } from '@benzene/aws-sqs';
@@ -32,6 +31,8 @@ const queueUrl = requireEnv('QUEUE_URL');
 const sqsEndpointUrl = process.env['SQS_ENDPOINT_URL'];
 const sqsClient = new SQSClient(sqsEndpointUrl ? { endpoint: sqsEndpointUrl } : {});
 
+export const sqsQueueUrl = queueUrl;
+
 export function buildSqsWorker() {
   return new InlineSelfHostedStartUp()
     .configure((app) =>
@@ -40,22 +41,4 @@ export function buildSqsWorker() {
       ),
     )
     .build();
-}
-
-async function main(): Promise<void> {
-  const worker = buildSqsWorker();
-  const controller = new AbortController();
-  process.on('SIGINT', () => controller.abort());
-  process.on('SIGTERM', () => controller.abort());
-
-  console.log(`orders-sqs-worker polling ${queueUrl}`);
-  await worker.startAsync(controller.signal);
-}
-
-const isMain = process.argv[1] !== undefined && import.meta.url === new URL(process.argv[1], 'file://').href;
-if (isMain) {
-  main().catch((err: unknown) => {
-    console.error(err);
-    process.exit(1);
-  });
 }

@@ -23,7 +23,7 @@ component-test, and each of its three entry points is exercised by actually runn
 | [`express-http`](express-http) | A standalone **Express** HTTP server (the non-Lambda hosting analog) |
 | [`google-cloud-functions`](google-cloud-functions) | Hosting the domain on **Google Cloud Functions** |
 | [`grpc`](grpc) | A **gRPC** greeter across all four RPC shapes, plus a client |
-| [`k8s-orders`](k8s-orders) | One handler as **three independent Kubernetes Deployments** — HTTP, SQS, Kafka |
+| [`k8s-orders`](k8s-orders) | One handler hosted over **HTTP, SQS, and Kafka in a single Kubernetes Deployment** |
 | [`kafka`](kafka) | A **Kafka** consumer worker + producer |
 | [`mesh-service`](mesh-service) | A Benzene **mesh** service end to end |
 | [`opentelemetry`](opentelemetry) | Pipeline tracing via `@benzene/diagnostics` spans |

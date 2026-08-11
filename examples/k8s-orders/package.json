@@ -2,15 +2,13 @@
   "name": "@benzene-example/k8s-orders",
   "version": "0.1.0",
   "private": true,
-  "description": "One order-placement handler hosted as three independent Kubernetes Deployments — HTTP (Express), SQS, and Kafka",
+  "description": "One order-placement handler hosted over HTTP (Express), SQS, and Kafka together in one process",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "start:api": "tsx src/api.ts",
-    "start:sqs-worker": "tsx src/sqsWorker.ts",
-    "start:kafka-worker": "tsx src/kafkaWorker.ts"
+    "start": "tsx src/app.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.700.0",

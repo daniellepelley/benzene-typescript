@@ -209,9 +209,9 @@ to drop a message. A bare Express route has no answer for that; you'd write a se
 handler and keep both in sync by hand. With Benzene the handler above doesn't change at all: the
 self-hosted `@benzene/aws-sqs` or `@benzene/kafka-core` worker points at the *same*
 `HelloWorldHandler`, because it was never written against Express's `req`/`res` in the first place —
-see [Getting Started: Kubernetes](getting-started-kubernetes.md) for that running as three independent
-Kubernetes Deployments from one handler. If HTTP genuinely is and always will be the only way in,
-reach for Express (or Fastify, or Koa) directly instead — you'll write less code, not more.
+see [Getting Started: Kubernetes](getting-started-kubernetes.md) for that running as one process, one
+Deployment, three transports. If HTTP genuinely is and always will be the only way in, reach for
+Express (or Fastify, or Koa) directly instead — you'll write less code, not more.
 
 ## Next steps
 

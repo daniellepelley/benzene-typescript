@@ -1,44 +1,38 @@
-# One handler, three Kubernetes Deployments
+# One handler, one process, three transports
 
 The runnable version of [Getting Started: Benzene on Kubernetes](../../docs/getting-started-kubernetes.md).
 
-The same `PlaceOrderHandler` — the shared handler every entry point below imports from `src/domain.ts`
-— reached three independent ways, each its own pod:
+The same `PlaceOrderHandler` — `src/domain.ts`, imported by every file below — reached three
+independent ways, from **one** running process:
 
 ```
-                              ┌──────────────────────────────────────┐
-        HTTP  ──────────────▶│  orders-api           (Deployment)    │──┐
-                              └──────────────────────────────────────┘  │
-                              ┌──────────────────────────────────────┐  │   all three dispatch
-        SQS queue  ─────────▶│  orders-sqs-worker    (Deployment)    │──┼──▶ PlaceOrderHandler
-                              └──────────────────────────────────────┘  │   (src/domain.ts)
-                              ┌──────────────────────────────────────┐  │
-        Kafka topic  ───────▶│  orders-kafka-worker  (Deployment)    │──┘
-                              └──────────────────────────────────────┘
+        HTTP        ─────────┐
+        SQS queue   ─────────┼──▶  orders-app (Deployment)  ──▶  PlaceOrderHandler
+        Kafka topic ─────────┘         (src/app.ts)               (src/domain.ts)
 ```
 
-Nothing in the handler knows which pod called it. That's the point: the same business logic scales,
-deploys, and rolls back independently behind whichever transport actually reaches it — a bare Express
-route alone gives you the first Deployment; Benzene gives you all three from one handler class.
+Nothing in the handler knows which transport called it. That's the point: `src/app.ts` starts the
+Express server, the SQS poller, and the Kafka consumer together, in the same Node process, all
+dispatching into the exact same handler class — a bare Express route alone gives you the HTTP leg;
+Benzene gives you all three from one class, one image, one Deployment.
 
 ## Files
 
-This is one npm package (`@benzene-example/k8s-orders`) with three entry point scripts sharing one
-domain file — the simplest way to share a handler across sibling processes without splitting into
-separate npm workspaces:
+This is one npm package (`@benzene-example/k8s-orders`) with one entry point sharing one domain file:
 
 | Path | What it is |
 |---|---|
-| `src/domain.ts` | the shared handler - `PlaceOrderHandler`, decorated with both `@httpEndpoint('POST', '/orders')` and `@message('order-place')`, imported by all three entry points below |
-| `src/httpApp.ts` / `src/api.ts` | an Express app (`@benzene/express`) - `POST /orders`, plus the runnable entry point |
-| `src/sqsWorker.ts` | `@benzene/aws-sqs`'s `useSqs` - the self-hosted SQS poller, not the Lambda-trigger `@benzene/aws-lambda-sqs` |
-| `src/kafkaWorker.ts` | `@benzene/kafka-core`'s `useKafka` - the self-hosted Kafka consumer |
-| `k8s/` | three Deployments (`api.yaml` also a Service), pointed at a real SQS queue and Kafka cluster via env vars - no bundled infra |
-| `compose/` | `docker-compose.yml` - LocalStack (SQS) + a throwaway Kafka broker + all three services, for a credential-free local run |
+| `src/domain.ts` | the shared handler - `PlaceOrderHandler`, decorated with both `@httpEndpoint('POST', '/orders')` and `@message('order-place')` |
+| `src/httpApp.ts` | the Express app (`@benzene/express`) - `POST /orders` |
+| `src/sqsWorker.ts` | `buildSqsWorker()` - `@benzene/aws-sqs`'s `useSqs`, the self-hosted SQS poller, not the Lambda-trigger `@benzene/aws-lambda-sqs` |
+| `src/kafkaWorker.ts` | `buildKafkaWorker()` - `@benzene/kafka-core`'s `useKafka`, the self-hosted Kafka consumer |
+| `src/app.ts` | the one entry point - starts all three together (see its own comment for **why** the SQS/Kafka legs are started fire-and-forget, not awaited before `app.listen()`) |
+| `k8s/` | one Deployment + Service, pointed at a real SQS queue and Kafka cluster via env vars - no bundled infra |
+| `compose/` | `docker-compose.yml` - LocalStack (SQS) + a throwaway Kafka broker + the one service, for a credential-free local run |
 
-Every entry point wires the handler itself (`useMessageHandlers(pipeline, PlaceOrderHandler)`) — this
-port has no reflection-based handler discovery, so "shared" means "the same class imported three times
-and wired explicitly," not "auto-discovered." See each file's `build*` function.
+Every leg wires the handler itself (`useMessageHandlers(pipeline, PlaceOrderHandler)`) — this port has
+no reflection-based handler discovery, so "shared" means "the same class imported once, wired three
+times," not "auto-discovered."
 
 ## Run it locally (no Kubernetes, no cloud account)
 
@@ -70,38 +64,48 @@ docker exec -i $(docker compose -f examples/k8s-orders/compose/docker-compose.ym
   '{"customerId":"c-3","sku":"gizmo","quantity":2}'
 ```
 
-`docker compose logs -f orders-api orders-sqs-worker orders-kafka-worker` to watch all three at once —
-an order placed through any of the three reaches the exact same handler.
+Three different entry points, one container's logs — `docker compose logs -f orders-app` — proving
+all three ran through the exact same handler code.
 
 ## Deploy to Kubernetes
 
-Build and load the three images (against a [kind](https://kind.sigs.k8s.io) cluster — swap for your
+Build and load the one image (against a [kind](https://kind.sigs.k8s.io) cluster — swap for your
 registry's push/pull on a real cluster):
 
 ```bash
-docker build -f examples/k8s-orders/Dockerfile.api        -t k8s-orders-api:local        .
-docker build -f examples/k8s-orders/Dockerfile.sqsWorker   -t k8s-orders-sqs-worker:local   .
-docker build -f examples/k8s-orders/Dockerfile.kafkaWorker -t k8s-orders-kafka-worker:local .
-kind load docker-image k8s-orders-api:local k8s-orders-sqs-worker:local k8s-orders-kafka-worker:local
+docker build -f examples/k8s-orders/Dockerfile -t k8s-orders:local .
+kind load docker-image k8s-orders:local
 ```
 
-Edit the placeholder env values in `k8s/sqs-worker.yaml` and `k8s/kafka-worker.yaml` to point at a
-real queue and cluster (there is deliberately no bundled SQS/Kafka in these manifests — see each
-file's own comment for why, and for the IRSA note on the SQS side), then:
+Edit the placeholder `QUEUE_URL`/`KAFKA_BROKERS` values in `k8s/app.yaml` to point at a real queue and
+cluster (there is deliberately no bundled SQS/Kafka in this manifest — see the file's own comment for
+why, and for the IRSA note on the SQS side), then:
 
 ```bash
 kubectl apply -k examples/k8s-orders/k8s/
-kubectl -n k8s-orders get pods   # 4 pods: 2x orders-api, 1x orders-sqs-worker, 1x orders-kafka-worker
-kubectl -n k8s-orders logs -f deploy/orders-sqs-worker
+kubectl -n k8s-orders get pods   # 2 pods: 2x orders-app
+kubectl -n k8s-orders logs -f deploy/orders-app
 ```
 
-Scale the transports independently, because they're independent Deployments:
+There's only one Deployment to scale - scaling it scales all three transports' consuming capacity
+together:
 
 ```bash
-kubectl -n k8s-orders scale deploy/orders-kafka-worker --replicas=3
+kubectl -n k8s-orders scale deploy/orders-app --replicas=4
 ```
 
 ## Why this, and not just Express
 
 See [Why not just Express?](../../docs/getting-started.md#why-not-just-express) for the reasoning
 this example exists to prove.
+
+## The alternative: one Deployment per transport
+
+Combining all three transports into one process is not the only valid shape - splitting them into
+**separate** entry points/Deployments (one for HTTP, one for the SQS poller, one for the Kafka
+consumer, each its own image) is a legitimate pattern too, and sometimes the better one: each
+transport then scales, rolls back, and fails independently of the others. The tradeoff is real: more
+images to build, more Deployments to manage, and a little duplicated startup wiring per transport if
+they're split into separate scripts. Reach for that shape instead when the transports' traffic,
+failure modes, or scaling needs genuinely diverge - `src/domain.ts` doesn't change either way, only
+how many entry points and Dockerfiles wrap it.
