@@ -3,6 +3,7 @@ import {
   IBenzeneServiceContainer,
   ILoggerFactory,
   ISerializer,
+  IStartUpCheck,
   NullLogger,
   NullLoggerFactory,
   ServiceIdentifier,
@@ -49,6 +50,8 @@ import { CacheMessageHandlersFinder } from '../CacheMessageHandlersFinder';
 import { tryAddHeaderMessageVersionGetter } from '../MessageVersionHeaderNames';
 import { CompositeMessageHandlersFinder } from '../CompositeMessageHandlersFinder';
 import { DefaultStatuses } from '../DefaultStatuses';
+import { DuplicateTopicStartUpCheck } from '../StartUpChecks/DuplicateTopicStartUpCheck';
+import { EmptyHandlerRegistryStartUpCheck } from '../StartUpChecks/EmptyHandlerRegistryStartUpCheck';
 import { DependencyMessageHandlersFinder } from '../DependencyMessageHandlersFinder';
 import { HandlerPipelineBuilder } from '../HandlerPipelineBuilder';
 import { ApplicationInfo } from '../Info/ApplicationInfo';
@@ -222,6 +225,16 @@ export function addBenzene(services: IBenzeneServiceContainer): IBenzeneServiceC
   tryAddSingleton(services, JsonSerializer);
   services.addServiceResolver();
   addBenzeneMiddleware(services);
+
+  // Boot-time wiring checks (run by every host's StartUpRunner). Registered as a collection under the
+  // IStartUpCheck token; the token guard keeps a repeated addBenzene() idempotent, since there is no
+  // per-implementation TryAdd for collections. Only the checks whose inputs exist in the port are
+  // registered — the pipeline-resolution and terminal-middleware checks need a pipeline-descriptor feed
+  // the port does not have yet (see the package README's start-up-checks divergence note).
+  if (!services.isTypeRegistered(IStartUpCheck)) {
+    services.addSingletonFactory(IStartUpCheck, () => new DuplicateTopicStartUpCheck());
+    services.addSingletonFactory(IStartUpCheck, () => new EmptyHandlerRegistryStartUpCheck());
+  }
   return services;
 }
 

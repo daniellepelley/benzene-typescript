@@ -66,3 +66,7 @@ export * from './BenzeneMessage/BenzeneMessageResponseAdapter';
 export * from './BenzeneMessage/DefaultResponseStatusHandler';
 export * from './BenzeneMessage/BenzeneMessageMessageHandlerResultSetter';
 export * from './BenzeneMessage/BenzeneMessageApplication';
+export * from './StartUpChecks/BenzeneStartUpCheckException';
+export * from './StartUpChecks/BenzeneStartUpChecks';
+export * from './StartUpChecks/DuplicateTopicStartUpCheck';
+export * from './StartUpChecks/EmptyHandlerRegistryStartUpCheck';

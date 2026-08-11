@@ -20,3 +20,5 @@ export * from './IDependencyWrapper';
 export * from './IMessageBuilder';
 export * from './IHttpBuilder';
 export * from './IBenzeneTestHost';
+export * from './StartUpChecks/IStartUpCheck';
+export * from './StartUpChecks/BenzeneStartUpCheckMode';

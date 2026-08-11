@@ -10,6 +10,7 @@
     "@google-cloud/functions-framework": "^3",
     "@benzene/abstractions": "0.1.0",
     "@benzene/abstractions-middleware": "0.1.0",
+    "@benzene/core-message-handlers": "0.1.0",
     "@benzene/core-middleware": "0.1.0",
     "@benzene/express": "0.1.0",
     "@benzene/google-cloud-functions-core": "0.1.0"

@@ -5,6 +5,7 @@ import {
   BenzeneStartUpOf,
   emptyConfiguration,
 } from '@benzene/abstractions-middleware';
+import { withStartUpChecks } from '@benzene/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { AzureFunctionApplicationBuilder } from './AzureFunctionApplicationBuilder';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
@@ -63,6 +64,8 @@ export class AzureFunctionStartUpRunner {
   ): IAzureFunctionApp {
     const appBuilder = new AzureFunctionApplicationBuilder(container);
     startUp.configure(appBuilder, configuration);
-    return appBuilder.createApp(container.createServiceResolverFactory());
+    // Boot-time wiring checks run here, on the built factory — shared by the production host and the test
+    // host, both of which finish through this method.
+    return appBuilder.createApp(withStartUpChecks(container.createServiceResolverFactory()));
   }
 }

@@ -6,6 +6,7 @@ import {
   IBenzeneApplicationBuilder,
   emptyConfiguration,
 } from '@benzene/abstractions-middleware';
+import { withStartUpChecks } from '@benzene/core-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
@@ -23,9 +24,10 @@ import { AwsLambdaEntryPoint } from './AwsLambdaEntryPoint';
  * against `Microsoft.Extensions.DependencyInjection` (`ServiceCollection.AddLogging()` +
  * `MicrosoftBenzeneServiceContainer` + `MicrosoftServiceResolverFactory`). Node has no MEL, so — matching
  * the rest of this port — it uses the first-party `DefaultBenzeneServiceContainer`, which is BOTH the
- * registration target and the source of the resolver factory. The `.WarmUp()` / `.RunStartUpChecks()`
- * post-build steps the .NET host runs are not ported yet (those framework services do not exist in the TS
- * port); they are additive and can be inserted here when they land, in one place for both hosts.
+ * registration target and the source of the resolver factory. The `.RunStartUpChecks()` post-build step
+ * the .NET host runs IS ported — `withStartUpChecks(...)` wraps the factory below, in one place for both the
+ * production host and the test host. (`.WarmUp()` remains unported — that framework service does not exist
+ * in the TS port yet; it is additive and can be inserted here when it lands.)
  */
 export class AwsLambdaStartUpRunner {
   /**
@@ -64,9 +66,12 @@ export class AwsLambdaStartUpRunner {
     // `app.eventPipeline` as `aws`, so the entry point is built from that one pipeline.
     const appBuilder = new AwsLambdaApplicationBuilder(eventPipeline, container);
     startUp.configure(appBuilder, configuration);
+    // Run the boot-time wiring checks once, on the built factory, before the entry point goes live — a
+    // wiring bug fails INIT (and any component test that boots through this same runner) rather than the
+    // first message that reaches the broken link.
     return new AwsLambdaEntryPoint(
       eventPipeline.build(),
-      container.createServiceResolverFactory(),
+      withStartUpChecks(container.createServiceResolverFactory()),
     );
   }
 }

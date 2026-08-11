@@ -1,6 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.Http.GoogleCloudFunctionHost. */
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
 import { BenzeneStartUpOf } from '@benzene/abstractions-middleware';
+import { withStartUpChecks } from '@benzene/core-message-handlers';
 import { GoogleCloudStartUpRunner } from '@benzene/google-cloud-functions-core';
 import { HttpFunction, Request, Response } from '@google-cloud/functions-framework';
 import {
@@ -81,7 +82,7 @@ export class GoogleCloudFunctionHost<
     startUp.configureServices(container, configuration);
     startUp.configure(appBuilder, configuration);
 
-    this.handler = appBuilder.build(container.createServiceResolverFactory());
+    this.handler = appBuilder.build(withStartUpChecks(container.createServiceResolverFactory()));
   }
 
   /**

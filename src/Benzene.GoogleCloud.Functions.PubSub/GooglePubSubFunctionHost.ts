@@ -1,6 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.GooglePubSubFunctionHost. */
 import { IEntryPointMiddlewareApplication, BenzeneStartUpOf } from '@benzene/abstractions-middleware';
 import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { withStartUpChecks } from '@benzene/core-message-handlers';
 import { GoogleCloudStartUpRunner } from '@benzene/google-cloud-functions-core';
 import { CloudEvent, CloudEventFunction } from '@google-cloud/functions-framework';
 import { MessagePublishedData } from './MessagePublishedData';
@@ -68,7 +69,7 @@ export class GooglePubSubFunctionHost<
     startUp.configureServices(container, configuration);
     startUp.configure(appBuilder, configuration);
 
-    this.app = appBuilder.build(container.createServiceResolverFactory());
+    this.app = appBuilder.build(withStartUpChecks(container.createServiceResolverFactory()));
   }
 
   /**
