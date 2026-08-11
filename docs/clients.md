@@ -397,6 +397,45 @@ withRetry(builder, 3); // added last → outermost: retries the correlation-stam
 `ClientsBuilder` / `SingleClientsBuilder` register these clients for DI, and `ClientMessageSender`
 adapts an `IBenzeneMessageClient` behind the generic `IMessageSender<TRequest, TResponse>` port.
 
+## Sending in bulk: `IBenzeneBatchMessageClient`
+
+When you have many messages for one destination, the batch clients send them with the provider's native
+*batch* primitive — one call per chunk instead of one per message:
+
+```ts
+export interface IBenzeneBatchMessageClient {
+  sendBatchAsync<TRequest>(requests: readonly IBenzeneClientRequest<TRequest>[]): Promise<BatchSendResult>;
+}
+```
+
+Ported for six transports — `SqsBatchMessageClient` (SQS `SendMessageBatch`), `SnsBatchMessageClient`
+(SNS `PublishBatch`), `EventBridgeBatchMessageClient` (`PutEvents`), `ServiceBusBatchMessageClient`,
+`EventHubBatchMessageClient`, and `EventGridBatchMessageClient`. Each builds every entry with the **same**
+`Outbound*ContextConverter` the single-send path uses, so a batched message is byte-for-byte what
+`useSqs`/`useSns`/… would have sent.
+
+Batch sending is request-only (there is no typed response, so it isn't affected by the response-type note
+in [Overview](#overview)). The result reports **only which entries failed**, by their index in your
+collection, so you retry exactly those:
+
+```ts
+import { SqsBatchMessageClient } from '@benzene/clients-aws-sqs';
+
+const batch = new SqsBatchMessageClient(sqsClient, queueUrl);
+const result = await batch.sendBatchAsync(
+  orders.map((o) => ({ topic: 'orders:create', message: o, headers: {} })),
+);
+if (!result.allSucceeded) {
+  const retry = result.failures.map((f) => orders[f.index]);
+  // …resend just `retry`
+}
+```
+
+Failure granularity follows each provider: SQS/SNS report per-entry `Failed` lists and EventBridge a
+positional response; Service Bus / Event Hub / Event Grid sends are atomic, so a batch-level throw fails
+every message in that batch. The still-deferred piece is the *generic-context* standalone client per
+transport — blocked on the same runtime type-erasure as typed outbound responses.
+
 ## Health checks: contract drift
 
 Package: `@benzene/clients-health-checks`. `ClientHealthCheck` is a consumer-side check that probes a
