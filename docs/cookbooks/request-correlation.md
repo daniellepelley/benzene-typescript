@@ -66,28 +66,34 @@ returns the first present key in the order you give — falling back to `''` (wh
 the self-generated id survives a missing header):
 
 ```ts
-import { addBenzene } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { ICorrelationId } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, ICorrelationId } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { addBenzene } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { CorrelationExtensions } from '@benzene/diagnostics';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
     CorrelationExtensions.addCorrelationId(services); // register CorrelationId as scoped
-  })
-  .configure((app) => {
-    app.useFn('PartnerCorrelation', async (context, next, resolver) => {
-      const headers = resolver.getService(IMessageHeadersGetter) as unknown as IMessageHeadersGetter<typeof context>;
-      // Try the partner header first, then a standard one; '' when neither is present.
-      const id = CorrelationExtensions.getHeader(headers, context, ['x-partner-request-id', 'correlationId']);
-      resolver.getService(ICorrelationId).set(id);
-      await next();
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => {
+      aws.useFn('PartnerCorrelation', async (context, next, resolver) => {
+        const headers = resolver.getService(IMessageHeadersGetter) as unknown as IMessageHeadersGetter<typeof context>;
+        // Try the partner header first, then a standard one; '' when neither is present.
+        const id = CorrelationExtensions.getHeader(headers, context, ['x-partner-request-id', 'correlationId']);
+        resolver.getService(ICorrelationId).set(id);
+        await next();
+      });
+      // ... the rest of your pipeline (useApiGateway(aws, ...) / useSqs(aws, ...) / ...)
     });
-    // ... the rest of your pipeline
-  })
-  .build();
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 Because `addCorrelationId` registers the service as **scoped**, each invocation gets its own

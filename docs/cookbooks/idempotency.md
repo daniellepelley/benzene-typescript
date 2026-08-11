@@ -56,43 +56,46 @@ addInMemoryIdempotencyStore(services, 24 * 60 * 60 * 1000); // retain keys for 2
 
 Add `useIdempotency` to the pipeline **before** `useMessageHandlers`, so it de-duplicates ahead of the
 handler. Both are free functions taking the pipeline builder first (the port's shape for fluent
-extensions). Reusing the `azureApp` helper from the [Azure Functions guide](../azure-functions.md):
+extensions). Wire it into your `StartUp` — the composition root from the
+[Azure Functions guide](../azure-functions.md#4-write-a-startup), selecting Azure with
+`useAzureFunctions(app, az => …)`. `configureServices` is where the idempotency store is registered,
+alongside `addBenzene`. Create `src/startUp.ts`:
 
 ```ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAzureFunctions } from '@benzene/azure-function-core';
 import { useServiceBus, ServiceBusContext } from '@benzene/azure-function-service-bus';
-import { useIdempotency } from '@benzene/idempotency';
-import { azureApp } from './azureApp.js';
+import { addInMemoryIdempotencyStore, useIdempotency } from '@benzene/idempotency';
 import { CapturePaymentHandler } from './CapturePaymentHandler.js';
 
-const serviceBusApp = azureApp((app) =>
-  useServiceBus(app, (sb) => {
-    useIdempotency<ServiceBusContext>(sb); // <-- de-duplicate here
-    useMessageHandlers(sb, CapturePaymentHandler);
-  }),
-);
+export class CapturePaymentStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+    addInMemoryIdempotencyStore(services); // defaults to a 24h TTL
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAzureFunctions(app, (az) =>
+      useServiceBus(az, (sb) => {
+        useIdempotency<ServiceBusContext>(sb); // <-- de-duplicate here
+        useMessageHandlers(sb, CapturePaymentHandler);
+      }),
+    );
+  }
+}
 ```
 
-The `azureApp` helper is where the store is registered, alongside `addBenzene`:
+Then boot it and expose the Service Bus trigger handler (importing `@benzene/azure-function-service-bus`
+lights up the host's `.serviceBusFunction` getter):
 
 ```ts
-import { addBenzene } from '@benzene/core-message-handlers';
-import {
-  IAzureFunctionApp,
-  IAzureFunctionAppBuilder,
-  InlineAzureFunctionStartUp,
-} from '@benzene/azure-function-core';
-import { addInMemoryIdempotencyStore } from '@benzene/idempotency';
+import { AzureFunctionHost } from '@benzene/azure-function-core';
+import '@benzene/azure-function-service-bus';
+import { CapturePaymentStartUp } from './startUp.js';
 
-export function azureApp(configure: (app: IAzureFunctionAppBuilder) => void): IAzureFunctionApp {
-  return new InlineAzureFunctionStartUp()
-    .configureServices((services) => {
-      addBenzene(services);
-      addInMemoryIdempotencyStore(services); // defaults to a 24h TTL
-    })
-    .configure(configure)
-    .build();
-}
+export const capturePayment = new AzureFunctionHost(CapturePaymentStartUp).serviceBusFunction;
 ```
 
 That's it. The first delivery of each message is processed; redeliveries of the same key short-circuit

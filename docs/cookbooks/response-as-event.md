@@ -128,29 +128,34 @@ router builder (from `useMessageHandlersWithRouter`) and adds the response-event
 handler dispatch:
 
 ```ts
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
 import { useResponseEvents } from '@benzene/response-events';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { registerOutboundRoutes } from './outbound.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class OrderStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     registerOutboundRoutes(services);
-  })
-  .configure((app) =>
-    useSqs(app, (sqs) =>
-      useMessageHandlersWithRouter(
-        sqs,
-        (router) => useResponseEvents(router, (events) => events.map('order:create', 'order:created')),
-        CreateOrderHandler,
-      ),
-    ),
-  )
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) =>
+        useMessageHandlersWithRouter(
+          sqs,
+          (router) => useResponseEvents(router, (events) => events.map('order:create', 'order:created')),
+          CreateOrderHandler,
+        ),
+      ),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(OrderStartUp).lambdaHandler;
 ```
 
 That's it. After `CreateOrderHandler` returns a successful result with a payload, the payload is

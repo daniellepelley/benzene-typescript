@@ -33,7 +33,7 @@ and `src/Benzene.Azure.ServiceBus/`.
 
 - [Node.js 22+](https://nodejs.org/) and npm.
 - For the Functions trigger: an Azure Functions v4 project wired up per
-  [Azure Functions Setup](../azure-functions.md), steps 1–7 (`azureApp` helper, `host.json`,
+  [Azure Functions Setup](../azure-functions.md), steps 1–7 (the `StartUp` composition root, `host.json`,
   `local.settings.json`).
 - For the worker: a host process you own (a container, an AKS pod, a plain Node process) — see
   [Unified Hosting Model](../hosting.md#self-hosted-worker--inlineselfhostedstartup).
@@ -106,31 +106,44 @@ npm install @benzene/azure-function-service-bus @benzene/azure-function-core \
   @benzene/abstractions-message-handlers @azure/functions @azure/service-bus
 ```
 
-`useServiceBus(app, action, configure?)` configures the pipeline; `handleServiceBusMessages(app,
-...messages)` dispatches. It takes a rest parameter, so the same function serves a single-message
-trigger and a batched (`cardinality: 'many'`) one. Reusing the `azureApp` helper from
-[Azure Functions Setup, step 4](../azure-functions.md#4-build-the-benzene-app), create `src/functions.ts`:
+Inside `configure`, `useServiceBus(az, action, configure?)` configures the pipeline; the host's
+`.serviceBusFunction` getter dispatches the batch. Write a `StartUp` (the same `BenzeneStartUp` contract
+every host boots from — see [Azure Functions Setup, step 4](../azure-functions.md#4-write-a-startup)),
+selecting Azure with `useAzureFunctions(app, az => …)`. Create `src/startUp.ts`:
 
 ```ts
-import { InvocationContext } from '@azure/functions';
-import type { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { handleServiceBusMessages, useServiceBus } from '@benzene/azure-function-service-bus';
-import { azureApp } from './azureApp.js';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAzureFunctions } from '@benzene/azure-function-core';
+import { useServiceBus } from '@benzene/azure-function-service-bus';
 import { CreateOrderHandler } from './handlers.js';
 
-const serviceBusApp = azureApp((app) =>
-  useServiceBus(app, (sb) => useMessageHandlers(sb, CreateOrderHandler)),
-);
+export class ServiceBusStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
 
-/** Service Bus trigger: each message routes by its `topic` application property. */
-export function orderQueue(
-  messages: ServiceBusReceivedMessage[],
-  _context: InvocationContext,
-): Promise<void> {
-  return handleServiceBusMessages(serviceBusApp, ...messages);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAzureFunctions(app, (az) => useServiceBus(az, (sb) => useMessageHandlers(sb, CreateOrderHandler)));
+  }
 }
 ```
+
+Then boot it and expose the trigger handler. Importing `@benzene/azure-function-service-bus` lights up the
+host's `.serviceBusFunction` getter — the Service Bus counterpart of `.httpFunction`. Create `src/functions.ts`:
+
+```ts
+import { AzureFunctionHost } from '@benzene/azure-function-core';
+import '@benzene/azure-function-service-bus';
+import { ServiceBusStartUp } from './startUp.js';
+
+/** Service Bus trigger: each message routes by its `topic` application property. */
+export const orderQueue = new AzureFunctionHost(ServiceBusStartUp).serviceBusFunction;
+```
+
+`.serviceBusFunction` dispatches through `handleServiceBusMessages`, which takes a rest parameter, so the
+same handler serves a single-message trigger and a batched (`cardinality: 'many'`) one.
 
 Register it with the `@azure/functions` v4 API at module load (`src/registrations.ts`):
 
@@ -237,18 +250,16 @@ Each message in the batch runs concurrently, in its own DI scope, on the `"servi
 
 ### 5. Testing the trigger
 
-You don't need a real broker. Build the same app your `azureApp` helper does, turn a `messageBuilder`
-into a native `ServiceBusReceivedMessage` with `asAzureServiceBusMessage` from
-`@benzene/azure-function-testing`, and invoke the callback directly:
+You don't need a real broker. Boot the same `ServiceBusStartUp` you deploy through `benzeneTestHost(...)` —
+overriding `IOrderStore` with a fake via `.withServices(...)` — turn a `messageBuilder` into a native
+`ServiceBusReceivedMessage` with `asAzureServiceBusMessage` from `@benzene/azure-function-testing`, and
+send the batch through the host:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { messageBuilder } from '@benzene/testing';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
 import { asAzureServiceBusMessage } from '@benzene/azure-function-testing';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { handleServiceBusMessages, useServiceBus } from '@benzene/azure-function-service-bus';
-import { CreateOrderHandler } from '../src/handlers.js';
+import { ServiceBusStartUp } from '../src/startUp.js';
 import { IOrderStore } from '../src/OrderStore.js';
 
 describe('CreateOrderHandler on Service Bus', () => {
@@ -256,29 +267,27 @@ describe('CreateOrderHandler on Service Bus', () => {
     const saved: string[] = [];
     const store: IOrderStore = { saveAsync: (id) => { saved.push(id); return Promise.resolve(); } };
 
-    const app = new InlineAzureFunctionStartUp()
-      .configureServices((services) => {
-        addBenzene(services);
-        services.addScopedInstance(IOrderStore, store);
-      })
-      .configure((builder) => useServiceBus(builder, (sb) => useMessageHandlers(sb, CreateOrderHandler)))
-      .build();
+    // Boot the SAME StartUp you deploy, overriding IOrderStore with the fake (last-registration-wins).
+    const host = benzeneTestHost(ServiceBusStartUp)
+      .withServices((services) => services.addScopedInstance(IOrderStore, store))
+      .buildAzureFunctionApp();
 
-    // asAzureServiceBusMessage puts the topic (and every header) on applicationProperties.
-    await handleServiceBusMessages(
-      app,
+    // asAzureServiceBusMessage puts the topic (and every header) on applicationProperties; a non-HTTP
+    // payload is dispatched fire-and-forget, and an array exercises the batched (`cardinality: 'many'`) trigger.
+    await host.sendEventAsync([
       asAzureServiceBusMessage(messageBuilder('order:create', { orderId: 'o-1' })),
       asAzureServiceBusMessage(messageBuilder('order:create', { orderId: 'o-2' })),
-    );
+    ]);
 
     expect(saved.sort()).toEqual(['o-1', 'o-2']);
   });
 });
 ```
 
-`handleServiceBusMessages` takes a rest parameter, so pass one message for a non-batched trigger or many
-to exercise a batched one — exactly as `test/Benzene.Core.Test/Azure/ServiceBus/ServiceBusPipelineTest.test.ts`
-does. See [Testing Benzene](../testing-benzene.md) for the full picture.
+Pass one message for a non-batched trigger or an array to exercise a batched one. In production the same
+wiring boots with `new AzureFunctionHost(ServiceBusStartUp).serviceBusFunction`, exactly the shape
+`test/Benzene.Core.Test/Azure/Hosting/AzureFunctionHostTest.test.ts` drives. See
+[Testing Benzene](../testing-benzene.md) for the full picture.
 
 ## Part B — the self-hosted worker
 
@@ -417,5 +426,5 @@ trigger's own `ServiceBusConnection` setting pointing at a real namespace or emu
 - [Message Handlers](../message-handlers.md) — `@message`, `IMessageHandler`, and `static inject`
 - [Message Result](../message-result.md) — the `BenzeneResult` factory and its statuses
 - [Mocking External Dependencies](mocking-dependencies.md) — faking `IOrderStore` in vitest
-- [Testing Benzene](../testing-benzene.md) — `InlineAzureFunctionStartUp` and the Azure test helpers
+- [Testing Benzene](../testing-benzene.md) — `benzeneTestHost(...).buildAzureFunctionApp()` and the Azure test helpers
 - [Azure Service Bus messages, payloads, and serialization](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-messages-payloads) — application properties, the field this cookbook routes on

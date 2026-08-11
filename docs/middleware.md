@@ -85,17 +85,27 @@ live *downstream* of the builder (like `useMessageHandlers`) are free functions 
 you nest them rather than chaining a `.useMessageHandlers()` method:
 
 ```ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => {
-    useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler));
-    useSqs(app, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler));
-  })
-  .build();
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => {
+      useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler));
+      useSqs(aws, (sqs) => useMessageHandlers(sqs, ProcessOrderHandler));
+    });
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 ## Inline middleware: `useFn` and `use`

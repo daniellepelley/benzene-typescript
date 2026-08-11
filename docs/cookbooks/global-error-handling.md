@@ -231,39 +231,53 @@ Both pipelines share one startup. Each `useExceptionHandler` is scoped to the pi
 on, so each transport gets a callback tailored to its own response shape:
 
 ```ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda';
-import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import {
+  AwsLambdaHost,
+  useAwsLambda,
+  useApiGateway,
+  ApiGatewayContext,
+  ensureResponseExists,
+  useSqs,
+  SqsMessageContext,
+} from '@benzene/aws-lambda';
 import { BenzeneResultStatus, ErrorPayload } from '@benzene/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => {
-    useApiGateway(app, (api) => {
-      api.useExceptionHandler((context: ApiGatewayContext) => {
-        ensureResponseExists(context);
-        const response = context.apiGatewayProxyResponse!;
-        response.statusCode = 500;
-        response.headers = { ...response.headers, 'content-type': 'application/json' };
-        response.body = JSON.stringify(
-          new ErrorPayload(BenzeneResultStatus.unexpectedError, ['An unexpected error occurred.']),
-        );
-      });
-      useMessageHandlers(api, CreateOrderHandler);
-    });
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
 
-    useSqs(app, (sqs) => {
-      sqs.useExceptionHandler((context: SqsMessageContext) => {
-        context.isSuccessful = false;
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => {
+      useApiGateway(aws, (api) => {
+        api.useExceptionHandler((context: ApiGatewayContext) => {
+          ensureResponseExists(context);
+          const response = context.apiGatewayProxyResponse!;
+          response.statusCode = 500;
+          response.headers = { ...response.headers, 'content-type': 'application/json' };
+          response.body = JSON.stringify(
+            new ErrorPayload(BenzeneResultStatus.unexpectedError, ['An unexpected error occurred.']),
+          );
+        });
+        useMessageHandlers(api, CreateOrderHandler);
       });
-      useMessageHandlers(sqs, ProcessOrderHandler);
-    });
-  })
-  .build();
 
-export const handler = toLambdaHandler(entryPoint);
+      useSqs(aws, (sqs) => {
+        sqs.useExceptionHandler((context: SqsMessageContext) => {
+          context.isSuccessful = false;
+        });
+        useMessageHandlers(sqs, ProcessOrderHandler);
+      });
+    });
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 ### 4. Logged output

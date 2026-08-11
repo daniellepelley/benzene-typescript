@@ -13,7 +13,7 @@ If your team has standardized on the Serverless Framework across a polyglot esta
 you want your Benzene services to deploy through the same `serverless.yml` and CI pipeline as everything
 else, this cookbook shows you how. Because Benzene and the Serverless Framework sit on **different layers
 of the stack** (runtime vs. provisioning), there's no integration package to install — a Benzene Lambda is
-just a normal Node.js Lambda whose handler string points at your `toLambdaHandler` export, and the
+just a normal Node.js Lambda whose handler string points at your `AwsLambdaHost` handler export, and the
 Serverless Framework deploys it like any other Node function.
 
 The one seam worth understanding up front: Benzene lets a single Lambda accept **several** event sources,
@@ -47,7 +47,7 @@ This is the whole mental model, and it's why there's nothing to install:
 
 | Concern | Owned by |
 |---|---|
-| Entry point, message routing, middleware, DI, serialization | **Benzene** (`InlineAwsLambdaStartUp` + `toLambdaHandler`) |
+| Entry point, message routing, middleware, DI, serialization | **Benzene** (a `StartUp` + `AwsLambdaHost`) |
 | Bundling the artifact, provisioning the function, wiring triggers, IAM, other resources | **Serverless Framework** (`serverless.yml`) |
 | The **handler string** and **which event sources are enabled** | **Both** — they must agree |
 
@@ -55,28 +55,41 @@ The Benzene side is exactly the entry point from [AWS Lambda Setup](../getting-s
 exports the bound handler:
 
 ```ts
-// src/index.ts
+// src/startUp.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { PlaceOrderHandler } from './handlers.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => addBenzene(services))
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, PlaceOrderHandler)))
-  .build();
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addBenzene(services);
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, PlaceOrderHandler)));
+  }
+}
+```
+
+```ts
+// src/index.ts
+import { AwsLambdaHost } from '@benzene/aws-lambda-core';
+import { StartUp } from './startUp.js';
 
 // The function the Serverless Framework's `handler:` string points at.
-export const handler = toLambdaHandler(entryPoint);
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 That gives Lambda a Node handler string of the form `file.export` — here, `index.handler` (the `handler`
 export of the bundled `index` file). Everything else in this cookbook is the Serverless Framework side.
 
-> **Export the bound handler.** Always `export const handler = toLambdaHandler(entryPoint)`, never
-> `export const handler = entryPoint.functionHandlerAsync` — assigning the method detaches `this` and the
+> **Export the bound handler.** Always `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
+> never `export const handler = host.functionHandlerAsync` — assigning the method detaches `this` and the
 > pipeline is lost at the first invocation. See
-> [AWS Lambda Setup](../getting-started-aws.md#4-wire-up-the-lambda-entry-point).
+> [AWS Lambda Setup](../getting-started-aws.md#4-write-the-composition-root-and-the-entry-point).
 
 ## Step-by-Step Implementation
 
@@ -122,7 +135,7 @@ custom:
 
 functions:
   api:
-    handler: src/index.handler   # <file>.<export> → your `toLambdaHandler` export
+    handler: src/index.handler   # <file>.<export> → your exported `AwsLambdaHost` handler
     events:
       - httpApi: '*'             # catch-all HTTP API → Benzene's useApiGateway pipeline
 ```
@@ -184,6 +197,10 @@ const entryPoint = compositeAwsLambda((c) => {
 export const handler = toLambdaHandler(entryPoint);
 ```
 
+> The single-transport case is simpler: a `StartUp` booted with `new AwsLambdaHost(StartUp).lambdaHandler`
+> (as in the first snippet above). `compositeAwsLambda` is the lower-level builder you reach for only when
+> one function must front **several** triggers.
+
 At runtime the composite picks the first route whose predicate matches the incoming event and delegates.
 **If a payload arrives that no route claims, the entry point throws.** So the rule is: **every event source
 you wire in `serverless.yml` must have a matching route (or `use*`) in code, and vice versa.**
@@ -208,8 +225,8 @@ functions:
 - Add the route but no `sqs` event → the route is never exercised (harmless, just dead wiring).
 
 > **Two triggers, one function, one container?** No — see above. If you'd rather deploy **one function per
-> transport** (the port's Model A default), give each its own `src/<transport>.ts` with its own
-> `InlineAwsLambdaStartUp`/`toLambdaHandler`, and a separate `serverless.yml` `functions:` entry per file.
+> transport** (the port's Model A default), give each its own `src/<transport>.ts` with its own `StartUp`
+> booted by `new AwsLambdaHost(StartUp).lambdaHandler`, and a separate `serverless.yml` `functions:` entry per file.
 > Splitting like this doesn't multiply cold starts — see
 > [Lambda Cold Start Optimization](lambda-cold-start-optimization.md).
 
@@ -277,8 +294,8 @@ The `handler:` string doesn't match your bundle. It's `<file>.<export>` — for 
 
 ### Function crashes immediately / "cannot read properties of undefined"
 
-You almost certainly wrote `export const handler = entryPoint.functionHandlerAsync`, which detaches `this`.
-Use `export const handler = toLambdaHandler(entryPoint)`.
+You almost certainly wrote `export const handler = host.functionHandlerAsync`, which detaches `this`.
+Use `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`.
 
 ### Architecture mismatch (`exec format error` in the logs)
 

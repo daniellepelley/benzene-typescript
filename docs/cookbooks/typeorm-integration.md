@@ -134,8 +134,10 @@ Register it as a **singleton instance** (one pool shared across the process) and
 ```ts
 // index.ts
 import { DataSource } from 'typeorm';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { OrderEntity } from './OrderEntity.js';
 import { IOrderRepository, OrdersDataSource, TypeOrmOrderRepository } from './OrderRepository.js';
@@ -150,16 +152,19 @@ const dataSource = new DataSource({
 // Initialize the pool once, on cold start. `initialize()` is idempotent-safe to await once here.
 await dataSource.initialize();
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
     services.addSingletonInstance(OrdersDataSource, dataSource);
     services.addScoped(IOrderRepository, TypeOrmOrderRepository);
-  })
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, GetOrderHandler)))
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, GetOrderHandler)));
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 The registration is identical on any host — this example uses AWS Lambda; on

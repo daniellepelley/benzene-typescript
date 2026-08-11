@@ -92,7 +92,9 @@ one entry point over the shared startup.
 **Lambda 1 — sends the customer a notification email:**
 
 ```ts
-import { IBenzeneResultOf, IMessageHandler, message, useMessageHandlers, InlineAwsLambdaStartUp, toLambdaHandler, useSns, BenzeneResult } from '@benzene/aws-lambda';
+import { IBenzeneResultOf, IMessageHandler, message, useMessageHandlers, AwsLambdaHost, useAwsLambda, useSns, BenzeneResult } from '@benzene/aws-lambda';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IEmailService } from './EmailService.js';
 
 export class OrderPlacedMessage {
@@ -120,16 +122,17 @@ export class SendOrderConfirmationEmailHandler
   }
 }
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class SendOrderConfirmationEmailStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     services.addScoped(IEmailService, SesEmailService);
-  })
-  .configure((app) =>
-    useSns(app, (sns) => useMessageHandlers(sns, SendOrderConfirmationEmailHandler)),
-  )
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useSns(aws, (sns) => useMessageHandlers(sns, SendOrderConfirmationEmailHandler)));
+  }
+}
+
+export const handler = new AwsLambdaHost(SendOrderConfirmationEmailStartUp).lambdaHandler;
 ```
 
 **Lambda 2 — a completely separate deployable, updates analytics from the same event:**
@@ -149,7 +152,7 @@ export class RecordOrderAnalyticsHandler
   }
 }
 
-// ...its own InlineAwsLambdaStartUp + toLambdaHandler, wiring RecordOrderAnalyticsHandler...
+// ...its own StartUp + new AwsLambdaHost(StartUp).lambdaHandler, wiring RecordOrderAnalyticsHandler...
 ```
 
 Both handlers key off the same `@message('order:placed')` topic — because they live in separate Lambda
@@ -239,19 +242,31 @@ to the subscription pointing at an SQS DLQ.
 ## Testing
 
 `test/Benzene.Core.Test/Aws/Sns/SnsPipelineTest.test.ts` is the reference for exercising the subscriber
-side without a live topic: build the entry point, feed it an `SNSEvent` from the `asSns` builder, and
-assert your handler ran (SNS is fire-and-forget, so the entry point returns `null`).
+side without a live topic: boot the same `StartUp` you deploy through `benzeneTestHost(...)`, feed it an
+`SNSEvent` from the `asSns` builder, and assert your handler ran (SNS is fire-and-forget, so the host
+returns `null`).
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { Context, SNSEvent } from 'aws-lambda';
-import { useMessageHandlers, InlineAwsLambdaStartUp, useSns } from '@benzene/aws-lambda';
-import { messageBuilder } from '@benzene/testing';
+import { SNSEvent } from 'aws-lambda';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAwsLambda, useSns } from '@benzene/aws-lambda';
+import { benzeneTestHost, messageBuilder } from '@benzene/testing';
 import { asSns } from '@benzene/aws-lambda-testing';
 import { SendOrderConfirmationEmailHandler } from '../src/SendOrderConfirmationEmailHandler.js';
 import { IEmailService } from '../src/EmailService.js';
 
-const fakeLambdaContext = {} as Context;
+// The composition root a deployment ships, booted with new AwsLambdaHost(SnsStartUp).lambdaHandler.
+class SnsStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useSns(aws, (sns) => useMessageHandlers(sns, SendOrderConfirmationEmailHandler)));
+  }
+}
 
 describe('SendOrderConfirmationEmailHandler on SNS', () => {
   it('routes an SNS notification to the handler', async () => {
@@ -263,18 +278,14 @@ describe('SendOrderConfirmationEmailHandler on SNS', () => {
       },
     };
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => {
-        services.addScopedInstance(IEmailService, emailService);
-      })
-      .configure((app) =>
-        useSns(app, (sns) => useMessageHandlers(sns, SendOrderConfirmationEmailHandler)),
-      )
-      .build();
+    // Boot the same StartUp you deploy, overriding IEmailService with the fake (last-registration-wins).
+    const host = benzeneTestHost(SnsStartUp)
+      .withServices((services) => services.addScopedInstance(IEmailService, emailService))
+      .buildAwsLambdaHost();
 
     const event = asSns(messageBuilder('order:placed', { orderId: '42', total: 100 })) as SNSEvent;
 
-    const response = await entryPoint.functionHandlerAsync(event, fakeLambdaContext);
+    const response = await host.sendEventAsync(event);
 
     expect(sent).toEqual(['42']); // the handler genuinely ran with the deserialized body
     expect(response).toBeNull(); // SNS is fire-and-forget

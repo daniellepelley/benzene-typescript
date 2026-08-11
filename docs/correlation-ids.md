@@ -63,28 +63,33 @@ register the service with `addCorrelationId` at startup and call `ICorrelationId
 own middleware:
 
 ```ts
-import { addBenzene } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { CorrelationExtensions } from '@benzene/diagnostics';
-import { ICorrelationId } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, ICorrelationId } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { addBenzene } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
+import { CorrelationExtensions } from '@benzene/diagnostics';
 
-// startup
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
     CorrelationExtensions.addCorrelationId(services);
-  })
-  .configure((app) => {
-    app.useFn('PartnerCorrelation', async (context, next, resolver) => {
-      const headers = resolver.getService(IMessageHeadersGetter) as unknown as IMessageHeadersGetter<typeof context>;
-      const partnerId = CorrelationExtensions.getHeader(headers, context, 'x-partner-request-id');
-      resolver.getService(ICorrelationId).set(partnerId);
-      await next();
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => {
+      aws.useFn('PartnerCorrelation', async (context, next, resolver) => {
+        const headers = resolver.getService(IMessageHeadersGetter) as unknown as IMessageHeadersGetter<typeof context>;
+        const partnerId = CorrelationExtensions.getHeader(headers, context, 'x-partner-request-id');
+        resolver.getService(ICorrelationId).set(partnerId);
+        await next();
+      });
+      // ... the rest of your pipeline (useApiGateway(aws, ...) / useSqs(aws, ...) / ...)
     });
-    // ... the rest of your pipeline
-  })
-  .build();
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 `getHeader(headersGetter, context, keys)` is the ported header lookup: it matches header keys

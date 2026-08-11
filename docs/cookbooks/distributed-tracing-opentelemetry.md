@@ -195,29 +195,32 @@ first, exactly as the API's HTTP pipeline did in Step 2. It reads the `tracepare
 parents its own root span on it, so both services share **one** trace id:
 
 ```ts
-import { Handler } from 'aws-lambda';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
 import { addDiagnostics, useW3CTraceContext } from '@benzene/diagnostics';
 import { ProcessOrderHandler } from './processOrderHandler.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class ProcessOrderStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
     addDiagnostics(services);
-  })
-  .configure((app) =>
-    useSqs(app, (sqs) => {
-      useW3CTraceContext(sqs); // FIRST: continue the trace the API stamped onto the message
-      useMessageHandlers(sqs, ProcessOrderHandler);
-    }),
-  )
-  .build();
+  }
 
-// `toLambdaHandler` binds `this`; assigning the method directly would detach it.
-export const handler: Handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) => {
+        useW3CTraceContext(sqs); // FIRST: continue the trace the API stamped onto the message
+        useMessageHandlers(sqs, ProcessOrderHandler);
+      }),
+    );
+  }
+}
+
+// `.lambdaHandler` closes over the host and keeps `this` bound; assigning the method directly detaches it.
+export const handler = new AwsLambdaHost(ProcessOrderStartUp).lambdaHandler;
 ```
 
 That's the whole loop: the API's outbound route stamps `traceparent` (Step 4), the worker's inbound

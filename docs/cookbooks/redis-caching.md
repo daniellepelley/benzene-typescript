@@ -129,8 +129,10 @@ API Gateway; the registration is identical on any host (see [Hosting](../hosting
 
 ```ts
 // index.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { IRedisConnectionFactory, RedisConnectionFactory } from '@benzene/cache-redis';
 import { ProductCacheService } from './ProductCacheService.js';
@@ -138,21 +140,24 @@ import { IProductRepository } from './ProductRepository.js';
 import { SqlProductRepository } from './SqlProductRepository.js';
 import { GetProductHandler, UpdateProductHandler, DeleteProductHandler } from './handlers.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
     services.addScoped(IRedisConnectionFactory, RedisConnectionFactory);
     services.addScoped(ProductCacheService);
     services.addScoped(IProductRepository, SqlProductRepository);
-  })
-  .configure((app) =>
-    useApiGateway(app, (api) =>
-      useMessageHandlers(api, GetProductHandler, UpdateProductHandler, DeleteProductHandler),
-    ),
-  )
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useApiGateway(aws, (api) =>
+        useMessageHandlers(api, GetProductHandler, UpdateProductHandler, DeleteProductHandler),
+      ),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 Nothing here is cache-specific — caching in Benzene isn't a middleware you add to a pipeline (see

@@ -107,23 +107,40 @@ parameters but no `inject` array can't be resolved — the container throws a te
 
 ### 3. Build the pipeline with the dependency mocked
 
-Register a `vi.fn()`-backed fake for `IOrderService` in `configureServices`, drive a real API Gateway event
-through the entry point, and assert on both the response and the spy:
+Boot the same `StartUp` you deploy, override `IOrderService` with a `vi.fn()`-backed fake via
+`.withServices(...)`, drive a real API Gateway event through the host, and assert on both the response and
+the spy. First the production composition root — the `StartUp` the test boots:
+
+```ts
+// src/startUp.ts — the same composition root you deploy.
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { GetOrderHandler } from './GetOrderHandler.js';
+
+export class GetOrderStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+    // ... your production IOrderService registration goes here
+  }
+
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, GetOrderHandler)));
+  }
+}
+```
 
 ```ts
 // GetOrderHandler.test.ts
 import { describe, expect, it, vi } from 'vitest';
-import { APIGatewayProxyResult, Context } from 'aws-lambda';
+import { APIGatewayProxyResult } from 'aws-lambda';
 import { BenzeneResult } from '@benzene/results';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { httpBuilder } from '@benzene/testing';
+import { benzeneTestHost, httpBuilder } from '@benzene/testing';
 import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
-import { GetOrderHandler } from '../src/GetOrderHandler.js';
+import { GetOrderStartUp } from '../src/startUp.js';
 import { IOrderService, OrderDto } from '../src/OrderService.js';
-
-const fakeLambdaContext = {} as Context;
 
 describe('GetOrderHandler', () => {
   it('returns the order from the service, through the real pipeline', async () => {
@@ -135,20 +152,14 @@ describe('GetOrderHandler', () => {
     const getAsync = vi.fn().mockResolvedValue(BenzeneResult.ok(dto));
     const orderService: IOrderService = { getAsync };
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => {
-        // Register the fake against the SAME identifier the handler injects.
-        services.addScopedInstance(IOrderService, orderService);
-      })
-      .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, GetOrderHandler)))
-      .build();
+    // Boot the SAME StartUp you deploy, overriding IOrderService with the fake (last-registration-wins).
+    const host = benzeneTestHost(GetOrderStartUp)
+      .withServices((services) => services.addScopedInstance(IOrderService, orderService))
+      .buildAwsLambdaHost();
 
     // Act: send a real HTTP event through the whole pipeline (routing, body binding, response render).
     const event = asApiGatewayRequest(httpBuilder('POST', '/orders/lookup', { id: '123' }));
-    const response = (await entryPoint.functionHandlerAsync(
-      event,
-      fakeLambdaContext,
-    )) as APIGatewayProxyResult;
+    const response = await host.sendEventAsync<APIGatewayProxyResult>(event);
 
     // Assert: on the response ...
     expect(response.statusCode).toBe(200);
@@ -170,15 +181,18 @@ onto the request, so send `id` in the body rather than as a `/{id}` path segment
 
 ### 4. Override a real registration (optional)
 
-If you want to build from a shared startup that already registers the real `IOrderService` and only swap
-it in the test, register the fake **after** it — the container resolves the most recent registration:
+When your `StartUp` already registers the real `IOrderService`, `.withServices(...)` runs **after** the
+startup's own `configureServices`, so the fake it registers wins — the container resolves the most recent
+registration for an identifier:
 
 ```ts
-.configureServices((services) => {
-  addBenzene(services);
-  services.addScoped(IOrderService, RealOrderService); // production registration
-  services.addScopedInstance(IOrderService, orderService); // test override — last wins
-})
+// In the production StartUp's configureServices:
+services.addScoped(IOrderService, RealOrderService); // production registration
+
+// In the test — layered on top, last wins:
+benzeneTestHost(GetOrderStartUp)
+  .withServices((services) => services.addScopedInstance(IOrderService, orderService)) // test override
+  .buildAwsLambdaHost();
 ```
 
 ## Troubleshooting

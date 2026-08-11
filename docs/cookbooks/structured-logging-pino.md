@@ -167,13 +167,18 @@ app.use(benzene((pipeline) => useMessageHandlers(pipeline, CreateOrderHandler), 
 On AWS Lambda or Azure Functions it's the same call inside `configureServices`:
 
 ```ts
-new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
-    addPinoLogging(services);
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
+    addPinoLogging(services); // <-- pino is now the ILoggerFactory
     addBenzene(services);
-  })
-  .configure(/* ... */)
-  .build();
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useSqs(aws, (sqs) => useMessageHandlers(sqs, CreateOrderHandler)));
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 With nothing registered, Benzene falls back to a `NullLoggerFactory` and log calls are no-ops — so this

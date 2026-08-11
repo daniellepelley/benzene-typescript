@@ -52,29 +52,35 @@ and `useLogResult` are pipeline-builder **members** (see
 [Common Middleware](common-middleware.md#uselogresult--uselogcontext)):
 
 ```ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
+import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
 import { addDiagnostics, useW3CTraceContext, useBenzeneEnrichment } from '@benzene/diagnostics';
-import { SqsMessageContext } from '@benzene/aws-lambda-sqs';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addDiagnostics(services); // span per middleware — marks failing spans Error, tagged benzene.*
-  })
-  .configure((app) =>
-    useSqs(app, (sqs) => {
-      useW3CTraceContext(sqs); // 1. FIRST — continue the caller's distributed trace
-      useBenzeneEnrichment(sqs); // 2. attach invocationId/traceId/topic/transport/handler to every log
-      sqs
-        .useExceptionHandler((context: SqsMessageContext) => {
-          context.isSuccessful = false; // 3. catch + log thrown exceptions; settle the message
-        })
-        .useLogResult(() => {}); // 4. one structured "BenzeneResult" info line per successful message
-      useMessageHandlers(sqs, ProcessOrderHandler);
-    }),
-  )
-  .build();
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) =>
+      useSqs(aws, (sqs) => {
+        useW3CTraceContext(sqs); // 1. FIRST — continue the caller's distributed trace
+        useBenzeneEnrichment(sqs); // 2. attach invocationId/traceId/topic/transport/handler to every log
+        sqs
+          .useExceptionHandler((context: SqsMessageContext) => {
+            context.isSuccessful = false; // 3. catch + log thrown exceptions; settle the message
+          })
+          .useLogResult(() => {}); // 4. one structured "BenzeneResult" info line per successful message
+        useMessageHandlers(sqs, ProcessOrderHandler);
+      }),
+    );
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 What each layer contributes when something fails:

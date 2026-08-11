@@ -157,33 +157,42 @@ languages, a payload a TypeScript service answers classifies the same in a .NET 
 
 To reproduce not just the handler but the *routing and request-mapping* a specific transport performs,
 render the payload into that transport's native event and drive a real entry point built from your
-production wiring. For AWS that means `InlineAwsLambdaStartUp`, whose `functionHandlerAsync(event, context)`
-is exactly what AWS invokes:
+production wiring. For AWS that means booting a `StartUp` with `new AwsLambdaHost(StartUp).lambdaHandler`,
+the same entry point AWS invokes:
 
 ```ts
 import { Context } from 'aws-lambda';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
 import { httpBuilder } from '@benzene/testing';
 import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
 import { CreateOrderHandler } from './src/CreateOrderHandler.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configure((app) => useApiGateway(app, (api) => useMessageHandlers(api, CreateOrderHandler)))
-  .build();
+class OrderStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {
+    addBenzene(services);
+  }
+  configure(app: IBenzeneApplicationBuilder): void {
+    useAwsLambda(app, (aws) => useApiGateway(aws, (api) => useMessageHandlers(api, CreateOrderHandler)));
+  }
+}
+
+const handler = new AwsLambdaHost(OrderStartUp).lambdaHandler;
 
 const event = asApiGatewayRequest(httpBuilder('POST', '/orders', { customerId: '1111' }));
-const response = await entryPoint.functionHandlerAsync(event, {} as Context);
+const response = (await handler(event, {} as Context, () => undefined)) as { statusCode: number };
 console.log(response.statusCode); // 200
 ```
 
 Queue and event transports drive the same way — swap `asApiGatewayRequest` for `asSqs` / `asSns` /
-`asEventBridge` and wire the matching `useSqs` / `useSns` / … helper. The Azure counterpart is
-`InlineAzureFunctionStartUp` with the `asAzure*` builders. Both full end-to-end paths, for every AWS and
-Azure transport, are documented with runnable examples in [Testing Benzene](testing-benzene.md), and the
-production wiring these build from is covered in [Getting Started (AWS)](getting-started-aws.md) and
-[Azure Functions](azure-functions.md).
+`asEventBridge` and wire the matching `useSqs` / `useSns` / … helper inside `useAwsLambda(app, (aws) => …)`.
+The Azure counterpart is a `StartUp` booted by `new AzureFunctionHost(StartUp)` with the `asAzure*`
+builders. Both full end-to-end paths, for every AWS and Azure transport, are documented with runnable
+examples in [Testing Benzene](testing-benzene.md), and the production wiring these build from is covered in
+[Getting Started (AWS)](getting-started-aws.md) and [Azure Functions](azure-functions.md).
 
 ## Distinguishing payload testing from unit testing
 
@@ -240,8 +249,10 @@ the `useSpec` document in-browser; see [Common Middleware](common-middleware.md#
 - **Wrong option shape.** `numberOfMessages` and `serializer` go in the *options object* of a transport
   builder (`asSqs(payload, { serializer })`); `asBenzeneMessage` takes the serializer as a bare second
   argument (`asBenzeneMessage(payload, serializer)`).
-- **A dependency needs replacing.** Register a fake against its token inside `.configureServices(...)`
-  after Benzene's baseline registrations when driving an `Inline*StartUp` entry point — see [Testing Benzene](testing-benzene.md).
+- **A dependency needs replacing.** Register a fake against its token inside the `StartUp`'s
+  `configureServices(...)` after Benzene's baseline registrations, or layer it on with
+  `benzeneTestHost(StartUp).withServices(...)` when driving the entry point from a test — see
+  [Testing Benzene](testing-benzene.md).
 
 ## See Also
 

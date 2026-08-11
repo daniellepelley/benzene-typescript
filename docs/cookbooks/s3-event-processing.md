@@ -133,19 +133,24 @@ shape. `useS3` takes the AWS event pipeline builder first and an inner pipeline 
 
 ```ts
 // index.ts
+import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
 import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
 import { useS3 } from '@benzene/aws-lambda-s3';
 import { ProcessUploadHandler } from './ProcessUploadHandler.js';
 
-const entryPoint = new InlineAwsLambdaStartUp()
-  .configureServices((services) => {
+export class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
     addBenzene(services);
-  })
-  .configure((app) => useS3(app, (s3) => useMessageHandlers(s3, ProcessUploadHandler)))
-  .build();
+  }
 
-export const handler = toLambdaHandler(entryPoint);
+  configure(app: IBenzeneApplicationBuilder, _config: BenzeneConfiguration): void {
+    useAwsLambda(app, (aws) => useS3(aws, (s3) => useMessageHandlers(s3, ProcessUploadHandler)));
+  }
+}
+
+export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
 ```
 
 `useS3(app, action)` registers the S3 services (topic/body extraction, request mapping, media-format
@@ -154,8 +159,8 @@ and appends an `S3LambdaHandler`. If the invocation isn't an S3 event, `S3Lambda
 event-source adapter — so you can compose `useS3` alongside `useSqs`/`useSns` in one composite function (see
 [AWS Lambda Setup](../getting-started-aws.md)).
 
-`toLambdaHandler(entryPoint)` binds `this` — assign the handler this way rather than exporting
-`entryPoint.functionHandlerAsync` directly (which would detach it).
+`new AwsLambdaHost(StartUp).lambdaHandler` binds `this` — export the handler this way rather than
+`host.functionHandlerAsync` directly (which would detach it).
 
 ### 3. Fetch the object's contents with the AWS SDK
 
@@ -237,21 +242,17 @@ Register the concrete store in `configureServices`:
 ## Testing
 
 `test/Benzene.Core.Test/Aws/S3/S3PipelineTest.test.ts` is the reference for exercising this without a live
-bucket: build the entry point, feed it an `S3Event` from the `asS3` builder, and assert your handler ran.
-Unlike the queue/topic builders, `asS3` takes the `bucket` and `key` directly (the "message" is the object
-reference, not a JSON payload), and the event name defaults to `ObjectCreated:Put`:
+bucket: boot the same `StartUp` you deploy through `benzeneTestHost(...)`, feed it an `S3Event` from the
+`asS3` builder, and assert your handler ran. Unlike the queue/topic builders, `asS3` takes the `bucket` and
+`key` directly (the "message" is the object reference, not a JSON payload), and the event name defaults to
+`ObjectCreated:Put`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { Context } from 'aws-lambda';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useS3 } from '@benzene/aws-lambda-s3';
+import { benzeneTestHost } from '@benzene/testing';
 import { asS3 } from '@benzene/aws-lambda-testing';
-import { ProcessUploadHandler } from '../src/ProcessUploadHandler.js';
+import { StartUp } from '../src/index.js';
 import { IObjectStore } from '../src/ObjectStore.js';
-
-const fakeLambdaContext = {} as Context;
 
 describe('ProcessUploadHandler on S3', () => {
   it('routes an ObjectCreated:Put record to the handler by event name', async () => {
@@ -259,18 +260,15 @@ describe('ProcessUploadHandler on S3', () => {
       getTextAsync: () => Promise.resolve('line-1\nline-2\nline-3'),
     };
 
-    const entryPoint = new InlineAwsLambdaStartUp()
-      .configureServices((services) => {
-        addBenzene(services);
-        services.addScopedInstance(IObjectStore, store);
-      })
-      .configure((app) => useS3(app, (s3) => useMessageHandlers(s3, ProcessUploadHandler)))
-      .build();
+    // Boot the same StartUp you deploy, overriding IObjectStore with the fake (last-registration-wins).
+    const host = benzeneTestHost(StartUp)
+      .withServices((services) => services.addScopedInstance(IObjectStore, store))
+      .buildAwsLambdaHost();
 
     // asS3(bucket, key) emits an S3Event whose single record's eventName is "ObjectCreated:Put".
     const event = asS3('my-bucket', 'photos/cat.png');
 
-    const response = await entryPoint.functionHandlerAsync(event, fakeLambdaContext);
+    const response = await host.sendEventAsync(event);
 
     // S3 is fire-and-forget: the router marks the event handled with the null sentinel.
     expect(response).toBeNull();
