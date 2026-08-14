@@ -12,7 +12,12 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 const srcDir = new URL('../src/', import.meta.url).pathname;
 const DELAY_BETWEEN_PUBLISHES_MS = 5000;
-const MAX_RETRIES_ON_RATE_LIMIT = 6;
+// npm doesn't document its publish rate limit, but bulk-publishing dozens of brand-new packages
+// commonly trips one somewhere around 25-30 in a short window; real-world reports suggest it's a
+// multi-hour cooldown, not a multi-minute one. Backoff climbs to 30 minutes per retry and allows
+// up to ~6 hours of total patience so this can be kicked off and left running unattended.
+const MAX_RETRIES_ON_RATE_LIMIT = 15;
+const rateLimitBackoffMs = (attempt) => Math.min(5 * attempt, 30) * 60_000;
 
 const folders = readdirSync(srcDir, { withFileTypes: true })
   .filter((e) => e.isDirectory())
@@ -64,8 +69,8 @@ for (const folder of folders) {
       const rateLimited = message.includes('E429') || message.includes('Too Many Requests');
       if (rateLimited && attempt < MAX_RETRIES_ON_RATE_LIMIT) {
         attempt++;
-        const backoffMs = 60_000 * attempt;
-        console.log(`[rate-limited] backing off ${backoffMs / 1000}s before retrying ${pkg.name} (attempt ${attempt})`);
+        const backoffMs = rateLimitBackoffMs(attempt);
+        console.log(`[rate-limited] backing off ${backoffMs / 60_000}min before retrying ${pkg.name} (attempt ${attempt}/${MAX_RETRIES_ON_RATE_LIMIT})`);
         await sleep(backoffMs);
         continue;
       }
