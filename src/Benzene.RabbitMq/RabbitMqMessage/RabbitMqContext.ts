@@ -1,6 +1,6 @@
 /** Port of Benzene.RabbitMq.RabbitMqMessage.RabbitMqContext. */
 import { ConsumeMessage } from 'amqplib';
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * The middleware pipeline context for a single RabbitMQ delivery consumed by {@link RabbitMqWorker}.

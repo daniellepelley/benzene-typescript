@@ -1,5 +1,5 @@
 /** Port of Benzene.Resilience.Polly.Extensions. */
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { IDefaultPolicyContext, IPolicy } from 'cockatiel';
 import { CockatielResilienceMiddleware } from './CockatielResilienceMiddleware';
 
@@ -13,7 +13,7 @@ import { CockatielResilienceMiddleware } from './CockatielResilienceMiddleware';
  * The C# `UseResiliencePipeline` is a fluent extension method on `IMiddlewarePipelineBuilder`;
  * TypeScript cannot add a method to the builder base class from a separate package, so this is a free
  * function taking the builder first and returning it for chaining — the same shape the port uses for
- * every non-fluent extension method (and for `@benzene/resilience`'s `useRetry`).
+ * every non-fluent extension method (and for `@benzenejs/resilience`'s `useRetry`).
  *
  * PORT DIVERGENCE: C# has four overloads — `(pipeline)`, `(pipeline, isFailure)`, and two that build the
  * pipeline inline from an `Action<ResiliencePipelineBuilder>`. cockatiel has no mutable pipeline builder;

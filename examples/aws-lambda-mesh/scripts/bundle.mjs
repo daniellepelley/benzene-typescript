@@ -4,10 +4,10 @@
  * `index.js` exporting `handler`), matching the `*_zip` variables in `deploy/variables.tf`.
  *
  * The AWS SDK v3 (`@aws-sdk/*`) is marked external — the `nodejs22.x` managed runtime already ships it, so
- * bundling it in would just bloat the zip. Everything else (the `@benzene/*` workspace packages and this
+ * bundling it in would just bloat the zip. Everything else (the `@benzenejs/*` workspace packages and this
  * example's own code) is bundled in, so the zip has no `node_modules` dependency at all.
  *
- * Output is an ESM `index.mjs` (matching the ESM `@benzene/*` sources) with a `handler` export, which
+ * Output is an ESM `index.mjs` (matching the ESM `@benzenejs/*` sources) with a `handler` export, which
  * Lambda's nodejs22.x runtime loads via the `index.handler` handler string.
  *
  * Usage: `node scripts/bundle.mjs` (or `npm run bundle` from this example). Requires the `zip` CLI.

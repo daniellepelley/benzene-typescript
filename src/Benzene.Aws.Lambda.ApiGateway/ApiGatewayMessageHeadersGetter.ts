@@ -1,6 +1,6 @@
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { DictionaryUtils } from '@benzene/core';
-import { IHttpHeaderMappings } from '@benzene/http';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { DictionaryUtils } from '@benzenejs/core';
+import { IHttpHeaderMappings } from '@benzenejs/http';
 import { ApiGatewayContext } from './ApiGatewayContext';
 
 /**

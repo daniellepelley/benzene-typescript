@@ -2,7 +2,7 @@ import {
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
   IMessageHandlersList,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * A mutable, append-only finder; its `version` lets consumers (e.g.

@@ -9,8 +9,8 @@ import {
   requireAuthorization,
   requirePolicy,
   requireRole,
-} from '@benzene/auth-core';
-import { IBasicAuthCredentialValidator, useBasicAuth } from '@benzene/auth-basic';
+} from '@benzenejs/auth-core';
+import { IBasicAuthCredentialValidator, useBasicAuth } from '@benzenejs/auth-basic';
 import { createSecureEvent, runSecure, seedPrincipal } from './authHost';
 
 /**

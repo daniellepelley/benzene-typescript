@@ -1,4 +1,4 @@
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { MiddlewareApplication } from '../MiddlewareApplication';
 import { StreamContext } from './StreamContext';
 

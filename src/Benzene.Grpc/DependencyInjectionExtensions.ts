@@ -1,17 +1,17 @@
-import { IBenzeneServiceContainer, tryAddScoped, tryAddSingleton } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped, tryAddSingleton } from '@benzenejs/abstractions';
 import {
   IMessageHandlerResultSetter,
   IMessageTopicGetter,
   IRequestMapper,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   addContextItems,
   addHeaderMessageVersionGetter,
   TransportInfo,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { DefaultGrpcStatusCodeMapper } from './DefaultGrpcStatusCodeMapper';
 import { GrpcContext } from './GrpcContext';
 import { GrpcMessageBodyGetter } from './GrpcMessageBodyGetter';

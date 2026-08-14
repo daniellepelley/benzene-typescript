@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { zodToJsonSchema } from '@benzene/zod';
+import { zodToJsonSchema } from '@benzenejs/zod';
 
 /**
  * Unit tests for `zodToJsonSchema` — the Zod → JSON Schema conversion that lets a service publish a topic's

@@ -3,8 +3,8 @@ import {
   ServiceIdentifier,
   serviceIdentifierName,
   VoidResult,
-} from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { IResponseEventMapping } from './IResponseEventMapping';
 import { ResponseEventPublication } from './ResponseEventPublication';
 

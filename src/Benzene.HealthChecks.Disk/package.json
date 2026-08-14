@@ -1,12 +1,15 @@
 {
-  "name": "@benzene/health-checks-disk",
-  "version": "0.1.0",
+  "name": "@benzenejs/health-checks-disk",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.HealthChecks.Disk",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzene/health-checks-core": "0.1.0"
-  }
+    "@benzenejs/health-checks-core": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

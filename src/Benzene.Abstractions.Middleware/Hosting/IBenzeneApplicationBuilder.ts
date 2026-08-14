@@ -1,4 +1,4 @@
-import { IRegisterDependency } from '@benzene/abstractions';
+import { IRegisterDependency } from '@benzenejs/abstractions';
 import { IMiddlewarePipelineBuilder } from '../IMiddlewarePipelineBuilder';
 
 /**

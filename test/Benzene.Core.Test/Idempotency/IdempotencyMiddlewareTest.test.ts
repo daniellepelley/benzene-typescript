@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   IIdempotencyKeyStrategy,
   IIdempotencyStore,
@@ -10,7 +10,7 @@ import {
   IdempotencyStatus,
   InMemoryIdempotencyStore,
   InProgressBehavior,
-} from '@benzene/idempotency';
+} from '@benzenejs/idempotency';
 
 /** Port of test/Benzene.Core.Test/Idempotency/IdempotencyMiddlewareTest.cs. */
 

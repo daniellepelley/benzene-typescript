@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IdempotencyStatus, InMemoryIdempotencyStore } from '@benzene/idempotency';
+import { IdempotencyStatus, InMemoryIdempotencyStore } from '@benzenejs/idempotency';
 
 /** Port of test/Benzene.Core.Test/Idempotency/InMemoryIdempotencyStoreTest.cs. */
 describe('InMemoryIdempotencyStore', () => {

@@ -4,8 +4,8 @@ import {
   IHasMessageResult,
   IMessageGetter,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
 
 /**

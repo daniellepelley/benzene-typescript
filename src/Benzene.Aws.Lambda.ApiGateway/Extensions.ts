@@ -1,6 +1,6 @@
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext } from '@benzene/aws-lambda-core';
-import { createMiddlewarePipeline } from '@benzene/core-middleware';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext } from '@benzenejs/aws-lambda-core';
+import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { ApiGatewayContext } from './ApiGatewayContext';
 import { ApiGatewayLambdaHandler } from './ApiGatewayLambdaHandler';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';

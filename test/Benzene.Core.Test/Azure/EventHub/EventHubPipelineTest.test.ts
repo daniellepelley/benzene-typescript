@@ -1,24 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import type { ReceivedEventData } from '@azure/event-hubs';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { ICurrentTransport, IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   EventHubApplication,
   EventHubContext,
   handleEventHub,
   useBenzeneMessage,
   useEventHub,
-} from '@benzene/azure-function-event-hub';
+} from '@benzenejs/azure-function-event-hub';
 
 /**
  * End-to-end port of the C# Azure Event Hub pipeline tests: wire the full stack via idiomatic DI and feed

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   ISchemaCasterOf,
   ISchemaCasters,
   registerPayloadSchemaVersions,
   registerSchemaCastDefinitions,
-} from '@benzene/core-versioning';
+} from '@benzenejs/core-versioning';
 import { V1OrderPayload, V2OrderPayload, V3OrderPayload } from './exampleSchemas';
 
 /**

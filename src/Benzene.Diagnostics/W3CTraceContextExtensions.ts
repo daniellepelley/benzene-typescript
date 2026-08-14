@@ -5,8 +5,8 @@ import {
   SpanKind,
   trace,
 } from '@opentelemetry/api';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
 import { parseTraceparent } from './Correlation/Extensions';
 

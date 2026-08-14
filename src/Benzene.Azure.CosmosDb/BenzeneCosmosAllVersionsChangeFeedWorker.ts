@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.CosmosDb.BenzeneCosmosAllVersionsChangeFeedWorker. */
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BenzeneCosmosAllVersionsChangeFeedConfig } from './BenzeneCosmosAllVersionsChangeFeedConfig';
 import {
   ChangeFeedItem,

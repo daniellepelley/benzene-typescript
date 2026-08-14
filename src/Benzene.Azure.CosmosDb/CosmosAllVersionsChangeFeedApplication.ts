@@ -1,8 +1,8 @@
 /** Port of Benzene.Azure.CosmosDb.CosmosAllVersionsChangeFeedApplication. */
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportNames } from '@benzene/abstractions-message-handlers';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
-import { StreamContext, StreamMiddlewareApplication } from '@benzene/core-middleware';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
+import { StreamContext, StreamMiddlewareApplication } from '@benzenejs/core-middleware';
 import { CosmosAllVersionsChangeFeedBatch } from './CosmosAllVersionsChangeFeedBatch';
 import { CosmosChangeFeedItem } from './CosmosChangeFeedItem';
 

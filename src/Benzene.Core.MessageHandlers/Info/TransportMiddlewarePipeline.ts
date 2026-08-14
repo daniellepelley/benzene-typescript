@@ -1,6 +1,6 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { ISetCurrentTransport } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 
 /**
  * Decorates an IMiddlewarePipeline, recording the given transport name via

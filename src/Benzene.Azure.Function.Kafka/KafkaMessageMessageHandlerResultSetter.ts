@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.Kafka.KafkaMessageMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { KafkaContext } from './KafkaContext';
 
 /**

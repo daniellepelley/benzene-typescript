@@ -1,7 +1,7 @@
 import { LambdaClient, ListFunctionsCommand, ListTagsCommand } from '@aws-sdk/client-lambda';
 import { describe, expect, it } from 'vitest';
-import { MeshDiscoveryFilter, MeshServiceSource } from '@benzene/mesh-contracts';
-import { AwsLambdaDiscoveryProvider } from '@benzene/mesh-discovery-aws';
+import { MeshDiscoveryFilter, MeshServiceSource } from '@benzenejs/mesh-contracts';
+import { AwsLambdaDiscoveryProvider } from '@benzenejs/mesh-discovery-aws';
 
 /**
  * Port of test/Benzene.Mesh.Test/Discovery/AwsLambdaDiscoveryProviderTest.cs. The Moq `IAmazonLambda`

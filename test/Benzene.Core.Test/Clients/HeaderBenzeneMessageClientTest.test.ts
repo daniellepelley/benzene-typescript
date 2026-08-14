@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   HeaderBenzeneMessageClient,
   IBenzeneMessageClient,
   sendMessageAsync,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 
 /**
  * Port of Benzene.Test.Clients.HeaderBenzeneMessageClientTest: the fixed (key, value) header is

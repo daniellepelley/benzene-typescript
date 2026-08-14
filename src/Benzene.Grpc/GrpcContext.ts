@@ -3,7 +3,7 @@ import {
   IHasMessageResult,
   IMessageHandlerResult,
   IMessageResult,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * The shared surface of every grpc-js server call, across all four RPC shapes — the port's stand-in for

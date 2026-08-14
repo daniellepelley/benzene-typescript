@@ -4,7 +4,7 @@
  * Port of Benzene.JsonSchema. Where the .NET package validates against `JsonSchema.Net`, this validates
  * against ajv; `registerJsonSchema(RequestType, schema)` associates a hand-authored JSON Schema with a
  * request class, `useAjvValidation(router)` wires the handler-pipeline middleware + status mapper +
- * spec/mesh JSON-Schema source. It sits alongside `@benzene/zod` / `@benzene/joi` / `@benzene/yup` as the
+ * spec/mesh JSON-Schema source. It sits alongside `@benzenejs/zod` / `@benzenejs/joi` / `@benzenejs/yup` as the
  * raw-JSON-Schema member of the validation-adapter family — reach for it to validate against an
  * externally-authored or shared JSON Schema contract rather than a code-first schema object.
  *

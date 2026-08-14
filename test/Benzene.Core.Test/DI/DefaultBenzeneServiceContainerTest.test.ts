@@ -4,9 +4,9 @@ import {
   IServiceResolverFactory,
   serviceToken,
   tryAddSingletonInstance,
-} from '@benzene/abstractions';
-import { BenzeneException } from '@benzene/core';
-import { DefaultBenzeneServiceContainer, ServiceCollection } from '@benzene/dependencies';
+} from '@benzenejs/abstractions';
+import { BenzeneException } from '@benzenejs/core';
+import { DefaultBenzeneServiceContainer, ServiceCollection } from '@benzenejs/dependencies';
 
 /**
  * Tests for the first-party container in Benzene.Dependencies, the TypeScript

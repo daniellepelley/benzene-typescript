@@ -1,10 +1,10 @@
 /** Port of Benzene.Mesh.Dispatch.Extensions. */
-import { tryAddSingletonFactory } from '@benzene/abstractions';
-import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
-import { RawStringMessage } from '@benzene/core-messages';
-import { MeshServiceRegistry } from '@benzene/mesh-contracts';
+import { tryAddSingletonFactory } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { MessageHandlerDefinition } from '@benzenejs/core-message-handlers';
+import { RawStringMessage } from '@benzenejs/core-messages';
+import { MeshServiceRegistry } from '@benzenejs/mesh-contracts';
 import { EnvironmentVariableMeshDispatchEnvironment, IMeshDispatchEnvironment } from './IMeshDispatchEnvironment';
 import { HttpMeshServiceDispatcher } from './HttpMeshServiceDispatcher';
 import { IMeshServiceDispatcher } from './IMeshServiceDispatcher';

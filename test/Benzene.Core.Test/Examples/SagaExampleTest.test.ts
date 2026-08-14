@@ -1,11 +1,11 @@
 /**
  * Drives `@benzene-example/saga`'s `buildSignupSaga` directly (the example is a plain program over
- * `@benzene/saga`, no host/transport) to prove the saga cross-cutting concern end-to-end: a multi-stage,
+ * `@benzenejs/saga`, no host/transport) to prove the saga cross-cutting concern end-to-end: a multi-stage,
  * partly-parallel transaction either completes in full or rolls back in full, leaving no orphaned records.
  * Ports the four cases of the .NET `SignupSagaTest`.
  */
 import { describe, expect, it } from 'vitest';
-import { SagaOutcome } from '@benzene/saga';
+import { SagaOutcome } from '@benzenejs/saga';
 import { buildSignupSaga, SignupApi, Store } from '@benzene-example/saga';
 
 describe('@benzene-example/saga', () => {

@@ -1,4 +1,4 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 
 /**
  * Conditional logic determining whether middleware should execute based on context

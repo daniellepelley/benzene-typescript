@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.QueueStorage.QueueStorageMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { QueueStorageContext } from './QueueStorageContext';
 
 /**

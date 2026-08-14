@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
 import {
   BenzeneMessageContext,
   BenzeneMessageRequest,
   Constants as MessagesConstants,
-} from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzene,
   addBenzeneMessage,
@@ -16,8 +16,8 @@ import {
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * End-to-end port of Benzene.Test.Core.Core.BenzeneMessagePipelineTest

@@ -1,9 +1,9 @@
 /** Port of Benzene.RabbitMq.RabbitMqMessage.RabbitMqApplication. */
 import { ConsumeMessage } from 'amqplib';
-import { IMessageResult, TransportNames } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
-import { MiddlewareApplicationWithResult } from '@benzene/core-middleware';
+import { IMessageResult, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
+import { MiddlewareApplicationWithResult } from '@benzenejs/core-middleware';
 import { RabbitMqContext } from './RabbitMqContext';
 
 /**

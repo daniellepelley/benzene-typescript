@@ -1,12 +1,12 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IHandlerPipelineBuilder,
   IMessageHandler,
   IMessageHandlerContext,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { MiddlewarePipeline } from '@benzene/core-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipeline } from '@benzenejs/core-middleware';
 import { MessageHandlerMiddleware } from './MessageHandlerMiddleware';
 
 /**

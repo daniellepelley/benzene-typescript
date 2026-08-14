@@ -6,10 +6,10 @@
  *
  * Ported from the shared order domain the .NET `Benzene.Examples.Kafka` consumer hosts.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler, IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrderStore } from './orderStore';
 
 export const Topics = {

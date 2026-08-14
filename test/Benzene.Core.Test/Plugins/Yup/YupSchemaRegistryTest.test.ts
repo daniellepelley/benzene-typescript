@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as yup from 'yup';
-import { getYupSchema, registerYupSchema, YupSchemaRegistry } from '@benzene/yup';
+import { getYupSchema, registerYupSchema, YupSchemaRegistry } from '@benzenejs/yup';
 
 /**
  * Unit tests for `YupSchemaRegistry` — the adapter's replacement for FluentValidation's

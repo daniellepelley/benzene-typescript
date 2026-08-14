@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JaegerFetch, JaegerTraceSource, JaegerTraceSourceOptions } from '@benzene/mesh-fleet-jaeger';
+import { JaegerFetch, JaegerTraceSource, JaegerTraceSourceOptions } from '@benzenejs/mesh-fleet-jaeger';
 
 /**
  * Port of test/Benzene.Mesh.Test/JaegerTraceSourceTest.cs. The Jaeger-backed trace source: trace-by-id
@@ -10,7 +10,7 @@ import { JaegerFetch, JaegerTraceSource, JaegerTraceSourceOptions } from '@benze
  *
  * `HttpMessageHandler`/`HttpClient` -> a `fetch`-like router; `request.RequestUri.PathAndQuery` -> the URL's
  * `pathname + search`. The C# `evt.ExceptionType` assertion is preserved (the `exceptionType` field was added
- * to `@benzene/mesh-wire` with the X-Ray port).
+ * to `@benzenejs/mesh-wire` with the X-Ray port).
  */
 
 const JaegerUrl = 'http://jaeger:16686';

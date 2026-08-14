@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Aws.S3.S3MeshArtifactStore. */
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { IMeshArtifactStore } from '@benzene/mesh-aggregator';
+import { IMeshArtifactStore } from '@benzenejs/mesh-aggregator';
 
 /**
  * An `IMeshArtifactStore` backed by an Amazon S3 bucket. Publishes and reads the mesh aggregator's generated

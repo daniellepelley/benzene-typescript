@@ -31,17 +31,17 @@ Three steps do the work:
 Node 22+ is required. The builders are dev-only:
 
 ```bash
-npm install --save-dev @benzene/testing
+npm install --save-dev @benzenejs/testing
 ```
 
-`@benzene/testing` carries the platform-neutral builders (`messageBuilder`, `httpBuilder`,
+`@benzenejs/testing` carries the platform-neutral builders (`messageBuilder`, `httpBuilder`,
 `asBenzeneMessage`, `asRawHttpRequest`). For a *transport-shaped* payload — an SQS event, an API Gateway
 request — add the matching per-transport helper, which builds the native event for you:
 
 ```bash
-npm install --save-dev @benzene/aws-lambda-testing
+npm install --save-dev @benzenejs/aws-lambda-testing
 # or
-npm install --save-dev @benzene/azure-function-testing
+npm install --save-dev @benzenejs/azure-function-testing
 ```
 
 ## The `BenzeneMessage` envelope
@@ -58,7 +58,7 @@ describes an HTTP-shaped one. Both take a typed body and carry fluent headers vi
 `withHeaders`:
 
 ```ts
-import { messageBuilder, httpBuilder } from '@benzene/testing';
+import { messageBuilder, httpBuilder } from '@benzenejs/testing';
 
 // A topic payload — the way a queue or event source addresses it.
 const payload = messageBuilder('order:create', { customerId: '11111111-1111-1111-1111-111111111111' })
@@ -74,10 +74,10 @@ builder can be turned into many different transport events.
 ## Step 2 — render it into a transport event
 
 Each `as*` builder turns a builder into the exact shape one transport routes on. The transport-neutral
-ones live in `@benzene/testing`:
+ones live in `@benzenejs/testing`:
 
 ```ts
-import { asBenzeneMessage, asRawHttpRequest } from '@benzene/testing';
+import { asBenzeneMessage, asRawHttpRequest } from '@benzenejs/testing';
 
 // A BenzeneMessageRequest: { topic, headers, body }, with body serialized to a JSON string.
 const envelope = asBenzeneMessage(payload);
@@ -90,8 +90,8 @@ The native-event builders live in the per-platform packages — the topic rides 
 reads (a `topic` message attribute for SQS/SNS, method + path for API Gateway, and so on):
 
 ```ts
-import { asSqs, asSns, asApiGatewayRequest } from '@benzene/aws-lambda-testing';
-import { asAzureServiceBusMessage } from '@benzene/azure-function-testing';
+import { asSqs, asSns, asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
+import { asAzureServiceBusMessage } from '@benzenejs/azure-function-testing';
 
 const sqsEvent = asSqs(payload);                     // SQSEvent
 const snsEvent = asSns(payload);                     // SNSEvent
@@ -118,16 +118,16 @@ dispatches by topic regardless of any HTTP route or queue binding. Build a `Benz
 hand it the `asBenzeneMessage` envelope, and read the response envelope back:
 
 ```ts
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { messageBuilder, asBenzeneMessage } from '@benzene/testing';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { messageBuilder, asBenzeneMessage } from '@benzenejs/testing';
 import { CreateOrderHandler } from './src/CreateOrderHandler.js';
 
 const container = new DefaultBenzeneServiceContainer();
@@ -162,13 +162,13 @@ the same entry point AWS invokes:
 
 ```ts
 import { Context } from 'aws-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { httpBuilder } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { httpBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { CreateOrderHandler } from './src/CreateOrderHandler.js';
 
 class OrderStartUp implements BenzeneStartUp {
@@ -209,14 +209,14 @@ These two answer different questions, and it is worth being deliberate about whi
 
 ## Probing a running service
 
-`@benzene/testing` sends payloads *in-process*. The one ported tool that fires an envelope at a *live*
-service over HTTP is the Cloud Service conformance probe (`@benzene/cloud-service-probe`) — but note that
+`@benzenejs/testing` sends payloads *in-process*. The one ported tool that fires an envelope at a *live*
+service over HTTP is the Cloud Service conformance probe (`@benzenejs/cloud-service-probe`) — but note that
 it is **not** a general topic-dispatch tool. It POSTs a small set of fixed synthetic envelopes (its own
 `healthcheck` and `mesh` envelopes) at a service's `/benzene/*` surfaces to assess black-box conformance to
 the Cloud Service Profile (R1–R8), and reports a tri-state verdict built only from what it observed:
 
 ```ts
-import { CloudServiceProbe } from '@benzene/cloud-service-probe';
+import { CloudServiceProbe } from '@benzenejs/cloud-service-probe';
 
 const report = await CloudServiceProbe.runAsync('https://my-service.example.com');
 console.log(report.notSatisfied);      // ids observed as unmet, e.g. []
@@ -233,10 +233,10 @@ topic, since it only ever sends its own envelopes. `CloudServiceProbeOptions` (`
 The .NET library also ships an HTTP `UseBenzeneMessage` endpoint (which dispatches a POSTed
 `BenzeneMessage` envelope at a running service) and a `benzene` CLI that generates per-topic /
 per-transport test-payload files for the Lambda Test Tool. Those are **.NET-only for now** — the
-TypeScript port covers payload testing through the in-process `@benzene/testing` helpers above rather
+TypeScript port covers payload testing through the in-process `@benzenejs/testing` helpers above rather
 than a hosted endpoint or CLI. To send a topic-addressed payload at a running instance today, drive the
 in-process message pipeline from a small script, or drop the `asSqs(...)` event on the real queue the
-topic is bound to. (The browser *Try it* Spec UI **is** ported — `@benzene/spec-ui`'s `useSpecUi` renders
+topic is bound to. (The browser *Try it* Spec UI **is** ported — `@benzenejs/spec-ui`'s `useSpecUi` renders
 the `useSpec` document in-browser; see [Common Middleware](common-middleware.md#not-yet-ported).)
 
 ## Troubleshooting

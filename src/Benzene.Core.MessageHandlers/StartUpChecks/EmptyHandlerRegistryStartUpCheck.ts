@@ -1,5 +1,5 @@
-import { ILoggerFactory, IServiceResolver, IStartUpCheck } from '@benzene/abstractions';
-import { IMessageHandlersFinder } from '@benzene/abstractions-message-handlers';
+import { ILoggerFactory, IServiceResolver, IStartUpCheck } from '@benzenejs/abstractions';
+import { IMessageHandlersFinder } from '@benzenejs/abstractions-message-handlers';
 
 /** The logger category empty-registry warnings are logged under. */
 const LOGGER_CATEGORY = 'Benzene.StartUpChecks';

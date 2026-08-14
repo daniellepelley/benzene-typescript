@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolver, ServiceIdentifier } from '@benzene/abstractions';
+import { IServiceResolver, ServiceIdentifier } from '@benzenejs/abstractions';
 import {
   ICurrentTransport,
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, IMiddlewareWrapper } from '@benzene/abstractions-middleware';
-import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { fakeResolver } from '@benzene/testing';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, IMiddlewareWrapper } from '@benzenejs/abstractions-middleware';
+import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { fakeResolver } from '@benzenejs/testing';
 import {
   addXRayTracing,
   IXRayRecorder,
   XRayMiddlewareDecorator,
   XRayMiddlewareWrapper,
-} from '@benzene/aws-lambda-xray';
+} from '@benzenejs/aws-lambda-xray';
 
 /**
  * Port of the C# Benzene.Aws.Tests.XRayMiddlewareTest, adapted to the injectable `IXRayRecorder` seam

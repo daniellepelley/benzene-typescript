@@ -1,4 +1,4 @@
-import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Extracts the request body from a transport context.
@@ -6,9 +6,9 @@ import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstract
  *
  * Erasure: C#'s `GetBody<TRequest>` recovers `typeof(TRequest)` at runtime; TypeScript erases `TRequest`,
  * so an optional `targetType` (the handler's request class) may be supplied for mappers that need the
- * runtime type - only `@benzene/core-versioning`'s `CastingRequestMapper` reads it (to pick the upcast
+ * runtime type - only `@benzenejs/core-versioning`'s `CastingRequestMapper` reads it (to pick the upcast
  * caster into the handler's type); every other mapper ignores it. Optional, so existing callers and
- * implementations are unaffected (the same pattern `@benzene/avro`'s deserialize members use).
+ * implementations are unaffected (the same pattern `@benzenejs/avro`'s deserialize members use).
  */
 export interface IRequestMapper<TContext> {
   getBody<TRequest>(context: TContext, targetType?: ServiceIdentifier<unknown>): TRequest | undefined;

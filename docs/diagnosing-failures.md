@@ -52,12 +52,12 @@ and `useLogResult` are pipeline-builder **members** (see
 [Common Middleware](common-middleware.md#uselogresult--uselogcontext)):
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
-import { addDiagnostics, useW3CTraceContext, useBenzeneEnrichment } from '@benzene/diagnostics';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs, SqsMessageContext } from '@benzenejs/aws-lambda-sqs';
+import { addDiagnostics, useW3CTraceContext, useBenzeneEnrichment } from '@benzenejs/diagnostics';
 
 export class StartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
@@ -136,7 +136,7 @@ A few middleware silently do nothing if wired in the wrong order — no error, j
   active-span parent; put it later and the earlier spans start a new, disconnected trace and inbound
   `traceparent` continuation is lost.
 - **Enrichment's `invocationId` needs an invocation upstream.** On the batch/per-message transports (SQS,
-  SNS, Kafka, Event Hub) `useBenzeneInvocation` (`@benzene/aws-lambda-core`) is wired per record
+  SNS, Kafka, Event Hub) `useBenzeneInvocation` (`@benzenejs/aws-lambda-core`) is wired per record
   automatically; on a hand-built pipeline, populate the invocation before `useBenzeneEnrichment(app)`
   runs, or that one field is omitted.
 - **`useExceptionHandler(...)` only wraps what comes *after* it.** Register it before

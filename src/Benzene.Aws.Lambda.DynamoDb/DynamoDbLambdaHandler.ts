@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.DynamoDbLambdaHandler. */
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplicationWithResult } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isDynamoDbEvent } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplicationWithResult } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isDynamoDbEvent } from '@benzenejs/aws-lambda-core';
 import { DynamoDBBatchResponse, DynamoDBStreamEvent } from 'aws-lambda';
 
 /**

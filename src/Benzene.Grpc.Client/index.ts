@@ -1,8 +1,8 @@
 /**
- * `@benzene/grpc-client` — the TypeScript port of `Benzene.Grpc.Client`: the OUTBOUND gRPC client.
+ * `@benzenejs/grpc-client` — the TypeScript port of `Benzene.Grpc.Client`: the OUTBOUND gRPC client.
  * A {@link GrpcBenzeneMessageClient} (an `IBenzeneMessageClient`) sends unary calls through a Benzene
  * middleware pipeline over a caller-supplied `@grpc/grpc-js` `Client`, with a topic → method route table
- * and a reverse status mapper (grpc status → Benzene result status, the inverse of `@benzene/grpc`'s
+ * and a reverse status mapper (grpc status → Benzene result status, the inverse of `@benzenejs/grpc`'s
  * server-side mapper).
  *
  * ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -18,14 +18,14 @@
  *
  * DEFERRED (deliberately NOT built — do not assume these exist):
  *  - **The gRPC health check** (`GrpcHealthCheck`, `AddGrpcHealthCheck`, the `AddGrpcClient(healthCheck:)`
- *    parameter) — the health-check domain is out of scope for this port, as it is for `@benzene/grpc`.
+ *    parameter) — the health-check domain is out of scope for this port, as it is for `@benzenejs/grpc`.
  *  - **Non-unary streaming** client calls — unary is the must-have; streaming over grpc-js does not map
- *    cleanly and is a separable concern (same stance as `@benzene/grpc`'s server side).
- *  - **Inbound-deadline / cancellation-token propagation** — `@benzene/grpc`'s `IGrpcServerCallAccessor`
+ *    cleanly and is a separable concern (same stance as `@benzenejs/grpc`'s server side).
+ *  - **Inbound-deadline / cancellation-token propagation** — `@benzenejs/grpc`'s `IGrpcServerCallAccessor`
  *    exposes no deadline and there is no ambient cancellation-token DI seam, so `GrpcBenzeneMessageClient`
  *    forwards neither by default (an explicit deadline can still be set via `GrpcContextConverter`).
  *  - **Protobuf wire codec** — `@grpc/grpc-js` ships no framework message type, so routes carry a
- *    JSON/structural `GrpcClientMarshaller` by default (the analog of `@benzene/grpc`'s
+ *    JSON/structural `GrpcClientMarshaller` by default (the analog of `@benzenejs/grpc`'s
  *    `JsonGrpcMessageAdapter` bend); a caller talking to a protobuf service passes a protobuf marshaller.
  *
  * BEND (`GrpcChannel`/`CallInvoker`/`RpcException` → grpc-js `Client`/`makeUnaryRequest`/`ServiceError`):

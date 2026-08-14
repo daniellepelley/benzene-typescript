@@ -1,5 +1,5 @@
 import Ajv, { type AnySchema, type ValidateFunction } from 'ajv';
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 
 /**
  * TypeScript-only file with no direct C# counterpart, filling the role `Benzene.JsonSchema`'s

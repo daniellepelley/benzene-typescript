@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { BenzeneResultStatus } from '@benzene/results';
-import { DefaultValidationStatusMapper, validationStatus } from '@benzene/abstractions-validation';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { DefaultValidationStatusMapper, validationStatus } from '@benzenejs/abstractions-validation';
 
 /**
  * Unit tests for `DefaultValidationStatusMapper` — port of
- * Benzene.FluentValidation.DefaultValidationStatusMapper (hoisted into `@benzene/abstractions-validation`
+ * Benzene.FluentValidation.DefaultValidationStatusMapper (hoisted into `@benzenejs/abstractions-validation`
  * so every schema adapter shares it). The FluentValidation per-error `CustomState` override branch has
  * no schema-neutral equivalent and is omitted, so only the two portable branches are exercised.
  */

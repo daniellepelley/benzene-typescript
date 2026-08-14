@@ -1,10 +1,13 @@
 {
-  "name": "@benzene/abstractions",
-  "version": "0.1.0",
+  "name": "@benzenejs/abstractions",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Abstractions",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
-  "dependencies": {}
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {},
+  "files": [
+    "dist"
+  ]
 }

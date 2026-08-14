@@ -1,5 +1,5 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { APIGatewayAuthorizerResult, APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 import { ApiGatewayCustomAuthorizerContext } from './ApiGatewayCustomAuthorizerContext';
 

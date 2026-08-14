@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { ServiceBusClient } from '@azure/service-bus';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IDependencyHealthCheck } from '@benzene/health-checks-core';
-import { getHealthCheckerBuilder, IHealthCheckFinder } from '@benzene/health-checks';
-import { useWorker, WorkerApplicationBuilder } from '@benzene/self-host';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IDependencyHealthCheck } from '@benzenejs/health-checks-core';
+import { getHealthCheckerBuilder, IHealthCheckFinder } from '@benzenejs/health-checks';
+import { useWorker, WorkerApplicationBuilder } from '@benzenejs/self-host';
 import {
   addServiceBusDependencyHealthCheck,
   BenzeneServiceBusConfig,
   IServiceBusClientFactory,
   useServiceBus,
-} from '@benzene/azure-service-bus';
+} from '@benzenejs/azure-service-bus';
 
 /**
  * Ports Benzene.Test.Azure.ServiceBusWorker.ServiceBusAutoWireHealthCheckTest: the consumer-side

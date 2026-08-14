@@ -1,7 +1,7 @@
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
-import { DiskHealthCheck } from '@benzene/health-checks-disk';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { DiskHealthCheck } from '@benzenejs/health-checks-disk';
 
 /**
  * Ports test/Benzene.Core.Test/HealthChecks/Disk/DiskHealthCheckTest.cs. `Path.GetTempPath()` becomes

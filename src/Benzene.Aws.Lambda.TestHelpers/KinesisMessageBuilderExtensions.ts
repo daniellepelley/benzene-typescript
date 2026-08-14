@@ -1,7 +1,7 @@
 /** Kinesis test-event builder (no C# TestHelper counterpart; based on the ported KinesisPipelineTest shape). */
 import { KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsKinesisOptions {

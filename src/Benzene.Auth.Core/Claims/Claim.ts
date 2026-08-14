@@ -3,7 +3,7 @@
  * authenticated caller as a `ClaimsPrincipal`, a BCL type every JWT/OAuth2 library on that platform
  * already produces; JavaScript has no such shared type, so Benzene ports the small slice of
  * `System.Security.Claims` the middleware actually reads (`Claim`, `ClaimsIdentity`,
- * `ClaimsPrincipal`, `ClaimTypes`) here in `@benzene/auth-core` rather than inventing a
+ * `ClaimsPrincipal`, `ClaimTypes`) here in `@benzenejs/auth-core` rather than inventing a
  * Benzene-specific principal abstraction. See the README "Claims" note.
  *
  * Only the fields the auth surface uses are carried — `type` and `value`. The BCL `Claim`'s

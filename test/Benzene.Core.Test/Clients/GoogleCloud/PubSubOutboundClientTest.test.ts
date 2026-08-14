@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PubSub } from '@google-cloud/pubsub';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   OutboundPubSubContextConverter,
   PubSubSendMessageContext,
   usePubSub,
-} from '@benzene/clients-google-cloud-pubsub';
+} from '@benzenejs/clients-google-cloud-pubsub';
 
 /**
  * Port of the C# Benzene.Clients.GoogleCloud.PubSub tests (the OutboundContext publish path). Drives the

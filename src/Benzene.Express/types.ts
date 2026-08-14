@@ -1,6 +1,6 @@
 /**
  * Minimal structural types for the Express/Connect request, response, and `next` a Benzene middleware
- * touches. Declaring them here (rather than importing `express`) keeps `@benzene/express` free of a
+ * touches. Declaring them here (rather than importing `express`) keeps `@benzenejs/express` free of a
  * runtime dependency on Express - the produced middleware is a standard `(req, res, next)` function that
  * works with Express or any Connect-style host. `express`/`@types/express` are only needed by the
  * consuming app; a real Express `Request`/`Response` structurally satisfies these.

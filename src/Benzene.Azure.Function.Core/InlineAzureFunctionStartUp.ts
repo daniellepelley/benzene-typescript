@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.Core.InlineAzureFunctionStartUp. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AzureFunctionAppBuilder } from './AzureFunctionAppBuilder';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
 import { IAzureFunctionAppBuilder } from './IAzureFunctionAppBuilder';

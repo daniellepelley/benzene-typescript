@@ -1,7 +1,7 @@
 import {
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * No-op `IMessageHandlerResultSetter<TContext>` base class for transports that don't need to report

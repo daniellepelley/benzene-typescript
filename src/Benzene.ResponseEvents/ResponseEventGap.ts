@@ -1,5 +1,5 @@
-import { Constructor, ServiceIdentifier, serviceIdentifierName } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+import { Constructor, ServiceIdentifier, serviceIdentifierName } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * One finding from the unmapped-response-handler diagnostic

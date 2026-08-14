@@ -1,7 +1,7 @@
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { SNSClient } from '@aws-sdk/client-sns';
-import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { OutboundSnsContextConverter } from './OutboundSnsContextConverter';
 import { SnsClientMiddleware } from './SnsClientMiddleware';
 import { SnsHealthCheck } from './SnsHealthCheck';

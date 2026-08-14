@@ -14,7 +14,7 @@
  *   the seam each transport's `*.TestHelpers` package calls from its own `build*Host` specialization
  *   (`buildAwsLambdaHost` / `buildAzureFunctionApp`), keeping the neutral core free of cloud imports.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneConfiguration,
   BenzeneStartUp,
@@ -22,18 +22,18 @@ import {
   BenzeneStartUpOf,
   emptyConfiguration,
   layerConfiguration,
-} from '@benzene/abstractions-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
-// The startup contract + configuration types moved to `@benzene/abstractions-middleware` (the neutral
+// The startup contract + configuration types moved to `@benzenejs/abstractions-middleware` (the neutral
 // hosting-abstractions package) so a production host can share them; re-export here so
-// `import { BenzeneStartUp, ... } from '@benzene/testing'` keeps working.
+// `import { BenzeneStartUp, ... } from '@benzenejs/testing'` keeps working.
 export {
   BenzeneConfiguration,
   BenzeneStartUp,
   BenzeneStartUpConstructor,
   BenzeneStartUpOf,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 
 /**
  * What a transport's `build*Host` specialization receives from {@link BenzeneTestHostBuilder.build}: the

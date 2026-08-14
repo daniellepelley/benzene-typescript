@@ -7,7 +7,7 @@ import {
   MeshServiceRegistry,
   MeshServiceRegistryEntry,
   MeshServiceSource,
-} from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-contracts';
 
 /** Port of test/Benzene.Mesh.Test/Discovery/MeshDiscoveryRunnerTest.cs. */
 

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageSender } from '@benzene/abstractions-messages';
-import { out } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResultStatus } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { FetchLike, HttpRequestMessage, useHttpClientToSend } from '@benzene/clients-http';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageSender } from '@benzenejs/abstractions-messages';
+import { out } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { FetchLike, HttpRequestMessage, useHttpClientToSend } from '@benzenejs/clients-http';
 
 /**
- * End-to-end outbound-send test for @benzene/clients-http, mirroring the C# Benzene.Client.Http usage:
+ * End-to-end outbound-send test for @benzenejs/clients-http, mirroring the C# Benzene.Client.Http usage:
  * a `MessageSender` whose client pipeline uses `useHttpClientToSend(verb, path)` sends a request over
  * a STUBBED fetch, and the deserialized/status-mapped `IBenzeneResult` comes back. The transport is a
  * fake `fetch` (per the HttpClient->fetch adaptation) so no real network call happens.

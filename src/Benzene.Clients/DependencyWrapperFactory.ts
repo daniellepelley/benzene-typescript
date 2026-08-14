@@ -1,4 +1,4 @@
-import { IDependencyWrapper, IServiceResolver } from '@benzene/abstractions';
+import { IDependencyWrapper, IServiceResolver } from '@benzenejs/abstractions';
 
 /**
  * Port of Benzene.Clients.DependencyWrapperFactory&lt;T&gt;.

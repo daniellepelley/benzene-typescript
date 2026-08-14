@@ -1,6 +1,6 @@
 # Cache Handler Responses with Redis
 
-Use `@benzene/cache-redis` to cache expensive reads behind a message handler, and keep the cache correct
+Use `@benzenejs/cache-redis` to cache expensive reads behind a message handler, and keep the cache correct
 on writes and deletes.
 
 ## Problem Statement
@@ -16,20 +16,20 @@ API) on every request. You want to:
 
 This cookbook builds a small product catalog on top of the caching abstractions described in
 [Caching](../caching.md) — read that first if you haven't; it's the reference doc for
-`@benzene/cache-core`/`@benzene/cache-redis` and covers every member in detail. This cookbook is the
+`@benzenejs/cache-core`/`@benzenejs/cache-redis` and covers every member in detail. This cookbook is the
 worked example on top of it: a full read/write/invalidate cycle wired into real message handlers.
 
 > **Port note — Redis client.** The .NET `Benzene.Cache.Redis` wraps `StackExchange.Redis`. Per the
 > port's [third-party-integration convention](../../README.md#porting-conventions), the TypeScript port is
 > an adapter over [`ioredis`](https://github.com/redis/ioredis), the popular Node Redis client. The
-> abstraction core (`@benzene/cache-core`) is a straight port; only the Redis layer is re-implemented.
+> abstraction core (`@benzenejs/cache-core`) is a straight port; only the Redis layer is re-implemented.
 > There is **no `IProcessTimerFactory` dependency** to satisfy in the port — the process-timer surface is
 > deferred, so unlike the .NET version, your cache service subclass constructs with just an `ILogger` and
 > an `IRedisConnectionFactory`.
 
 ## Prerequisites
 
-- [Node.js 22+](https://nodejs.org/) and a Benzene service using `@benzene/core-message-handlers`
+- [Node.js 22+](https://nodejs.org/) and a Benzene service using `@benzenejs/core-message-handlers`
   (message handlers returning `IBenzeneResultOf<T>`) — see [AWS Lambda Setup](../getting-started-aws.md)
   if you don't have one yet.
 - A reachable Redis instance (a local Docker container is enough for development — see
@@ -38,10 +38,10 @@ worked example on top of it: a full read/write/invalidate cycle wired into real 
 ## Installation
 
 ```bash
-npm install @benzene/cache-core @benzene/cache-redis ioredis
+npm install @benzenejs/cache-core @benzenejs/cache-redis ioredis
 ```
 
-`@benzene/cache-redis` depends on `@benzene/cache-core` and `ioredis` directly — no other runtime
+`@benzenejs/cache-redis` depends on `@benzenejs/cache-core` and `ioredis` directly — no other runtime
 dependencies are pulled in.
 
 ## Step-by-Step Implementation
@@ -54,7 +54,7 @@ can resolve it (the port's convention for anything injected — see [Message Han
 
 ```ts
 // ProductRepository.ts
-import { IBenzeneResultOf, ServiceToken, VoidResult, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResultOf, ServiceToken, VoidResult, serviceToken } from '@benzenejs/abstractions';
 
 export class Product {
   id?: string;
@@ -87,9 +87,9 @@ client is constructed, so there's no separate async connect call to await:
 ```ts
 // ProductCacheService.ts
 import type { RedisOptions } from 'ioredis';
-import { ILogger } from '@benzene/abstractions';
-import { ICacheEntry } from '@benzene/cache-core';
-import { IRedisConnectionFactory, RedisCacheService } from '@benzene/cache-redis';
+import { ILogger } from '@benzenejs/abstractions';
+import { ICacheEntry } from '@benzenejs/cache-core';
+import { IRedisConnectionFactory, RedisCacheService } from '@benzenejs/cache-redis';
 import { Product } from './ProductRepository.js';
 
 export class ProductCacheService extends RedisCacheService {
@@ -129,12 +129,12 @@ API Gateway; the registration is identical on any host (see [Hosting](../hosting
 
 ```ts
 // index.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { IRedisConnectionFactory, RedisConnectionFactory } from '@benzene/cache-redis';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { IRedisConnectionFactory, RedisConnectionFactory } from '@benzenejs/cache-redis';
 import { ProductCacheService } from './ProductCacheService.js';
 import { IProductRepository } from './ProductRepository.js';
 import { SqlProductRepository } from './SqlProductRepository.js';
@@ -171,10 +171,10 @@ below through constructor injection, the same as any other dependency.
 
 ```ts
 // handlers.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
 import { ProductCacheService } from './ProductCacheService.js';
 import { IProductRepository, Product } from './ProductRepository.js';
 
@@ -245,7 +245,7 @@ result. If your write method's return type isn't `IBenzeneResultOf<T>`, use the
 
 ```ts
 // handlers.ts (continued)
-import { VoidResult } from '@benzene/abstractions';
+import { VoidResult } from '@benzenejs/abstractions';
 
 export class DeleteProductRequest {
   productId?: string;
@@ -273,13 +273,13 @@ writing to the same database).
 
 ### 6. Add a Redis health check
 
-`@benzene/cache-core`'s `addCacheHealthCheck` wraps `ICacheService.canConnectAsync()` (a Redis `PING` for
+`@benzenejs/cache-core`'s `addCacheHealthCheck` wraps `ICacheService.canConnectAsync()` (a Redis `PING` for
 `RedisCacheService`) into a ready-made health check, so a monitoring system can confirm Redis connectivity
 without hitting a real product handler. Wire it into a [health-check](../health-checks.md) topic:
 
 ```ts
-import { useHealthCheck } from '@benzene/health-checks';
-import { addCacheHealthCheck } from '@benzene/cache-core';
+import { useHealthCheck } from '@benzenejs/health-checks';
+import { addCacheHealthCheck } from '@benzenejs/cache-core';
 
 .configure((app) =>
   useApiGateway(app, (api) => {
@@ -304,9 +304,9 @@ fastest way to assert which key gets touched, and lazy-load vs. write-through br
 // test/productCache.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import type { RedisOptions } from 'ioredis';
-import { NullLogger } from '@benzene/abstractions';
-import { IRedisConnectionFactory, RedisClient } from '@benzene/cache-redis';
-import { BenzeneResult } from '@benzene/results';
+import { NullLogger } from '@benzenejs/abstractions';
+import { IRedisConnectionFactory, RedisClient } from '@benzenejs/cache-redis';
+import { BenzeneResult } from '@benzenejs/results';
 import { ProductCacheService } from '../src/ProductCacheService.js';
 import { Product } from '../src/ProductRepository.js';
 
@@ -407,7 +407,7 @@ database entirely.
 
 ## Further Reading
 
-- [Caching](../caching.md) — the full reference for `@benzene/cache-core`/`@benzene/cache-redis`,
+- [Caching](../caching.md) — the full reference for `@benzenejs/cache-core`/`@benzenejs/cache-redis`,
   including every member of `RedisCacheService`/`ICacheEntry<T>` and the write-through/invalidate semantics
   used above.
 - [Health Checks](../health-checks.md) — wiring `addCacheHealthCheck` into a pipeline.

@@ -1,5 +1,5 @@
 /**
- * `@benzene/grpc` — the server-side slice of `Benzene.Grpc`: routes gRPC calls of **all four RPC shapes**
+ * `@benzenejs/grpc` — the server-side slice of `Benzene.Grpc`: routes gRPC calls of **all four RPC shapes**
  * (unary, server-streaming, client-streaming, bidirectional) into Benzene message handlers over
  * `@grpc/grpc-js`, bridging the request/response payloads (and request/response *streams* as
  * `AsyncIterable`), inbound metadata (headers), Benzene result status → grpc status code + `benzene-status`

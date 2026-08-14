@@ -13,7 +13,7 @@ unchanged on Cloud Functions; only the entry point differs, and that's what this
 > It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why. Two adaptations matter here. First,
 > the .NET **production host** `GoogleCloudFunctionHost<TStartUp>` (and its Pub/Sub sibling) **is ported**, and
-> it now boots the SAME canonical `BenzeneStartUp` (from `@benzene/abstractions-middleware`) that
+> it now boots the SAME canonical `BenzeneStartUp` (from `@benzenejs/abstractions-middleware`) that
 > `AwsLambdaHost` / `AzureFunctionHost` boot — you write one `StartUp` and select Google inside `configure`
 > with `useGoogleCloud(app, g => …)`, exactly where AWS writes `useAwsLambda` and Azure writes
 > `useAzureFunctions`. (The legacy per-cloud `GoogleCloudFunctionStartUp` / `GooglePubSubFunctionStartUp`
@@ -64,20 +64,20 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 ## 2. Install the packages
 
 ```bash
-npm install @benzene/google-cloud-functions-core @benzene/google-cloud-functions-http \
-  @benzene/google-cloud-functions-pubsub \
-  @benzene/core-message-handlers @benzene/http @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers @benzene/abstractions-middleware \
+npm install @benzenejs/google-cloud-functions-core @benzenejs/google-cloud-functions-http \
+  @benzenejs/google-cloud-functions-pubsub \
+  @benzenejs/core-message-handlers @benzenejs/http @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers @benzenejs/abstractions-middleware \
   @google-cloud/functions-framework
 npm install --save-dev typescript
 ```
 
-`@benzene/google-cloud-functions-core` brings the neutral `useGoogleCloud` selector (the Google counterpart
-of `useAwsLambda`/`useAzureFunctions`); `@benzene/google-cloud-functions-http` brings the HTTP host
-(`GoogleCloudFunctionHost`) and its `useHttp` wiring; `@benzene/google-cloud-functions-pubsub` brings the
-Pub/Sub host (`GooglePubSubFunctionHost`) and `usePubSub`. `@benzene/core-message-handlers` supplies
-`addBenzene`, the `@message` decorator, and `useMessageHandlers`; `@benzene/http` adds `@httpEndpoint`;
-`@benzene/results` supplies `BenzeneResult`; the `@benzene/abstractions*` packages supply the
+`@benzenejs/google-cloud-functions-core` brings the neutral `useGoogleCloud` selector (the Google counterpart
+of `useAwsLambda`/`useAzureFunctions`); `@benzenejs/google-cloud-functions-http` brings the HTTP host
+(`GoogleCloudFunctionHost`) and its `useHttp` wiring; `@benzenejs/google-cloud-functions-pubsub` brings the
+Pub/Sub host (`GooglePubSubFunctionHost`) and `usePubSub`. `@benzenejs/core-message-handlers` supplies
+`addBenzene`, the `@message` decorator, and `useMessageHandlers`; `@benzenejs/http` adds `@httpEndpoint`;
+`@benzenejs/results` supplies `BenzeneResult`; the `@benzenejs/abstractions*` packages supply the
 `IMessageHandler` / `IBenzeneResultOf` / `IBenzeneServiceContainer` types and the canonical
 `BenzeneStartUp` / `IBenzeneApplicationBuilder` / `BenzeneConfiguration` hosting contract.
 `@google-cloud/functions-framework` is the Google runtime you register the host with (and the source of its
@@ -89,11 +89,11 @@ Create `src/handlers.ts`. This is where your logic lives — the file you'd carr
 moved to Express or Lambda:
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -136,11 +136,11 @@ Create `src/http.ts`. The startup is the platform-neutral pair of methods every 
 only the entry-point registration at the bottom is Google-specific:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
-import { GoogleCloudFunctionHost, useHttp } from '@benzene/google-cloud-functions-http';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useGoogleCloud } from '@benzenejs/google-cloud-functions-core';
+import { GoogleCloudFunctionHost, useHttp } from '@benzenejs/google-cloud-functions-http';
 import * as functions from '@google-cloud/functions-framework';
 import { PlaceOrderHandler } from './handlers.js';
 
@@ -233,11 +233,11 @@ A Pub/Sub trigger is a different Cloud Functions trigger type from HTTP, so it g
 — but it still uses the same handler classes. Create `src/pubsub.ts`:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
-import { GooglePubSubFunctionHost, usePubSub } from '@benzene/google-cloud-functions-pubsub';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useGoogleCloud } from '@benzenejs/google-cloud-functions-core';
+import { GooglePubSubFunctionHost, usePubSub } from '@benzenejs/google-cloud-functions-pubsub';
 import * as functions from '@google-cloud/functions-framework';
 import { NotifyWarehouseHandler } from './handlers.js';
 
@@ -274,13 +274,13 @@ gcloud functions deploy orders-pubsub \
 ## 7. Test it
 
 Before deploying, exercise both startups in-memory with the same wiring you'll ship, using the test-helper
-packages. Boot the **real** startup with `benzeneTestHost(...)` from `@benzene/testing`, override any
+packages. Boot the **real** startup with `benzeneTestHost(...)` from `@benzenejs/testing`, override any
 dependency with `.withServices(...)`, then finish with the one GCP-specific line —
 `buildGoogleCloudFunctionHost(...)` for HTTP or `buildGooglePubSubFunctionHost(...)` for Pub/Sub:
 
 ```bash
-npm install --save-dev vitest @benzene/testing \
-  @benzene/google-cloud-functions-http-testing @benzene/google-cloud-functions-pubsub-testing
+npm install --save-dev vitest @benzenejs/testing \
+  @benzenejs/google-cloud-functions-http-testing @benzenejs/google-cloud-functions-pubsub-testing
 ```
 
 **HTTP** — build a native request with `asGoogleCloudHttpRequest(httpBuilder(...))`, push it in with
@@ -289,8 +289,8 @@ npm install --save-dev vitest @benzene/testing \
 ```ts
 // test/http.test.ts
 import { describe, expect, it } from 'vitest';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asGoogleCloudHttpRequest, buildGoogleCloudFunctionHost } from '@benzene/google-cloud-functions-http-testing';
+import { benzeneTestHost, httpBuilder } from '@benzenejs/testing';
+import { asGoogleCloudHttpRequest, buildGoogleCloudFunctionHost } from '@benzenejs/google-cloud-functions-http-testing';
 import { OrdersStartUp } from '../src/http.js'; // export OrdersStartUp to test it
 
 describe('orders (HTTP)', () => {
@@ -313,14 +313,14 @@ handler published — through a faked `IBenzeneMessageSender`:
 ```ts
 // test/pubsub.test.ts
 import { describe, expect, it } from 'vitest';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { benzeneTestHost, FakeBenzeneMessageSender, messageBuilder } from '@benzene/testing';
-import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
-import { usePubSub } from '@benzene/google-cloud-functions-pubsub';
-import { asPubSubEvent, buildGooglePubSubFunctionHost } from '@benzene/google-cloud-functions-pubsub-testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { benzeneTestHost, FakeBenzeneMessageSender, messageBuilder } from '@benzenejs/testing';
+import { useGoogleCloud } from '@benzenejs/google-cloud-functions-core';
+import { usePubSub } from '@benzenejs/google-cloud-functions-pubsub';
+import { asPubSubEvent, buildGooglePubSubFunctionHost } from '@benzenejs/google-cloud-functions-pubsub-testing';
 
 // A startup whose handler publishes 'order:created' downstream via IBenzeneMessageSender.
 class PublishingStartUp implements BenzeneStartUp {
@@ -353,7 +353,7 @@ describe('orders (Pub/Sub)', () => {
 the transport reads. You can also build the payload directly:
 
 ```ts
-import { PubSubMessageBuilder } from '@benzene/google-cloud-functions-pubsub-testing';
+import { PubSubMessageBuilder } from '@benzenejs/google-cloud-functions-pubsub-testing';
 
 const data = new PubSubMessageBuilder()
   .withTopic('order:place')

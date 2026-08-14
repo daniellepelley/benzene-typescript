@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Dispatch.IMeshDispatchEnvironment (+ EnvironmentVariableMeshDispatchEnvironment). */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /** Tells the dispatch gate whether the process is running in a Production environment. */
 export interface IMeshDispatchEnvironment {

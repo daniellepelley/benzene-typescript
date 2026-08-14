@@ -20,7 +20,7 @@ test with no external backend (the shape the port's own `examples/opentelemetry`
 the **cross-service** wiring — propagating the trace onto an SQS message and
 picking it back up in the worker — plus the OTLP exporter for production.
 
-> **The big difference from .NET:** there is **no `@benzene/opentelemetry` package and no
+> **The big difference from .NET:** there is **no `@benzenejs/opentelemetry` package and no
 > `AddBenzeneInstrumentation()` call.** In .NET a `TracerProviderBuilder` must opt into each source by
 > name (`AddSource("Benzene")`). OpenTelemetry JS exports spans from **every** API tracer once an SDK
 > is registered globally, so you register the standard `@opentelemetry/sdk-node` and Benzene's spans
@@ -36,19 +36,19 @@ picking it back up in the worker — plus the OTLP exporter for production.
 
 ## Installation
 
-`@benzene/diagnostics` brings `@opentelemetry/api` in transitively — that's all you need to *emit*
+`@benzenejs/diagnostics` brings `@opentelemetry/api` in transitively — that's all you need to *emit*
 spans. To *export* them, add the OpenTelemetry Node SDK and an exporter (these are OpenTelemetry
-packages, peers of your app, not `@benzene/*` packages):
+packages, peers of your app, not `@benzenejs/*` packages):
 
 ```bash
-npm install @benzene/diagnostics
+npm install @benzenejs/diagnostics
 npm install @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-http
 ```
 
 For the cross-service worker example, also add the outbound SQS client and the SQS transport:
 
 ```bash
-npm install @benzene/clients @benzene/clients-aws-sqs @benzene/aws-lambda-sqs @aws-sdk/client-sqs
+npm install @benzenejs/clients @benzenejs/clients-aws-sqs @benzenejs/aws-lambda-sqs @aws-sdk/client-sqs
 ```
 
 ## Step 1 — enable automatic span-per-middleware
@@ -58,8 +58,8 @@ npm install @benzene/clients @benzene/clients-aws-sqs @benzene/aws-lambda-sqs @a
 resolvable. You never opt in per middleware — call it once at startup, alongside `addBenzene`:
 
 ```ts
-import { addBenzene, addBenzeneMessage } from '@benzene/core-message-handlers';
-import { addDiagnostics } from '@benzene/diagnostics';
+import { addBenzene, addBenzeneMessage } from '@benzenejs/core-message-handlers';
+import { addDiagnostics } from '@benzenejs/diagnostics';
 
 addBenzene(container);
 addBenzeneMessage(container);
@@ -72,21 +72,21 @@ non-recording — the decorator ends it immediately and calls the inner middlewa
 
 ## Step 2 — the pipeline: continue the trace, enrich, measure
 
-Add three middleware around your handlers. `useW3CTraceContext` (from `@benzene/diagnostics`) must be
+Add three middleware around your handlers. `useW3CTraceContext` (from `@benzenejs/diagnostics`) must be
 **first** — it reads the inbound `traceparent` header and starts the pipeline's root span parented on
 the remote trace, so a trace started upstream continues here instead of starting over. Then
 `useBenzeneEnrichment` (ties log lines to the trace via `traceId`/`spanId`) and `useBenzeneMetrics`
 (the once-per-message counter + histogram):
 
 ```ts
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { BenzeneMessageContext } from '@benzene/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
 import {
   useBenzeneEnrichment,
   useBenzeneMetrics,
   useW3CTraceContext,
-} from '@benzene/diagnostics';
+} from '@benzenejs/diagnostics';
 import { CreateOrderHandler } from './createOrderHandler.js';
 
 const pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
@@ -109,10 +109,10 @@ distinguishable:
 
 ```ts
 import { SpanKind, trace } from '@opentelemetry/api';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 const tracer = trace.getTracer('myapp.orders');
 
@@ -146,16 +146,16 @@ handler writes carries the same trace ids as the spans — see
 ## Step 4 — propagate the trace onto the outbound message
 
 The API doesn't call the worker directly — it puts a message on SQS via
-[`@benzene/clients`](../clients.md) outbound routing. Add the **outbound** `useW3CTraceContext` (note:
-imported from `@benzene/clients`, not `@benzene/diagnostics`) to the route. It stamps the active span's
+[`@benzenejs/clients`](../clients.md) outbound routing. Add the **outbound** `useW3CTraceContext` (note:
+imported from `@benzenejs/clients`, not `@benzenejs/diagnostics`) to the route. It stamps the active span's
 `traceparent`/`tracestate` onto the outgoing message's headers, which the SQS converter forwards as
 message attributes — so the trace context genuinely goes out on the wire:
 
 ```ts
 import { SQSClient } from '@aws-sdk/client-sqs';
-import { addOutboundRouting } from '@benzene/clients';
-import { useW3CTraceContext } from '@benzene/clients'; // outbound counterpart
-import { useSqs } from '@benzene/clients-aws-sqs';
+import { addOutboundRouting } from '@benzenejs/clients';
+import { useW3CTraceContext } from '@benzenejs/clients'; // outbound counterpart
+import { useSqs } from '@benzenejs/clients-aws-sqs';
 
 const sqs = new SQSClient({});
 
@@ -171,7 +171,7 @@ The handler injects the `IBenzeneMessageSender` and sends by topic — no queue 
 the call site:
 
 ```ts
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 
 @message('order:create', { requestType: CreateOrderRequest, responseType: CreateOrderResponse })
 export class CreateOrderHandler implements IMessageHandler<CreateOrderRequest, CreateOrderResponse> {
@@ -190,17 +190,17 @@ export class CreateOrderHandler implements IMessageHandler<CreateOrderRequest, C
 
 ## Step 5 — the worker picks the trace back up
 
-The SQS worker's pipeline puts `useW3CTraceContext` (the **inbound** one, from `@benzene/diagnostics`)
+The SQS worker's pipeline puts `useW3CTraceContext` (the **inbound** one, from `@benzenejs/diagnostics`)
 first, exactly as the API's HTTP pipeline did in Step 2. It reads the `traceparent` the API stamped and
 parents its own root span on it, so both services share **one** trace id:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { addDiagnostics, useW3CTraceContext } from '@benzene/diagnostics';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { addDiagnostics, useW3CTraceContext } from '@benzenejs/diagnostics';
 import { ProcessOrderHandler } from './processOrderHandler.js';
 
 export class ProcessOrderStartUp implements BenzeneStartUp {
@@ -334,7 +334,7 @@ business spans sharing the root trace id, and the error span for a failing handl
   spans are non-recording **by design** — this is not a bug and not a sampler issue. See
   [Monitoring](../monitoring.md).
 - **Two separate traces instead of one.** Confirm `useW3CTraceContext` is the **first** middleware on
-  the receiving side, and that the **outbound** `useW3CTraceContext` (from `@benzene/clients`) is on
+  the receiving side, and that the **outbound** `useW3CTraceContext` (from `@benzenejs/clients`) is on
   the route used to send. Both are required for continuity.
 - **`useW3CTraceContext` fails to resolve.** It resolves `IMessageHeadersGetter<TContext>` for the
   pipeline's context type. Every built-in transport registers it; on a custom pipeline, register the

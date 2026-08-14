@@ -1,5 +1,5 @@
 /** Port of Benzene.CloudService.CloudServiceProfileReport (and CloudServiceRequirement). */
-import { MeshProfile } from '@benzene/mesh-wire';
+import { MeshProfile } from '@benzenejs/mesh-wire';
 import type { CloudServiceBuilder } from './CloudServiceBuilder';
 
 /** One requirement of the Cloud Service Profile (docs/specification/cloud-service-profile.md §2), as self-assessed at wire-up. */

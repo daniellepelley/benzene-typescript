@@ -1,6 +1,6 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler, IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 /**
  * Adapts a no-response handler to the request/response handler shape, returning

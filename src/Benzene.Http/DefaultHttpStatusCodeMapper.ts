@@ -1,4 +1,4 @@
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { IHttpStatusCodeMapper } from './IHttpStatusCodeMapper';
 
 /**

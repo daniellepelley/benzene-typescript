@@ -1,4 +1,4 @@
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { Constants } from './Constants';
 
 /** The inline handler shape wrapped by FuncWrapperMiddleware. Port of C# `Func<TContext, Func<Task>, Task>`. */

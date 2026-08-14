@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsApplication. */
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { SNSEvent } from 'aws-lambda';
 import { SnsMessageProcessingException } from './SnsMessageProcessingException';
 import { SnsOptions } from './SnsOptions';

@@ -9,8 +9,8 @@
  * `GoogleCloudFunctionBenzeneTestHost` mints and captures the `Response` (the output) at dispatch. Shaped
  * exactly like the Azure sibling's `asAzureHttpRequest`, so the two read identically bar the builder name.
  */
-import { IHttpBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IHttpBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import type { Request } from '@google-cloud/functions-framework';
 import { jsonMessageSerializer } from './defaults';
 

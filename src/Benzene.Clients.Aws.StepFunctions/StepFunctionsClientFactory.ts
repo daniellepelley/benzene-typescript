@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.Aws.StepFunctions.StepFunctionsClientFactory. */
 import { SFNClient } from '@aws-sdk/client-sfn';
-import { ILogger, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ILogger, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IStepFunctionsClient } from './IStepFunctionsClient';
 import { StepFunctionsClient } from './StepFunctionsClient';
 

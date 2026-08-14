@@ -2,7 +2,7 @@ import {
   IHasMessageResult,
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { MessageResult } from './MessageResult';
 
 /**

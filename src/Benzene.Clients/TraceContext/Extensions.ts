@@ -1,4 +1,4 @@
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { OutboundContext } from '../OutboundContext';
 import { W3CTraceContextMiddleware } from './W3CTraceContextMiddleware';
 
@@ -8,8 +8,8 @@ import { W3CTraceContextMiddleware } from './W3CTraceContextMiddleware';
  * Port of Benzene.Clients.TraceContext.Extensions.UseW3CTraceContext (a C# extension method -> a free
  * function).
  *
- * Named to match the .NET source; this is the outbound-pipeline counterpart of `@benzene/diagnostics`'
- * inbound `useW3CTraceContext`. Import it from `@benzene/clients` for the outbound direction.
+ * Named to match the .NET source; this is the outbound-pipeline counterpart of `@benzenejs/diagnostics`'
+ * inbound `useW3CTraceContext`. Import it from `@benzenejs/clients` for the outbound direction.
  */
 export function useW3CTraceContext(
   app: IMiddlewarePipelineBuilder<OutboundContext>,

@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { BenzeneWorkerBuilder } from './BenzeneWorkerBuilder';
 import { IBenzeneWorkerStartup } from './IBenzeneWorkerStartup';
 
@@ -16,7 +16,7 @@ export interface IBenzeneWorkerBuilder {
  *
  * C# builds over `new ServiceCollection()` + `MicrosoftBenzeneServiceContainer`/
  * `MicrosoftServiceResolverFactory`; the port uses `DefaultBenzeneServiceContainer` from
- * `@benzene/dependencies`, which is both the registration surface and the resolver-factory source - so
+ * `@benzenejs/dependencies`, which is both the registration surface and the resolver-factory source - so
  * C#'s separate `Action<IServiceCollection>` becomes an `Action<IBenzeneServiceContainer>`.
  */
 export class InlineSelfHostedStartUp implements IBenzeneWorkerBuilder {

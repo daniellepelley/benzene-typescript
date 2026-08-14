@@ -13,10 +13,10 @@
  * Divergences from the C# original: `Func<DateTimeOffset>` clock -> `() => number` (epoch ms), default
  * `Date.now`; `Task<MeshUsage?>` -> `Promise<MeshUsage | undefined>`. The C# `FetchUsageAsync` takes an
  * optional `MeshUsageWindow` (which it deliberately IGNORES, being cumulative-since-start) - this port omits
- * that parameter entirely because `@benzene/mesh-contracts`'s `IMeshUsageSource.fetchUsageAsync` has no
+ * that parameter entirely because `@benzenejs/mesh-contracts`'s `IMeshUsageSource.fetchUsageAsync` has no
  * window parameter in this snapshot; behavior is identical (the window was ignored anyway).
  */
-import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzene/mesh-contracts';
+import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzenejs/mesh-contracts';
 import { MeshCollectorStore } from './MeshCollectorStore';
 
 export class CollectorUsageSource implements IMeshUsageSource {

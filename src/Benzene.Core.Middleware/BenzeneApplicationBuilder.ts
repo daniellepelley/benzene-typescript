@@ -1,5 +1,5 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { MiddlewarePipelineBuilder } from './MiddlewarePipelineBuilder';
 
 /**

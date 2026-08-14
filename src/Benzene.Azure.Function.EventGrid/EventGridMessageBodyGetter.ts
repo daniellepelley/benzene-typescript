@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.EventGrid.EventGridMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { EventGridContext } from './EventGridContext';
 
 /**

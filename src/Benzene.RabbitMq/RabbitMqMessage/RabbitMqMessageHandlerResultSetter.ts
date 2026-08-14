@@ -1,5 +1,5 @@
 /** Port of Benzene.RabbitMq.RabbitMqMessage.RabbitMqMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { RabbitMqContext } from './RabbitMqContext';
 
 /**

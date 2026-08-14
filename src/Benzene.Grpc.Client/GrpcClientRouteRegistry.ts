@@ -1,4 +1,4 @@
-import { BenzeneException } from '@benzene/core';
+import { BenzeneException } from '@benzenejs/core';
 import { GrpcClientMarshaller, GrpcClientRoute, jsonGrpcMarshaller } from './GrpcClientRoute';
 import { IGrpcClientRoute } from './IGrpcClientRoute';
 import { IGrpcClientRouteRegistry } from './IGrpcClientRouteRegistry';

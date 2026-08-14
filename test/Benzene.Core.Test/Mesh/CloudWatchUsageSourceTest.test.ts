@@ -1,7 +1,7 @@
 import { CloudWatchClient, GetMetricDataCommand, ListMetricsCommand, Metric } from '@aws-sdk/client-cloudwatch';
 import { describe, expect, it } from 'vitest';
-import { MeshUsageSource } from '@benzene/mesh-contracts';
-import { CloudWatchUsageOptions, CloudWatchUsageSource } from '@benzene/mesh-usage-cloudwatch';
+import { MeshUsageSource } from '@benzenejs/mesh-contracts';
+import { CloudWatchUsageOptions, CloudWatchUsageSource } from '@benzenejs/mesh-usage-cloudwatch';
 
 /**
  * Port of test/Benzene.Mesh.Test/CloudWatchUsageSourceTest.cs. The Moq `IAmazonCloudWatch` becomes a stub

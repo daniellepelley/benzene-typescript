@@ -1,4 +1,4 @@
-import { IPayloadSerializer, ISerializer } from '@benzene/abstractions';
+import { IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
 
 /**
  * Default ISerializer implementation, backed by JSON. Also implements IPayloadSerializer,

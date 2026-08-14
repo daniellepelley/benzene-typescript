@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.InlineHealthCheck. */
-import { IHealthCheck, IHealthCheckResult } from '@benzene/health-checks-core';
+import { IHealthCheck, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 /**
  * An `IHealthCheck` whose result is produced by an arbitrary delegate, allowing a check to be defined

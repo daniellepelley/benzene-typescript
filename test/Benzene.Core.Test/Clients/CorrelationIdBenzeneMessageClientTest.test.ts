@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, ICorrelationId } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, ICorrelationId } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   BenzeneClientRequest,
   CorrelationIdBenzeneMessageClient,
   IBenzeneMessageClient,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 
 /**
  * Port of the correlation-id decorator scenario: the current invocation's correlation id is attached

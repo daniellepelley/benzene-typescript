@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Azure.Blob.BlobMeshArtifactStore. */
 import { ContainerClient, RestError } from '@azure/storage-blob';
-import { IMeshArtifactStore } from '@benzene/mesh-aggregator';
+import { IMeshArtifactStore } from '@benzenejs/mesh-aggregator';
 
 /**
  * An `IMeshArtifactStore` backed by an Azure Blob Storage container. Publishes and reads the mesh

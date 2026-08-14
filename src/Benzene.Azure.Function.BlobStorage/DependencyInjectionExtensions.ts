@@ -1,9 +1,9 @@
 /** Port of Benzene.Azure.Function.BlobStorage.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { ITransportInfo, TransportNames } from '@benzene/abstractions-message-handlers';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { TransportInfo } from '@benzene/core-message-handlers';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { ITransportInfo, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { TransportInfo } from '@benzenejs/core-message-handlers';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { BlobStorageApplication } from './BlobStorageApplication';
 import { BlobStorageContext } from './BlobStorageContext';
 

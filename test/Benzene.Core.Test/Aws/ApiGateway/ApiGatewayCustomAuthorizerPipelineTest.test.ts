@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayAuthorizerResult } from 'aws-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
 import {
   ApiGatewayCustomAuthorizerApplication,
   ApiGatewayCustomAuthorizerContext,
   useApiGatewayCustomAuthorizer,
   useCustomAuthorizer,
-} from '@benzene/aws-lambda-api-gateway';
-import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asApiGatewayCustomAuthorizerEvent } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-api-gateway';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asApiGatewayCustomAuthorizerEvent } from '@benzenejs/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# custom-authorizer pipeline tests

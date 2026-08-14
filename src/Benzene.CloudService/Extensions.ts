@@ -2,23 +2,23 @@
 import {
   IMessageGetter,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import {
   MessageHandlerDefinition,
   MessageHandlerResult,
   setApplicationInfo,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { Constants as HealthCheckConstants, useHealthCheck } from '@benzene/health-checks';
+} from '@benzenejs/core-message-handlers';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { Constants as HealthCheckConstants, useHealthCheck } from '@benzenejs/health-checks';
 import {
   BenzeneMessageHttpOptions,
   HttpEndpointDefinition,
   IHttpContext,
   IHttpEndpointDefinition,
   useBenzeneMessage,
-} from '@benzene/http';
+} from '@benzenejs/http';
 import {
   BenzeneMessageMeshStatusReader,
   HttpMeshTraceExporter,
@@ -26,9 +26,9 @@ import {
   MeshServiceInfo,
   MeshTopics,
   useMeshTrace,
-} from '@benzene/mesh-wire';
-import { BenzeneResult } from '@benzene/results';
-import { Constants as SchemaConstants, useSpec } from '@benzene/schema-openapi';
+} from '@benzenejs/mesh-wire';
+import { BenzeneResult } from '@benzenejs/results';
+import { Constants as SchemaConstants, useSpec } from '@benzenejs/schema-openapi';
 import { CloudServiceBuilder, ICloudServiceBuilder } from './CloudServiceBuilder';
 import { CloudServiceDescriptorSource } from './CloudServiceDescriptorSource';
 import { CloudServiceProfileReport } from './CloudServiceProfileReport';

@@ -14,12 +14,12 @@
  */
 import { LambdaClient } from '@aws-sdk/client-lambda';
 import { S3Client } from '@aws-sdk/client-s3';
-import { MeshAggregator } from '@benzene/mesh-aggregator';
-import { MeshDiscoveryFilter, MeshDiscoveryRunner, MeshRegistryJson } from '@benzene/mesh-contracts';
-import { AwsLambdaDiscoveryProvider } from '@benzene/mesh-discovery-aws';
-import { LambdaMeshServiceSource } from '@benzene/mesh-aws-lambda';
-import { AwsLambdaClient } from '@benzene/clients-aws-lambda';
-import { S3MeshArtifactStore } from '@benzene/mesh-aws-s3';
+import { MeshAggregator } from '@benzenejs/mesh-aggregator';
+import { MeshDiscoveryFilter, MeshDiscoveryRunner, MeshRegistryJson } from '@benzenejs/mesh-contracts';
+import { AwsLambdaDiscoveryProvider } from '@benzenejs/mesh-discovery-aws';
+import { LambdaMeshServiceSource } from '@benzenejs/mesh-aws-lambda';
+import { AwsLambdaClient } from '@benzenejs/clients-aws-lambda';
+import { S3MeshArtifactStore } from '@benzenejs/mesh-aws-s3';
 
 /** The aggregation summary returned to the caller (mirrors .NET's `MeshAggregateSummary`). */
 interface MeshAggregateSummary {

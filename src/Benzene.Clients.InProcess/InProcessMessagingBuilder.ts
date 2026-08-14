@@ -1,9 +1,9 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { TransportNames } from '@benzene/abstractions-message-handlers';
-import { IMiddlewareApplicationWithResult, IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
-import { BenzeneMessageContext, IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzene/core-messages';
-import { MiddlewareApplicationWithResult, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewareApplicationWithResult, IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageContext, IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzenejs/core-messages';
+import { MiddlewareApplicationWithResult, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { DuplicateInProcessPipelineException } from './DuplicateInProcessPipelineException';
 
 type Dispatcher = IMiddlewareApplicationWithResult<IBenzeneMessageRequest, IBenzeneMessageResponse>;

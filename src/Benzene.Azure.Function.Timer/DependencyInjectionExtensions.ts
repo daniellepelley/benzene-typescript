@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.Timer.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IMessageHandlerResultSetter,
@@ -8,9 +8,9 @@ import {
   IRequestMapper,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import {
   addHeaderMessageVersionGetter,
   addMediaFormatNegotiation,
@@ -19,8 +19,8 @@ import {
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
   TransportInfo,
-} from '@benzene/core-message-handlers';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { TimerApplication } from './TimerApplication';
 import { TimerContext } from './TimerContext';
 import {

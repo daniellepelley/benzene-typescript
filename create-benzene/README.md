@@ -25,7 +25,7 @@ npx create-benzene my-service --template aws-apigateway
 |---|---|
 | `<project-directory>` | Directory to create the project in (also the default package name). |
 | `-t, --template <id>` | Starter template (`aws-apigateway`, `aws-sqs`). Prompted for if omitted. |
-| `--no-tests` | Skip the component-test project (drops `vitest` + the `@benzene/*-testing` devDeps). |
+| `--no-tests` | Skip the component-test project (drops `vitest` + the `@benzenejs/*-testing` devDeps). |
 | `--overwrite` | Allow generating into a non-empty directory. |
 | `-h, --help` | Show help. |
 
@@ -48,7 +48,7 @@ the templates there, not here. (For the templates-vs-examples distinction, see
 
 ## Published-vs-local packages
 
-Generated projects reference the **real** `@benzene/*` npm package names at their published versions.
+Generated projects reference the **real** `@benzenejs/*` npm package names at their published versions.
 Until those packages are published to the npm registry, a generated project cannot `npm install` them
 from the registry — resolve them from a local `benzene-typescript` workspace checkout instead (see each
 template's own README). This is a stated prerequisite of the templates, not a bug in the generated code.

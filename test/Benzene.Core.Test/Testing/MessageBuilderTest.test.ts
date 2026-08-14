@@ -8,7 +8,7 @@ import {
   asRawHttpRequest,
   httpBuilder,
   messageBuilder,
-} from '@benzene/testing';
+} from '@benzenejs/testing';
 
 describe('messageBuilder', () => {
   it('captures topic, message and fluent headers (last-wins)', () => {

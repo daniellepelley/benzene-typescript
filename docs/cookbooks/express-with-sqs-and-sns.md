@@ -18,14 +18,14 @@ worker for fulfilment. You want:
 > **Port shape differs from .NET.** The .NET cookbook runs ASP.NET Core **and** the SQS/SNS consumers in
 > **one Lambda process, one DI container** (`Benzene.Aws.Lambda.AspNet`'s HTTP bridge). The TypeScript port
 > has no in-process HTTP-plus-queue bridge: Express is a long-running host and the queue consumer is a
-> long-running `@benzene/self-host` worker, so they are **two deployables**. The idiomatic TS topology is
+> long-running `@benzenejs/self-host` worker, so they are **two deployables**. The idiomatic TS topology is
 > the durable **SNS → SQS** fan-out below — the HTTP service publishes to SNS, and the worker consumes an
 > SQS queue subscribed to that topic. This is the same decoupling the .NET single-process version gives
 > you, just across two processes. See [Hosting](../hosting.md) for the execution models.
 
 ```
 POST /orders ──► Express service ──► SNS topic ──► SQS queue ──► SQS worker
-   (@benzene/express)   (publish order:placed)          (poll, route to handler)
+   (@benzenejs/express)   (publish order:placed)          (poll, route to handler)
 ```
 
 ## Prerequisites
@@ -38,17 +38,17 @@ POST /orders ──► Express service ──► SNS topic ──► SQS queue �
 The Express HTTP service:
 
 ```bash
-npm install @benzene/express @benzene/core-message-handlers @benzene/http @benzene/results \
-  @benzene/dependencies @benzene/clients @benzene/clients-aws-sns \
-  @benzene/abstractions @benzene/abstractions-message-handlers \
+npm install @benzenejs/express @benzenejs/core-message-handlers @benzenejs/http @benzenejs/results \
+  @benzenejs/dependencies @benzenejs/clients @benzenejs/clients-aws-sns \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers \
   express @aws-sdk/client-sns
 ```
 
 The SQS consumer worker (a separate deployable):
 
 ```bash
-npm install @benzene/self-host @benzene/aws-sqs @benzene/core-message-handlers @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers @aws-sdk/client-sqs
+npm install @benzenejs/self-host @benzenejs/aws-sqs @benzenejs/core-message-handlers @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers @aws-sdk/client-sqs
 ```
 
 ## Step-by-Step Implementation
@@ -68,18 +68,18 @@ export class OrderPlaced {
 
 ### 2. The Express service: an HTTP handler that publishes to SNS
 
-The HTTP handler depends only on `IBenzeneMessageSender` (`@benzene/clients`) — the transport-agnostic
+The HTTP handler depends only on `IBenzeneMessageSender` (`@benzenejs/clients`) — the transport-agnostic
 outbound port. It sends on the `order:placed` topic; a route registered at startup carries that topic to
 SNS. Nothing in the handler mentions SNS:
 
 ```ts
 // handlers.ts
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 import { OrderPlaced } from './events.js';
 
 export class PlaceOrder {
@@ -116,7 +116,7 @@ export class PlaceOrderHandler implements IMessageHandler<PlaceOrder, OrderAccep
 ```
 
 Wire the Express app. `addOutboundRouting` registers the `order:placed` route, and `useSns` (from
-`@benzene/clients-aws-sns`) makes that route's terminal step a `PublishCommand` to your topic. The route is
+`@benzenejs/clients-aws-sns`) makes that route's terminal step a `PublishCommand` to your topic. The route is
 registered on the **same container** you hand to `benzene(...)`, so the handler resolves
 `IBenzeneMessageSender` from it:
 
@@ -124,11 +124,11 @@ registered on the **same container** you hand to `benzene(...)`, so the handler 
 // index.ts
 import express from 'express';
 import { SNSClient } from '@aws-sdk/client-sns';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { addOutboundRouting } from '@benzene/clients';
-import { useSns } from '@benzene/clients-aws-sns';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { addOutboundRouting } from '@benzenejs/clients';
+import { useSns } from '@benzenejs/clients-aws-sns';
 import { PlaceOrderHandler } from './handlers.js';
 
 const app = express();
@@ -154,16 +154,16 @@ the topic on the deep `healthcheck` layer — pass a trailing `false` to opt out
 
 ### 3. The SQS worker: consume the event from a queue
 
-The consumer is a separate deployable: a long-running `@benzene/self-host` worker that polls an SQS queue
+The consumer is a separate deployable: a long-running `@benzenejs/self-host` worker that polls an SQS queue
 and routes each message to a handler by its `topic` message attribute. The handler is an ordinary Benzene
 message handler keyed on the same `order:placed` topic:
 
 ```ts
 // NotifyWarehouseHandler.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { OrderPlaced } from './events.js';
 
 export class WarehouseAck {
@@ -181,15 +181,15 @@ export class NotifyWarehouseHandler implements IMessageHandler<OrderPlaced, Ware
 }
 ```
 
-Host it on a worker. `useSqs` (from `@benzene/aws-sqs`) adds a long-running `SqsConsumer` that long-polls
+Host it on a worker. `useSqs` (from `@benzenejs/aws-sqs`) adds a long-running `SqsConsumer` that long-polls
 the queue and runs each message through the pipeline; `SqsClientFactory` wraps an AWS SDK v3 `SQSClient`:
 
 ```ts
 // worker.ts
 import { SQSClient } from '@aws-sdk/client-sqs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { SqsClientFactory, useSqs } from '@benzene/aws-sqs';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { SqsClientFactory, useSqs } from '@benzenejs/aws-sqs';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { NotifyWarehouseHandler } from './NotifyWarehouseHandler.js';
 
 const worker = new InlineSelfHostedStartUp()
@@ -239,13 +239,13 @@ delivers it to the queue, and the worker picks it up and runs `NotifyWarehouseHa
 
 Test each side in-process, no cloud required.
 
-**The HTTP handler** — inject the first-party `FakeBenzeneMessageSender` (`@benzene/testing`), which
+**The HTTP handler** — inject the first-party `FakeBenzeneMessageSender` (`@benzenejs/testing`), which
 captures what a service published instead of sending anywhere, and assert on the topic and payload:
 
 ```ts
 // test/placeOrder.test.ts
 import { describe, expect, it } from 'vitest';
-import { FakeBenzeneMessageSender } from '@benzene/testing';
+import { FakeBenzeneMessageSender } from '@benzenejs/testing';
 import { PlaceOrder, PlaceOrderHandler } from '../src/handlers.js';
 
 describe('PlaceOrderHandler', () => {
@@ -267,7 +267,7 @@ describe('PlaceOrderHandler', () => {
 ```
 
 **The worker handler** — drive it directly (it's an ordinary handler), or exercise the whole SQS pipeline
-with the `@benzene/aws-sqs-test-helpers` builders. See [Testing Benzene](../testing-benzene.md) and
+with the `@benzenejs/aws-sqs-test-helpers` builders. See [Testing Benzene](../testing-benzene.md) and
 [Mocking External Dependencies](mocking-dependencies.md).
 
 ## Troubleshooting
@@ -305,7 +305,7 @@ and its `ReportBatchItemFailures` reporting, see [Handling SQS Message Failures]
 
 Neither handler knows its host, so the exact same `PlaceOrderHandler` and `NotifyWarehouseHandler` run on
 AWS Lambda — the HTTP one behind API Gateway, the queue one behind an SQS event-source mapping (using
-`@benzene/aws-lambda-sqs`). See [AWS Lambda Setup](../getting-started-aws.md).
+`@benzenejs/aws-lambda-sqs`). See [AWS Lambda Setup](../getting-started-aws.md).
 
 ## Further Reading
 

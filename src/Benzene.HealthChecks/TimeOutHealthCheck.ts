@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.TimeOutHealthCheck. */
-import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzene/health-checks-core';
+import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 /**
  * Decorates an `IHealthCheck` with a fixed 10-second timeout: if the wrapped check has not completed

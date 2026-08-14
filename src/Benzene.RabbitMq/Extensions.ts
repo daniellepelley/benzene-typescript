@@ -1,6 +1,6 @@
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { IBenzeneWorkerStartup } from '@benzene/self-host';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { addRabbitMqConsumer } from './DependencyInjectionExtensions';
 import { IRabbitMqConnectionFactory } from './IRabbitMqConnectionFactory';
 import { RabbitMqApplication } from './RabbitMqMessage/RabbitMqApplication';
@@ -16,7 +16,7 @@ import { RabbitMqWorker } from './RabbitMqWorker';
  *
  * Adds a self-hosted RabbitMQ consumer to a Benzene worker, mirroring `useKafka`/`useServiceBus`. This is
  * the first vendor-neutral, self-hosted broker in Benzene — intended for long-running workers (console,
- * container, Kubernetes) via `@benzene/self-host`.
+ * container, Kubernetes) via `@benzenejs/self-host`.
  *
  * DIVERGENCE — no SeedCancellationToken middleware. The C# `UseRabbitMq` seeds each scope's ambient
  * cancellation token from the delivery. The port has no ambient cancellation-token DI seam yet (matching
@@ -24,7 +24,7 @@ import { RabbitMqWorker } from './RabbitMqWorker';
  *
  * OUTBOUND PUBLISH — ported in the `RabbitMqSendMessage/` subdirectory (`RabbitMqBenzeneMessageClient`,
  * `RabbitMqClientMiddleware`, `RabbitMqContextConverter`, `useRabbitMqClient`); this file is the
- * consumer-worker entry point (`useRabbitMq`). See the README `@benzene/rabbitmq` bullet.
+ * consumer-worker entry point (`useRabbitMq`). See the README `@benzenejs/rabbitmq` bullet.
  *
  * @param app The worker startup to add the RabbitMQ consumer to.
  * @param config The queue to consume and the processing behaviour to use.

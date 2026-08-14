@@ -9,17 +9,17 @@
  * method becomes a TypeScript **fluent method** added to the builder by module augmentation + a prototype
  * assignment — the same shape the sibling AWS Lambda helper's `buildAwsLambdaHost()` uses, keeping the
  * `benzeneTestHost(StartUp).withServices(...).buildEventHubWorkerHost()` chain intact. The neutral
- * `@benzene/testing` core stays free of any cloud import; importing this package (for its
+ * `@benzenejs/testing` core stays free of any cloud import; importing this package (for its
  * `asEventHubBenzeneMessage` builder) is what lights the method up. A `this` constraint pins it to a
  * startup whose `configure` receives the unified `IBenzeneApplicationBuilder`.
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { EventHubConsumerApplication } from '@benzene/azure-event-hub';
-import { WorkerApplicationBuilder } from '@benzene/self-host';
-import { BenzeneTestHostBuilder } from '@benzene/testing';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { EventHubConsumerApplication } from '@benzenejs/azure-event-hub';
+import { WorkerApplicationBuilder } from '@benzenejs/self-host';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
 import { EventHubWorkerBenzeneTestHost } from './EventHubWorkerBenzeneTestHost';
 
-declare module '@benzene/testing' {
+declare module '@benzenejs/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {
     /**
      * Builds an {@link EventHubWorkerBenzeneTestHost} from the startup + any `withServices`/

@@ -1,14 +1,14 @@
 /** Port of Benzene.Azure.Function.QueueStorage.BenzeneMessageQueueStorageHandler. */
-import { ISerializer, IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { ISerializer, IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   BenzeneMessageContext,
   BenzeneMessageRequest,
   IBenzeneMessageRequest,
-} from '@benzene/core-messages';
-import { BenzeneMessageApplication, MessageResult } from '@benzene/core-message-handlers';
-import { MiddlewareRouter } from '@benzene/core-middleware';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/core-messages';
+import { BenzeneMessageApplication, MessageResult } from '@benzenejs/core-message-handlers';
+import { MiddlewareRouter } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { QueueStorageContext } from './QueueStorageContext';
 
 /**

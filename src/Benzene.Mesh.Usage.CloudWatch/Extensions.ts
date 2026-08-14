@@ -1,12 +1,12 @@
 /** Port of Benzene.Mesh.Usage.CloudWatch.Extensions. */
 import { CloudWatchClient } from '@aws-sdk/client-cloudwatch';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMeshUsageSource } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMeshUsageSource } from '@benzenejs/mesh-contracts';
 import { CloudWatchUsageOptions } from './CloudWatchUsageOptions';
 import { CloudWatchUsageSource } from './CloudWatchUsageSource';
 
 /**
- * Registers a `CloudWatchUsageSource` as an `IMeshUsageSource`, so `@benzene/mesh-aggregator` reads the
+ * Registers a `CloudWatchUsageSource` as an `IMeshUsageSource`, so `@benzenejs/mesh-aggregator` reads the
  * `benzene.messages.processed` counter back from CloudWatch each run and merges it into `usage.json`.
  *
  * Registers a default `CloudWatchClient` (region + credentials from the ambient AWS environment - on Lambda,

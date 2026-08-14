@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 /** Port of Benzene.Test.Diagnostics.CorrelationExtensionsTest. */
 

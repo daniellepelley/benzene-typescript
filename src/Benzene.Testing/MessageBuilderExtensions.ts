@@ -1,6 +1,6 @@
 /** Port of Benzene.Testing.MessageBuilderExtensions + Benzene.Core.Messages.TestHelpers.MessageBuilderExtensions. */
-import { IHttpBuilder, IMessageBuilder, ISerializer } from '@benzene/abstractions';
-import { BenzeneMessageRequest } from '@benzene/core-messages';
+import { IHttpBuilder, IMessageBuilder, ISerializer } from '@benzenejs/abstractions';
+import { BenzeneMessageRequest } from '@benzenejs/core-messages';
 
 /** A serializer, or just its `serialize` half. C#'s required `ISerializer` becomes optional, defaulting to JSON. */
 export type MessageSerializer = Pick<ISerializer, 'serialize'>;

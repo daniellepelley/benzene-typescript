@@ -1,10 +1,10 @@
 /** Port of Benzene.Clients.Azure.EventHub.OutboundEventHubContextConverter. */
 import { EventData } from '@azure/event-hubs';
-import { ISerializer, VoidResult } from '@benzene/abstractions';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { ISerializer, VoidResult } from '@benzenejs/abstractions';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { EventHubSendMessageContext } from './EventHubSendMessageContext';
 
 /**

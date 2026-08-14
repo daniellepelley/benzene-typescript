@@ -1,4 +1,4 @@
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
 import { BenzeneResultStatus } from './BenzeneResultStatus';
 
 /**

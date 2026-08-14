@@ -1,8 +1,8 @@
-import { BenzeneException } from '@benzene/core';
+import { BenzeneException } from '@benzenejs/core';
 import {
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { getGrpcMethods } from './GrpcMethodAttribute';
 import { GrpcMethodDefinition } from './GrpcMethodDefinition';
 import { IGrpcMethodDefinition } from './IGrpcMethodDefinition';

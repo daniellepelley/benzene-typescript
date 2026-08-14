@@ -1,7 +1,7 @@
 /** Port of Benzene.Kafka.Core.Kafka.DependencyInjectionExtensions (C# extension method -> free function). */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { KafkaSendMessageBodyGetter } from './KafkaMessageBodyGetter';
 import { KafkaSendMessageHeadersGetter } from './KafkaMessageHeadersGetter';
 import { KafkaSendMessageTopicGetter } from './KafkaSendMessageTopicGetter';

@@ -1,4 +1,4 @@
-import { serviceToken } from '@benzene/abstractions';
+import { serviceToken } from '@benzenejs/abstractions';
 
 /** The in-memory order store the HTTP handlers read/write — the example's stand-in for a database. */
 export interface Order {

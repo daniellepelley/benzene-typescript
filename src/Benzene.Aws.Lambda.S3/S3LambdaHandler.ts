@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.S3.S3LambdaHandler. */
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isS3Event } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isS3Event } from '@benzenejs/aws-lambda-core';
 import { S3Event } from 'aws-lambda';
 
 /**

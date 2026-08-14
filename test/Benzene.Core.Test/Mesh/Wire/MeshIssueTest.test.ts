@@ -2,10 +2,10 @@
  * Port of the wire-facing half of Benzene.Test.Mesh.Wire.MeshIssuesTest (spec §4.1): the classification
  * precedence table and the normative fingerprint recipe. The C# suite's emitter-middleware cases
  * (`UseMeshIssues`/`IMeshIssueExporter`/`MeshIssueOccurrence`) are the mesh service-side emitter, not part of
- * `@benzene/mesh-wire`'s ported surface, so they are out of scope here.
+ * `@benzenejs/mesh-wire`'s ported surface, so they are out of scope here.
  */
 import { describe, expect, it } from 'vitest';
-import { MeshIssueClassification, MeshIssueFingerprint } from '@benzene/mesh-wire';
+import { MeshIssueClassification, MeshIssueFingerprint } from '@benzenejs/mesh-wire';
 
 describe('MeshIssueClassification', () => {
   it('Classification_FollowsThePrecedenceTable', () => {

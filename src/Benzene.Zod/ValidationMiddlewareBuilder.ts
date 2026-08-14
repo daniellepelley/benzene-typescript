@@ -1,12 +1,12 @@
-import { Constructor, IServiceResolver, VoidResult } from '@benzene/abstractions';
+import { Constructor, IServiceResolver, VoidResult } from '@benzenejs/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IMessageHandler,
   IMessageHandlerContext,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware } from '@benzene/abstractions-middleware';
-import { IValidationStatusMapper } from '@benzene/abstractions-validation';
-import { getMessageMetadata } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware } from '@benzenejs/abstractions-middleware';
+import { IValidationStatusMapper } from '@benzenejs/abstractions-validation';
+import { getMessageMetadata } from '@benzenejs/core-message-handlers';
 import { ValidationMiddleware } from './ValidationMiddleware';
 import { getZodSchema } from './ZodSchemaRegistry';
 

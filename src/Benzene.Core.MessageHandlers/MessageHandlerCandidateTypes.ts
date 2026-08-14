@@ -1,4 +1,4 @@
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 
 /**
  * Records one `addMessageHandlers(...)` call's explicit handler types (or no types, for the

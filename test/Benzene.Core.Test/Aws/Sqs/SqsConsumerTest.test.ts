@@ -6,18 +6,18 @@ import type {
   ReceiveMessageCommandInput,
   ReceiveMessageCommandOutput,
 } from '@aws-sdk/client-sqs';
-import { ILoggerFactory, IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   addBenzene,
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   ISqsClientFactory,
   ISqsConsumerClient,
@@ -31,8 +31,8 @@ import {
   SqsConsumerOptions,
   withConfigDefaults,
   useSqs,
-} from '@benzene/aws-sqs';
-import { BenzeneWorkerBuilder, IBenzeneWorkerStartup } from '@benzene/self-host';
+} from '@benzenejs/aws-sqs';
+import { BenzeneWorkerBuilder, IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { FakeLoggerFactory } from '../../Logging/Helpers/FakeLoggerFactory';
 
 /**

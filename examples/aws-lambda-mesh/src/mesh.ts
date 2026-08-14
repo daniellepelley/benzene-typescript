@@ -12,10 +12,10 @@ import {
   FileSystemMeshArtifactStore,
   IMeshArtifactStore,
   MeshAggregator,
-} from '@benzene/mesh-aggregator';
-import { MeshDiscoveryFilter, MeshDiscoveryRunner, MeshManifest, MeshServiceRegistry } from '@benzene/mesh-contracts';
-import { AwsLambdaDiscoveryProvider } from '@benzene/mesh-discovery-aws';
-import { LambdaMeshServiceSource } from '@benzene/mesh-aws-lambda';
+} from '@benzenejs/mesh-aggregator';
+import { MeshDiscoveryFilter, MeshDiscoveryRunner, MeshManifest, MeshServiceRegistry } from '@benzenejs/mesh-contracts';
+import { AwsLambdaDiscoveryProvider } from '@benzenejs/mesh-discovery-aws';
+import { LambdaMeshServiceSource } from '@benzenejs/mesh-aws-lambda';
 import { discoveryLambdaClient, inMemoryLambdaClient } from './localAwsEnvironment';
 
 /** The outcome of one aggregation pass: the discovered registry, the manifest, and the artifact store. */

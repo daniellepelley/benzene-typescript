@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ILogger, LogLevel } from '@benzene/abstractions';
-import { BoundedConcurrentDispatcher } from '@benzene/self-host';
+import { ILogger, LogLevel } from '@benzenejs/abstractions';
+import { BoundedConcurrentDispatcher } from '@benzenejs/self-host';
 import { FakeLoggerFactory, LogCollector } from '../Logging/Helpers/FakeLoggerFactory';
 
 /**

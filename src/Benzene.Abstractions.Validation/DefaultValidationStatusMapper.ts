@@ -1,5 +1,5 @@
-import { Constructor } from '@benzene/abstractions';
-import { BenzeneResultStatus } from '@benzene/results';
+import { Constructor } from '@benzenejs/abstractions';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { IValidationStatusMapper } from './IValidationStatusMapper';
 import { getValidationStatus } from './ValidationStatusAttribute';
 
@@ -12,8 +12,8 @@ import { getValidationStatus } from './ValidationStatusAttribute';
  *
  * Deliberate divergence from the C# source:
  * - C# keeps this class inside the `Benzene.FluentValidation` project. Here it is hoisted into
- *   `@benzene/abstractions-validation` so every schema adapter (`@benzene/zod`, and future
- *   `@benzene/joi` / `@benzene/yup`) shares one implementation instead of each re-declaring it.
+ *   `@benzenejs/abstractions-validation` so every schema adapter (`@benzenejs/zod`, and future
+ *   `@benzenejs/joi` / `@benzenejs/yup`) shares one implementation instead of each re-declaring it.
  * - C# also inspects per-error `CustomState` for a `BenzeneValidationState.Status` override before
  *   consulting the handler attribute. That override is a FluentValidation-specific feature
  *   (per-rule custom state) with no schema-library-neutral equivalent, so it is omitted; only the

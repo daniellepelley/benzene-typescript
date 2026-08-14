@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { ApiGatewayContext } from '@benzene/aws-lambda-api-gateway';
-import { OAuth2BearerOptions, useOAuth2Bearer } from '@benzene/auth-oauth2';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { ApiGatewayContext } from '@benzenejs/aws-lambda-api-gateway';
+import { OAuth2BearerOptions, useOAuth2Bearer } from '@benzenejs/auth-oauth2';
 
 /**
  * Port of test/Benzene.Core.Test/Auth/OAuth2BearerOptionsValidationTest.cs. `OAuth2BearerOptions.validate`

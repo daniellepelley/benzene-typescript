@@ -16,16 +16,16 @@ You want to test a handler's behavior without touching real infrastructure:
 
 - [Node.js 22+](https://nodejs.org/) and a Benzene service — see [Getting Started](../getting-started.md).
 - A handler that takes its dependency via `static inject` (see [Message Handlers](../message-handlers.md)).
-- The transport testing package for however you drive the pipeline (`@benzene/aws-lambda-testing` here).
+- The transport testing package for however you drive the pipeline (`@benzenejs/aws-lambda-testing` here).
 
 ## Installation
 
 ```bash
-npm install --save-dev vitest @benzene/testing @benzene/aws-lambda-testing
+npm install --save-dev vitest @benzenejs/testing @benzenejs/aws-lambda-testing
 ```
 
-`vitest` is the test runner (its `vi.fn()` gives you spies for verifying calls); `@benzene/testing`
-provides the `messageBuilder`/`httpBuilder` request builders, and `@benzene/aws-lambda-testing` turns
+`vitest` is the test runner (its `vi.fn()` gives you spies for verifying calls); `@benzenejs/testing`
+provides the `messageBuilder`/`httpBuilder` request builders, and `@benzenejs/aws-lambda-testing` turns
 those into native cloud events (`asApiGatewayRequest`, `asSqs`, …).
 
 ## The approach
@@ -58,7 +58,7 @@ identifier):
 
 ```ts
 // OrderService.ts
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export class OrderDto {
   id?: string;
@@ -78,10 +78,10 @@ export const IOrderService: ServiceToken<IOrderService> = serviceToken<IOrderSer
 
 ```ts
 // GetOrderHandler.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
 import { IOrderService, OrderDto } from './OrderService.js';
 
 export class GetOrderMessage {
@@ -113,11 +113,11 @@ the spy. First the production composition root — the `StartUp` the test boots:
 
 ```ts
 // src/startUp.ts — the same composition root you deploy.
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { GetOrderHandler } from './GetOrderHandler.js';
 
 export class GetOrderStartUp implements BenzeneStartUp {
@@ -136,9 +136,9 @@ export class GetOrderStartUp implements BenzeneStartUp {
 // GetOrderHandler.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import { APIGatewayProxyResult } from 'aws-lambda';
-import { BenzeneResult } from '@benzene/results';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+import { BenzeneResult } from '@benzenejs/results';
+import { benzeneTestHost, httpBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { GetOrderStartUp } from '../src/startUp.js';
 import { IOrderService, OrderDto } from '../src/OrderService.js';
 

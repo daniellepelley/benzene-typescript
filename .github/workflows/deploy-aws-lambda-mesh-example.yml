@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # Install the whole workspace (the example depends on the @benzene/* workspace packages), then
+      # Install the whole workspace (the example depends on the @benzenejs/* workspace packages), then
       # bundle every function. Unlike the .NET job (one self-contained publish per project), esbuild
       # produces all seven tiny zips in a single `npm run bundle` — no per-function matrix needed.
       - name: Install workspace

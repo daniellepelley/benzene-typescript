@@ -1,4 +1,4 @@
-import { IVersionSelector } from '@benzene/abstractions-message-handlers';
+import { IVersionSelector } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Returns the requested version when available, otherwise the highest available

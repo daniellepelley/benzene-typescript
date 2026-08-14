@@ -1,16 +1,19 @@
 {
-  "name": "@benzene/mesh-collector",
-  "version": "0.1.0",
+  "name": "@benzenejs/mesh-collector",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Mesh.Collector",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/mesh-wire": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
-    "@benzene/results": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/mesh-wire": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

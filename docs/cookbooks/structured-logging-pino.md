@@ -11,8 +11,8 @@ processing time — to appear as first-class fields on every log event, includin
 handlers write.
 
 **Before you install anything, the important thing to know is what Benzene *doesn't* provide here:**
-there is **no `@benzene/pino` package**. Benzene logs through its own small `ILogger` / `ILoggerFactory`
-abstraction (`@benzene/abstractions`, `Logging/ILogger`) — the port's stand-in for .NET's
+there is **no `@benzenejs/pino` package**. Benzene logs through its own small `ILogger` / `ILoggerFactory`
+abstraction (`@benzenejs/abstractions`, `Logging/ILogger`) — the port's stand-in for .NET's
 `Microsoft.Extensions.Logging`, since Node has no platform-standard logging abstraction to plug a
 provider into. So the integration is a small **adapter** you write once: a class that implements
 `ILogger` over a pino logger, registered as the `ILoggerFactory`. That's the whole surface — there's no
@@ -36,12 +36,12 @@ Benzene-side extension point beyond it, and Benzene's enrichment middleware work
 npm install pino
 ```
 
-`@benzene/abstractions` (which supplies `ILogger` / `ILoggerFactory`) is already a transitive dependency
+`@benzenejs/abstractions` (which supplies `ILogger` / `ILoggerFactory`) is already a transitive dependency
 of the core packages, so there's nothing else to add on the Benzene side.
 
 ## The `ILogger` contract you're implementing
 
-Benzene's logging surface is deliberately minimal (`@benzene/abstractions`, `Logging/ILogger`):
+Benzene's logging surface is deliberately minimal (`@benzenejs/abstractions`, `Logging/ILogger`):
 
 ```ts
 export enum LogLevel { Trace, Debug, Information, Warning, Error, Critical }
@@ -60,7 +60,7 @@ export interface ILoggerFactory {
 }
 ```
 
-`LoggerBase` (also in `@benzene/abstractions`) already implements the four level-specific helpers in
+`LoggerBase` (also in `@benzenejs/abstractions`) already implements the four level-specific helpers in
 terms of `log`, so an adapter only has to implement `log` and `beginScope`.
 
 The one subtlety is **`beginScope`**. Benzene's enrichment middleware opens a scope on *one* logger and
@@ -82,7 +82,7 @@ import {
   ILoggerFactory,
   LoggerBase,
   LogLevel,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 
 /** Ambient scope stack, per async invocation, shared by every logger this factory hands out. */
 const scopeStorage = new AsyncLocalStorage<Record<string, unknown>[]>();
@@ -151,9 +151,9 @@ one you hand to `benzene(...)`:
 
 ```ts
 import express from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { addPinoLogging } from './pinoLogging.js';
 import { CreateOrderHandler } from './createOrderHandler.js';
 
@@ -190,12 +190,12 @@ Add `useLogResult` (or `useLogContext`, if you don't want the extra `"BenzeneRes
 early in the pipeline, chaining the fields you want:
 
 ```ts
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 app.useLogResult((x) => CorrelationExtensions.withCorrelationId(x));
 ```
 
-- `CorrelationExtensions.withCorrelationId` (`@benzene/diagnostics`) — adds `correlationId` (a
+- `CorrelationExtensions.withCorrelationId` (`@benzenejs/diagnostics`) — adds `correlationId` (a
   per-invocation UUID unless your own middleware calls `ICorrelationId.set(...)` — see
   [Request Correlation](request-correlation.md)).
 
@@ -203,7 +203,7 @@ Or, for the portable one-call version that also adds `invocationId` / `traceId` 
 `transport` / `handler` on every platform:
 
 ```ts
-import { useBenzeneEnrichment } from '@benzene/diagnostics';
+import { useBenzeneEnrichment } from '@benzenejs/diagnostics';
 
 useBenzeneEnrichment(app);
 ```
@@ -218,7 +218,7 @@ during that request, all carrying the same scope fields. A handler's own logging
 it runs inside the same ambient scope:
 
 ```ts
-import { ILogger, ILoggerFactory } from '@benzene/abstractions';
+import { ILogger, ILoggerFactory } from '@benzenejs/abstractions';
 
 @message('order:create', { requestType: CreateOrderRequest, responseType: CreateOrderResponse })
 export class CreateOrderHandler implements IMessageHandler<CreateOrderRequest, CreateOrderResponse> {

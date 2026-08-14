@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MeshServiceReport } from '@benzene/mesh-contracts';
-import { HttpMeshReportPublisher, MeshReportingOptions } from '@benzene/mesh-reporting';
+import { MeshServiceReport } from '@benzenejs/mesh-contracts';
+import { HttpMeshReportPublisher, MeshReportingOptions } from '@benzenejs/mesh-reporting';
 
 /**
  * Port of test/Benzene.Mesh.Test/HttpMeshReportPublisherTest.cs. The C# `CapturingHttpMessageHandler` +

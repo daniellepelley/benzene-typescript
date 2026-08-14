@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.HttpMeshServiceSource. */
-import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzene/mesh-contracts';
+import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
 import { IMeshServiceSource } from './IMeshServiceSource';
 
 /** A `fetch`-like function - the port of C# `HttpClient` (`HttpClient` -> injectable `fetch`). */
@@ -21,7 +21,7 @@ export class HttpRequestException extends Error {
  * The default `IMeshServiceSource` - fetches `MeshServiceRegistryEntry.specUrl`/`healthUrl` over HTTP.
  * This is `MeshAggregator`'s original (pre-`IMeshServiceSource`) behavior.
  *
- * `HttpClient` -> an injectable `fetch` (default global `fetch`, the `@benzene/health-checks-http` pattern).
+ * `HttpClient` -> an injectable `fetch` (default global `fetch`, the `@benzenejs/health-checks-http` pattern).
  * `GetStringAsync` throws on a non-2xx response, so the spec fetch throws when `!response.ok`; the health
  * fetch deliberately reads the body regardless of status (see {@link fetchHealthAsync}).
  */

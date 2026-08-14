@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
-import { CacheHealthCheck, ICacheService } from '@benzene/cache-core';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { CacheHealthCheck, ICacheService } from '@benzenejs/cache-core';
 
 /**
  * Ports test/Benzene.Core.Test/Cache/CacheHealthCheckTest.cs. The C# generic `CacheHealthCheck<T>` +

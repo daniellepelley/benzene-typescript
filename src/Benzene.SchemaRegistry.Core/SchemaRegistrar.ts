@@ -1,5 +1,5 @@
 /** Port of Benzene.SchemaRegistry.Core.SchemaRegistrar. */
-import { Constructor, IPayloadSerializer } from '@benzene/abstractions';
+import { Constructor, IPayloadSerializer } from '@benzenejs/abstractions';
 import { ISchemaRegistryClient } from './ISchemaRegistryClient';
 import { ISchemaResolver } from './ISchemaResolver';
 import { SchemaIncompatibleException } from './SchemaIncompatibleException';

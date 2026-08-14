@@ -5,12 +5,12 @@
  * the descriptor is a projection of the running code, never hand-maintained.
  *
  * Note: request/response JSON *schemas* aren't included here - deriving them would need the normative
- * `ServiceDescriptor` path (schemas from a `@benzene/zod`/`joi`/`yup` registry; see the README's
+ * `ServiceDescriptor` path (schemas from a `@benzenejs/zod`/`joi`/`yup` registry; see the README's
  * "Multi-language interoperability" section). The aggregator handles a schema-less descriptor fine: it still
  * builds the cross-service topic catalog and topology from the topics themselves.
  */
-import { MessageHandlersRegistry, RegistryMessageHandlersFinder } from '@benzene/core-message-handlers';
-import { RegistryHttpEndpointFinder } from '@benzene/http';
+import { MessageHandlersRegistry, RegistryMessageHandlersFinder } from '@benzenejs/core-message-handlers';
+import { RegistryHttpEndpointFinder } from '@benzenejs/http';
 
 interface SpecRequest {
   topic: string;

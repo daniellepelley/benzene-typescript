@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { DefaultValidationStatusMapper } from '@benzene/abstractions-validation';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { getJsonSchemaValidator, registerJsonSchema, ValidationMiddleware } from '@benzene/ajv';
+import { IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { DefaultValidationStatusMapper } from '@benzenejs/abstractions-validation';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { getJsonSchemaValidator, registerJsonSchema, ValidationMiddleware } from '@benzenejs/ajv';
 
 /**
  * Direct unit coverage for the handler-level {@link ValidationMiddleware} — the paths the end-to-end

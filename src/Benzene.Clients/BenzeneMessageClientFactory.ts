@@ -1,4 +1,4 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import { IBenzeneMessageClient } from './IBenzeneMessageClient';
 import { IBenzeneMessageClientFactory } from './IBenzeneMessageClientFactory';
 import { ClientMapping } from './ClientMapping';

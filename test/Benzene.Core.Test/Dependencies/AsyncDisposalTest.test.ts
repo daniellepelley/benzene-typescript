@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { serviceToken } from '@benzene/abstractions';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { serviceToken } from '@benzenejs/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /** A scoped resource that records async teardown — the shape a Unit of Work / DB session takes. */
 class AsyncResource {

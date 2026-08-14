@@ -3,7 +3,7 @@
 Every [message handler](message-handlers.md) returns its outcome wrapped in an `IBenzeneResultOf<T>` (or
 `IBenzeneResult` for handlers with no payload) instead of throwing for expected failure cases. The
 result carries a status, a success flag, the payload (on success), and error messages (on failure).
-Build one with the `BenzeneResult` factory (`@benzene/results`) — you should not need to implement
+Build one with the `BenzeneResult` factory (`@benzenejs/results`) — you should not need to implement
 `IBenzeneResultOf<T>` yourself.
 
 > **Naming note.** C# `IBenzeneResult<T>` becomes `IBenzeneResultOf<T>` (TypeScript can't reuse the
@@ -13,7 +13,7 @@ Build one with the `BenzeneResult` factory (`@benzene/results`) — you should n
 
 ## `IBenzeneResult` / `IBenzeneResultOf<T>`
 
-Defined in `@benzene/abstractions`:
+Defined in `@benzenejs/abstractions`:
 
 ```ts
 export interface IBenzeneResult {
@@ -30,17 +30,17 @@ export interface IBenzeneResultOf<T> extends IBenzeneResult {
 
 `status` is a plain string (see [`BenzeneResultStatus`](#benzeneresultstatus) below) — not a TypeScript
 `enum` — which is what lets transport-specific status mappers (HTTP status codes, SQS
-batch-item-failure, ...) key off it without a hard dependency on `@benzene/results` itself. A handler
+batch-item-failure, ...) key off it without a hard dependency on `@benzenejs/results` itself. A handler
 with no meaningful payload returns `IBenzeneResultOf<VoidResult>`, which the factory fills in for you.
 
 ## `BenzeneResult` factory
 
-Factory functions on `BenzeneResult` (`@benzene/results`). The C# generic/non-generic overload pairs
+Factory functions on `BenzeneResult` (`@benzenejs/results`). The C# generic/non-generic overload pairs
 (`Ok()` / `Ok<T>(payload)`) collapse into a single function with an **optional** payload that defaults to
 `VoidResult`, and the method names are **camelCase** (`BenzeneResult.ok(x)`, not `.Ok(x)`):
 
 ```ts
-import { BenzeneResult } from '@benzene/results';
+import { BenzeneResult } from '@benzenejs/results';
 
 BenzeneResult.ok(new OrderDto());        // BenzeneResult.ok<OrderDto>() also valid (VoidResult payload)
 BenzeneResult.created(new OrderDto());
@@ -82,11 +82,11 @@ status via `BenzeneResultStatus.isSuccess(status)`.
 > helpers (`.IsOk()`, `.IsNotFound()`, `.As<TOutput>()`) have no port yet. To classify a result
 > in TypeScript, compare its `status` against `BenzeneResultStatus` or use the classification helpers
 > below. (The reverse HTTP-status-code → result mapping — C# `HttpStatusCode.Convert()` — *is* ported,
-> as the free function `convertHttpStatusCode(code)` in `@benzene/results`.)
+> as the free function `convertHttpStatusCode(code)` in `@benzenejs/results`.)
 
 ## `BenzeneResultStatus`
 
-An object of string constants plus classification helpers (`@benzene/results`), **not** a TypeScript
+An object of string constants plus classification helpers (`@benzenejs/results`), **not** a TypeScript
 `enum`:
 
 ```ts
@@ -131,7 +131,7 @@ failure (a `404`/`422`).
 
 ### HTTP
 
-`@benzene/http`'s `DefaultHttpStatusCodeMapper` (`IHttpStatusCodeMapper`) maps every
+`@benzenejs/http`'s `DefaultHttpStatusCodeMapper` (`IHttpStatusCodeMapper`) maps every
 `BenzeneResultStatus` value onto an HTTP status code; unrecognized or `undefined` statuses default to
 `500`:
 
@@ -171,7 +171,7 @@ the [cookbooks](cookbooks/README.md).
 
 Two representative examples, verified against the port's source:
 
-- **AWS SQS** (`@benzene/aws-lambda-sqs`) — batch-based. `SqsApplication` runs each record in the batch,
+- **AWS SQS** (`@benzenejs/aws-lambda-sqs`) — batch-based. `SqsApplication` runs each record in the batch,
   and reports every record whose handler returned `isSuccessful === false`, or that threw, back to Lambda
   as an `SQSBatchResponse.batchItemFailures` entry — so SQS redrives (or dead-letters, per your redrive
   policy) only those records; successfully-handled records in the same batch are not reprocessed.
@@ -179,7 +179,7 @@ Two representative examples, verified against the port's source:
   `FailWholeBatch` throws `SqsBatchProcessingException` on any failure so SQS retries the whole batch).
   Partial-batch mode requires `ReportBatchItemFailures` on the event source mapping's
   `FunctionResponseTypes`.
-- **AWS SNS** (`@benzene/aws-lambda-sns`) — one notification per invocation, no per-record ack API, so
+- **AWS SNS** (`@benzenejs/aws-lambda-sns`) — one notification per invocation, no per-record ack API, so
   settlement rides on whether the invocation throws. `SnsMessageMessageHandlerResultSetter` records the result;
   `SnsApplication` then consults `SnsOptions`. Both flags are **opt-in, defaulting to `false`**:
   - `raiseOnFailureStatus` (default `false`) — when `true`, a non-exception failure result is escalated
@@ -193,7 +193,7 @@ Two representative examples, verified against the port's source:
 > **Port note.** The .NET `SnsOptions.RaiseOnFailureStatus` defaults to `true`; the TypeScript port keeps
 > both `SnsOptions` flags additive and `false` by default, preserving the pre-settlement behavior. Set
 > `raiseOnFailureStatus = true` explicitly if you want a failure result to trigger SNS retries. Other
-> queue/stream transports (`@benzene/azure-function-service-bus`, `@benzene/azure-function-kafka`, ...)
+> queue/stream transports (`@benzenejs/azure-function-service-bus`, `@benzenejs/azure-function-kafka`, ...)
 > expose their own equivalent options — check each package's `*Options` class for its exact default.
 
 ## See also

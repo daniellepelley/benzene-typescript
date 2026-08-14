@@ -1,4 +1,4 @@
-import { ServiceIdentifier } from '@benzene/abstractions';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
 import { ITopic } from './ITopic';
 
 /**

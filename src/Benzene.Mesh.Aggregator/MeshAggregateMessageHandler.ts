@@ -1,8 +1,8 @@
 /** Port of Benzene.Mesh.Aggregator.MeshAggregateMessageHandler. */
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MeshManifest, MeshServiceRegistry } from '@benzene/mesh-contracts';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MeshManifest, MeshServiceRegistry } from '@benzenejs/mesh-contracts';
+import { BenzeneResult } from '@benzenejs/results';
 import { MeshAggregator } from './MeshAggregator';
 
 /**

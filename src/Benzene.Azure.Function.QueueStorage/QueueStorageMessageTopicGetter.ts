@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.QueueStorage.QueueStorageMessageTopicGetter. */
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { QueueStorageContext } from './QueueStorageContext';
 
 /**

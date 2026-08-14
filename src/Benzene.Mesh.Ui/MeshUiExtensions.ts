@@ -1,8 +1,8 @@
 /** Port of Benzene.Mesh.Ui.MeshUiExtensions. */
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { MeshUiMiddleware } from './MeshUiMiddleware';
 import { MeshSpecUiMiddleware } from './MeshSpecUiMiddleware';
 
@@ -11,7 +11,7 @@ export const DefaultPath = '/mesh-ui';
 
 /**
  * The default URL the UI fetches `manifest.json` from — a relative path, since the realistic case is the HTML
- * sitting in the same directory as the aggregator's generated artifacts (unlike `@benzene/spec-ui`'s default, which
+ * sitting in the same directory as the aggregator's generated artifacts (unlike `@benzenejs/spec-ui`'s default, which
  * points at a route on the same live service).
  */
 export const DefaultManifestUrl = 'manifest.json';
@@ -26,7 +26,7 @@ export const DefaultSpecUiPath = '/mesh-spec-ui.html';
 /**
  * The default wire-envelope endpoint the mesh UI's live Fleet plane polls, following the default service standard's
  * `/benzene/` prefix. Pass it as `useMeshUi`'s `envelopeUrl` on a mesh host that also serves a
- * `@benzene/mesh-collector` over the wire envelope.
+ * `@benzenejs/mesh-collector` over the wire envelope.
  */
 export const DefaultEnvelopeUrl = '/benzene/invoke';
 

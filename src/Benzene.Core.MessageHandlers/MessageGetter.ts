@@ -1,12 +1,12 @@
 import {
   IMessageGetter,
   IMessageTopicGetter,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import {
   IMessageBodyGetter,
   IMessageHeadersGetter,
   ITopic,
-} from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-messages';
 
 /**
  * Default `IMessageGetter<TContext>` implementation that composes the individually registered

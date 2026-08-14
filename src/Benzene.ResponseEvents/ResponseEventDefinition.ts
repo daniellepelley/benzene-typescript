@@ -1,6 +1,6 @@
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IMessageDefinition, ITopic } from '@benzene/abstractions-messages';
-import { Topic } from '@benzene/core-messages';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMessageDefinition, ITopic } from '@benzenejs/abstractions-messages';
+import { Topic } from '@benzenejs/core-messages';
 
 /**
  * An {@link IMessageDefinition} describing one event this service publishes as a mapped handler response

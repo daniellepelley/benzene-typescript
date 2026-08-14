@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TopologyEdgeSource } from '@benzene/mesh-contracts';
-import { PrometheusQueryClient, TempoServiceGraphTopologyBuilder, TempoTopologyOptions } from '@benzene/mesh-tracing-tempo';
+import { TopologyEdgeSource } from '@benzenejs/mesh-contracts';
+import { PrometheusQueryClient, TempoServiceGraphTopologyBuilder, TempoTopologyOptions } from '@benzenejs/mesh-tracing-tempo';
 
 /**
  * Port of test/Benzene.Mesh.Test/TempoServiceGraphTopologyBuilderTest.cs. The C# `HttpMessageHandler` that

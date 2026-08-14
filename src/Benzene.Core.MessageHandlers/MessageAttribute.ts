@@ -1,4 +1,4 @@
-import { Constructor, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
+import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
 import { MessageHandlersRegistry } from './MessageHandlersRegistry';
 
 /**

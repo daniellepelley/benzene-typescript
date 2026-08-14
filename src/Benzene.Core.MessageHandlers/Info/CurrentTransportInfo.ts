@@ -1,4 +1,4 @@
-import { ICurrentTransport, ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
+import { ICurrentTransport, ISetCurrentTransport } from '@benzenejs/abstractions-message-handlers';
 import { Constants } from '../Constants';
 
 /**

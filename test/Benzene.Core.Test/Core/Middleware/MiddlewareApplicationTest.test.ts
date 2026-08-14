@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
 import {
   EntryPointMiddlewareApplicationWithResult,
   MiddlewareApplication,
   MiddlewareApplicationWithResult,
   MiddlewareMultiApplicationWithResult,
   MiddlewarePipelineBuilder,
-} from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer, ServiceCollection } from '@benzene/dependencies';
+} from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer, ServiceCollection } from '@benzenejs/dependencies';
 
 /**
  * Port of Benzene.Test.Core.Middleware.MiddlewareApplicationScopeDisposalTest and
@@ -48,15 +48,15 @@ class TrackingServiceResolver implements IServiceResolver {
 
   constructor(private readonly inner: IServiceResolver) {}
 
-  getService<T>(identifier: import('@benzene/abstractions').ServiceIdentifier<T>): T {
+  getService<T>(identifier: import('@benzenejs/abstractions').ServiceIdentifier<T>): T {
     return this.inner.getService(identifier);
   }
 
-  tryGetService<T>(identifier: import('@benzene/abstractions').ServiceIdentifier<T>): T | undefined {
+  tryGetService<T>(identifier: import('@benzenejs/abstractions').ServiceIdentifier<T>): T | undefined {
     return this.inner.tryGetService(identifier);
   }
 
-  getServices<T>(identifier: import('@benzene/abstractions').ServiceIdentifier<T>): T[] {
+  getServices<T>(identifier: import('@benzenejs/abstractions').ServiceIdentifier<T>): T[] {
     return this.inner.getServices(identifier);
   }
 

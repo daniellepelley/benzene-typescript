@@ -3,9 +3,9 @@
  * a concrete `CacheEntry<T>` subclass backed by an in-memory string store (no Redis).
  */
 import { describe, expect, it, vi } from 'vitest';
-import { ILogger, IDisposable, LogLevel, LoggerBase } from '@benzene/abstractions';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { CacheEntry, CacheUpdateAction } from '@benzene/cache-core';
+import { ILogger, IDisposable, LogLevel, LoggerBase } from '@benzenejs/abstractions';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { CacheEntry, CacheUpdateAction } from '@benzenejs/cache-core';
 
 interface Widget {
   id: string;

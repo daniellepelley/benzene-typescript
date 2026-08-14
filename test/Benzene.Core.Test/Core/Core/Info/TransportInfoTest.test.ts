@@ -5,7 +5,7 @@ import {
   CurrentTransportInfo,
   TransportInfo,
   TransportsInfo,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 
 /** Tests for the ported Benzene.Core.MessageHandlers.Info implementations. */
 describe('TransportsInfo', () => {

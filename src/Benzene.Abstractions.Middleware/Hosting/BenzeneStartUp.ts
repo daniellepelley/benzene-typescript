@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { IBenzeneApplicationBuilder } from './IBenzeneApplicationBuilder';
 import { BenzeneConfiguration } from './BenzeneConfiguration';
 
@@ -16,9 +16,9 @@ import { BenzeneConfiguration } from './BenzeneConfiguration';
  *
  * SHARED CONTRACT: this is the ONE contract the in-memory `benzeneTestHost(StartUp)` and the production
  * `AwsLambdaHost<TStartUp>` both consume, so what a component test boots is exactly what deploys. It lives
- * in `@benzene/abstractions-middleware` (the neutral hosting-abstractions package, alongside
- * {@link IStartUp} and {@link IBenzeneApplicationBuilder}) rather than in `@benzene/testing`, so a
- * production host never depends on the testing package. `@benzene/testing` re-exports it unchanged.
+ * in `@benzenejs/abstractions-middleware` (the neutral hosting-abstractions package, alongside
+ * {@link IStartUp} and {@link IBenzeneApplicationBuilder}) rather than in `@benzenejs/testing`, so a
+ * production host never depends on the testing package. `@benzenejs/testing` re-exports it unchanged.
  *
  * BEND FROM .NET: `getConfiguration` is optional here (`IStartUp.GetConfiguration()` is required). A host
  * treats an absent `getConfiguration` as {@link emptyConfiguration}, so the many startups that read only

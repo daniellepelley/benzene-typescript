@@ -6,7 +6,7 @@ import {
   CosmosChangeFeedSource,
   ICosmosChangeFeedCheckpointStore,
   InMemoryCosmosChangeFeedCheckpointStore,
-} from '@benzene/azure-cosmos-db';
+} from '@benzenejs/azure-cosmos-db';
 
 /**
  * Net-new coverage for the change-feed-processor fork (no C# counterpart — the .NET tests mock the

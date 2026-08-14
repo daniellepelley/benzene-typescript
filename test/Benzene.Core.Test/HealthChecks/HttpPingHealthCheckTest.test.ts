@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResultStatus } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { HealthCheckResponse, HealthCheckStatus } from '@benzene/health-checks-core';
-import { getHealthCheckerBuilder, HealthCheckProcessor } from '@benzene/health-checks';
-import { HttpPingHealthCheck, PingFetch, addHttpPing } from '@benzene/health-checks-http';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { HealthCheckResponse, HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { getHealthCheckerBuilder, HealthCheckProcessor } from '@benzenejs/health-checks';
+import { HttpPingHealthCheck, PingFetch, addHttpPing } from '@benzenejs/health-checks-http';
 
 /**
  * Ports the http-ping health-check test: a `HttpPingHealthCheck` over a STUBBED fetch (per the

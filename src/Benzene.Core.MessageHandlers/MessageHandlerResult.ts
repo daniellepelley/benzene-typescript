@@ -1,10 +1,10 @@
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
 import {
   IMessageHandlerDefinition,
   IMessageHandlerResult,
   IMessageHandlerResultOf,
-} from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * Default `IMessageHandlerResult` implementation, produced by `MessageRouter<TContext>` after

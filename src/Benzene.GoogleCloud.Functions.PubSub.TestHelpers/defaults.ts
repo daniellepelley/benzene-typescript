@@ -1,4 +1,4 @@
-import { MessageSerializer } from '@benzene/testing';
+import { MessageSerializer } from '@benzenejs/testing';
 
 /** The default body serializer for the Google Cloud Functions Pub/Sub builders (C#'s default `new JsonSerializer()`). */
 export const jsonMessageSerializer: MessageSerializer = {

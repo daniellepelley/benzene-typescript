@@ -1,7 +1,7 @@
-import { Constructor, IBenzeneResultOf, IServiceResolver } from '@benzene/abstractions';
-import { IMessageHandler, IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { Constructor, IBenzeneResultOf, IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { MessageHandlerContext } from './BenzeneMessageContext';
 
 /**

@@ -1,4 +1,4 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
 import { IBenzeneClientContext } from './IBenzeneClientContext';
 import { IBenzeneClientRequest } from './IBenzeneClientRequest';
 

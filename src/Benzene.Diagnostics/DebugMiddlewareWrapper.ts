@@ -1,6 +1,6 @@
 /** Port of Benzene.Diagnostics.DebugMiddlewareWrapper. */
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareWrapper } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareWrapper } from '@benzenejs/abstractions-middleware';
 import { DebugMiddlewareDecorator } from './DebugMiddlewareDecorator';
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { VoidResult } from '@benzene/abstractions';
-import { MessageSenderDefinition } from '@benzene/core-messages';
+import { VoidResult } from '@benzenejs/abstractions';
+import { MessageSenderDefinition } from '@benzenejs/core-messages';
 
 /** Port of the Benzene.Core.Messages.MessageSenderDefinition factory scenarios. */
 

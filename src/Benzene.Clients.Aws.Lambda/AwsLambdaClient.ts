@@ -1,7 +1,7 @@
 /** Port of Benzene.Clients.Aws.Lambda.AwsLambdaClient. */
 import { InvocationType, InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ISerializer } from '@benzene/abstractions';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { ISerializer } from '@benzenejs/abstractions';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { AwsLambdaFunctionErrorException } from './AwsLambdaFunctionErrorException';
 
 /**

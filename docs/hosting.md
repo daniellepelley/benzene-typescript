@@ -7,10 +7,10 @@ your handler changes between hosts — the handler itself never moves.
 > **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > The .NET original centres this model on a single `BenzeneStartUp` class run through per-platform
 > **production host adapters**. **Those `*Host<TStartUp>` production hosts ARE now ported for the three
-> serverless clouds** — `AwsLambdaHost<TStartUp>` (`@benzene/aws-lambda-core`),
-> `AzureFunctionHost<TStartUp>` (`@benzene/azure-function-core`), and `GoogleCloudFunctionHost<TStartUp>` /
-> `GooglePubSubFunctionHost<TStartUp>` (`@benzene/google-cloud-functions-*`). You write one `StartUp`
-> implementing the canonical `BenzeneStartUp` contract (from `@benzene/abstractions-middleware`) and boot
+> serverless clouds** — `AwsLambdaHost<TStartUp>` (`@benzenejs/aws-lambda-core`),
+> `AzureFunctionHost<TStartUp>` (`@benzenejs/azure-function-core`), and `GoogleCloudFunctionHost<TStartUp>` /
+> `GooglePubSubFunctionHost<TStartUp>` (`@benzenejs/google-cloud-functions-*`). You write one `StartUp`
+> implementing the canonical `BenzeneStartUp` contract (from `@benzenejs/abstractions-middleware`) and boot
 > it with a **one-liner** — `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
 > `new AzureFunctionHost(StartUp).httpFunction`, `new GoogleCloudFunctionHost(StartUp).httpFunction` — the
 > SAME composition root a component test boots (`benzeneTestHost(StartUp)`), so what you test is what
@@ -56,7 +56,7 @@ middleware inside that pipeline — the value `benzene(...)` returns — and nev
 anything about the host process. This is the TypeScript port's counterpart to the .NET `Benzene.AspNet.Core`
 host on Kestrel.
 
-**3. Self-hosted worker** — `@benzene/self-host`. Here Benzene itself owns a long-running consumer that
+**3. Self-hosted worker** — `@benzenejs/self-host`. Here Benzene itself owns a long-running consumer that
 actively receives work (a broker poll loop) and keeps the process alive — no external infrastructure
 invokes you, and no separate host is already listening. This is the one mode where how many events run
 *at once* is Benzene's own decision; see [Worker concurrency](#worker-concurrency).
@@ -65,9 +65,9 @@ invokes you, and no separate host is already listening. This is the one mode whe
 > Kestrel (use Express in its place), and the generic `IHostedService` worker host
 > (`Benzene.HostedService`) — the .NET generic-host adapter that owns a worker process's start/stop
 > lifecycle; instead, drive the composite worker's `startAsync`/`stopAsync` from your own process
-> lifecycle (below). gRPC hosting *is* ported — `@benzene/grpc`'s `useGrpc` bridges a `@grpc/grpc-js`
+> lifecycle (below). gRPC hosting *is* ported — `@benzenejs/grpc`'s `useGrpc` bridges a `@grpc/grpc-js`
 > `Server` into the same handler pipeline (the grpc-js `Server` replaces .NET's ASP.NET-hosted gRPC). And
-> on the self-hosted side, both the platform-neutral worker *scaffolding* (`@benzene/self-host`) **and**
+> on the self-hosted side, both the platform-neutral worker *scaffolding* (`@benzenejs/self-host`) **and**
 > the ready-made broker/stream consumers — SQS, Service Bus, Event Hub, RabbitMQ, Kafka, and the Cosmos DB
 > change feed — are ported, each added with a `use*` call on the worker startup. See
 > [Self-hosted worker](#self-hosted-worker--inlineselfhostedstartup) below.
@@ -78,11 +78,11 @@ Write this once. It's the only file you carry over verbatim between every host o
 
 ```ts
 // src/handlers.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -117,14 +117,14 @@ step that routes a matched request to its handler by topic. Pass every handler c
 
 ### Express — `benzene(...)`
 
-Package: `@benzene/express`. `benzene(...)` returns Express middleware that inserts Benzene into the
+Package: `@benzenejs/express`. `benzene(...)` returns Express middleware that inserts Benzene into the
 request pipeline; the transport pipeline is configured in the callback it takes.
 
 ```ts
 // src/index.ts
 import express from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
 import { PlaceOrderHandler } from './handlers.js';
 
 const app = express();
@@ -141,8 +141,8 @@ else falls through to the rest of the Express app, so it coexists cleanly with e
 
 ### AWS Lambda — `AwsLambdaHost`
 
-Package: `@benzene/aws-lambda-core` (plus one transport package per event source) — or the
-`@benzene/aws-lambda` umbrella, which bundles the core and every event-source transport under one
+Package: `@benzenejs/aws-lambda-core` (plus one transport package per event source) — or the
+`@benzenejs/aws-lambda` umbrella, which bundles the core and every event-source transport under one
 install and re-exports the granular names shown here (as [AWS Lambda Setup](getting-started-aws.md)
 uses). Like Azure and Google, the AWS host is the host-class shape: you write one `StartUp` class
 implementing the same `BenzeneStartUp` contract as every other host, pass it to `AwsLambdaHost`, and
@@ -150,11 +150,11 @@ export its `.lambdaHandler`. Inside `configure`, select AWS with `useAwsLambda(a
 
 ```ts
 // src/startUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { PlaceOrderHandler } from './handlers.js';
 
 export class StartUp implements BenzeneStartUp {
@@ -169,7 +169,7 @@ export class StartUp implements BenzeneStartUp {
 
 ```ts
 // src/handler.ts — the one-liner boot AWS invokes.
-import { AwsLambdaHost } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost } from '@benzenejs/aws-lambda-core';
 import { StartUp } from './startUp.js';
 
 export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
@@ -189,7 +189,7 @@ The one-liner `new AwsLambdaHost(StartUp).lambdaHandler` boots the same `StartUp
 
 ### Azure Functions — `AzureFunctionHost`
 
-Package: `@benzene/azure-function-core` (plus one transport package per trigger type). Like Google, the
+Package: `@benzenejs/azure-function-core` (plus one transport package per trigger type). Like Google, the
 Azure host is the host-class shape: you write one `StartUp` class implementing the same
 `BenzeneStartUp` contract as every other host, pass it to `AzureFunctionHost`, and it hands you the
 native-trigger handler to register with the `@azure/functions` v4 API. Inside `configure`, select Azure
@@ -197,11 +197,11 @@ with `useAzureFunctions(app, az => …)` — the exact counterpart of AWS's `use
 
 ```ts
 // src/startUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useAzureHttp } from '@benzene/azure-function-http';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useAzureHttp } from '@benzenejs/azure-function-http';
 import { PlaceOrderHandler } from './handlers.js';
 
 export class HttpStartUp implements BenzeneStartUp {
@@ -216,8 +216,8 @@ export class HttpStartUp implements BenzeneStartUp {
 
 ```ts
 // src/functions.ts — importing the HTTP package lights up the host's `.httpFunction` getter.
-import { AzureFunctionHost } from '@benzene/azure-function-core';
-import '@benzene/azure-function-http';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+import '@benzenejs/azure-function-http';
 import { HttpStartUp } from './startUp.js';
 
 /** The `@azure/functions` HTTP handler to register with `app.http(...)`. */
@@ -226,8 +226,8 @@ export const placeOrderHttp = new AzureFunctionHost(HttpStartUp).httpFunction;
 
 The one-liner `new AzureFunctionHost(StartUp).httpFunction` boots the same `StartUp` a component test
 boots (`benzeneTestHost(StartUp).buildAzureFunctionApp()`), so what you test is what deploys. Each
-trigger package adds its own getter — `.serviceBusFunction` (`@benzene/azure-function-service-bus`),
-`.eventHubFunction` (`@benzene/azure-function-event-hub`) — over its `handle*` dispatch, so a fire-and-forget
+trigger package adds its own getter — `.serviceBusFunction` (`@benzenejs/azure-function-service-bus`),
+`.eventHubFunction` (`@benzenejs/azure-function-event-hub`) — over its `handle*` dispatch, so a fire-and-forget
 trigger reads the same way. You then register `placeOrderHttp` with `app.http(...)` at module load. See
 [Azure Functions Setup](azure-functions.md) for registration, `host.json`, and non-HTTP triggers.
 
@@ -237,7 +237,7 @@ trigger reads the same way. You then register `placeOrderHttp` with `app.http(..
 
 ### Google Cloud Functions — `GoogleCloudFunctionHost`
 
-Package: `@benzene/google-cloud-functions-http` (HTTP) and `@benzene/google-cloud-functions-pubsub`
+Package: `@benzenejs/google-cloud-functions-http` (HTTP) and `@benzenejs/google-cloud-functions-pubsub`
 (Pub/Sub). The same host-class shape as AWS and Azure: you write one `StartUp` implementing the same
 `BenzeneStartUp` contract, pass it to `GoogleCloudFunctionHost`, and export its `.httpFunction`. Inside
 `configure`, select Google with `useGoogleCloud(app, g => …)` — the exact counterpart of AWS's
@@ -245,11 +245,11 @@ Package: `@benzene/google-cloud-functions-http` (HTTP) and `@benzene/google-clou
 
 ```ts
 // src/startUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
-import { useHttp } from '@benzene/google-cloud-functions-http';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useGoogleCloud } from '@benzenejs/google-cloud-functions-core';
+import { useHttp } from '@benzenejs/google-cloud-functions-http';
 import { PlaceOrderHandler } from './handlers.js';
 
 export class OrdersStartUp implements BenzeneStartUp {
@@ -264,7 +264,7 @@ export class OrdersStartUp implements BenzeneStartUp {
 
 ```ts
 // src/function.ts — `.httpFunction` is the `HttpFunction` the Functions Framework invokes.
-import { GoogleCloudFunctionHost } from '@benzene/google-cloud-functions-http';
+import { GoogleCloudFunctionHost } from '@benzenejs/google-cloud-functions-http';
 import { OrdersStartUp } from './startUp.js';
 
 export const ordersFunction = new GoogleCloudFunctionHost(OrdersStartUp).httpFunction;
@@ -276,15 +276,15 @@ For a Pub/Sub-triggered function, swap `useHttp` for `usePubSub` and `GoogleClou
 
 ### Self-hosted worker — `InlineSelfHostedStartUp`
 
-Package: `@benzene/self-host`. Unlike the hosts above, a worker owns a long-running process rather than
+Package: `@benzenejs/self-host`. Unlike the hosts above, a worker owns a long-running process rather than
 responding to an external caller. `InlineSelfHostedStartUp` registers services and one or more
 `IBenzeneWorker`s, then `build()` returns a single composite worker with `startAsync`/`stopAsync` you
 drive from your process's lifecycle:
 
 ```ts
 // src/worker.ts
-import { addBenzene } from '@benzene/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { OrdersConsumer } from './OrdersConsumer.js';
 
 const worker = new InlineSelfHostedStartUp()
@@ -300,10 +300,10 @@ process.on('SIGTERM', () => void worker.stopAsync());
 
 `workers.add((resolver) => …)` registers a factory that builds one worker from the invocation's resolver
 factory; register several and `build()` composes them into one `CompositeBenzeneWorker` that starts and
-stops them together (see [`@benzene/self-host`'s `CompositeBenzeneWorker`](https://github.com/daniellepelley/benzene-typescript/tree/main/src/Benzene.SelfHost)).
+stops them together (see [`@benzenejs/self-host`'s `CompositeBenzeneWorker`](https://github.com/daniellepelley/benzene-typescript/tree/main/src/Benzene.SelfHost)).
 
 `OrdersConsumer` is your own `IBenzeneWorker` — a small interface with `startAsync(signal?)` /
-`stopAsync(signal?)` (from `@benzene/abstractions-middleware`). Its poll loop receives broker messages
+`stopAsync(signal?)` (from `@benzenejs/abstractions-middleware`). Its poll loop receives broker messages
 and dispatches each one into a Benzene message pipeline, so the *same* `PlaceOrderHandler` runs here too.
 
 #### Ready-made self-hosted consumers
@@ -317,12 +317,12 @@ the worker to the composite:
 
 | Package | `use*` function | Transport | Inner pipeline |
 | --- | --- | --- | --- |
-| `@benzene/aws-sqs` | `useSqs(workers, config, clientFactory, action)` | `"sqs"` | `useMessageHandlers(...)` |
-| `@benzene/azure-service-bus` | `useServiceBus(workers, config, clientFactory, action)` | `"service-bus"` | `useMessageHandlers(...)` |
-| `@benzene/azure-event-hub` | `useEventHub(workers, config, processorClientFactory, action)` | `"event-hub"` | `useMessageHandlers(...)` |
-| `@benzene/rabbitmq` | `useRabbitMq(workers, config, connectionFactory, action)` | `"rabbitmq"` | `useMessageHandlers(...)` |
-| `@benzene/kafka-core` | `useKafka(workers, config, consumerFactory, action)` | `"kafka"` | `useMessageHandlers(...)` |
-| `@benzene/azure-cosmos-db` | `useCosmosDbChangeFeed(workers, config, processorFactory, action)` | `"cosmos-db"` | `useStream(...)` |
+| `@benzenejs/aws-sqs` | `useSqs(workers, config, clientFactory, action)` | `"sqs"` | `useMessageHandlers(...)` |
+| `@benzenejs/azure-service-bus` | `useServiceBus(workers, config, clientFactory, action)` | `"service-bus"` | `useMessageHandlers(...)` |
+| `@benzenejs/azure-event-hub` | `useEventHub(workers, config, processorClientFactory, action)` | `"event-hub"` | `useMessageHandlers(...)` |
+| `@benzenejs/rabbitmq` | `useRabbitMq(workers, config, connectionFactory, action)` | `"rabbitmq"` | `useMessageHandlers(...)` |
+| `@benzenejs/kafka-core` | `useKafka(workers, config, consumerFactory, action)` | `"kafka"` | `useMessageHandlers(...)` |
+| `@benzenejs/azure-cosmos-db` | `useCosmosDbChangeFeed(workers, config, processorFactory, action)` | `"cosmos-db"` | `useStream(...)` |
 
 The message-based consumers route by topic, so their `action` is the same
 `useMessageHandlers(pipeline, PlaceOrderHandler)` you write on every other host — the *same*
@@ -334,9 +334,9 @@ worker startup:
 ```ts
 // src/worker.ts
 import { SQSClient } from '@aws-sdk/client-sqs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { SqsClientFactory, useSqs } from '@benzene/aws-sqs';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { SqsClientFactory, useSqs } from '@benzenejs/aws-sqs';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { PlaceOrderHandler } from './handlers.js';
 
 const worker = new InlineSelfHostedStartUp()
@@ -363,10 +363,10 @@ The `use*` call registers Benzene's base services itself, so you don't need a `c
 
 The Cosmos DB change-feed consumer is the one stream (not message) transport here: changed documents
 carry no message envelope, so its pipeline is a **streaming** pipeline over the document type
-(`useStream(...)` from `@benzene/core-middleware`) rather than `useMessageHandlers`. This is the
+(`useStream(...)` from `@benzenejs/core-middleware`) rather than `useMessageHandlers`. This is the
 standalone worker — distinct from the Azure Functions `CosmosDBTrigger` adapter
-(`@benzene/azure-function-cosmos-db`, see [Azure Functions Setup](azure-functions.md)); reach for this
-one when you want a long-running `@benzene/self-host` worker with manual per-batch checkpoint control.
+(`@benzenejs/azure-function-cosmos-db`, see [Azure Functions Setup](azure-functions.md)); reach for this
+one when you want a long-running `@benzenejs/self-host` worker with manual per-batch checkpoint control.
 
 Its third argument is an `ICosmosChangeFeedProcessorFactory<TDocument>` — the built-in
 `CosmosChangeFeedProcessorFactory` takes the monitored container and an
@@ -379,14 +379,14 @@ table, etc.
 ```ts
 // src/cosmos-worker.ts
 import { CosmosClient } from '@azure/cosmos';
-import { useStream } from '@benzene/core-middleware';
+import { useStream } from '@benzenejs/core-middleware';
 import {
   BenzeneCosmosChangeFeedConfig,
   CosmosChangeFeedProcessorFactory,
   InMemoryCosmosChangeFeedCheckpointStore,
   useCosmosDbChangeFeed,
-} from '@benzene/azure-cosmos-db';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+} from '@benzenejs/azure-cosmos-db';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 
 class OrderDocument {
   orderId?: string;
@@ -449,7 +449,7 @@ Both are covered in full, with runnable code, in
 ## `IBenzeneApplicationBuilder`
 
 The `app` passed to each host's `configure` step is an `IBenzeneApplicationBuilder`
-(`@benzene/abstractions-middleware`) — the platform-neutral builder every host implements:
+(`@benzenejs/abstractions-middleware`) — the platform-neutral builder every host implements:
 
 ```ts
 export interface IBenzeneApplicationBuilder extends IRegisterDependency {
@@ -468,7 +468,7 @@ export interface IBenzeneApplicationBuilder extends IRegisterDependency {
 
 Each platform's `use*` transport function is a free function taking the builder first and pattern-matching
 on the concrete builder type, so calling the wrong one for the running host is a safe no-op. `useWorker`
-(from `@benzene/self-host`) is the clearest example:
+(from `@benzenejs/self-host`) is the clearest example:
 
 ```ts
 export function useWorker(
@@ -488,7 +488,7 @@ This is the free-function port of the .NET `Use*` extension methods (see the
 
 ## `IBenzeneInvocation`
 
-`IBenzeneInvocation` (`@benzene/abstractions-middleware`) is a platform-neutral bag of metadata about the
+`IBenzeneInvocation` (`@benzenejs/abstractions-middleware`) is a platform-neutral bag of metadata about the
 current invocation, so a handler can stay portable while still reaching native platform context when it
 genuinely needs to:
 
@@ -512,15 +512,15 @@ Enable it by calling `useBenzeneInvocation()` on the pipeline builder inside `co
 `IBenzeneInvocation` as a scoped dependency. It's populated once per pipeline by whichever level's
 `useBenzeneInvocation()` you called, so call it at the level you need it resolvable from.
 
-> **Port scope.** `useBenzeneInvocation()` is wired for AWS Lambda (`@benzene/aws-lambda-core`, where
+> **Port scope.** `useBenzeneInvocation()` is wired for AWS Lambda (`@benzenejs/aws-lambda-core`, where
 > `invocationId` is the Lambda request ID and `getFeature` exposes the Lambda `Context`) over the
-> platform-neutral core (`@benzene/core-middleware`). The Express and Azure Functions accessors from the
+> platform-neutral core (`@benzenejs/core-middleware`). The Express and Azure Functions accessors from the
 > .NET model aren't ported yet.
 
 ## Worker concurrency
 
 For the self-hosted worker (mode 3), how many events run *at once* is Benzene's decision. The port ships
-`BoundedConcurrentDispatcher<T>` (`@benzene/self-host`) — a fan-out primitive a worker's poll loop hands
+`BoundedConcurrentDispatcher<T>` (`@benzenejs/self-host`) — a fan-out primitive a worker's poll loop hands
 each received item to:
 
 ```ts
@@ -550,8 +550,8 @@ you hand each received item to it yourself.
 
 You don't need a real cloud host to test any of these. Build the same entry point your host ships,
 construct a native event with the transport's test helper, and invoke it — the request runs your real
-pipeline end-to-end. `@benzene/testing` supplies the payload builders (`httpBuilder`, `messageBuilder`),
-and `@benzene/aws-lambda-testing` / `@benzene/azure-function-testing` turn them into native events. See
+pipeline end-to-end. `@benzenejs/testing` supplies the payload builders (`httpBuilder`, `messageBuilder`),
+and `@benzenejs/aws-lambda-testing` / `@benzenejs/azure-function-testing` turn them into native events. See
 [Testing Benzene](testing-benzene.md).
 
 ## See Also

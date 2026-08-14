@@ -13,7 +13,7 @@ Registry, AWS Glue) is that source of truth: producers register the schema they 
 hands back a stable id, and each published message carries that id so a consumer can look up the exact
 writer schema.
 
-`@benzene/schema-registry-core` gives you three things:
+`@benzenejs/schema-registry-core` gives you three things:
 
 - a provider-agnostic `ISchemaRegistryClient` seam, so registry-backed serialization and evolution
   checks aren't tied to one vendor;
@@ -22,7 +22,7 @@ writer schema.
 - a serializer decorator (`SchemaRegistrySerializer`, built at startup by `SchemaRegistrar`) that
   registers each message type's schema and frames its output with the resolved id.
 
-It complements [`@benzene/avro`](serialization.md), which serializes payloads against Avro schemas but
+It complements [`@benzenejs/avro`](serialization.md), which serializes payloads against Avro schemas but
 does not itself talk to a registry. The two layer cleanly: Avro produces the bytes, the schema-registry
 serializer registers the schema and frames those bytes with the id.
 
@@ -36,7 +36,7 @@ serializer registers the schema and frames those bytes with the id.
 ## Installation
 
 ```bash
-npm install @benzene/schema-registry-core
+npm install @benzenejs/schema-registry-core
 ```
 
 Node 22+ is required. Everything in this package is in-workspace and dependency-free; you add a registry
@@ -49,7 +49,7 @@ SDK only when you write a remote client (see [Remote registry clients](#remote-r
 [porting conventions](../README.md#porting-conventions).
 
 ```ts
-import { ISchemaRegistryClient, SchemaDefinition, RegisteredSchema } from '@benzene/schema-registry-core';
+import { ISchemaRegistryClient, SchemaDefinition, RegisteredSchema } from '@benzenejs/schema-registry-core';
 
 interface ISchemaRegistryClient {
   // Registers `schema` under its subject and returns a registry-wide id.
@@ -93,7 +93,7 @@ import {
   SchemaCompatibilityMode,
   SchemaDefinition,
   SchemaFormat,
-} from '@benzene/schema-registry-core';
+} from '@benzenejs/schema-registry-core';
 
 const registry = new InMemorySchemaRegistryClient(SchemaCompatibilityMode.Backward);
 
@@ -126,24 +126,24 @@ new InMemorySchemaRegistryClient(mode?: SchemaCompatibilityMode, checker?: ISche
 ## Resolving a schema per message type
 
 `ISchemaResolver` maps a message **class** to the `SchemaDefinition` to register for it. Keeping this a
-seam means the schema source stays pluggable and format-specific — an adapter over `@benzene/avro`'s
+seam means the schema source stays pluggable and format-specific — an adapter over `@benzenejs/avro`'s
 schema source can supply the Avro schema without this package depending on Avro.
 
 > Because TypeScript erases generic type arguments, the resolver keys on the message **class**
-> (a `Constructor`) rather than a runtime `Type`, the same convention `@benzene/avro` and the
+> (a `Constructor`) rather than a runtime `Type`, the same convention `@benzenejs/avro` and the
 > [validation](validation.md) adapters use.
 
 Use `DelegateSchemaResolver` for an inline mapping:
 
 ```ts
-import { DelegateSchemaResolver, SchemaDefinition } from '@benzene/schema-registry-core';
+import { DelegateSchemaResolver, SchemaDefinition } from '@benzenejs/schema-registry-core';
 
 const resolver = new DelegateSchemaResolver(
   (type) => new SchemaDefinition(`${type.name}-value`, schemaTextFor(type)),
 );
 ```
 
-For Avro payloads, wrap `@benzene/avro`'s schema source in an `ISchemaResolver` that returns the Avro
+For Avro payloads, wrap `@benzenejs/avro`'s schema source in an `ISchemaResolver` that returns the Avro
 schema text under the `<type>-value` subject; the resolver is the single place the two packages meet.
 
 ## Wiring it up at startup with `SchemaRegistrar`
@@ -153,8 +153,8 @@ missing or incompatible schema surfaces at boot, not on the first message. `Sche
 front and hands back a serializer whose `serialize` is synchronous (no registry call on the hot path):
 
 ```ts
-import { SchemaRegistrar } from '@benzene/schema-registry-core';
-import { AvroSerializer } from '@benzene/avro';
+import { SchemaRegistrar } from '@benzenejs/schema-registry-core';
+import { AvroSerializer } from '@benzenejs/avro';
 
 const registrar = new SchemaRegistrar(registry, resolver);
 
@@ -193,7 +193,7 @@ deserialize<T>(payload, targetType?): T | undefined   // consumes that Base64
 Schema ids are resolved once, at startup, into the id map the serializer is constructed with, so
 serialization stays synchronous. The type key is recovered from the payload's `constructor` on the way
 out; the deserialize path takes an optional `targetType` (the erased `T`) that is forwarded to the inner
-serializer — Avro needs it, JSON does not. Like `@benzene/avro`, the string members Base64-armor the
+serializer — Avro needs it, JSON does not. Like `@benzenejs/avro`, the string members Base64-armor the
 framed bytes so the serializer also flows through string-body pipelines unchanged.
 
 Serializing a type whose schema you didn't register **throws immediately** — a missing registration is a
@@ -213,7 +213,7 @@ Framing Benzene's payloads this way makes them interoperable with the wider Kafk
 non-Benzene consumer resolves the writer schema from the embedded id.
 
 ```ts
-import { ConfluentWireFormat } from '@benzene/schema-registry-core';
+import { ConfluentWireFormat } from '@benzenejs/schema-registry-core';
 
 const framed = ConfluentWireFormat.encode(schemaId, bodyBytes); // 0x00 | id(4, BE) | body
 const { schemaId: id, body } = ConfluentWireFormat.decode(framed);
@@ -241,7 +241,7 @@ backward-compatible one (say, adding an optional field). For true evolution rule
 a real registry server that computes compatibility, or supply a format-aware checker:
 
 ```ts
-import { ISchemaCompatibilityChecker, InMemorySchemaRegistryClient, SchemaCompatibilityMode } from '@benzene/schema-registry-core';
+import { ISchemaCompatibilityChecker, InMemorySchemaRegistryClient, SchemaCompatibilityMode } from '@benzenejs/schema-registry-core';
 
 class AvroCompatibilityChecker implements ISchemaCompatibilityChecker {
   isCompatible(latest, candidate, mode): boolean {
@@ -268,7 +268,7 @@ method, ported to a free function taking the container first). It registers your
 as a singleton, resolvable by the `ISchemaRegistryClient` token:
 
 ```ts
-import { addSchemaRegistry } from '@benzene/schema-registry-core';
+import { addSchemaRegistry } from '@benzenejs/schema-registry-core';
 
 addSchemaRegistry(services, registry);
 ```
@@ -306,7 +306,7 @@ import {
   SchemaCompatibilityMode,
   SchemaDefinition,
   SchemaIncompatibleException,
-} from '@benzene/schema-registry-core';
+} from '@benzenejs/schema-registry-core';
 
 describe('order schema evolution', () => {
   it('rejects an incompatible change under Backward', async () => {

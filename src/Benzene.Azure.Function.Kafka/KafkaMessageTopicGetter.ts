@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.Kafka.KafkaMessageTopicGetter. */
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
-import { Topic } from '@benzene/core-messages';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { Topic } from '@benzenejs/core-messages';
 import { KafkaContext } from './KafkaContext';
 
 /**

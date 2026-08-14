@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import Joi from 'joi';
-import { BenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { registerJoiSchema, ValidationClientMiddleware } from '@benzene/joi';
+import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { registerJoiSchema, ValidationClientMiddleware } from '@benzenejs/joi';
 
 /**
  * Unit tests for the client-side `ValidationClientMiddleware` — port of

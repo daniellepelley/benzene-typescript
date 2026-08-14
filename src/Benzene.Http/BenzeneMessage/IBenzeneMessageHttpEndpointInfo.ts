@@ -1,5 +1,5 @@
 /** Port of Benzene.Http.BenzeneMessage.IBenzeneMessageHttpEndpointInfo (and BenzeneMessageHttpEndpointInfo). */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Describes the BenzeneMessage-over-HTTP endpoint a service exposes. Registered in DI by

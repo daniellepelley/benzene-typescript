@@ -32,18 +32,18 @@ runtime.
 ## Installation
 
 ```bash
-npm install --save-dev vitest @benzene/testing @benzene/aws-lambda-testing
+npm install --save-dev vitest @benzenejs/testing @benzenejs/aws-lambda-testing
 ```
 
-`@benzene/testing` provides `benzeneTestHost`, `messageBuilder`/`httpBuilder`, and the
-`FakeBenzeneMessageSender` egress double. `@benzene/aws-lambda-testing` adds the `buildAwsLambdaHost()`
+`@benzenejs/testing` provides `benzeneTestHost`, `messageBuilder`/`httpBuilder`, and the
+`FakeBenzeneMessageSender` egress double. `@benzenejs/aws-lambda-testing` adds the `buildAwsLambdaHost()`
 specialization (imported for its side-effect module augmentation) and the native-event builders
 `asApiGatewayRequest` / `asSqs`.
 
 > **Consolidation note.** .NET ships a separate `*.TestHelpers` package per transport
 > (`Benzene.Aws.Lambda.ApiGateway.TestHelpers`, `…Sqs.TestHelpers`, …). In Node every Lambda event type
 > lives in the one `@types/aws-lambda` package, so there is nothing to isolate — the port ships a single
-> `@benzene/aws-lambda-testing` with a builder per transport.
+> `@benzenejs/aws-lambda-testing` with a builder per transport.
 
 ## The App Under Test
 
@@ -53,7 +53,7 @@ returns the created order; an `orders:shipped` SQS message notifies the customer
 
 ```ts
 // ports.ts
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface IPaymentGateway {
   chargeAsync(customerId: string, amountInCents: number): Promise<IBenzeneResultOf<string>>;
@@ -70,11 +70,11 @@ export const IShippingNotifier: ServiceToken<IShippingNotifier> =
 
 ```ts
 // handlers.ts
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message, MessageHandlersRegistry } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 import { IPaymentGateway, IShippingNotifier } from './ports.js';
 
 // A local registry keeps importing this module out of the global handler discovery.
@@ -126,13 +126,13 @@ export class OrderShippedHandler implements IMessageHandler<OrderShippedEvent, V
 
 ```ts
 // StartUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { BenzeneStartUp } from '@benzene/testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { BenzeneStartUp } from '@benzenejs/testing';
 import { CreateOrderHandler, OrderShippedHandler } from './handlers.js';
 import { IPaymentGateway, IShippingNotifier } from './ports.js';
 import { StripePaymentGateway, EmailShippingNotifier } from './adapters.js';
@@ -159,7 +159,7 @@ stubbed just enough to make the project complete:
 
 ```ts
 // adapters.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
 import { IPaymentGateway, IShippingNotifier } from './ports.js';
 
 export class StripePaymentGateway implements IPaymentGateway {
@@ -184,9 +184,9 @@ registration (last-registration-wins); `.buildAwsLambdaHost()` is the one AWS-sp
 // OrderFunction.test.ts
 import { describe, expect, it, vi } from 'vitest';
 import { APIGatewayProxyResult, SQSBatchResponse } from 'aws-lambda';
-import { BenzeneResult } from '@benzene/results';
-import { benzeneTestHost, httpBuilder, messageBuilder } from '@benzene/testing';
-import { asApiGatewayRequest, asSqs } from '@benzene/aws-lambda-testing';
+import { BenzeneResult } from '@benzenejs/results';
+import { benzeneTestHost, httpBuilder, messageBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest, asSqs } from '@benzenejs/aws-lambda-testing';
 import { OrdersStartUp } from './StartUp.js';
 import { IPaymentGateway, IShippingNotifier } from './ports.js';
 
@@ -274,8 +274,8 @@ If a handler publishes a message rather than returning a payload, register the f
 `FakeBenzeneMessageSender` for `IBenzeneMessageSender` and assert on what it captured — no live queue:
 
 ```ts
-import { FakeBenzeneMessageSender } from '@benzene/testing';
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { FakeBenzeneMessageSender } from '@benzenejs/testing';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 
 const fake = new FakeBenzeneMessageSender();
 

@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
 import { LambdaClient } from '@aws-sdk/client-lambda';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
-import { SnsHealthCheck } from '@benzene/clients-aws-sns';
-import { EventBridgeHealthCheck } from '@benzene/clients-aws-eventbridge';
-import { AwsLambdaHealthCheck } from '@benzene/clients-aws-lambda';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { SnsHealthCheck } from '@benzenejs/clients-aws-sns';
+import { EventBridgeHealthCheck } from '@benzenejs/clients-aws-eventbridge';
+import { AwsLambdaHealthCheck } from '@benzenejs/clients-aws-lambda';
 
 /**
  * Each AWS client's health check lives in its own client package (matching .NET). They are

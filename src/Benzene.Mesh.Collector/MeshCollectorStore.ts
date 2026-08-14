@@ -13,13 +13,13 @@
  * - The C# `lock (_lock)` around every mutation/read is dropped: JS is single-threaded, so no batch can be
  *   torn by a concurrent one (the §6 "snapshot copy" concern the lock guarded does not arise).
  * - The collector-local `BenzeneResultStatusExtensions.IsSuccess` (a duplicate of the six-status success
- *   set) is replaced by `BenzeneResultStatus.isSuccess` from `@benzene/results` - the identical set, already
+ *   set) is replaced by `BenzeneResultStatus.isSuccess` from `@benzenejs/results` - the identical set, already
  *   the cross-language success vocabulary.
  * - `StringComparer.Ordinal` ordering -> a local `ordinalCompare` (UTF-16 code-unit order, ordinal for the
- *   ASCII ids in play), the same helper `@benzene/mesh-aggregator` uses.
+ *   ASCII ids in play), the same helper `@benzenejs/mesh-aggregator` uses.
  */
-import { MeshHeartbeat, MeshIssue, MeshIssueBatch, MeshServiceDescriptor, MeshTraceEvent } from '@benzene/mesh-wire';
-import { BenzeneResultStatus } from '@benzene/results';
+import { MeshHeartbeat, MeshIssue, MeshIssueBatch, MeshServiceDescriptor, MeshTraceEvent } from '@benzenejs/mesh-wire';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { IMeshFleetReadModel } from './IMeshFleetReadModel';
 import { MeshTimeRangeResolver, ResolvedWindow } from './MeshTimeRangeResolver';
 import {

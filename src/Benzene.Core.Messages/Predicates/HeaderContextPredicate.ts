@@ -1,6 +1,6 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IContextPredicate } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IContextPredicate } from '@benzenejs/abstractions-middleware';
 
 /**
  * Matches a context whose `IMessageHeadersGetter`-exposed headers contain the configured header name

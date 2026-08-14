@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Discovery.Azure.IAzureResourceLister (+ AzureResourceInfo). */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The subset of an Azure App Service / Function App resource that mesh discovery needs. C# `record` ->

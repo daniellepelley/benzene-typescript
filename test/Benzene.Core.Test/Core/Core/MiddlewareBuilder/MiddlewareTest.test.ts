@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ILoggerFactory, LogLevel } from '@benzene/abstractions';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer, DefaultServiceResolverFactory, ServiceCollection } from '@benzene/dependencies';
+import { ILoggerFactory, LogLevel } from '@benzenejs/abstractions';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer, DefaultServiceResolverFactory, ServiceCollection } from '@benzenejs/dependencies';
 import { FakeLoggerFactory } from '../../../Logging/Helpers/FakeLoggerFactory';
 
 /** Port of Benzene.Test.Core.Core.MiddlewareBuilder.MiddlewareTest. */

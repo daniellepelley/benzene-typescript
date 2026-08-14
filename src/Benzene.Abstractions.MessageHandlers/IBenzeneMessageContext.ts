@@ -1,5 +1,5 @@
-import { Constructor, IBenzeneResultOf } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+import { Constructor, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * The per-invocation context flowing through the handler middleware pipeline for a single message

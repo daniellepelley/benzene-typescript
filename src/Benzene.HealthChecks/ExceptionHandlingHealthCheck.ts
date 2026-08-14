@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.ExceptionHandlingHealthCheck. */
-import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzene/health-checks-core';
+import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 /**
  * Decorates an `IHealthCheck` so that an error thrown out of `executeAsync` is caught and turned into

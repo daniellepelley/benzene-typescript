@@ -9,12 +9,12 @@
  * it binds are exactly what this test exercises.)
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
 import {
   asAzureServiceBusMessage,
   asAzureHttpRequest,
   asEventHubBenzeneMessage,
-} from '@benzene/azure-function-testing';
+} from '@benzenejs/azure-function-testing';
 import {
   orderPlacedEventHub,
   orderPlacedServiceBus,

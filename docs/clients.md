@@ -8,7 +8,7 @@ transport.
 
 A Benzene service is a set of message handlers reachable by topic (see
 [Message Handlers](message-handlers.md)). When one service needs to call another, its business logic
-depends on just one interface, `IBenzeneMessageSender` (`@benzene/clients`):
+depends on just one interface, `IBenzeneMessageSender` (`@benzenejs/clients`):
 
 ```ts
 export interface IBenzeneMessageSender {
@@ -33,23 +33,23 @@ decorator mechanism to learn.
 >
 > | Transport | Route extension | Package |
 > | --- | --- | --- |
-> | AWS SNS | `useSns` | `@benzene/clients-aws-sns` |
-> | AWS SQS | `useSqs` | `@benzene/clients-aws-sqs` |
-> | AWS EventBridge | `useEventBridge` | `@benzene/clients-aws-eventbridge` |
-> | Azure Service Bus | `useServiceBus` | `@benzene/clients-azure-service-bus` |
-> | Azure Event Hub | `useEventHub` | `@benzene/clients-azure-event-hub` |
-> | Azure Event Grid | `useEventGrid` | `@benzene/clients-azure-event-grid` |
-> | Azure Queue Storage | `useQueueStorage` | `@benzene/clients-azure-queue-storage` |
-> | Google Cloud Pub/Sub | `usePubSub` | `@benzene/clients-google-cloud-pubsub` |
-> | HTTP | on the message-sender path | `@benzene/clients-http` (see [HTTP](#http)) |
-> | In-process (no wire) | `useInProcess` / `useInProcessFanOut` | `@benzene/clients-in-process` (see [In-process](#in-process)) |
+> | AWS SNS | `useSns` | `@benzenejs/clients-aws-sns` |
+> | AWS SQS | `useSqs` | `@benzenejs/clients-aws-sqs` |
+> | AWS EventBridge | `useEventBridge` | `@benzenejs/clients-aws-eventbridge` |
+> | Azure Service Bus | `useServiceBus` | `@benzenejs/clients-azure-service-bus` |
+> | Azure Event Hub | `useEventHub` | `@benzenejs/clients-azure-event-hub` |
+> | Azure Event Grid | `useEventGrid` | `@benzenejs/clients-azure-event-grid` |
+> | Azure Queue Storage | `useQueueStorage` | `@benzenejs/clients-azure-queue-storage` |
+> | Google Cloud Pub/Sub | `usePubSub` | `@benzenejs/clients-google-cloud-pubsub` |
+> | HTTP | on the message-sender path | `@benzenejs/clients-http` (see [HTTP](#http)) |
+> | In-process (no wire) | `useInProcess` / `useInProcessFanOut` | `@benzenejs/clients-in-process` (see [In-process](#in-process)) |
 >
 > Each also auto-wires a non-destructive reachability check for its target on the dependency category
 > (opt out with `healthCheck: false`). If a route has no broker extension, its terminal send is still
 > whatever `IMiddleware<OutboundContext>` you add to it. **Still deferred:** the high-level AWS Lambda
 > outbound route (`.useAwsLambda`) and Kafka/gRPC outbound route extensions — a low-level **AWS Lambda
 > invoke** client does ship (see [AWS Lambda](#aws-lambda)), and Kafka has a send-side message client
-> (`@benzene/kafka-core`'s `useKafkaSend`). See the [repository README package table](../README.md) for
+> (`@benzenejs/kafka-core`'s `useKafkaSend`). See the [repository README package table](../README.md) for
 > exactly what's ported.
 
 ## Installation
@@ -58,14 +58,14 @@ Install the core client package; add the HTTP and/or AWS Lambda packages as need
 
 | Package | What it adds |
 |---|---|
-| `@benzene/clients` | `IBenzeneMessageSender`, `OutboundContext`, `OutboundRoutingBuilder` / `addOutboundRouting`, the parallel fan-out (`useParallel`) and outbound W3C trace-context (`useW3CTraceContext`) middleware, and the lower-level `IBenzeneMessageClient` decorator suite (`ClientBuilder`, `withRetry`, `withCorrelationId`, `sendMessageAsync`). |
-| `@benzene/clients-http` | Outbound HTTP building blocks over the Node `fetch` API — `useHttp` / `useHttpClient` / `useHttpClientToSend`, `HttpContextConverter`, `HttpClientMiddleware`. |
-| `@benzene/clients-aws-lambda` | `AwsLambdaClient` — the low-level AWS Lambda invoke client, over `@aws-sdk/client-lambda`. |
-| `@benzene/clients-health-checks` | The consumer-side contract-drift health check (`ClientHealthCheck`, `addContractCheck`). |
-| `@benzene/resilience` | `useRetry` — retry-with-backoff around any pipeline stage; works on `OutboundContext` unmodified (see [Resilience](resilience.md)). |
+| `@benzenejs/clients` | `IBenzeneMessageSender`, `OutboundContext`, `OutboundRoutingBuilder` / `addOutboundRouting`, the parallel fan-out (`useParallel`) and outbound W3C trace-context (`useW3CTraceContext`) middleware, and the lower-level `IBenzeneMessageClient` decorator suite (`ClientBuilder`, `withRetry`, `withCorrelationId`, `sendMessageAsync`). |
+| `@benzenejs/clients-http` | Outbound HTTP building blocks over the Node `fetch` API — `useHttp` / `useHttpClient` / `useHttpClientToSend`, `HttpContextConverter`, `HttpClientMiddleware`. |
+| `@benzenejs/clients-aws-lambda` | `AwsLambdaClient` — the low-level AWS Lambda invoke client, over `@aws-sdk/client-lambda`. |
+| `@benzenejs/clients-health-checks` | The consumer-side contract-drift health check (`ClientHealthCheck`, `addContractCheck`). |
+| `@benzenejs/resilience` | `useRetry` — retry-with-backoff around any pipeline stage; works on `OutboundContext` unmodified (see [Resilience](resilience.md)). |
 
 ```bash
-npm install @benzene/clients
+npm install @benzenejs/clients
 ```
 
 ## Basic usage
@@ -73,7 +73,7 @@ npm install @benzene/clients
 Register your routes once at startup, then resolve `IBenzeneMessageSender` and call `sendAsync`:
 
 ```ts
-import { addOutboundRouting } from '@benzene/clients';
+import { addOutboundRouting } from '@benzenejs/clients';
 
 addOutboundRouting(services, (routing) =>
   routing
@@ -82,8 +82,8 @@ addOutboundRouting(services, (routing) =>
 ```
 
 ```ts
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 
 export class OrderClient {
   static readonly inject = [IBenzeneMessageSender] as const;
@@ -153,14 +153,14 @@ one route.
 ## Outbound middleware
 
 Cross-cutting concerns are ordinary `IMiddleware<OutboundContext>`, added to a route the same way you'd
-add middleware to any other Benzene pipeline. Two are shipped in `@benzene/clients`, plus `useRetry`
-from `@benzene/resilience`:
+add middleware to any other Benzene pipeline. Two are shipped in `@benzenejs/clients`, plus `useRetry`
+from `@benzenejs/resilience`:
 
 | Helper | Behavior |
 |---|---|
-| `useW3CTraceContext(pipeline)` (`@benzene/clients`) | Stamps the active OpenTelemetry span's W3C `traceparent`/`tracestate` onto `OutboundContext.headers`, so the receiving service can continue the same distributed trace. No-ops when there is no active span. This is the **outbound** counterpart of `@benzene/diagnostics`' inbound `useW3CTraceContext` — same name, opposite direction; import the outbound one from `@benzene/clients`. See [Monitoring & Diagnostics](monitoring.md). |
-| `useParallel(pipeline, branches, maxDegreeOfParallelism?)` (`@benzene/clients`) | Fans one topic out to several transports concurrently (see below). |
-| `useRetry(pipeline, options)` (`@benzene/resilience`) | Retries the whole pipeline beneath it with exponential backoff. Pass `shouldRetryContext: (ctx) => (ctx.response as IBenzeneResult).status === BenzeneResultStatus.serviceUnavailable` to retry on a specific result status, and/or `shouldRetry` to retry specific errors. Fully generic — the same `RetryMiddleware<TContext>` used everywhere else. See [Resilience](resilience.md). |
+| `useW3CTraceContext(pipeline)` (`@benzenejs/clients`) | Stamps the active OpenTelemetry span's W3C `traceparent`/`tracestate` onto `OutboundContext.headers`, so the receiving service can continue the same distributed trace. No-ops when there is no active span. This is the **outbound** counterpart of `@benzenejs/diagnostics`' inbound `useW3CTraceContext` — same name, opposite direction; import the outbound one from `@benzenejs/clients`. See [Monitoring & Diagnostics](monitoring.md). |
+| `useParallel(pipeline, branches, maxDegreeOfParallelism?)` (`@benzenejs/clients`) | Fans one topic out to several transports concurrently (see below). |
+| `useRetry(pipeline, options)` (`@benzenejs/resilience`) | Retries the whole pipeline beneath it with exponential backoff. Pass `shouldRetryContext: (ctx) => (ctx.response as IBenzeneResult).status === BenzeneResultStatus.serviceUnavailable` to retry on a specific result status, and/or `shouldRetry` to retry specific errors. Fully generic — the same `RetryMiddleware<TContext>` used everywhere else. See [Resilience](resilience.md). |
 
 There's no dedicated per-call-headers middleware — `sendAsync`'s `headers` parameter already covers
 ambient/per-request header state.
@@ -169,8 +169,8 @@ Put retry outermost so a failed attempt retries the whole pipeline beneath it, i
 stamping:
 
 ```ts
-import { useW3CTraceContext } from '@benzene/clients';
-import { useRetry } from '@benzene/resilience';
+import { useW3CTraceContext } from '@benzenejs/clients';
+import { useRetry } from '@benzenejs/resilience';
 
 addOutboundRouting(services, (routing) =>
   routing.route('order:create', (pipeline) => {
@@ -188,7 +188,7 @@ branch succeeds; otherwise the result is a single failure whose errors name each
 (all-must-succeed). It is a terminal send step — it does not continue to any middleware added after it.
 
 ```ts
-import { useParallel } from '@benzene/clients';
+import { useParallel } from '@benzenejs/clients';
 
 addOutboundRouting(services, (routing) =>
   routing.route('order:created', (pipeline) =>
@@ -208,8 +208,8 @@ Any `IMiddleware<OutboundContext>` works — no special interface beyond the one
 middleware implements:
 
 ```ts
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 
 export class TenantHeaderMiddleware implements IMiddleware<OutboundContext> {
   static readonly inject = [ITenantContext] as const;
@@ -229,13 +229,13 @@ built-in middleware.
 
 ## HTTP
 
-Package: `@benzene/clients-http`. HTTP is the concrete outbound transport that ships today. It plugs
-into the **message-sender** path (`out(...)` from `@benzene/core-messages`), converting a
+Package: `@benzenejs/clients-http`. HTTP is the concrete outbound transport that ships today. It plugs
+into the **message-sender** path (`out(...)` from `@benzenejs/core-messages`), converting a
 message-shaped client context into an HTTP call over the Node global `fetch`:
 
 ```ts
-import { out } from '@benzene/core-messages';
-import { useHttpClientToSend } from '@benzene/clients-http';
+import { out } from '@benzenejs/core-messages';
+import { useHttpClientToSend } from '@benzenejs/clients-http';
 
 out(builder, (senders) =>
   senders.createSenderWithResponse<CreateOrder, OrderCreated>((client) =>
@@ -265,13 +265,13 @@ onto the outgoing `HttpRequestMessage.headers`; `HttpClientMiddleware` then perf
 
 ## AWS Lambda
 
-Package: `@benzene/clients-aws-lambda`. `AwsLambdaClient` (an `IAwsLambdaClient`) invokes a named
+Package: `@benzenejs/clients-aws-lambda`. `AwsLambdaClient` (an `IAwsLambdaClient`) invokes a named
 Lambda function directly via `@aws-sdk/client-lambda`, serializing the request and deserializing the
 response payload as JSON:
 
 ```ts
 import { InvocationType, LambdaClient } from '@aws-sdk/client-lambda';
-import { AwsLambdaClient } from '@benzene/clients-aws-lambda';
+import { AwsLambdaClient } from '@benzenejs/clients-aws-lambda';
 
 const client = new AwsLambdaClient(new LambdaClient({}));
 
@@ -296,12 +296,12 @@ profile-authenticated `LambdaClient` for local development.
 > route extension (`.useAwsLambda`) are not yet ported — see the [README package table](../README.md).
 > The `AwsLambdaHealthCheck` reachability check *is* ported (its `HealthCheckMode.Active` invoke path,
 > which needs that high-level client, is not). The Kafka and EventBridge outbound clients are ported now
-> (`@benzene/kafka-core`'s `KafkaBenzeneMessageClient` / `useKafkaSend`, and
-> `@benzene/clients-aws-eventbridge`'s `useEventBridge`); the gRPC outbound client is not ported yet.
+> (`@benzenejs/kafka-core`'s `KafkaBenzeneMessageClient` / `useKafkaSend`, and
+> `@benzenejs/clients-aws-eventbridge`'s `useEventBridge`); the gRPC outbound client is not ported yet.
 
 ## In-process
 
-Package: `@benzene/clients-in-process`. Not a wire transport at all — dispatches an outbound send
+Package: `@benzenejs/clients-in-process`. Not a wire transport at all — dispatches an outbound send
 straight to a handler registered in the *same runtime*, in the shared `BenzeneMessage` envelope every
 transport uses, without going over any wire (no SQS/SNS/HTTP/socket, not even loopback). It exists
 for the case where functionality that used to live in a different service has been moved into the
@@ -312,7 +312,7 @@ the shape this is written toward: many in-process modules, each with its own pip
 real services one route at a time.
 
 ```ts
-import { addInProcessMessaging, useInProcess } from '@benzene/clients-in-process';
+import { addInProcessMessaging, useInProcess } from '@benzenejs/clients-in-process';
 
 // One or more named pipelines, each with its own handlers:
 addInProcessMessaging(services, (registry) => registry
@@ -363,7 +363,7 @@ genuinely lost unless its own handler retries internally.
 
 ## Lower-level: the `IBenzeneMessageClient` decorator suite
 
-Alongside outbound routing, `@benzene/clients` ports the decorator-based client model — a
+Alongside outbound routing, `@benzenejs/clients` ports the decorator-based client model — a
 transport-agnostic client you resolve and call directly, useful for one-off cases where you don't want
 a topic-keyed route table:
 
@@ -376,7 +376,7 @@ export interface IBenzeneMessageClient {
 }
 ```
 
-`sendMessageAsync` / `sendMessageNoResponseAsync` (`@benzene/clients`) are free-function helpers that
+`sendMessageAsync` / `sendMessageNoResponseAsync` (`@benzenejs/clients`) are free-function helpers that
 build the `IBenzeneClientRequest` for you from a topic and message. `ClientBuilder` composes a decorated
 client: a base builder produces the innermost client, and each decorator wraps it. The two ported
 decorators are added by free functions:
@@ -390,7 +390,7 @@ decorators are added by free functions:
   `correlationId`). See [Correlation IDs](correlation-ids.md).
 
 ```ts
-import { ClientBuilder, withRetry, withCorrelationId } from '@benzene/clients';
+import { ClientBuilder, withRetry, withCorrelationId } from '@benzenejs/clients';
 
 const builder = new ClientBuilder((resolver) => new MyBaseClient(resolver));
 withCorrelationId(builder);
@@ -422,7 +422,7 @@ in [Overview](#overview)). The result reports **only which entries failed**, by 
 collection, so you retry exactly those:
 
 ```ts
-import { SqsBatchMessageClient } from '@benzene/clients-aws-sqs';
+import { SqsBatchMessageClient } from '@benzenejs/clients-aws-sqs';
 
 const batch = new SqsBatchMessageClient(sqsClient, queueUrl);
 const result = await batch.sendBatchAsync(
@@ -441,14 +441,14 @@ transport — blocked on the same runtime type-erasure as typed outbound respons
 
 ## Health checks: contract drift
 
-Package: `@benzene/clients-health-checks`. `ClientHealthCheck` is a consumer-side check that probes a
+Package: `@benzenejs/clients-health-checks`. `ClientHealthCheck` is a consumer-side check that probes a
 downstream provider via its generated client (`IHasHealthCheck`) and reports both whether the provider
 is reachable and whether its message contract has **drifted** from the one this client was generated
 against. Register it on the contracts diagnostic topic — never a liveness/readiness probe, since it
 calls a downstream service:
 
 ```ts
-import { addContractCheck } from '@benzene/clients-health-checks';
+import { addContractCheck } from '@benzenejs/clients-health-checks';
 
 addContractCheck(healthChecks, 'orders-service', IOrdersServiceClient);
 ```

@@ -5,9 +5,9 @@ import {
   tryAddScoped,
   tryAddSingleton,
   tryAddSingletonInstance,
-} from '@benzene/abstractions';
-import { IBenzeneMessageClient } from '@benzene/clients';
-import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzene/grpc';
+} from '@benzenejs/abstractions';
+import { IBenzeneMessageClient } from '@benzenejs/clients';
+import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzenejs/grpc';
 import { Client } from '@grpc/grpc-js';
 import { DefaultGrpcStatusReverseMapper } from './DefaultGrpcStatusReverseMapper';
 import { GrpcBenzeneMessageClient } from './GrpcBenzeneMessageClient';
@@ -30,7 +30,7 @@ import { IGrpcStatusReverseMapper } from './IGrpcStatusReverseMapper';
  * or owned here.
  *
  * DEFERRED (`healthCheck` parameter): .NET's `AddGrpcClient` auto-wires a `GrpcHealthCheck`. The
- * health-check domain is out of scope for this port (as it is for `@benzene/grpc`), so the parameter and
+ * health-check domain is out of scope for this port (as it is for `@benzenejs/grpc`), so the parameter and
  * the auto-wiring are dropped.
  */
 export function addGrpcClient(

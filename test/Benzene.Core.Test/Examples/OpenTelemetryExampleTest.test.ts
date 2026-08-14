@@ -2,7 +2,7 @@
  * Drives `@benzene-example/opentelemetry` end-to-end with an in-memory OpenTelemetry span exporter (the
  * same `OtelHarness` the port's own diagnostics tests use — no otel-lgtm collector needed). Ports the
  * dispatch assertions of the .NET `SendEndpointTest` AND additionally asserts on the emitted spans, which
- * is the whole point of the example: `@benzene/diagnostics` produces one span per pipeline middleware, and
+ * is the whole point of the example: `@benzenejs/diagnostics` produces one span per pipeline middleware, and
  * the handlers add business child spans (`Payment.Charge`, `Warehouse.*`) under them.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

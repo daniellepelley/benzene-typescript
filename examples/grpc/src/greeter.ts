@@ -1,8 +1,8 @@
 /**
  * The grpc-js wire contract for the Greeter service, all four RPC shapes. In .NET this comes from
  * `Protos/greet.proto` compiled to a strongly-typed `Greeter.GreeterBase`/`GreeterClient`; grpc-js ships
- * no framework message type, so — exactly like `@benzene/grpc`'s `JsonGrpcMessageAdapter` and
- * `@benzene/grpc-client`'s `jsonGrpcMarshaller` — we marshal the `{ name }` / `{ message }` payloads as
+ * no framework message type, so — exactly like `@benzenejs/grpc`'s `JsonGrpcMessageAdapter` and
+ * `@benzenejs/grpc-client`'s `jsonGrpcMarshaller` — we marshal the `{ name }` / `{ message }` payloads as
  * JSON on the wire. The same `ServiceDefinition` is registered on the server and used by the raw client in
  * the test, so both ends agree on the codec.
  */

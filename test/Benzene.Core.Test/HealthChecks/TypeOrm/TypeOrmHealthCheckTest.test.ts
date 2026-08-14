@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
 import {
   DatabaseConnectionHealthCheck,
   DatabaseHealthCheck,
   ITypeOrmDatabase,
-} from '@benzene/health-checks-typeorm';
+} from '@benzenejs/health-checks-typeorm';
 
 /**
  * Ports test/Benzene.Core.Test/HealthChecks/EntityFramework/DatabaseConnectionHealthCheckTest.cs +

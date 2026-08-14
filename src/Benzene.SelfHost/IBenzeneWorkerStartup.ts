@@ -1,5 +1,5 @@
-import { IRegisterDependency, IServiceResolverFactory } from '@benzene/abstractions';
-import { IBenzeneWorker, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IRegisterDependency, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IBenzeneWorker, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 
 /**
  * The worker-registration surface a self-hosted `BenzeneStartUp.Configure` builds against: register

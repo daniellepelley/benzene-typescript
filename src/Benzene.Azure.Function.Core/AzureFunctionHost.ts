@@ -1,4 +1,4 @@
-import { BenzeneStartUp } from '@benzene/abstractions-middleware';
+import { BenzeneStartUp } from '@benzenejs/abstractions-middleware';
 import { AzureFunctionStartUpRunner } from './AzureFunctionStartUpRunner';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
 
@@ -12,8 +12,8 @@ import { IAzureFunctionApp } from './IAzureFunctionApp';
  *
  * ```ts
  * import { app } from '@azure/functions';
- * import { AzureFunctionHost } from '@benzene/azure-function-core';
- * import '@benzene/azure-function-http'; // lights up `.httpFunction` (see below)
+ * import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+ * import '@benzenejs/azure-function-http'; // lights up `.httpFunction` (see below)
  * import { StartUp } from './startUp';
  *
  * const host = new AzureFunctionHost(StartUp);
@@ -31,8 +31,8 @@ import { IAzureFunctionApp } from './IAzureFunctionApp';
  * type (HTTP, Service Bus, Event Hub, …) is a separate registration whose payload adaptation lives in its
  * own transport package. So this core host stays transport-agnostic (it exposes the built {@link app} and
  * the two neutral dispatch methods), and each transport package ADDS the native-handler getter it owns —
- * `@benzene/azure-function-http` adds `.httpFunction`, `@benzene/azure-function-service-bus` adds
- * `.serviceBusFunction`, `@benzene/azure-function-event-hub` adds `.eventHubFunction` — via
+ * `@benzenejs/azure-function-http` adds `.httpFunction`, `@benzenejs/azure-function-service-bus` adds
+ * `.serviceBusFunction`, `@benzenejs/azure-function-event-hub` adds `.eventHubFunction` — via
  * `declare module`, exactly as the `*-testing` packages add `buildAzureFunctionApp` to the test host. A
  * getter lights up only when its transport package is imported (which a trigger registration always does
  * for its `use*` wiring), so core keeps zero transport imports. See each transport package's

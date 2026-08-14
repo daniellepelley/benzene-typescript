@@ -1,5 +1,5 @@
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { BenzeneMessageContext, ensureResponseExists } from '@benzene/core-messages';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneMessageContext, ensureResponseExists } from '@benzenejs/core-messages';
 import { Constants } from '../Constants';
 
 /**

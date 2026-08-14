@@ -1,7 +1,7 @@
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzene/grpc';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzenejs/grpc';
 import { Client } from '@grpc/grpc-js';
 import { GrpcClientMiddleware } from './GrpcClientMiddleware';
 import { GrpcContextConverter } from './GrpcContextConverter';
@@ -18,7 +18,7 @@ import { IGrpcClientRouteRegistry } from './IGrpcClientRouteRegistry';
  *
  * PORT DIVERGENCE: the C# parameterless `.UseGrpcClient()` overload resolves the `CallInvoker` from the
  * container; the TypeScript port takes the grpc-js `Client` explicitly (there is no synthetic DI token
- * for the raw client), mirroring how `@benzene/clients-aws-sqs`'s `useSqsClient` takes the `SQSClient`.
+ * for the raw client), mirroring how `@benzenejs/clients-aws-sqs`'s `useSqsClient` takes the `SQSClient`.
  */
 export function useGrpcClient(
   app: IMiddlewarePipelineBuilder<GrpcSendMessageContext>,

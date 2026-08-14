@@ -9,8 +9,8 @@
  * of the Functions trigger's checkpoint-on-success. `useCosmosDbAllVersionsChangeFeed(...)` is the
  * all-versions-and-deletes sibling, streaming {@link CosmosChangeFeedItem} (current + previous +
  * {@link CosmosChangeType}) so deletes and intermediate versions surface. Intended for
- * `@benzene/self-host` workers rather than Azure Functions (for a `CosmosDBTrigger`, use
- * `@benzene/azure-function-cosmos-db`).
+ * `@benzenejs/self-host` workers rather than Azure Functions (for a `CosmosDBTrigger`, use
+ * `@benzenejs/azure-function-cosmos-db`).
  *
  * THE CHANGE-FEED-PROCESSOR FORK. The .NET `Microsoft.Azure.Cosmos` SDK has a **push-model**
  * `ChangeFeedProcessor` with automatic lease/checkpoint management. `@azure/cosmos` has **no** such

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.QueueStorage.QueueStorageMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { QueueStorageContext } from './QueueStorageContext';
 
 /**

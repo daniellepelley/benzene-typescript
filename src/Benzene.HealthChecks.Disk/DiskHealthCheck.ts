@@ -5,7 +5,7 @@ import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 
 /**
  * A host self-check on free disk space for the drive containing a given path. Reports

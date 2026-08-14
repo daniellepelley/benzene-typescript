@@ -1,4 +1,4 @@
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
 import { ApiGatewayV2Context, ensureV2ResponseExists } from './ApiGatewayV2Context';
 import { Constants } from './Constants';
 

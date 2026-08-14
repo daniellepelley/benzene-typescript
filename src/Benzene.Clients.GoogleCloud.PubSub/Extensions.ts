@@ -1,13 +1,13 @@
 import { PubSub } from '@google-cloud/pubsub';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { OutboundPubSubContextConverter } from './OutboundPubSubContextConverter';
 import { PubSubClientMiddleware } from './PubSubClientMiddleware';
 import { PubSubSendMessageContext } from './PubSubSendMessageContext';
 
 /**
  * Port of Benzene.Clients.GoogleCloud.PubSub.Extensions (C# fluent extension methods -> free functions
- * taking the builder first) — the Google Cloud counterpart of `@benzene/clients-aws-sqs`'s `useSqs`.
+ * taking the builder first) — the Google Cloud counterpart of `@benzenejs/clients-aws-sqs`'s `useSqs`.
  *
  * PORT DIVERGENCE: like the AWS/Azure client siblings, the client is passed explicitly (there is no
  * synthetic DI token for the raw `@google-cloud/pubsub` `PubSub` client), so the container-resolved

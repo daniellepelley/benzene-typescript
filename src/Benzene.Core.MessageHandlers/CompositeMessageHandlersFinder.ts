@@ -1,7 +1,7 @@
 import {
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Combines multiple finders into one.

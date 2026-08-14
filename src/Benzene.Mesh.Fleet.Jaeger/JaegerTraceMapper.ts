@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Fleet.Jaeger.JaegerTraceMapper. */
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 /** One trace as mapped from Jaeger: its id and the mesh events of its topic-bearing spans. */
 export interface JaegerMappedTrace {
@@ -25,7 +25,7 @@ type JsonObject = Record<string, unknown>;
  *
  * `System.Text.Json.JsonDocument` -> `JSON.parse` + `unknown` type guards; `DateTimeOffset` -> epoch-ms
  * `number`. (`MeshTraceEvent.exceptionType`, from `benzene.exception.type`, IS carried - the field was added
- * to `@benzene/mesh-wire` with the X-Ray port.)
+ * to `@benzenejs/mesh-wire` with the X-Ray port.)
  */
 export const JaegerTraceMapper = {
   /**

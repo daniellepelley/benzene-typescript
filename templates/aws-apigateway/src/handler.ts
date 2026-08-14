@@ -1,4 +1,4 @@
-import { AwsLambdaHost } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost } from '@benzenejs/aws-lambda-core';
 import { StartUp } from './startUp';
 
 /**

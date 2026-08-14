@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { SnsRecordContext } from './SnsRecordContext';
 
 /**

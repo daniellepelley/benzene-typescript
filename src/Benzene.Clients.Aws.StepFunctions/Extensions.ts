@@ -1,10 +1,10 @@
 import { SFNClient } from '@aws-sdk/client-sfn';
-import { IBenzeneServiceContainer, ILoggerFactory, NullLogger } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, ILoggerFactory, NullLogger } from '@benzenejs/abstractions';
 import {
   addDependencyHealthCheck,
   HealthCheckMode,
   IHealthCheckBuilder,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { IStepFunctionsClient } from './IStepFunctionsClient';
 import {
   IStepFunctionsClientFactory,
@@ -18,7 +18,7 @@ import { StepFunctionsHealthCheck } from './StepFunctionsHealthCheck';
  *
  * PORT DIVERGENCE: the C# `AddStepFunctionsClient` resolves `IAmazonStepFunctions` from the container;
  * the TypeScript port takes the `@aws-sdk/client-sfn` `SFNClient` explicitly (there is no synthetic DI
- * token for the raw AWS SDK client), matching the `@benzene/clients-aws-*` siblings.
+ * token for the raw AWS SDK client), matching the `@benzenejs/clients-aws-*` siblings.
  */
 
 /**

@@ -1,7 +1,7 @@
 /** Port of Benzene.Cache.Core.CacheWriteActions. */
-import { IBenzeneResult, IBenzeneResultOf, ISerializer } from '@benzene/abstractions';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf, ISerializer } from '@benzenejs/abstractions';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { CacheUpdateAction } from './CacheUpdateAction';
 import { CacheInvalidateActions } from './CacheInvalidateActions';
 import { ICacheWriteActions } from './ICacheWriteActions';

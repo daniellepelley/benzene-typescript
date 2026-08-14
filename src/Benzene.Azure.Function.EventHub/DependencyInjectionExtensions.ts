@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.EventHub.Function.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { EventHubApplication } from './EventHubApplication';
 import { EventHubContext } from './EventHubContext';
 

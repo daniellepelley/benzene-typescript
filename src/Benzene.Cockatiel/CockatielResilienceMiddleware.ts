@@ -1,5 +1,5 @@
 /** Port of Benzene.Resilience.Polly.PollyResilienceMiddleware. */
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { IDefaultPolicyContext, IPolicy } from 'cockatiel';
 import { BenzeneFailureResultException } from './BenzeneFailureResultException';
 

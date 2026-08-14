@@ -1,4 +1,4 @@
-import { BenzeneStartUp } from '@benzene/abstractions-middleware';
+import { BenzeneStartUp } from '@benzenejs/abstractions-middleware';
 import { Context, Handler } from 'aws-lambda';
 import { AwsLambdaEntryPoint } from './AwsLambdaEntryPoint';
 import { AwsLambdaStartUpRunner } from './AwsLambdaStartUpRunner';
@@ -12,7 +12,7 @@ import { toLambdaHandler } from './toLambdaHandler';
  * startup class and export its {@link lambdaHandler}:
  *
  * ```ts
- * import { AwsLambdaHost } from '@benzene/aws-lambda-core';
+ * import { AwsLambdaHost } from '@benzenejs/aws-lambda-core';
  * import { StartUp } from './startUp';
  * export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
  * ```

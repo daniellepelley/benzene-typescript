@@ -9,13 +9,13 @@ process it.
 A file lands in an S3 bucket (an image upload, a CSV drop, a data export) and you need a Lambda to react to
 it. You want to:
 
-- Wire an S3-triggered Lambda into Benzene's message-handler pipeline with `@benzene/aws-lambda-s3`.
+- Wire an S3-triggered Lambda into Benzene's message-handler pipeline with `@benzenejs/aws-lambda-s3`.
 - Route each S3 record to the right handler by its **S3 event name** (e.g. `ObjectCreated:Put`) — no
   `topic` message attribute to bolt on, unlike SQS/SNS.
 - Read the object reference (bucket, key, size, ETag) inside the handler, and fetch the object body from S3
   when you actually need its contents.
 
-This cookbook covers what `@benzene/aws-lambda-s3` does for you (routing an `S3Event` batch to handlers by
+This cookbook covers what `@benzenejs/aws-lambda-s3` does for you (routing an `S3Event` batch to handlers by
 event name, one record at a time) and where its responsibility ends — the S3 bucket notification
 configuration and the Lambda invoke permission are AWS infrastructure, not something the TypeScript port
 generates.
@@ -30,10 +30,10 @@ generates.
 ## Installation
 
 ```bash
-npm install @benzene/aws-lambda-s3 @benzene/aws-lambda-core @benzene/core-message-handlers \
-  @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
+npm install @benzenejs/aws-lambda-s3 @benzenejs/aws-lambda-core @benzenejs/core-message-handlers \
+  @benzenejs/results @benzenejs/abstractions @benzenejs/abstractions-message-handlers
 # for the Testing section:
-npm install --save-dev @benzene/aws-lambda-testing
+npm install --save-dev @benzenejs/aws-lambda-testing
 ```
 
 If your handler fetches the object's contents, also install the AWS SDK's S3 client:
@@ -44,7 +44,7 @@ npm install @aws-sdk/client-s3
 
 ## How Benzene routes an S3 record
 
-It's worth understanding exactly what `@benzene/aws-lambda-s3` does before writing any handler code, because
+It's worth understanding exactly what `@benzenejs/aws-lambda-s3` does before writing any handler code, because
 S3 routing differs from the queue/topic transports.
 
 `S3LambdaHandler` claims any Lambda invocation whose event is an `S3Event` (records whose `eventSource` is
@@ -95,10 +95,10 @@ and key. The handler is an ordinary Benzene message handler; the only S3-specifi
 
 ```ts
 // ProcessUploadHandler.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 // A subset of the S3Notification fields, matched by name.
 export class FileUploaded {
@@ -133,11 +133,11 @@ shape. `useS3` takes the AWS event pipeline builder first and an inner pipeline 
 
 ```ts
 // index.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useS3 } from '@benzene/aws-lambda-s3';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useS3 } from '@benzenejs/aws-lambda-s3';
 import { ProcessUploadHandler } from './ProcessUploadHandler.js';
 
 export class StartUp implements BenzeneStartUp {
@@ -172,7 +172,7 @@ container) so the handler stays testable:
 ```ts
 // ObjectStore.ts
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface IObjectStore {
   getTextAsync(bucket: string, key: string): Promise<string>;
@@ -197,10 +197,10 @@ Inject it into the handler with `static inject` and read the object once you hav
 
 ```ts
 // ProcessUploadHandler.ts (fetching the body)
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IObjectStore } from './ObjectStore.js';
 
 export class FileUploaded {
@@ -249,8 +249,8 @@ bucket: boot the same `StartUp` you deploy through `benzeneTestHost(...)`, feed 
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { benzeneTestHost } from '@benzene/testing';
-import { asS3 } from '@benzene/aws-lambda-testing';
+import { benzeneTestHost } from '@benzenejs/testing';
+import { asS3 } from '@benzenejs/aws-lambda-testing';
 import { StartUp } from '../src/index.js';
 import { IObjectStore } from '../src/ObjectStore.js';
 

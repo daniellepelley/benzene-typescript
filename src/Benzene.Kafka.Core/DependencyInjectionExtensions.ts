@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IMessageHandlerResultSetter,
@@ -7,15 +7,15 @@ import {
   IRequestMapper,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   addHeaderMessageVersionGetter,
   addMediaFormatNegotiation,
   JsonSerializer,
   MultiSerializerOptionsRequestMapper,
   TransportInfo,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { KafkaMessageBodyGetter } from './KafkaMessage/KafkaMessageBodyGetter';
 import { KafkaMessageHandlerResultSetter } from './KafkaMessage/KafkaMessageHandlerResultSetter';
 import { KafkaMessageHeadersGetter } from './KafkaMessage/KafkaMessageHeadersGetter';

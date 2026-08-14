@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
-import { BenzeneException } from '@benzene/core';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneException } from '@benzenejs/core';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { addS3, S3Application, S3RecordContext, useS3 } from '@benzene/aws-lambda-s3';
-import { benzeneTestHost, type BenzeneStartUp } from '@benzene/testing';
-import { asS3 } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { addS3, S3Application, S3RecordContext, useS3 } from '@benzenejs/aws-lambda-s3';
+import { benzeneTestHost, type BenzeneStartUp } from '@benzenejs/testing';
+import { asS3 } from '@benzenejs/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# S3 pipeline test (test/Benzene.Core.Test/Aws/S3/SnsMessagePipelineTest.cs,

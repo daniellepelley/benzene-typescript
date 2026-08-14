@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Wire.IMeshTraceExporter (and HttpMeshTraceExporter). */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { MeshJson } from './MeshJson';
 import { MeshTopics } from './MeshTopics';
 import { MeshTraceBatch, MeshTraceEvent } from './MeshTraceEvent';

@@ -1,10 +1,10 @@
 /**
- * `@benzene/google-cloud-functions-pubsub-testing` — the in-memory test harness for a Benzene service
+ * `@benzenejs/google-cloud-functions-pubsub-testing` — the in-memory test harness for a Benzene service
  * hosted on Google Cloud Functions Gen2 Pub/Sub. Port of Benzene.GoogleCloud.Functions.PubSub.TestHelpers,
- * and the GCP Pub/Sub counterpart of `@benzene/aws-lambda-testing` (SQS/SNS consumer) /
- * `@benzene/google-cloud-functions-http-testing`.
+ * and the GCP Pub/Sub counterpart of `@benzenejs/aws-lambda-testing` (SQS/SNS consumer) /
+ * `@benzenejs/google-cloud-functions-http-testing`.
  *
- * Boot a real startup with `benzeneTestHost(MyStartUp)` (from `@benzene/testing`), override any dependency
+ * Boot a real startup with `benzeneTestHost(MyStartUp)` (from `@benzenejs/testing`), override any dependency
  * with `.withServices(...)`, then finish with the single GCP-specific line `buildGooglePubSubFunctionHost(...)`
  * to get a {@link GooglePubSubFunctionBenzeneTestHost}. Turn a neutral `messageBuilder(topic, body)` into the
  * native Pub/Sub payload with `asPubSubEvent` (or build one directly with `PubSubMessageBuilder`), push it in

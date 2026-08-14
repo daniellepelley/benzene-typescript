@@ -3,8 +3,8 @@
  *
  * `useSqs(workerStartup, config, clientFactory, action)` adds a long-running {@link SqsConsumer} worker
  * that polls an SQS queue with long polling and runs each received message through a Benzene middleware
- * pipeline, tagging the transport as `"sqs"`. Intended for `@benzene/self-host` workers rather than
- * Lambda (for Lambda-delivered SQS, use `@benzene/aws-lambda-sqs`).
+ * pipeline, tagging the transport as `"sqs"`. Intended for `@benzenejs/self-host` workers rather than
+ * Lambda (for Lambda-delivered SQS, use `@benzenejs/aws-lambda-sqs`).
  *
  * ADAPTATION — the SQS client. .NET's `SqsConsumer` calls `IAmazonSQS.ReceiveMessageAsync` /
  * `DeleteMessageBatchAsync` directly; the aws-sdk v3 client uses `client.send(new XCommand(...))`, so

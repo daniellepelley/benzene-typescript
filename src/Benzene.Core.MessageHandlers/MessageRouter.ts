@@ -1,13 +1,13 @@
-import { IBenzeneResult, ILogger, NullLogger } from '@benzene/abstractions';
+import { IBenzeneResult, ILogger, NullLogger } from '@benzenejs/abstractions';
 import {
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
   IMessageHandlerFactory,
   IMessageHandlerResultSetter,
   IRequestMapper,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import { IDefaultStatuses } from './MessageResult';
 import { MessageHandlerDefinition } from './MessageHandlerDefinition';
 import { MessageHandlerResult } from './MessageHandlerResult';

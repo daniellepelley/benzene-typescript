@@ -1,5 +1,5 @@
-import { IResponseHandlerContainer } from '@benzene/abstractions-message-handlers';
-import { ResponseMessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { IResponseHandlerContainer } from '@benzenejs/abstractions-message-handlers';
+import { ResponseMessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { ExpressContext } from './ExpressContext';
 
 /**

@@ -10,15 +10,15 @@
  * is the `use<Cloud>` verb inside `configure` — here `useGoogleCloud(app, g => useHttp(g, …))`, exactly
  * where AWS writes `useAwsLambda(app, aws => …)` and Azure writes `useAzureFunctions(app, az => …)`.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneConfiguration,
   BenzeneStartUp,
   IBenzeneApplicationBuilder,
-} from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
-import { useHttp } from '@benzene/google-cloud-functions-http';
+} from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useGoogleCloud } from '@benzenejs/google-cloud-functions-core';
+import { useHttp } from '@benzenejs/google-cloud-functions-http';
 import { CreateOrderHandler, ListOrdersHandler } from './handlers';
 import { IOrderStore, InMemoryOrderStore } from './orderStore';
 

@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.DynamoDbMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { DynamoDbAttributeValueConverter } from './DynamoDbAttributeValueConverter';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 

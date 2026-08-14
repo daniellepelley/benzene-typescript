@@ -1,4 +1,4 @@
-import { IBenzeneResult, IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResult, IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Sends an outbound message and reports only the result status (no typed response payload).

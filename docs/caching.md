@@ -1,13 +1,13 @@
 # Caching
 
-Benzene's caching support is a provider-agnostic abstraction (`@benzene/cache-core`) with a Redis
-implementation (`@benzene/cache-redis`) that your handlers and services consume directly through
+Benzene's caching support is a provider-agnostic abstraction (`@benzenejs/cache-core`) with a Redis
+implementation (`@benzenejs/cache-redis`) that your handlers and services consume directly through
 dependency injection.
 
 ## Overview
 
 Caching in Benzene is **not** a middleware you add to a pipeline with a `useCache(...)` call — there is
-no such function in the codebase. Instead, `@benzene/cache-core` gives you a small set of abstractions
+no such function in the codebase. Instead, `@benzenejs/cache-core` gives you a small set of abstractions
 for building a cache-backed service:
 
 - `ICacheService` — a marker interface with a single `canConnectAsync()` method, used to health-check
@@ -22,11 +22,11 @@ for building a cache-backed service:
 - `CacheUpdateAction` — an enum (`None`, `Set`, `Invalidate`) used to tell a generic `writeThroughAsync`
   call what to do with the cache after the underlying write completes.
 
-`@benzene/cache-core` also ships abstract base classes (`CacheInvalidateActions`, `CacheWriteActions<T>`,
+`@benzenejs/cache-core` also ships abstract base classes (`CacheInvalidateActions`, `CacheWriteActions<T>`,
 `CacheEntry<T>`) that implement the serialization, logging, and write-through/lazy-load orchestration
 around these interfaces, so a concrete cache provider only needs to implement the few `protected
 abstract` methods that actually talk to the backend (get/set/delete a raw string value).
-`@benzene/cache-redis`'s `RedisCacheEntry<T>`, `RedisMultiKeyActions<T>`, and `RedisWildcardActions`
+`@benzenejs/cache-redis`'s `RedisCacheEntry<T>`, `RedisMultiKeyActions<T>`, and `RedisWildcardActions`
 are exactly this: classes that fill in those abstract methods using `ioredis`.
 
 Use this when you want request-scoped or cross-instance caching of message handler results or downstream
@@ -37,7 +37,7 @@ update cache" each time).
 > **Port note — Redis client.** The .NET `Benzene.Cache.Redis` wraps `StackExchange.Redis`, a
 > .NET-only library. Per the port's [third-party-integration convention](../README.md#porting-conventions),
 > it is re-created as an adapter over **[`ioredis`](https://github.com/redis/ioredis)**, the popular
-> Node Redis client. The abstraction core (`@benzene/cache-core`) is a straight port; only the Redis
+> Node Redis client. The abstraction core (`@benzenejs/cache-core`) is a straight port; only the Redis
 > layer is re-implemented against `ioredis`.
 
 > **Port note — process timers.** In .NET every cache operation opens a named `IProcessTimerFactory`
@@ -48,7 +48,7 @@ update cache" each time).
 
 ## Prerequisites
 
-- A Benzene service using `@benzene/core-message-handlers` (message handlers returning
+- A Benzene service using `@benzenejs/core-message-handlers` (message handlers returning
   `IBenzeneResultOf<T>`).
 - Node 22+.
 - For distributed caching: a reachable Redis instance (or cluster) and the `ioredis` connection options
@@ -59,16 +59,16 @@ update cache" each time).
 Add the core abstractions:
 
 ```
-npm install @benzene/cache-core
+npm install @benzenejs/cache-core
 ```
 
 For Redis-backed caching, also add:
 
 ```
-npm install @benzene/cache-redis
+npm install @benzenejs/cache-redis
 ```
 
-`@benzene/cache-redis` depends on `@benzene/cache-core` and `ioredis` directly — no other runtime
+`@benzenejs/cache-redis` depends on `@benzenejs/cache-core` and `ioredis` directly — no other runtime
 dependencies are pulled in.
 
 ## Basic Usage
@@ -79,9 +79,9 @@ keys you care about:
 
 ```ts
 import type { RedisOptions } from 'ioredis';
-import { ILogger } from '@benzene/abstractions';
-import { ICacheEntry } from '@benzene/cache-core';
-import { RedisCacheService, IRedisConnectionFactory } from '@benzene/cache-redis';
+import { ILogger } from '@benzenejs/abstractions';
+import { ICacheEntry } from '@benzenejs/cache-core';
+import { RedisCacheService, IRedisConnectionFactory } from '@benzenejs/cache-redis';
 
 export class OrderCacheService extends RedisCacheService {
   static readonly inject = [ILogger, IRedisConnectionFactory] as const;
@@ -111,7 +111,7 @@ Register it in DI — the default `IRedisConnectionFactory` (`RedisConnectionFac
 `ioredis` connection) and your cache service — and inject it wherever you need it:
 
 ```ts
-import { RedisConnectionFactory, IRedisConnectionFactory } from '@benzene/cache-redis';
+import { RedisConnectionFactory, IRedisConnectionFactory } from '@benzenejs/cache-redis';
 
 addBenzene(services);
 services.addScoped(IRedisConnectionFactory, RedisConnectionFactory);
@@ -119,9 +119,9 @@ services.addScoped(OrderCacheService);
 ```
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
 
 @message('orders:get', { requestType: GetOrderRequest, responseType: Order })
 export class GetOrderMessageHandler implements IMessageHandler<GetOrderRequest, Order> {
@@ -167,7 +167,7 @@ export class GetOrderMessageHandler implements IMessageHandler<GetOrderRequest, 
 | Member | Purpose |
 | --- | --- |
 | `getValueAsync()` | Reads and deserializes the cached value, or `undefined` on a miss or error (errors are logged, not thrown). |
-| `setValueAsync(value, expireIn?)` | Serializes (via `@benzene/core-message-handlers`'s `JsonSerializer`) and stores the value, using `expireIn` (ms) or the service's `defaultCacheLifespan`. |
+| `setValueAsync(value, expireIn?)` | Serializes (via `@benzenejs/core-message-handlers`'s `JsonSerializer`) and stores the value, using `expireIn` (ms) or the service's `defaultCacheLifespan`. |
 | `invalidateAsync()` | Deletes the key(s). |
 | `lazyLoadAsync(databaseReadFunc)` | Cache-aside read: hit returns from cache; miss calls `databaseReadFunc` and caches a successful result. |
 | `writeThroughAsync(modifyDatabaseFunc)` | Runs the write, then updates the cache based on the result's `BenzeneResultStatus` (`ok`/`created`/`updated`/`accepted` → `Set`; `deleted` → `Invalidate`; anything else → no cache change). |
@@ -180,12 +180,12 @@ hit is wrapped with `BenzeneResult.ok(value)`.
 
 ### Health check
 
-`@benzene/cache-core` exposes `ICacheService.canConnectAsync()` (for `RedisCacheService`, a Redis
+`@benzenejs/cache-core` exposes `ICacheService.canConnectAsync()` (for `RedisCacheService`, a Redis
 `PING`) as the primitive a health check builds on, and ships the ready-made `CacheHealthCheck` and
 `addCacheHealthCheck` helpers that wrap it:
 
 ```ts
-import { addCacheHealthCheck } from '@benzene/cache-core';
+import { addCacheHealthCheck } from '@benzenejs/cache-core';
 
 useHealthCheck(app, 'healthcheck', (checks) => addCacheHealthCheck(checks));
 ```
@@ -235,8 +235,8 @@ The three-argument `writeThroughAsync` overload lets you decide, per result, whe
 doesn't fit your handler:
 
 ```ts
-import { CacheUpdateAction } from '@benzene/cache-core';
-import { BenzeneResultStatus } from '@benzene/results';
+import { CacheUpdateAction } from '@benzenejs/cache-core';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 await entry.writeThroughAsync(
   () => this.orders.archiveOrderAsync(orderId),
@@ -248,7 +248,7 @@ await entry.writeThroughAsync(
 
 ### A different cache backend
 
-Because `@benzene/cache-core`'s `CacheEntry<T>`/`CacheWriteActions<T>`/`CacheInvalidateActions` do all
+Because `@benzenejs/cache-core`'s `CacheEntry<T>`/`CacheWriteActions<T>`/`CacheInvalidateActions` do all
 the serialization, logging, and write-through/lazy-load orchestration, adding support for a backend
 other than Redis means implementing just the raw storage primitives:
 
@@ -258,7 +258,7 @@ protected abstract setEntryValueAsync(value: string, expireIn: number | undefine
 protected abstract invalidateEntryAsync(): Promise<boolean>;
 ```
 
-along with the `logger` and `keyDescription` getters (used for log messages). `@benzene/cache-redis`'s
+along with the `logger` and `keyDescription` getters (used for log messages). `@benzenejs/cache-redis`'s
 `RedisCacheEntry<T>` is a complete, minimal example of this.
 
 ## Examples

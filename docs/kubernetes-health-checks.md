@@ -1,6 +1,6 @@
 # Kubernetes Health Checks
 
-`@benzene/health-checks` provides purpose-built liveness/readiness convenience functions on top of the
+`@benzenejs/health-checks` provides purpose-built liveness/readiness convenience functions on top of the
 general-purpose [health checks](health-checks.md) support, matching [Kubernetes' own liveness/readiness/
 startup probe model](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/).
 This page covers the semantics, how to wire them up per transport, and example probe configuration.
@@ -33,8 +33,8 @@ Kubernetes' guidance is specific about what belongs in each, and Benzene doesn't
 > When in doubt, use the deep `healthcheck` layer instead (below).
 
 For a dependency you *have* reasoned is safe to gate on, register it explicitly under readiness — e.g.
-`@benzene/health-checks-http`'s [`addHttpPing`](health-checks.md#httppinghealthcheck--addhttpping-benzenehealth-checks-http),
-`@benzene/health-checks-tcp`'s
+`@benzenejs/health-checks-http`'s [`addHttpPing`](health-checks.md#httppinghealthcheck--addhttpping-benzenehealth-checks-http),
+`@benzenejs/health-checks-tcp`'s
 [`addTcpPing`](health-checks.md#tcphealthcheck--addtcpping-benzenehealth-checks-tcp), or your own
 check via `useReadinessCheck(...)`.
 
@@ -48,7 +48,7 @@ above.
 
 ### Client / contract-drift checks belong in *neither* probe
 
-A generated client's contract-drift check (`@benzene/clients-health-checks`' `ClientHealthCheck` /
+A generated client's contract-drift check (`@benzenejs/clients-health-checks`' `ClientHealthCheck` /
 `addContractCheck`) is **not** an ordinary external-dependency check, and it does not belong in a
 liveness *or* a readiness probe. It calls a *downstream provider's* health endpoint and compares
 contract hashes, so it fails the two tests above harder than a database check does:
@@ -69,7 +69,7 @@ instead.
 
 > **Porting note.** The .NET library ships a dedicated probe-less `contracts` topic and a
 > `UseContractsCheck` middleware for exactly this. The TypeScript port has the `ClientHealthCheck` and
-> `addContractCheck`/`addContractCheckInstance` builder helpers (`@benzene/clients-health-checks`) but
+> `addContractCheck`/`addContractCheckInstance` builder helpers (`@benzenejs/clients-health-checks`) but
 > **no `useContractsCheck` middleware yet** — register the contract checks on a topic of your own via
 > the general `useHealthCheck` and scrape it directly, until the dedicated middleware is ported.
 
@@ -95,9 +95,9 @@ general `useHealthCheck` takes — an array of instances, a builder-configuring 
 prebuilt `IHealthCheckBuilder`.
 
 ```ts
-import { useLivenessCheck, useReadinessCheck } from '@benzene/health-checks';
-import { addHttpPing } from '@benzene/health-checks-http';
-import { addTcpPing } from '@benzene/health-checks-tcp';
+import { useLivenessCheck, useReadinessCheck } from '@benzenejs/health-checks';
+import { addHttpPing } from '@benzenejs/health-checks-http';
+import { addTcpPing } from '@benzenejs/health-checks-tcp';
 
 useLivenessCheck(app, (checks) =>
   checks.addHealthCheck(ProcessResponsiveCheck)); // your own check: cheap, no external I/O
@@ -124,11 +124,11 @@ conventional probe path to the liveness/readiness topic, then wire the middlewar
 
 ```ts
 import express from 'express';
-import { benzene } from '@benzene/express';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzene/http';
-import { useLivenessCheck, useReadinessCheck, Constants } from '@benzene/health-checks';
-import { addHttpPing } from '@benzene/health-checks-http';
+import { benzene } from '@benzenejs/express';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzenejs/http';
+import { useLivenessCheck, useReadinessCheck, Constants } from '@benzenejs/health-checks';
+import { addHttpPing } from '@benzenejs/health-checks-http';
 
 const container = new DefaultBenzeneServiceContainer();
 // Map the conventional Kubernetes probe paths onto the liveness/readiness topics.

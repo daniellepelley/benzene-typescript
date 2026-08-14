@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
-import { DynamoDbHealthCheck } from '@benzene/health-checks-dynamodb';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { DynamoDbHealthCheck } from '@benzenejs/health-checks-dynamodb';
 
 /**
  * Ports Benzene.Test.HealthChecks.DynamoDb.DynamoDbHealthCheckTest: a non-destructive `DescribeTable`

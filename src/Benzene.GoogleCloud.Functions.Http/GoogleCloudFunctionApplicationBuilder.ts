@@ -1,7 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.Http.GoogleCloudFunctionApplicationBuilder. */
-import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
-import { BenzeneApplicationBuilder } from '@benzene/core-middleware';
-import { GoogleCloudFunctionsPlatform } from '@benzene/google-cloud-functions-core';
+import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { BenzeneApplicationBuilder } from '@benzenejs/core-middleware';
+import { GoogleCloudFunctionsPlatform } from '@benzenejs/google-cloud-functions-core';
 import { Request, Response } from '@google-cloud/functions-framework';
 
 /**
@@ -18,9 +18,9 @@ export type GoogleCloudFunctionRequestHandler = (req: Request, res: Response) =>
  * HOST-MACHINERY ADAPTATION: the .NET original implements `Benzene.AspNet.Core.IAspApplicationBuilder`
  * purely so that stack's existing `UseHttp(IBenzeneApplicationBuilder, ...)` extension treats a Cloud
  * Functions host the same as a real ASP.NET Core one WITHOUT needing a live `IApplicationBuilder`.
- * `Benzene.AspNet.Core` is .NET-specific and is NOT ported — `@benzene/express` is its Node/JS analog
+ * `Benzene.AspNet.Core` is .NET-specific and is NOT ported — `@benzenejs/express` is its Node/JS analog
  * (see the README) — and the Functions Framework's HTTP signature is itself Express-shaped
- * (`functions.http(name, (req, res) => ...)`). So the TypeScript builder reuses `@benzene/express`'s
+ * (`functions.http(name, (req, res) => ...)`). So the TypeScript builder reuses `@benzenejs/express`'s
  * already-tested `ExpressContext` + `addExpress` adapter machinery to bridge that req/res into the
  * Benzene HTTP pipeline, exactly as the Express middleware does when invoked — see `useHttp`.
  *
@@ -34,7 +34,7 @@ export class GoogleCloudFunctionApplicationBuilder extends BenzeneApplicationBui
   /**
    * The platform identifier reported by the base `IBenzeneApplicationBuilder.platform`. Sourced from the
    * shared {@link GoogleCloudFunctionsPlatform} constant so the neutral `useGoogleCloud(app, …)` seam (in
-   * `@benzene/google-cloud-functions-core`) can gate on it — this builder IS an `IBenzeneApplicationBuilder`
+   * `@benzenejs/google-cloud-functions-core`) can gate on it — this builder IS an `IBenzeneApplicationBuilder`
    * (via `BenzeneApplicationBuilder`), the same one a unified `BenzeneStartUp.configure(app)` receives.
    */
   static readonly platformName = GoogleCloudFunctionsPlatform;

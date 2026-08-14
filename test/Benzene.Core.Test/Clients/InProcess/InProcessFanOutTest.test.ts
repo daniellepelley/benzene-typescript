@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundRoutingBuilder } from '@benzene/clients';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundRoutingBuilder } from '@benzenejs/clients';
 import {
   addInProcessMessaging,
   DuplicateInProcessFanOutTargetException,
   InProcessFanOutTarget,
   InProcessPipelineNotFoundException,
   useInProcessFanOut,
-} from '@benzene/clients-in-process';
-import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/clients-in-process';
+import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Port of test/Benzene.Core.Test/Clients/InProcess/InProcessFanOutTest.cs. Coverage for

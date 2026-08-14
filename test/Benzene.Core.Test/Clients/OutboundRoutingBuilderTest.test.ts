@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { DuplicateOutboundRouteException, OutboundRoutingBuilder } from '@benzene/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { DuplicateOutboundRouteException, OutboundRoutingBuilder } from '@benzenejs/clients';
 
 /** Port of test/Benzene.Core.Test/Clients/OutboundRoutingBuilderTest.cs. */
 

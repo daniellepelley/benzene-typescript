@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IServiceResolver, serviceToken } from '@benzene/abstractions';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IServiceResolver, serviceToken } from '@benzenejs/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * The classic captive-dependency footgun: a `singleton` factory resolves a `scoped` service, capturing

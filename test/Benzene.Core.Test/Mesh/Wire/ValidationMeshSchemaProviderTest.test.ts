@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { VoidResult } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+import { VoidResult } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import {
   IMessageHandlerDefinition,
   IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
-import { MapTypeJsonSchemaSource } from '@benzene/abstractions-validation';
-import { registerZodSchema, ZodJsonSchemaSource } from '@benzene/zod';
-import { MeshDescriptorFactory, MeshServiceInfo, ValidationMeshSchemaProvider } from '@benzene/mesh-wire';
+} from '@benzenejs/abstractions-message-handlers';
+import { MapTypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
+import { registerZodSchema, ZodJsonSchemaSource } from '@benzenejs/zod';
+import { MeshDescriptorFactory, MeshServiceInfo, ValidationMeshSchemaProvider } from '@benzenejs/mesh-wire';
 
 /**
  * `ValidationMeshSchemaProvider` derives a topic's request/response payload schemas from the registered

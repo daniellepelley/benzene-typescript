@@ -1,7 +1,7 @@
 import { Context } from 'aws-lambda';
-import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneInvocation, useBenzeneInvocation as coreUseBenzeneInvocation } from '@benzene/core-middleware';
+import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneInvocation, useBenzeneInvocation as coreUseBenzeneInvocation } from '@benzenejs/core-middleware';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 
 /**

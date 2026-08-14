@@ -1,17 +1,20 @@
 {
-  "name": "@benzene/aws-lambda-testing",
-  "version": "0.1.0",
+  "name": "@benzenejs/aws-lambda-testing",
+  "version": "0.1.0-beta.1",
   "description": "Test-event builders for the AWS Lambda Benzene transports (ports the Benzene.Aws.Lambda.*.TestHelpers projects)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@types/aws-lambda": "^8.10",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/aws-lambda-core": "0.1.0",
-    "@benzene/core-middleware": "0.1.0",
-    "@benzene/testing": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-core": "0.1.0-beta.1",
+    "@benzenejs/core-middleware": "0.1.0-beta.1",
+    "@benzenejs/testing": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

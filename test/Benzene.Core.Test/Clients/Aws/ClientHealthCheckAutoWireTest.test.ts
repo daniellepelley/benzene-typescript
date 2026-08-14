@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { OutboundRoutingBuilder } from '@benzene/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { OutboundRoutingBuilder } from '@benzenejs/clients';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
-import { IDependencyHealthCheck } from '@benzene/health-checks-core';
-import { getHealthCheckerBuilder, IHealthCheckFinder } from '@benzene/health-checks';
-import { useSqs } from '@benzene/clients-aws-sqs';
-import { useSns } from '@benzene/clients-aws-sns';
-import { useEventBridge } from '@benzene/clients-aws-eventbridge';
+import { IDependencyHealthCheck } from '@benzenejs/health-checks-core';
+import { getHealthCheckerBuilder, IHealthCheckFinder } from '@benzenejs/health-checks';
+import { useSqs } from '@benzenejs/clients-aws-sqs';
+import { useSns } from '@benzenejs/clients-aws-sns';
+import { useEventBridge } from '@benzenejs/clients-aws-eventbridge';
 
 /**
  * The AWS send clients come with their own health checks: wiring `useSqs`/`useSns`/`useEventBridge`

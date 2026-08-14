@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { IMessageHandlerResult, IResponseHandler } from '@benzene/abstractions-message-handlers';
-import { IBenzeneServiceContainer, IRegisterDependency } from '@benzene/abstractions';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { IMessageHandlerResult, IResponseHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneServiceContainer, IRegisterDependency } from '@benzenejs/abstractions';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import {
   Base64JsonMessage,
   BroadcastEventChecker,
@@ -21,7 +21,7 @@ import {
   hasField,
   set,
   tryGet,
-} from '@benzene/extras';
+} from '@benzenejs/extras';
 
 /** Port of the Benzene.Extras scenarios. */
 

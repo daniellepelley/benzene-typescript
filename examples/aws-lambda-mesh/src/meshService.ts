@@ -3,8 +3,8 @@
  * `Shared/MeshServiceWiring`. Each service is a single Lambda (a composite entry point) that:
  *
  *  - answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
- *    mesh interrogates (via `@benzene/aws-lambda-core`'s `useBenzeneMessage`). The `spec` topic is served by
- *    the **library `useSpec`** (`@benzene/schema-openapi`) — the standard, dogfooded self-description path —
+ *    mesh interrogates (via `@benzenejs/aws-lambda-core`'s `useBenzeneMessage`). The `spec` topic is served by
+ *    the **library `useSpec`** (`@benzenejs/schema-openapi`) — the standard, dogfooded self-description path —
  *    which builds the benzene spec document (`{ requests, events, transports, components.schemas }`) from the
  *    service's own DI-registered feeds. There is deliberately no hand-built spec: `useSpec` IS the single
  *    source of truth, so running the example proves `useSpec` emits the correct spec.
@@ -22,11 +22,11 @@
  *  - `transports[]` ← a declared `TransportsInfo` (the composite is multi-container, so the transports the
  *    service listens on are declared here rather than auto-aggregated across routes).
  */
-import { Constructor, IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler, ITransportsInfo } from '@benzene/abstractions-message-handlers';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
-import { IHealthCheck } from '@benzene/health-checks-core';
-import { useHealthCheck } from '@benzene/health-checks';
+import { Constructor, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler, ITransportsInfo } from '@benzenejs/abstractions-message-handlers';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
+import { IHealthCheck } from '@benzenejs/health-checks-core';
+import { useHealthCheck } from '@benzenejs/health-checks';
 import { Handler } from 'aws-lambda';
 import {
   addBenzene,
@@ -36,19 +36,19 @@ import {
   TransportInfo,
   TransportsInfo,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { addHttpMessageHandlers } from '@benzene/http';
-import { addResponseEventDeclarations, ResponseEventDefinition } from '@benzene/response-events';
-import { useSpec } from '@benzene/schema-openapi';
-import { ZodJsonSchemaSource } from '@benzene/zod';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { addHttpMessageHandlers } from '@benzenejs/http';
+import { addResponseEventDeclarations, ResponseEventDefinition } from '@benzenejs/response-events';
+import { useSpec } from '@benzenejs/schema-openapi';
+import { ZodJsonSchemaSource } from '@benzenejs/zod';
+import { BenzeneResult } from '@benzenejs/results';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
-import { addOutboundRouting } from '@benzene/clients';
-import { useSqs as useSqsClient } from '@benzene/clients-aws-sqs';
-import { useSns as useSnsClient } from '@benzene/clients-aws-sns';
-import { useEventBridge as useEventBridgeClient } from '@benzene/clients-aws-eventbridge';
+import { addOutboundRouting } from '@benzenejs/clients';
+import { useSqs as useSqsClient } from '@benzenejs/clients-aws-sqs';
+import { useSns as useSnsClient } from '@benzenejs/clients-aws-sns';
+import { useEventBridge as useEventBridgeClient } from '@benzenejs/clients-aws-eventbridge';
 import {
   compositeAwsLambda,
   isApiGatewayEvent,
@@ -57,12 +57,12 @@ import {
   isSnsEvent,
   isSqsEvent,
   toLambdaHandler,
-} from '@benzene/aws-lambda-core';
-import { useBenzeneMessage } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useSns } from '@benzene/aws-lambda-sns';
-import { useEventBridge } from '@benzene/aws-lambda-eventbridge';
+} from '@benzenejs/aws-lambda-core';
+import { useBenzeneMessage } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useSns } from '@benzenejs/aws-lambda-sns';
+import { useEventBridge } from '@benzenejs/aws-lambda-eventbridge';
 
 /** A transport a service listens on. */
 export type Transport = 'http' | 'sqs' | 'sns' | 'eventbridge';
@@ -97,7 +97,7 @@ export interface MeshServiceDefinition {
   /** The payload type of the produced events (all events in this example carry the same `{ orderId }` shape). */
   readonly eventPayloadType?: Constructor<unknown>;
   /**
-   * The service's health checks, run by `@benzene/health-checks`' `useHealthCheck` middleware on the
+   * The service's health checks, run by `@benzenejs/health-checks`' `useHealthCheck` middleware on the
    * reserved `healthcheck` topic (mirrors .NET's `.UseHealthCheck("benzene:healthcheck", healthChecks)`).
    * Their aggregated `HealthCheckResponse` is what the mesh writes into `services/{name}.json` and the
    * Mesh UI renders per check (status + declared dependencies). Optional; omit for a service with none.

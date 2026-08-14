@@ -17,6 +17,6 @@ export * from './AzureFunctionHostExtensions';
 // DEFERRED: StreamingExtensions.cs (`UseEventHubStream` — the fan-in variant presenting the whole batch as
 // a single `StreamContext<EventData>`). It depends on the generic streaming primitives
 // `StreamContext<TItem>` / `StreamMiddlewareApplication` from `Benzene.Core.Middleware`, which are NOT yet
-// ported to `@benzene/core-middleware`; porting those core primitives is out of scope for this transport
+// ported to `@benzenejs/core-middleware`; porting those core primitives is out of scope for this transport
 // adapter. Also deferred: the `UseEventHub(IBenzeneApplicationBuilder, ...)` host-neutral overload (see
 // `DependencyInjectionExtensions.ts`), the same deferral as the ported ServiceBus/Kafka packages.

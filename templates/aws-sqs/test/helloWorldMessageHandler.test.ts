@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
 // Importing the AWS testing package provides `asSqs` AND lights up the `.buildAwsLambdaHost()` method
 // on the neutral test host (module augmentation).
-import { asSqs } from '@benzene/aws-lambda-testing';
+import { asSqs } from '@benzenejs/aws-lambda-testing';
 import { StartUp } from '../src/startUp';
 import { IGreeter } from '../src/greeter';
 

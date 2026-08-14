@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { VoidResult } from '@benzene/abstractions';
+import { VoidResult } from '@benzenejs/abstractions';
 import {
   addOutboundRouting,
   IBenzeneMessageSender,
   OutboundResponseTypeMismatchException,
   UnroutedTopicException,
-} from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { OutboundRoutingBuilder } from '@benzene/clients';
+} from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { OutboundRoutingBuilder } from '@benzenejs/clients';
 
 /**
  * Port of test/Benzene.Core.Test/Clients/DefaultBenzeneMessageSenderTest.cs. `DefaultBenzeneMessageSender`

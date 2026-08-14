@@ -1,7 +1,7 @@
 /** Port of Benzene.HealthChecks.Schema.SchemaHealthCheckExtensions. */
-import { IMessageHandlerDefinitionLookUp } from '@benzene/abstractions-message-handlers';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
-import { IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { IMessageHandlerDefinitionLookUp } from '@benzenejs/abstractions-message-handlers';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
+import { IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { SchemaHealthCheck } from './SchemaHealthCheck';
 
 /**

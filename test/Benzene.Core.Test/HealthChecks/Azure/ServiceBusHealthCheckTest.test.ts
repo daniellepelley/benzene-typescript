@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ServiceBusClient, ServiceBusError, ServiceBusReceiver } from '@azure/service-bus';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
-import { ServiceBusHealthCheck } from '@benzene/health-checks-azure-service-bus';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { ServiceBusHealthCheck } from '@benzenejs/health-checks-azure-service-bus';
 
 /**
  * Ports Benzene.Test.HealthChecks.Azure.ServiceBus.ServiceBusHealthCheckTest: a non-destructive

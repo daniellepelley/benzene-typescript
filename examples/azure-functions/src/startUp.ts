@@ -7,13 +7,13 @@
  * Each startup is booted once, at module load, into its own `AzureFunctionHost` in `functions.ts`. The
  * port's one-transport-per-container rule means each trigger is its own host/app.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useAzureHttp } from '@benzene/azure-function-http';
-import { useServiceBus } from '@benzene/azure-function-service-bus';
-import { useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useAzureHttp } from '@benzenejs/azure-function-http';
+import { useServiceBus } from '@benzenejs/azure-function-service-bus';
+import { useBenzeneMessage, useEventHub } from '@benzenejs/azure-function-event-hub';
 import { NotifyWarehouseHandler, PlaceOrderHandler } from './handlers';
 
 /** HTTP trigger (request/response): `POST /orders` returns an order confirmation. */

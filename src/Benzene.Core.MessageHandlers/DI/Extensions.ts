@@ -11,7 +11,7 @@ import {
   tryAddScopedFactory,
   tryAddSingleton,
   tryAddSingletonFactory,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
   IHandlerMiddlewareBuilder,
@@ -34,14 +34,14 @@ import {
   IResponsePayloadMapper,
   IResponseRenderer,
   IVersionSelector,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import {
   IMessageBodyBytesGetter,
   IMessageBodyGetter,
   IMessageHeadersGetter,
-} from '@benzene/abstractions-messages';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { addBenzeneMiddleware } from '@benzene/core-middleware';
+} from '@benzenejs/abstractions-messages';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { addBenzeneMiddleware } from '@benzenejs/core-middleware';
 import { BenzeneMessageGetter } from '../BenzeneMessage/BenzeneBodyMapper';
 import { BenzeneMessageMessageHandlerResultSetter } from '../BenzeneMessage/BenzeneMessageMessageHandlerResultSetter';
 import { BenzeneMessageResponseAdapter } from '../BenzeneMessage/BenzeneMessageResponseAdapter';
@@ -57,13 +57,13 @@ import { HandlerPipelineBuilder } from '../HandlerPipelineBuilder';
 import { ApplicationInfo } from '../Info/ApplicationInfo';
 import { BlankApplicationInfo } from '../Info/BlankApplicationInfo';
 import { CurrentTransportInfo } from '../Info/CurrentTransportInfo';
-import { ICurrentTransport, ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
+import { ICurrentTransport, ISetCurrentTransport } from '@benzenejs/abstractions-message-handlers';
 import {
   IApplicationInfo,
   ITransportInfo,
   ITransportsInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { TransportInfo } from '../Info/TransportInfo';
 import { TransportsInfo } from '../Info/TransportsInfo';
 import { addMediaFormatNegotiation } from '../MediaFormats/DependencyInjectionExtensions';
@@ -130,7 +130,7 @@ export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneS
  * Registers the request/response plumbing for the `BenzeneMessage` context (message extraction,
  * result setting, response adaptation) without announcing a "benzene" wire endpoint via
  * `ITransportInfo`. `addBenzeneMessage` calls this and then adds that announcement; a caller that
- * dispatches `BenzeneMessageContext` some other way (e.g. `@benzene/clients-in-process`'s in-process
+ * dispatches `BenzeneMessageContext` some other way (e.g. `@benzenejs/clients-in-process`'s in-process
  * dispatch, which never exposes a wire endpoint) calls this directly instead, and registers its own
  * `ITransportInfo` under its own name.
  * Port of C# `AddBenzeneMessageHandling` (`Benzene.Core.MessageHandlers/DI/Extensions.cs`).

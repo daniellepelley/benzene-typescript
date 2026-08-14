@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Sqs.Consumer.SqsConsumer. */
 import type { ReceiveMessageCommandInput } from '@aws-sdk/client-sqs';
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { ISqsClientFactory } from './ISqsClientFactory';
 import { SqsConsumerAckMode } from './SqsConsumerAckMode';
 import { SqsConsumerApplication } from './SqsConsumerApplication';

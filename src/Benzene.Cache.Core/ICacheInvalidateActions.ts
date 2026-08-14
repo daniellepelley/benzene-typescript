@@ -1,5 +1,5 @@
 /** Port of Benzene.Cache.Core.ICacheInvalidateActions. */
-import { IBenzeneResult } from '@benzene/abstractions';
+import { IBenzeneResult } from '@benzenejs/abstractions';
 
 /**
  * Cache operations that only ever remove entries: an outright invalidate, and a write-through

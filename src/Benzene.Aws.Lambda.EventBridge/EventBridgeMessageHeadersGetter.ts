@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.EventBridge.EventBridgeMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { EventBridgeContext } from './EventBridgeContext';
 
 /**

@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Exposes the names of every transport registered with the application

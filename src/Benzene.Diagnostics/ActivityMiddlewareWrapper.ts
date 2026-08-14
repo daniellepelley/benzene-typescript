@@ -1,5 +1,5 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareWrapper } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareWrapper } from '@benzenejs/abstractions-middleware';
 import { ActivityMiddlewareDecorator } from './ActivityMiddlewareDecorator';
 
 /**

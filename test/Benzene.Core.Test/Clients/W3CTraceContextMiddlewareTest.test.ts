@@ -6,9 +6,9 @@ import {
   OutboundContext,
   useW3CTraceContext,
   W3CTraceContextMiddleware,
-} from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import { OtelHarness } from '../Diagnostics/otelHarness';
 
 /**

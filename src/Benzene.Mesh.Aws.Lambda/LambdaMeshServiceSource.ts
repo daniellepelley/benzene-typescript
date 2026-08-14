@@ -1,10 +1,10 @@
 /** Port of Benzene.Mesh.Aws.Lambda.LambdaMeshServiceSource. */
 import { InvocationType } from '@aws-sdk/client-lambda';
 import { context as otelContext, trace } from '@opentelemetry/api';
-import { BenzeneMessageClientResponse } from '@benzene/clients';
-import { BenzeneMessageClientRequest, IAwsLambdaClient } from '@benzene/clients-aws-lambda';
-import { IMeshServiceSource } from '@benzene/mesh-aggregator';
-import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzene/mesh-contracts';
+import { BenzeneMessageClientResponse } from '@benzenejs/clients';
+import { BenzeneMessageClientRequest, IAwsLambdaClient } from '@benzenejs/clients-aws-lambda';
+import { IMeshServiceSource } from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
 import { raceWithSignal } from './raceWithSignal';
 
 // Deliberately hardcoded, not referencing the spec/health topic constants directly - keeps this adapter's

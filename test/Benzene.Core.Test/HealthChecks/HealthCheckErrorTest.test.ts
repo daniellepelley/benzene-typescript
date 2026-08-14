@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HealthCheckDependency, HealthCheckError, HealthCheckStatus } from '@benzene/health-checks-core';
+import { HealthCheckDependency, HealthCheckError, HealthCheckStatus } from '@benzenejs/health-checks-core';
 
 /**
  * Ports Benzene.HealthChecks.Core.HealthCheckError's shared classification policy: an

@@ -1,8 +1,8 @@
 /** Port of Benzene.Spec.Ui.SpecUiExtensions. */
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { SpecUiMiddleware } from './SpecUiMiddleware';
 
 /** The default path the spec UI is served from. */

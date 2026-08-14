@@ -7,7 +7,7 @@ export type ClaimPredicate = (claim: Claim) => boolean;
 /**
  * Minimal port of `System.Security.Claims.ClaimsPrincipal` (BCL) - the authenticated caller for a
  * message, an aggregate of one or more {@link ClaimsIdentity}s. See {@link Claim} for why this BCL
- * slice is ported into `@benzene/auth-core`.
+ * slice is ported into `@benzenejs/auth-core`.
  */
 export class ClaimsPrincipal {
   /** The identities that make up this principal. Port of `ClaimsPrincipal.Identities`. */

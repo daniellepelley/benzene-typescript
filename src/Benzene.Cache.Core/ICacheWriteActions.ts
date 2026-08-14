@@ -1,5 +1,5 @@
 /** Port of Benzene.Cache.Core.ICacheWriteActions. */
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
 import { CacheUpdateAction } from './CacheUpdateAction';
 import { ICacheInvalidateActions } from './ICacheInvalidateActions';
 

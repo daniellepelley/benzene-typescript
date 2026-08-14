@@ -5,7 +5,7 @@
 > self-hosted surfaces.
 
 One platform-neutral `StartUp` hosting an order domain on **Google Cloud Functions Gen2 (HTTP)**, via
-[`@benzene/google-cloud-functions-http`](../../src/Benzene.GoogleCloud.Functions.Http). Ported from the
+[`@benzenejs/google-cloud-functions-http`](../../src/Benzene.GoogleCloud.Functions.Http). Ported from the
 .NET `Benzene.Examples.Google`.
 
 The handlers in [`src/handlers.ts`](src/handlers.ts) are written once and know nothing about the Functions

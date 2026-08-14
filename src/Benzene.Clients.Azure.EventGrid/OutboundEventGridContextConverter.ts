@@ -1,9 +1,9 @@
 /** Port of Benzene.Clients.Azure.EventGrid.OutboundEventGridContextConverter. */
 import { SendCloudEventInput } from '@azure/eventgrid';
-import { VoidResult } from '@benzene/abstractions';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
-import { BenzeneResult } from '@benzene/results';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
+import { BenzeneResult } from '@benzenejs/results';
 import { EventGridSendMessageContext } from './EventGridSendMessageContext';
 
 /**

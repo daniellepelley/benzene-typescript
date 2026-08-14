@@ -6,17 +6,17 @@ import {
   IServiceResolver,
   NullLogger,
   VoidResult,
-} from '@benzene/abstractions';
-import { BenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { IBenzeneMessageClient } from '@benzene/clients';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions';
+import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { IBenzeneMessageClient } from '@benzenejs/clients';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import {
   MiddlewarePipelineBuilder,
   NullBenzeneServiceContainer,
   NullServiceResolver,
-} from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import { Producer } from 'kafkajs';
 import { KafkaContextConverter } from './KafkaContextConverter';
 import { isKafkaMessagePersisted, KafkaSendMessageContext } from './KafkaSendMessageContext';

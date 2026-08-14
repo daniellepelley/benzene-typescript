@@ -1,4 +1,4 @@
-import { IContextConverter } from '@benzene/abstractions-middleware';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
 
 /**
  * Adapts a pair of functions into an IContextConverter.

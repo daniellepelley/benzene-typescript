@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
-import { SagaContext, SagaStep, SagaStepState } from '@benzene/saga';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
+import { SagaContext, SagaStep, SagaStepState } from '@benzenejs/saga';
 
 /** Port of test/Benzene.Core.Test/Saga/SagaStepTest.cs. */
 describe('SagaStep', () => {

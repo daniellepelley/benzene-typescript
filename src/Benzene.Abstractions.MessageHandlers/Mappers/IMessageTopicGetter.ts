@@ -1,5 +1,5 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * Extracts the routing topic from a transport-specific message context, so a router can look up

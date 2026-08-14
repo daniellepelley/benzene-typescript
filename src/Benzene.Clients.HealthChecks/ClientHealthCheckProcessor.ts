@@ -5,7 +5,7 @@ import {
   HealthCheckStatus,
   IHealthCheckResponse,
   SchemaHealthCheckConstants,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { ClientHashMatch } from './ClientHashMatch';
 
 /**

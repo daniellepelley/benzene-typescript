@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The write side of a transport-specific outgoing response, giving response handlers a common set

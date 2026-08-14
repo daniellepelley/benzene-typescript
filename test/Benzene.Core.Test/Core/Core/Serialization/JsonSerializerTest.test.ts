@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 
 /** Port of Benzene.Test.Core.Core.Serialization.JsonSerializerTest. */
 class ExampleRequestPayload {

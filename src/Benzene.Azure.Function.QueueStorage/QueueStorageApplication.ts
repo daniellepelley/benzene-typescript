@@ -1,8 +1,8 @@
 /** Port of Benzene.Azure.Function.QueueStorage.QueueStorageApplication. */
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { BoundedFanOut, EntryPointMiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { BoundedFanOut, EntryPointMiddlewareApplication } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { QueueStorageContext } from './QueueStorageContext';
 import { QueueStorageMessage } from './QueueStorageMessage';
 import { QueueStorageMessageProcessingException } from './QueueStorageMessageProcessingException';

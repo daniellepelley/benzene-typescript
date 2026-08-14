@@ -1,10 +1,10 @@
 /** Port of Benzene.Clients.Azure.QueueStorage.OutboundQueueStorageContextConverter. */
-import { ISerializer, VoidResult } from '@benzene/abstractions';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
-import { BenzeneMessageRequest } from '@benzene/core-messages';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { ISerializer, VoidResult } from '@benzenejs/abstractions';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
+import { BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { QueueStorageSendMessageContext } from './QueueStorageSendMessageContext';
 
 /**

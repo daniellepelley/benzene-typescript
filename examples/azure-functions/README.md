@@ -41,6 +41,6 @@ by the tests.)
 ## Verify it
 
 `test/Benzene.Core.Test/Examples/AzureFunctionsExampleTest.test.ts` builds each trigger's payload with
-`@benzene/azure-function-testing` (`asAzureHttpRequest` / `asAzureServiceBusMessage` /
+`@benzenejs/azure-function-testing` (`asAzureHttpRequest` / `asAzureServiceBusMessage` /
 `asEventHubBenzeneMessage`) and invokes each callback, asserting the shared handler ran — proof the "one
 domain, three triggers" wiring routes end-to-end.

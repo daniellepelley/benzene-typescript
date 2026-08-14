@@ -1,5 +1,5 @@
 /**
- * `@benzene/google-cloud-functions-pubsub` — consume Pub/Sub messages on Google Cloud Functions Gen2 via
+ * `@benzenejs/google-cloud-functions-pubsub` — consume Pub/Sub messages on Google Cloud Functions Gen2 via
  * a CloudEvent (push-subscription) trigger. Port of Benzene.GoogleCloud.Functions.PubSub.
  *
  * Pub/Sub delivers exactly one message per invocation, so this is a single-message trigger. Wire it

@@ -1,6 +1,6 @@
 import { EventHubProducerClient } from '@azure/event-hubs';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { EventHubClientMiddleware } from './EventHubClientMiddleware';
 import { EventHubSendMessageContext } from './EventHubSendMessageContext';
 import { OutboundEventHubContextConverter } from './OutboundEventHubContextConverter';
@@ -9,7 +9,7 @@ import { OutboundEventHubContextConverter } from './OutboundEventHubContextConve
  * Port of Benzene.Clients.Azure.EventHub.Extensions (C# fluent extension methods -> free functions
  * taking the builder first).
  *
- * PORT SCOPE: like the `@benzene/clients-aws-*` / `@benzene/clients-azure-service-bus` siblings, this
+ * PORT SCOPE: like the `@benzenejs/clients-aws-*` / `@benzenejs/clients-azure-service-bus` siblings, this
  * ports the `OutboundContext` send path; the generic `IBenzeneClientContext<T,Void>` overloads, the
  * standalone `EventHubBenzeneMessageClient`, and the native `EventHubBatchMessageClient` are deferred
  * (see the README structure table). The C# `.UseEventHub(action, …)` custom-middleware overload is also

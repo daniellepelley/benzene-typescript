@@ -1,9 +1,9 @@
 /** Port of Benzene.Azure.Function.ServiceBus.ServiceBusApplication. */
 import { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { EntryPointMiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { EntryPointMiddlewareApplication } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { ServiceBusContext } from './ServiceBusContext';
 import { ServiceBusMessageProcessingException } from './ServiceBusMessageProcessingException';
 import { ServiceBusOptions } from './ServiceBusOptions';

@@ -1,4 +1,4 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 
 /**
  * An executable middleware pipeline that processes context objects through a chain

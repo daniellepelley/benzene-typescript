@@ -1,5 +1,5 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 
 /**
  * Default `IBenzeneClientContext` implementation used by `MessageSender`.

@@ -1,4 +1,4 @@
-import { ILogContextBuilder, LogContextBuilderExtensions } from '@benzene/abstractions';
+import { ILogContextBuilder, LogContextBuilderExtensions } from '@benzenejs/abstractions';
 import { ApiGatewayContext } from './ApiGatewayContext';
 
 const { onRequest } = LogContextBuilderExtensions;

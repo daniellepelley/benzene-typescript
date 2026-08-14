@@ -1,5 +1,5 @@
 /** Port of Benzene.Cache.Core.Extensions (the cache health-check registration helper). */
-import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { CacheHealthCheckFactory } from './CacheHealthCheckFactory';
 
 /**

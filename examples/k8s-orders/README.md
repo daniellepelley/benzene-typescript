@@ -23,9 +23,9 @@ This is one npm package (`@benzene-example/k8s-orders`) with one entry point sha
 | Path | What it is |
 |---|---|
 | `src/domain.ts` | the shared handler - `PlaceOrderHandler`, decorated with both `@httpEndpoint('POST', '/orders')` and `@message('order-place')` |
-| `src/httpApp.ts` | the Express app (`@benzene/express`) - `POST /orders` |
-| `src/sqsWorker.ts` | `buildSqsWorker()` - `@benzene/aws-sqs`'s `useSqs`, the self-hosted SQS poller, not the Lambda-trigger `@benzene/aws-lambda-sqs` |
-| `src/kafkaWorker.ts` | `buildKafkaWorker()` - `@benzene/kafka-core`'s `useKafka`, the self-hosted Kafka consumer |
+| `src/httpApp.ts` | the Express app (`@benzenejs/express`) - `POST /orders` |
+| `src/sqsWorker.ts` | `buildSqsWorker()` - `@benzenejs/aws-sqs`'s `useSqs`, the self-hosted SQS poller, not the Lambda-trigger `@benzenejs/aws-lambda-sqs` |
+| `src/kafkaWorker.ts` | `buildKafkaWorker()` - `@benzenejs/kafka-core`'s `useKafka`, the self-hosted Kafka consumer |
 | `src/app.ts` | the one entry point - starts all three together (see its own comment for **why** the SQS/Kafka legs are started fire-and-forget, not awaited before `app.listen()`) |
 | `k8s/` | one Deployment + Service, pointed at a real SQS queue and Kafka cluster via env vars - no bundled infra |
 | `compose/` | `docker-compose.yml` - LocalStack (SQS) + a throwaway Kafka broker + the one service, for a credential-free local run |

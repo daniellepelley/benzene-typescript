@@ -9,15 +9,15 @@
  * response's `statusCode`, body (subset match) and headers (subset match, case-insensitive keys).
  */
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { findSubsetMismatch, load } from './ConformanceFixtures';
 import { GreetConformanceHandler } from './Handlers/GreetConformanceHandler';
 import { StatusConformanceHandler } from './Handlers/StatusConformanceHandler';

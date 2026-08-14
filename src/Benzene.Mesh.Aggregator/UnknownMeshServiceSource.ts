@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.UnknownMeshServiceSource. */
-import { MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+import { MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 import { IMeshServiceSource } from './IMeshServiceSource';
 
 /**

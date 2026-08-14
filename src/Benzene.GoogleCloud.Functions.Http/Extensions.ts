@@ -1,7 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.Http — the UseHttp wiring (Benzene.AspNet.Core.BenzeneExtensions.UseHttp analog). */
-import { IBenzeneApplicationBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { MiddlewareApplication } from '@benzene/core-middleware';
-import { addExpress, ExpressContext } from '@benzene/express';
+import { IBenzeneApplicationBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { MiddlewareApplication } from '@benzenejs/core-middleware';
+import { addExpress, ExpressContext } from '@benzenejs/express';
 import { Request } from '@google-cloud/functions-framework';
 import { GoogleCloudFunctionApplicationBuilder } from './GoogleCloudFunctionApplicationBuilder';
 
@@ -11,9 +11,9 @@ import { GoogleCloudFunctionApplicationBuilder } from './GoogleCloudFunctionAppl
  *
  * ASP.NET → EXPRESS ADAPTATION: the .NET reference calls `app.UseHttp(...)` from
  * `Benzene.AspNet.Core`, which is a no-op unless the builder is an `IAspApplicationBuilder`. That stack
- * is .NET-specific and unported; `@benzene/express` is its Node analog and the Functions Framework's
+ * is .NET-specific and unported; `@benzenejs/express` is its Node analog and the Functions Framework's
  * HTTP model is Express req/res, so this reuses Express's `addExpress` + `ExpressContext` machinery to
- * bridge into the Benzene HTTP pipeline (the same construction `@benzene/express`'s `benzene()`
+ * bridge into the Benzene HTTP pipeline (the same construction `@benzenejs/express`'s `benzene()`
  * middleware performs).
  *
  * NEUTRAL-BUILDER SEAM: this now takes the unified `IBenzeneApplicationBuilder` (what a
@@ -62,7 +62,7 @@ export function useHttp(
  * Reads the raw request body string from a Functions Framework request. The Functions Framework buffers
  * the raw bytes on `req.rawBody` (and parses `req.body`); prefer the raw buffer, falling back to an
  * already-parsed body (re-serializing a parsed object as a best-effort fallback, mirroring
- * `@benzene/express`'s body handling), and to an empty string when there is no body.
+ * `@benzenejs/express`'s body handling), and to an empty string when there is no body.
  */
 function readRawBody(req: Request): string {
   if (req.rawBody !== undefined) {

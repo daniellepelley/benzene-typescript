@@ -1,12 +1,12 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneConfiguration,
   BenzeneStartUp,
   IBenzeneApplicationBuilder,
-} from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+} from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { DefaultGreeter, IGreeter } from './greeter';
 import { HelloWorldMessageHandler } from './helloWorldMessageHandler';
 

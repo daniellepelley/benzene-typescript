@@ -1,5 +1,5 @@
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { PresetTopicHolder } from './PresetTopicHolder';
 
 /**

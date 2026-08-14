@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
-import { addOutboundRouting, IBenzeneMessageSender } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { useSqs } from '@benzene/clients-aws-sqs';
-import { useSns } from '@benzene/clients-aws-sns';
-import { useEventBridge } from '@benzene/clients-aws-eventbridge';
+import { addOutboundRouting, IBenzeneMessageSender } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { useSqs } from '@benzenejs/clients-aws-sqs';
+import { useSns } from '@benzenejs/clients-aws-sns';
+import { useEventBridge } from '@benzenejs/clients-aws-eventbridge';
 
 /**
  * The outbound AWS transport clients: a topic routed through `addOutboundRouting` + `useSqs`/`useSns`/

@@ -1,4 +1,4 @@
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { SqsMessageContext } from './SqsMessageContext';
 
 /**

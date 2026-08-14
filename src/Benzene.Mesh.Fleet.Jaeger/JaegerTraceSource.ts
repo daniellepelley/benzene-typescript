@@ -6,8 +6,8 @@ import {
   MeshTimeRangeResolver,
   TraceSummary,
   TraceView,
-} from '@benzene/mesh-collector';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/mesh-collector';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { JaegerMappedTrace, JaegerTraceMapper } from './JaegerTraceMapper';
 import { JaegerTraceSourceOptions } from './JaegerTraceSourceOptions';
 
@@ -34,7 +34,7 @@ interface SearchWindow {
  * rule); a genuine connection failure (the `fetch` rejecting) throws and the composite's fetch-isolation
  * degrades that slice.
  *
- * `HttpClient` -> injectable `fetch` (mirroring `@benzene/mesh-tracing-tempo`'s query client); the body is
+ * `HttpClient` -> injectable `fetch` (mirroring `@benzenejs/mesh-tracing-tempo`'s query client); the body is
  * read on any `response.ok`, like `GetAsync` + `ReadAsStringAsync`. `CancellationToken` -> optional
  * `AbortSignal`; `DateTimeOffset` -> epoch-ms `number`.
  */

@@ -2,7 +2,7 @@
 import {
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 
 /**

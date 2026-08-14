@@ -1,5 +1,5 @@
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { SqsSendMessageContext } from './SqsSendMessageContext';
 
 /**

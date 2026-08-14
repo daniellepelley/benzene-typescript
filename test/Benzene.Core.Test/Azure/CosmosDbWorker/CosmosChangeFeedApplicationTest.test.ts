@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder, StreamContext, useStream } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder, StreamContext, useStream } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   CosmosChangeFeedApplication,
   CosmosChangeFeedBatch,
-} from '@benzene/azure-cosmos-db';
+} from '@benzenejs/azure-cosmos-db';
 
 /**
  * Port of Benzene.Core.Test/Azure/CosmosDbWorker/CosmosChangeFeedApplicationTest.cs: fan-in

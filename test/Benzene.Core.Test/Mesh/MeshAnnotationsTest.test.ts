@@ -6,9 +6,9 @@ import {
   FileSystemMeshArtifactStore,
   MeshAnnotationPublisher,
   MeshAnnotationsMessageHandler,
-} from '@benzene/mesh-aggregator';
-import { MeshAnnotationLog, MeshAnnotationRequest } from '@benzene/mesh-contracts';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/mesh-aggregator';
+import { MeshAnnotationLog, MeshAnnotationRequest } from '@benzenejs/mesh-contracts';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshAnnotationsTest.cs. The discussion feature's write path:

@@ -1,5 +1,5 @@
 import type { Request, Response } from '@google-cloud/functions-framework';
-import { GoogleCloudFunctionRequestHandler } from '@benzene/google-cloud-functions-http';
+import { GoogleCloudFunctionRequestHandler } from '@benzenejs/google-cloud-functions-http';
 
 /**
  * The response the Google Cloud Functions HTTP pipeline wrote — the captured status, headers, and body.

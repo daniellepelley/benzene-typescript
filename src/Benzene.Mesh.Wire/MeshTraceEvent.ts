@@ -1,5 +1,5 @@
 /** Port of the trace/heartbeat data shapes in Benzene.Mesh.Wire.MeshTraceEvent. */
-import { HealthCheckResponse } from '@benzene/health-checks-core';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 
 /**
  * One pipeline invocation as the mesh sees it (docs/specification/mesh.md §3) - semantic

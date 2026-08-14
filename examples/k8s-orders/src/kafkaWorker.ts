@@ -12,9 +12,9 @@
  * fire-and-forget, for the same reason and the same shape as the SQS leg.
  */
 import { Kafka } from 'kafkajs';
-import { IKafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { IKafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { PLACE_ORDER_TOPIC, PlaceOrderHandler } from './domain.js';
 
 const brokers = (process.env['KAFKA_BROKERS'] ?? 'localhost:9092').split(',');

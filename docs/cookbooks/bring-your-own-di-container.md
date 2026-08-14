@@ -12,14 +12,14 @@ resolve through *that* container instead of the one Benzene ships.
 Be clear on one thing up front: **the TypeScript port has no Microsoft.Extensions.DependencyInjection
 to swap out.** The .NET version of this recipe is about replacing MS DI's `IServiceProvider` with
 Lamar/DryIoc/Autofac via the host's provider factory. Node has no platform container, so Benzene
-ships **its own** first-party container (`@benzene/dependencies`) and defines the whole DI surface as
-a small set of interfaces in `@benzene/abstractions`. Those interfaces *are* the integration seam. In
+ships **its own** first-party container (`@benzenejs/dependencies`) and defines the whole DI surface as
+a small set of interfaces in `@benzenejs/abstractions`. Those interfaces *are* the integration seam. In
 practice you almost never need to replace the container — but if you do, this page shows exactly which
 contracts to implement.
 
 ## How Benzene DI is layered
 
-Three interfaces, all in `@benzene/abstractions`, make up the seam:
+Three interfaces, all in `@benzenejs/abstractions`, make up the seam:
 
 ```
  configureServices((services) => …)         addBenzene(services), useMessageHandlers(app, …), your registrations
@@ -45,7 +45,7 @@ whole reason a replacement is possible.
 
 ## The default container
 
-`DefaultBenzeneServiceContainer` (in `@benzene/dependencies`) is the container every entry point uses
+`DefaultBenzeneServiceContainer` (in `@benzenejs/dependencies`) is the container every entry point uses
 unless you build one yourself. It is the counterpart of .NET's `MicrosoftBenzeneServiceContainer`, and
 it deliberately mirrors Microsoft.Extensions.DependencyInjection semantics so ported code behaves the
 same:
@@ -62,7 +62,7 @@ You rarely construct it directly — `configureServices` gives you one — but y
 do:
 
 ```ts
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 const container = new DefaultBenzeneServiceContainer();
 container.addSingleton(IGreeter, Greeter);
@@ -104,12 +104,12 @@ container.addScopedFactory(IOrderService, (resolver) =>
 
 There is no `addSingleton`/`addScoped`/`addTransient` that *conditionally* skips an existing
 registration on the interface itself. That is the job of the **`tryAdd…` free functions** in
-`@benzene/abstractions` — `tryAddSingleton`, `tryAddScopedFactory`, `tryAddSingletonInstance`, and the
+`@benzenejs/abstractions` — `tryAddSingleton`, `tryAddScopedFactory`, `tryAddSingletonInstance`, and the
 rest — which take the container as their first argument and register only if `isTypeRegistered(id)` is
 false (the port of C#'s `TryAdd…` extension methods):
 
 ```ts
-import { tryAddSingleton } from '@benzene/abstractions';
+import { tryAddSingleton } from '@benzenejs/abstractions';
 
 tryAddSingleton(services, IClock, SystemClock); // registers only if nothing else has claimed IClock
 ```
@@ -130,7 +130,7 @@ the interface is the compile-time type. A concrete class can be its own identifi
 in C#):
 
 ```ts
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface IOrderRepository {
   findAsync(id: string): Promise<Order | undefined>;
@@ -186,7 +186,7 @@ import {
   IServiceResolverFactory,
   ServiceIdentifier,
   serviceIdentifierName,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 
 class ExternalContainerResolver implements IServiceResolver {
   constructor(private readonly scope: MyExternalScope) {} // your container's scope type
@@ -228,7 +228,7 @@ class ExternalContainerFactory implements IServiceResolverFactory {
 
 The `IBenzeneServiceContainer` half maps each `add…` call onto your container's registration API,
 implementing the class-factory + `static inject` resolution yourself (see
-`DefaultBenzeneServiceContainer`'s `createClassFactory` in `@benzene/dependencies` for the reference
+`DefaultBenzeneServiceContainer`'s `createClassFactory` in `@benzenejs/dependencies` for the reference
 implementation to copy). `createServiceResolverFactory()` then returns your
 `ExternalContainerFactory`.
 
@@ -246,9 +246,9 @@ up a transport. Register through the container, build a scope, and resolve:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { ISerializer } from '@benzene/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { ISerializer } from '@benzenejs/abstractions';
 
 describe('container backs a Benzene registration graph', () => {
   it('resolves the baseline services addBenzene registers', () => {
@@ -307,7 +307,7 @@ the reference contract.
   service in a bespoke way, `add…Factory(token, (resolver) => …)` already gives you full control over
   construction without leaving Benzene's container.
 - **No native adapter packages (yet).** The .NET port ships `Benzene.Autofac`; there is no
-  `@benzene/tsyringe`-style adapter in the TypeScript port. The seam is the three interfaces on this
+  `@benzenejs/tsyringe`-style adapter in the TypeScript port. The seam is the three interfaces on this
   page — implement them if you need a specific container, and consider contributing the adapter back.
 
 ## Further reading

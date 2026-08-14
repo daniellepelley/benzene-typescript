@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IServiceResolver } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { Constants } from '@benzene/core';
+import { IBenzeneResultOf, IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { Constants } from '@benzenejs/core';
 import {
   addBenzene,
   MessageHandlersRegistry,
   MessageResult,
   message,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import type { CloudEvent } from '@google-cloud/functions-framework';
 import {
   GooglePubSubFunctionHost,
@@ -25,7 +25,7 @@ import {
   PubSubMiddlewareApplication,
   PubSubOptions,
   usePubSub,
-} from '@benzene/google-cloud-functions-pubsub';
+} from '@benzenejs/google-cloud-functions-pubsub';
 
 /**
  * End-to-end port of the C# Pub/Sub tests (test/Benzene.Core.Test/Google/*). Pub/Sub delivers exactly
@@ -205,10 +205,10 @@ class PubSubTestHandler implements IMessageHandler<PubSubTestRequest, PubSubTest
 }
 
 class PubSubTestStartUp implements GooglePubSubFunctionStartUp {
-  configureServices(services: import('@benzene/abstractions').IBenzeneServiceContainer): void {
+  configureServices(services: import('@benzenejs/abstractions').IBenzeneServiceContainer): void {
     addBenzene(services);
   }
-  configure(app: import('@benzene/google-cloud-functions-pubsub').GooglePubSubFunctionApplicationBuilder): void {
+  configure(app: import('@benzenejs/google-cloud-functions-pubsub').GooglePubSubFunctionApplicationBuilder): void {
     usePubSub(app, (pubsub) => useMessageHandlers(pubsub, PubSubTestHandler));
   }
 }

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { Topic } from '@benzene/core-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { Topic } from '@benzenejs/core-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   CrudConventionResponseEventMapping,
   ExplicitResponseEventMapping,
   IResponseEventMapping,
   PublishFailureMode,
   ResponseEventMappings,
-} from '@benzene/response-events';
+} from '@benzenejs/response-events';
 
 /** Port of test/Benzene.Core.Test/ResponseEvents/ResponseEventMappingTest.cs. */
 

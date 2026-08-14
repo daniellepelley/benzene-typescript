@@ -2,15 +2,15 @@ import { AddressInfo } from 'node:net';
 import { Server } from 'node:http';
 import express from 'express';
 import { afterEach, describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { benzene } from '@benzene/express';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { benzene } from '@benzenejs/express';
 
 /**
- * Integration tests for `@benzene/express` against a REAL Express app: Benzene handles the verbs+URLs it
+ * Integration tests for `@benzenejs/express` against a REAL Express app: Benzene handles the verbs+URLs it
  * has `@httpEndpoint` handlers for, and everything else falls through to the ordinary Express pipeline -
  * the strangler-fig pattern. No C# counterpart (ASP.NET Core is .NET-specific); these prove the Node/JS
  * host adaptation end to end.

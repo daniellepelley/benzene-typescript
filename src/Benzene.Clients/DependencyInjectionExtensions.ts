@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { DefaultBenzeneMessageSender } from './DefaultBenzeneMessageSender';
 import { IBenzeneMessageSender } from './IBenzeneMessageSender';
 import { OutboundRoutingBuilder } from './OutboundRoutingBuilder';

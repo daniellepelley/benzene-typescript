@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
-import { IBenzeneWorker, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IBenzeneWorker, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { CompositeBenzeneWorker } from './CompositeBenzeneWorker';
 import { IBenzeneWorkerStartup } from './IBenzeneWorkerStartup';
 

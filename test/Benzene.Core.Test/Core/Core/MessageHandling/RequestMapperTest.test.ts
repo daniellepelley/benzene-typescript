@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IPayloadSerializer, ISerializer } from '@benzene/abstractions';
-import { IMessageBodyGetter, IMessageBodyBytesGetter } from '@benzene/abstractions-messages';
-import { JsonSerializer, RequestMapper } from '@benzene/core-message-handlers';
+import { IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
+import { IMessageBodyGetter, IMessageBodyBytesGetter } from '@benzenejs/abstractions-messages';
+import { JsonSerializer, RequestMapper } from '@benzenejs/core-message-handlers';
 
 /** Port of Benzene.Test.Core.Core.MessageHandling.RequestMapperTest scenarios. */
 class TestContext {}

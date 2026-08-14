@@ -1,4 +1,4 @@
-import { Constructor, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { Constructor, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IValidationSchema } from './IValidationSchema';
 
 /**

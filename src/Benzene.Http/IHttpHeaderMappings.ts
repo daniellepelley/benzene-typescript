@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Maps custom header names to standard HTTP header names, so transports using different header

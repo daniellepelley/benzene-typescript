@@ -1,7 +1,7 @@
 import { AddressInfo, createServer, Server } from 'node:net';
 import { describe, expect, it } from 'vitest';
-import { HealthCheckStatus } from '@benzene/health-checks-core';
-import { TcpHealthCheck } from '@benzene/health-checks-tcp';
+import { HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { TcpHealthCheck } from '@benzenejs/health-checks-tcp';
 
 /**
  * Ports test/Benzene.Core.Test/HealthChecks/Tcp/TcpHealthCheckTest.cs. C#'s `TcpListener` becomes a

@@ -1,4 +1,4 @@
-import { IHttpContext } from '@benzene/http';
+import { IHttpContext } from '@benzenejs/http';
 import { ExpressRequestLike, ExpressResponseLike } from './types';
 
 /** The buffered HTTP response, written to the real Express `res` in `ExpressResponseAdapter.finalizeAsync`. */

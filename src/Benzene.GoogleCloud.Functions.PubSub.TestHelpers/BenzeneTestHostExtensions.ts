@@ -13,11 +13,11 @@
  * there is no host-neutral `this` to augment onto — see the README ledger.) It reconstructs the same
  * `GooglePubSubFunctionApplicationBuilder` → `configure` → `build` sequence a real deployment performs
  * (mirroring `GooglePubSubFunctionHost`), returning a ready {@link GooglePubSubFunctionBenzeneTestHost}. The
- * neutral `@benzene/testing` core stays free of any cloud import; this package is where the GCF Pub/Sub
+ * neutral `@benzenejs/testing` core stays free of any cloud import; this package is where the GCF Pub/Sub
  * bridge lives.
  */
-import { BenzeneTestHostBuilder } from '@benzene/testing';
-import { GooglePubSubFunctionApplicationBuilder } from '@benzene/google-cloud-functions-pubsub';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
+import { GooglePubSubFunctionApplicationBuilder } from '@benzenejs/google-cloud-functions-pubsub';
 import { GooglePubSubFunctionBenzeneTestHost } from './GooglePubSubFunctionBenzeneTestHost';
 
 /**

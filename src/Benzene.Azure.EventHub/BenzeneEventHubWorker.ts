@@ -6,8 +6,8 @@ import {
   SubscribeOptions,
   Subscription,
 } from '@azure/event-hubs';
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BenzeneEventHubConfig, withEventHubConfigDefaults } from './BenzeneEventHubConfig';
 import { EventHubConsumerApplication } from './EventHubConsumerApplication';
 import { EventHubMessageProcessingException } from './EventHubMessageProcessingException';
@@ -15,7 +15,7 @@ import { IEventProcessorClientFactory } from './IEventProcessorClientFactory';
 
 /**
  * A long-running worker that consumes an Event Hub and dispatches each event through the middleware
- * pipeline — for `@benzene/self-host`, not Azure Functions (use `@benzene/azure-function-event-hub` for
+ * pipeline — for `@benzenejs/self-host`, not Azure Functions (use `@benzenejs/azure-function-event-hub` for
  * an Event Hub trigger).
  *
  * PORTING NOTE — the SDK's processor model. .NET uses `EventProcessorClient` (`ProcessEventAsync`/

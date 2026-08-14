@@ -1,4 +1,4 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
 
 /**
  * The core message handler contract: handles a request and produces a result-wrapped response.

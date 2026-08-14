@@ -1,10 +1,10 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.TestHelpers.MessageBuilderExtensions. */
-import { IMessageBuilder } from '@benzene/abstractions';
+import { IMessageBuilder } from '@benzenejs/abstractions';
 import {
   MessagePublishedData,
   PubSubMessageTopicGetter,
-} from '@benzene/google-cloud-functions-pubsub';
-import { MessageSerializer } from '@benzene/testing';
+} from '@benzenejs/google-cloud-functions-pubsub';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsPubSubEventOptions {
@@ -12,7 +12,7 @@ export interface AsPubSubEventOptions {
 }
 
 /**
- * Bridges the shared `@benzene/testing` `messageBuilder(...)` (used identically across every transport's
+ * Bridges the shared `@benzenejs/testing` `messageBuilder(...)` (used identically across every transport's
  * test helpers) into a Pub/Sub-shaped {@link MessagePublishedData}: the topic rides on the `"topic"`
  * attribute (via {@link PubSubMessageTopicGetter.DefaultTopicAttribute} — the exact key
  * `PubSubMessageTopicGetter` reads), every header rides as a further attribute (what

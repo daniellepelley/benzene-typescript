@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.Tcp.Extensions. */
-import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { TcpHealthCheckFactory } from './TcpHealthCheckFactory';
 
 /**

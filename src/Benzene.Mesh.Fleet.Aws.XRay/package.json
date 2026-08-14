@@ -1,16 +1,19 @@
 {
-  "name": "@benzene/mesh-fleet-aws-xray",
-  "version": "0.1.0",
+  "name": "@benzenejs/mesh-fleet-aws-xray",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Mesh.Fleet.Aws.XRay",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@aws-sdk/client-xray": "^3.700.0",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/mesh-collector": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
-    "@benzene/mesh-wire": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/mesh-collector": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
+    "@benzenejs/mesh-wire": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

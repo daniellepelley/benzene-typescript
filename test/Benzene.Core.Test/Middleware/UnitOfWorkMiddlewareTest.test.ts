@@ -4,14 +4,14 @@ import {
   IServiceResolver,
   IServiceResolverFactory,
   IUnitOfWork,
-} from '@benzene/abstractions';
-import { MiddlewareFunc } from '@benzene/abstractions-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions';
+import { MiddlewareFunc } from '@benzenejs/abstractions-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   MiddlewarePipelineBuilder,
   UnitOfWorkOptions,
   unitOfWorkMiddleware,
-} from '@benzene/core-middleware';
+} from '@benzenejs/core-middleware';
 
 interface Ctx {
   value: string;

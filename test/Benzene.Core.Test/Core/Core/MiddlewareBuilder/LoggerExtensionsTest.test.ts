@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ILoggerFactory, LogContextBuilderExtensions, LogLevel } from '@benzene/abstractions';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { ILoggerFactory, LogContextBuilderExtensions, LogLevel } from '@benzenejs/abstractions';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   DefaultBenzeneServiceContainer,
   DefaultServiceResolverFactory,
   ServiceCollection,
-} from '@benzene/dependencies';
+} from '@benzenejs/dependencies';
 import { FakeLoggerFactory } from '../../../Logging/Helpers/FakeLoggerFactory';
 
 /** Port of the UseLogResult / UseLogContext scenarios from Benzene.Core.Test. */

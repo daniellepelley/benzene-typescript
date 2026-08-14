@@ -23,7 +23,7 @@ Every built-in transport tears its per-request scope down with `disposeAsync()`,
 net is always armed:
 
 ```ts
-import { IUnitOfWork } from '@benzene/abstractions';
+import { IUnitOfWork } from '@benzenejs/abstractions';
 
 export class DbUnitOfWork implements IUnitOfWork {
   static readonly inject = [Database]; // constructor injection
@@ -61,8 +61,8 @@ export class DbUnitOfWork implements IUnitOfWork {
 ## 2. Register it and add the middleware
 
 ```ts
-import { unitOfWorkMiddleware } from '@benzene/core-middleware';
-import { IUnitOfWork } from '@benzene/abstractions';
+import { unitOfWorkMiddleware } from '@benzenejs/core-middleware';
+import { IUnitOfWork } from '@benzenejs/abstractions';
 
 container.addSingletonInstance(Database, database);
 container.addScoped(IUnitOfWork, DbUnitOfWork);

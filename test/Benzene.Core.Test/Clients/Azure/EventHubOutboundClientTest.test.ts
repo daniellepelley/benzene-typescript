@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { CreateBatchOptions, EventData, EventDataBatch, EventHubProducerClient } from '@azure/event-hubs';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   EventHubSendMessageContext,
   OutboundEventHubContextConverter,
   useEventHub,
-} from '@benzene/clients-azure-event-hub';
+} from '@benzenejs/clients-azure-event-hub';
 
 /**
  * Port of the C# Benzene.Clients.Azure.EventHub tests (the OutboundContext send path — the generic
  * `EventHubContextConverter<T>`/`EventHubBenzeneMessageClient`/batch client are deferred, matching the
- * `@benzene/clients-*` siblings). Drives the send end-to-end from `IBenzeneMessageSender.sendAsync` over
+ * `@benzenejs/clients-*` siblings). Drives the send end-to-end from `IBenzeneMessageSender.sendAsync` over
  * a capturing fake `EventHubProducerClient` (createBatch → tryAdd → sendBatch), plus a converter unit test.
  */
 

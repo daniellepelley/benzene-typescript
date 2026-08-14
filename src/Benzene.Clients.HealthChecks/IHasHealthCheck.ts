@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.HealthChecks.IHasHealthCheck. */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { HealthCheckResponse } from '@benzene/health-checks-core';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 
 /**
  * Implemented by a generated downstream-service client: exposes the contract hash the client was

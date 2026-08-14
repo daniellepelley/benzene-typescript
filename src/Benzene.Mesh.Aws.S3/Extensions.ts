@@ -1,8 +1,8 @@
 /** Port of Benzene.Mesh.Aws.S3.Extensions. */
 import { S3Client } from '@aws-sdk/client-s3';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addMeshAggregator } from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addMeshAggregator } from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry } from '@benzenejs/mesh-contracts';
 import { S3MeshArtifactStore } from './S3MeshArtifactStore';
 
 /**

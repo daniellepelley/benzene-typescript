@@ -10,7 +10,7 @@
  * five query handlers depend on. `CollectorUsageSource` bridges the store's cumulative stats into the
  * aggregator's `usage.json`. `MeshTimeRangeResolver` resolves the optional Grafana/ISO query time range.
  *
- * Not ported from the .NET original (missing `@benzene/mesh-contracts` prerequisite in this snapshot):
+ * Not ported from the .NET original (missing `@benzenejs/mesh-contracts` prerequisite in this snapshot):
  * threading a `MeshUsageWindow` to the usage sources. See each file header for the exact boundary.
  */
 export * from './Views';

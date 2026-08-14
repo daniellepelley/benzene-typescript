@@ -8,9 +8,9 @@ import {
   MeshTimeRangeResolver,
   TraceSummary,
   TraceView,
-} from '@benzene/mesh-collector';
-import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzene/mesh-contracts';
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-collector';
+import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzenejs/mesh-contracts';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshTimeRangeTest.cs. Pins the Grafana-grammar resolver, the push-collector

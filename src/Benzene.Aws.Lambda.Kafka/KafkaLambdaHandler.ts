@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaLambdaHandler. */
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isKafkaEvent } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isKafkaEvent } from '@benzenejs/aws-lambda-core';
 import { MSKEvent } from 'aws-lambda';
 
 /**

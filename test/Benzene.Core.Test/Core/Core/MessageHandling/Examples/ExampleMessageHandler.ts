@@ -1,6 +1,6 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler, IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
 import { Defaults } from './Defaults';
 import { ExampleRequestPayload, ExampleResponsePayload } from './ExampleRequestPayload';
 

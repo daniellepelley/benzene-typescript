@@ -1,5 +1,5 @@
 /** Port of Benzene.Xml.XmlSerializer. */
-import { Constructor, ISerializer } from '@benzene/abstractions';
+import { Constructor, ISerializer } from '@benzenejs/abstractions';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 /**

@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.EventHub.TestHelpers.MessageBuilderExtensions. */
 import type { ReceivedEventData } from '@azure/event-hubs';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { asBenzeneMessage, MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { asBenzeneMessage, MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsEventHubBenzeneMessageOptions {

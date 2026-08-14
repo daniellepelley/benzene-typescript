@@ -1,11 +1,11 @@
 /** Port of Benzene.Kafka.Core.TestHelpers.MessageBuilderExtensions. */
 import type { EachMessagePayload, IHeaders } from 'kafkajs';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 /**
- * Turns a platform-neutral `@benzene/testing` `messageBuilder(...)` into an `EachMessagePayload`, so a
+ * Turns a platform-neutral `@benzenejs/testing` `messageBuilder(...)` into an `EachMessagePayload`, so a
  * component test can push the demo message through a {@link KafkaBenzeneTestHost} exactly as the broker
  * would deliver it. Kafka routes on the literal record `topic` (the builder's topic must be the Kafka
  * topic name, not a colon-separated id), every header rides as a record header, and the serialized
@@ -20,7 +20,7 @@ import { jsonMessageSerializer } from './defaults';
  *
  * IDIOM MAP: the two C# overloads (`AsKafkaBenzeneMessage()` / `AsKafkaBenzeneMessage(ISerializer)`)
  * collapse to one free function with an optional trailing `serializer`, defaulting to JSON — matching the
- * `MessageSerializer` shape reused across the `@benzene/*-test-helpers` builders.
+ * `MessageSerializer` shape reused across the `@benzenejs/*-test-helpers` builders.
  *
  * @param source The message builder.
  * @param serializer The serializer used to render the record value (defaults to JSON).

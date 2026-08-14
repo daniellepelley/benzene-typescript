@@ -1,5 +1,5 @@
 /**
- * Port-verification test for `@benzene/azure-service-bus-test-helpers` (ports
+ * Port-verification test for `@benzenejs/azure-service-bus-test-helpers` (ports
  * Benzene.Azure.ServiceBus.TestHelpers). Two complementary halves:
  *
  * 1. `asAzureServiceBusMessage` — faithful native-shape checks, plus a faithful port of the C#
@@ -16,34 +16,34 @@
  *    `addServiceBusConsumer`, README wrinkle 5, that lets `useServiceBus` + `useMessageHandlers` route).
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { useWorker } from '@benzene/self-host';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { useWorker } from '@benzenejs/self-host';
 import {
   addServiceBusConsumer,
   IServiceBusClientFactory,
   ServiceBusConsumerApplication,
   ServiceBusConsumerContext,
   useServiceBus,
-} from '@benzene/azure-service-bus';
+} from '@benzenejs/azure-service-bus';
 import {
   benzeneTestHost,
   FakeBenzeneMessageSender,
   messageBuilder,
   type BenzeneStartUp,
-} from '@benzene/testing';
-import { asAzureServiceBusMessage } from '@benzene/azure-service-bus-test-helpers';
+} from '@benzenejs/testing';
+import { asAzureServiceBusMessage } from '@benzenejs/azure-service-bus-test-helpers';
 
 const Topics = { placeOrder: 'order:place', orderCreated: 'order:created' } as const;
 

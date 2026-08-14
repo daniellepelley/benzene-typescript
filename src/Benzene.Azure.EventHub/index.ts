@@ -4,8 +4,8 @@
  * `useEventHub(workerStartup, config, clientFactory, action)` adds a long-running
  * {@link BenzeneEventHubWorker} that consumes an Event Hub via `@azure/event-hubs` and runs each event
  * through a Benzene middleware pipeline (transport `"event-hub"`), checkpointing per partition every
- * `checkpointInterval` successfully handled events. Intended for `@benzene/self-host` workers rather than
- * Azure Functions (for an Event Hub trigger, use `@benzene/azure-function-event-hub`).
+ * `checkpointInterval` successfully handled events. Intended for `@benzenejs/self-host` workers rather than
+ * Azure Functions (for an Event Hub trigger, use `@benzenejs/azure-function-event-hub`).
  *
  * PORTING NOTE: .NET's `EventProcessorClient` maps to a JS `EventHubConsumerClient` (built with a
  * `CheckpointStore`) + `subscribe(...)`; the per-event `ProcessEventAsync` becomes a per-partition

@@ -1,5 +1,5 @@
-import { IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
+import { IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
 
 /** In a nested directory to prove recursive discovery. */
 @message('auto-cancel-order')

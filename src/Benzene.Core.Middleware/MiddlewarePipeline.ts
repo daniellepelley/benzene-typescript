@@ -1,10 +1,10 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IMiddlewareFactory,
   IMiddlewarePipeline,
   MiddlewareFactoryFunc,
   NextFunc,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 import { DefaultMiddlewareFactory } from './DefaultMiddlewareFactory';
 
 /**

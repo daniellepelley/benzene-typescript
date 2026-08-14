@@ -1,8 +1,8 @@
 /** Port of Benzene.Kafka.Core.TestHelpers.KafkaBenzeneTestHost. */
 import type { EachMessagePayload } from 'kafkajs';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
-import { KafkaApplication } from '@benzene/kafka-core';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { KafkaApplication } from '@benzenejs/kafka-core';
 
 /**
  * A test host that drives the Kafka message pipeline a `StartUp` configured, without a running broker.

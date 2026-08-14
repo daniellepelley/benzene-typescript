@@ -1,10 +1,10 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IContextConverter,
   IMiddleware,
   IMiddlewarePipeline,
   NextFunc,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 
 /**
  * Converts the context to a different type, runs an inner pipeline against it and

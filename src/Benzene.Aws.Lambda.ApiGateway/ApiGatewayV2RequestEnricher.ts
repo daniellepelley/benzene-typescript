@@ -1,6 +1,6 @@
-import { IRequestEnricher } from '@benzene/abstractions-message-handlers';
-import { DictionaryUtils } from '@benzene/core';
-import { IHttpHeaderMappings, IRouteFinder } from '@benzene/http';
+import { IRequestEnricher } from '@benzenejs/abstractions-message-handlers';
+import { DictionaryUtils } from '@benzenejs/core';
+import { IHttpHeaderMappings, IRouteFinder } from '@benzenejs/http';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';
 
 /**

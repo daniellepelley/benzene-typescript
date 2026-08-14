@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   AcceptHeaderMediaFormatBase,
   JsonMediaFormat,
   JsonSerializer,
   MediaFormatNegotiator,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /** Port of Benzene.Test.Core.Core.MediaFormats.MediaFormatNegotiatorTest scenarios. */
 class TestContext {

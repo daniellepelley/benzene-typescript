@@ -1,11 +1,11 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Maps a numeric/string HTTP status code to a Benzene result status (and result).
  * Port of Benzene.Clients.Common.BenzeneResultHttpMapper.
  *
- * The code -> status table is the INVERSE of `@benzene/http`'s `DefaultHttpStatusCodeMapper`
+ * The code -> status table is the INVERSE of `@benzenejs/http`'s `DefaultHttpStatusCodeMapper`
  * status -> code table (200->Ok, 201->Created, 202->Accepted, 400->BadRequest, 401->Unauthorized,
  * 403->Forbidden, 404->NotFound, 409->Conflict, 422->ValidationError, 429->TooManyRequests,
  * 500->UnexpectedError, 501->NotImplemented, 503->ServiceUnavailable, 504->Timeout). It carries a

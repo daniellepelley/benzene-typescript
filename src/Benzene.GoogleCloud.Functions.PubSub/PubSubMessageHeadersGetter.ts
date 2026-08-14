@@ -1,5 +1,5 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.PubSubMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { PubSubContext } from './PubSubContext';
 
 /**

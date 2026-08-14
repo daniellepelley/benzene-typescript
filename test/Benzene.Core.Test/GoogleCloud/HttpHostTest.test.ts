@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { addBenzene, MessageHandlersRegistry, message, useMessageHandlers } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { addBenzene, MessageHandlersRegistry, message, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 import type { Request, Response } from '@google-cloud/functions-framework';
 import {
   GoogleCloudFunctionApplicationBuilder,
   GoogleCloudFunctionHost,
   GoogleCloudFunctionStartUp,
   useHttp,
-} from '@benzene/google-cloud-functions-http';
+} from '@benzenejs/google-cloud-functions-http';
 
 /**
  * Port of the C# GoogleCloudFunctionHostTest (test/Benzene.Core.Test/Hosting): the same startup that
  * hosts on any Benzene HTTP host also hosts on the Functions Framework HTTP trigger. Fakes only — a
  * (req, res) is built directly and driven through the host, no live functions-framework server. The
- * host bridges the Functions Framework's Express-style req/res through `@benzene/express`'s HTTP
+ * host bridges the Functions Framework's Express-style req/res through `@benzenejs/express`'s HTTP
  * pipeline (the ported ASP.NET Core analog).
  */
 

@@ -7,13 +7,13 @@
  * The idiomatic `app.http(...)`/`app.serviceBusQueue(...)`/`app.eventHub(...)` registrations that bind
  * these to real triggers live in `registrations.ts`.
  */
-import { AzureFunctionHost } from '@benzene/azure-function-core';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
 // Importing the transport packages lights up the host's native-trigger getters
 // (`.httpFunction`/`.serviceBusFunction`/`.eventHubFunction`) — the same import each trigger needs anyway
 // for its `use*` wiring in `startUp.ts`.
-import '@benzene/azure-function-http';
-import '@benzene/azure-function-service-bus';
-import '@benzene/azure-function-event-hub';
+import '@benzenejs/azure-function-http';
+import '@benzenejs/azure-function-service-bus';
+import '@benzenejs/azure-function-event-hub';
 import { EventHubStartUp, HttpStartUp, ServiceBusStartUp } from './startUp';
 
 /** HTTP trigger (request/response): `POST /orders` returns an order confirmation. */

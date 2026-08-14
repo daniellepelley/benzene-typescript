@@ -3,9 +3,9 @@
  * hand-rolled `IServiceResolver` object literal, and a hand-forged message context with a
  * `response: undefined as unknown as IBenzeneResultOf<T>` hole.
  */
-import { IServiceResolver, ServiceIdentifier, serviceIdentifierName } from '@benzene/abstractions';
-import { MessageHandlerContext } from '@benzene/core-message-handlers';
-import { Topic } from '@benzene/core-messages';
+import { IServiceResolver, ServiceIdentifier, serviceIdentifierName } from '@benzenejs/abstractions';
+import { MessageHandlerContext } from '@benzenejs/core-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
 
 /**
  * Builds a minimal in-memory `IServiceResolver` from `[identifier, implementation]` pairs — no object

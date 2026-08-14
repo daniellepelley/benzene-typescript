@@ -1,5 +1,5 @@
 /**
- * Port-verification test for `@benzene/aws-sqs-test-helpers` (ports Benzene.Aws.Sqs.TestHelpers).
+ * Port-verification test for `@benzenejs/aws-sqs-test-helpers` (ports Benzene.Aws.Sqs.TestHelpers).
  * The C# original ships only the `AsSqsMessage()` builder (no `*BenzeneTestHost`), and the C#
  * `SqsConsumerMessagePipelineTest` drives the built message through a `SqsConsumerApplication` directly.
  * The port mirrors that shape: build the real DI pipeline `useSqs` builds, wrap a native
@@ -8,21 +8,21 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { Message, ReceiveMessageCommandOutput } from '@aws-sdk/client-sqs';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { addSqsConsumer, SqsConsumerApplication, SqsConsumerMessageContext } from '@benzene/aws-sqs';
-import { FakeBenzeneMessageSender, messageBuilder } from '@benzene/testing';
-import { asSqsMessage } from '@benzene/aws-sqs-test-helpers';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { addSqsConsumer, SqsConsumerApplication, SqsConsumerMessageContext } from '@benzenejs/aws-sqs';
+import { FakeBenzeneMessageSender, messageBuilder } from '@benzenejs/testing';
+import { asSqsMessage } from '@benzenejs/aws-sqs-test-helpers';
 
 const Topics = { placeOrder: 'order:place', orderCreated: 'order:created' } as const;
 

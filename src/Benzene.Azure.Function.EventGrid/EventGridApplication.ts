@@ -1,8 +1,8 @@
 /** Port of Benzene.Azure.Function.EventGrid.EventGridApplication. */
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { BoundedFanOut, EntryPointMiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { BoundedFanOut, EntryPointMiddlewareApplication } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { EventGridContext } from './EventGridContext';
 import { EventGridMessageProcessingException } from './EventGridMessageProcessingException';
 import { EventGridOptions } from './EventGridOptions';

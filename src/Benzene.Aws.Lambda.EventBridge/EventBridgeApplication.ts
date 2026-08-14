@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.EventBridge.EventBridgeApplication. */
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { MiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { MiddlewareApplication } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { EventBridgeEvent } from 'aws-lambda';
 import { EventBridgeContext } from './EventBridgeContext';
 

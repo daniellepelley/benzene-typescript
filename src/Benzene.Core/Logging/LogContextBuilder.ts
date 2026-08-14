@@ -4,7 +4,7 @@ import {
   IRegisterDependency,
   IServiceResolver,
   LogContextDictionaryFunc,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import { ContextDictionaryBuilder } from './ContextDictionaryBuilder';
 import { IContextDictionaryBuilder } from './IContextDictionaryBuilder';
 

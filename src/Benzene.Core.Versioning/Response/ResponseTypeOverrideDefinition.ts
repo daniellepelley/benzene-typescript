@@ -1,7 +1,7 @@
 /** Port of Benzene.Core.Versioning.Response.ResponseTypeOverrideDefinition. */
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * Wraps a handler definition, overriding only {@link responseType} with the downcast target type so the
@@ -22,7 +22,7 @@ export class ResponseTypeOverrideDefinition implements IMessageHandlerDefinition
     return this.inner.requestType;
   }
 
-  get handlerType(): import('@benzene/abstractions').Constructor<unknown> {
+  get handlerType(): import('@benzenejs/abstractions').Constructor<unknown> {
     return this.inner.handlerType;
   }
 }

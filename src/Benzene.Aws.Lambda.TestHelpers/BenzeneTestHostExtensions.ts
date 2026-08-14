@@ -8,18 +8,18 @@
  * TypeScript **fluent method** added to the builder by module augmentation + a prototype assignment — the
  * port's documented "C# extension method → base-class/fluent-builder member" convention, and the shape
  * that keeps the gold-standard `benzeneTestHost(StartUp).withServices(...).buildAwsLambdaHost()` chain
- * intact. The neutral `@benzene/testing` core stays free of any cloud import; importing this package (for
+ * intact. The neutral `@benzenejs/testing` core stays free of any cloud import; importing this package (for
  * its `as*` builders) is what lights the method up. A `this` constraint pins it to a startup whose
  * `configure` receives the unified `IBenzeneApplicationBuilder`. It returns the ready
  * {@link AwsLambdaBenzeneTestHost} directly (the .NET version returns the bare entry point and asks the
  * caller to wrap it — folding the wrap in matches the `host.sendEventAsync(...)` shape).
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { AwsLambdaStartUpRunner } from '@benzene/aws-lambda-core';
-import { BenzeneTestHostBuilder } from '@benzene/testing';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { AwsLambdaStartUpRunner } from '@benzenejs/aws-lambda-core';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
 import { AwsLambdaBenzeneTestHost } from './AwsLambdaBenzeneTestHost';
 
-declare module '@benzene/testing' {
+declare module '@benzenejs/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {
     /**
      * Builds an in-memory {@link AwsLambdaBenzeneTestHost} from the startup + any `withServices`/

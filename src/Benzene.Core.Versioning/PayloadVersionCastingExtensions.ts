@@ -1,5 +1,5 @@
 /** Port of Benzene.Core.Versioning.PayloadVersionCastingExtensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IMessageTopicGetter,
@@ -7,12 +7,12 @@ import {
   IRequestEnricher,
   IRequestMapper,
   IResponsePayloadMapper,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import {
   DefaultResponsePayloadMapper,
   MultiSerializerOptionsRequestMapper,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { CastingRequestMapper } from './Request/CastingRequestMapper';
 import { CastingResponsePayloadMapper } from './Response/CastingResponsePayloadMapper';
 import { ISchemaCasters } from './Schemas/ISchemaCasters';

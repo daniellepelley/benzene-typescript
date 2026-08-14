@@ -1,8 +1,8 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.GooglePubSubFunctionHost. */
-import { IEntryPointMiddlewareApplication, BenzeneStartUpOf } from '@benzene/abstractions-middleware';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { withStartUpChecks } from '@benzene/core-message-handlers';
-import { GoogleCloudStartUpRunner } from '@benzene/google-cloud-functions-core';
+import { IEntryPointMiddlewareApplication, BenzeneStartUpOf } from '@benzenejs/abstractions-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
+import { GoogleCloudStartUpRunner } from '@benzenejs/google-cloud-functions-core';
 import { CloudEvent, CloudEventFunction } from '@google-cloud/functions-framework';
 import { MessagePublishedData } from './MessagePublishedData';
 import { GooglePubSubFunctionApplicationBuilder } from './GooglePubSubFunctionApplicationBuilder';

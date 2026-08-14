@@ -32,19 +32,19 @@ never cast; a topic with one handler is never version-routed).
 
 - [Node.js 22+](https://nodejs.org/).
 - A Benzene message pipeline. The examples below use the BenzeneMessage envelope transport
-  (`@benzene/core-messages`), but the version signal is transport-neutral — the same handlers work on any
+  (`@benzenejs/core-messages`), but the version signal is transport-neutral — the same handlers work on any
   transport that carries `benzene-version` as metadata.
 
 ## Installation
 
 ```bash
-npm install @benzene/core-versioning @benzene/core-message-handlers @benzene/core-messages \
-  @benzene/core-middleware @benzene/dependencies @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers @benzene/abstractions-messages
+npm install @benzenejs/core-versioning @benzenejs/core-message-handlers @benzenejs/core-messages \
+  @benzenejs/core-middleware @benzenejs/dependencies @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers @benzenejs/abstractions-messages
 ```
 
-`@benzene/core-versioning` is only needed for Mechanism B (casting). Mechanism A is pure
-`@benzene/core-message-handlers` — the `@message` decorator's `version` option and the router do it all.
+`@benzenejs/core-versioning` is only needed for Mechanism B (casting). Mechanism A is pure
+`@benzenejs/core-message-handlers` — the `@message` decorator's `version` option and the router do it all.
 
 ## Mechanism A — route to a version-specific handler
 
@@ -80,10 +80,10 @@ export class OrderAcceptedV2 {
 
 ```ts
 // handlers/order.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { CreateOrderV1, CreateOrderV2, OrderAcceptedV1, OrderAcceptedV2 } from '../contracts/order.js';
 
 @message('order:create', { version: 'v1', requestType: CreateOrderV1, responseType: OrderAcceptedV1 })
@@ -165,10 +165,10 @@ handler only ever sees its own schema:
 
 ```ts
 // handlers/inventory.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { InventoryAdjustmentV3 } from '../contracts/inventory.js';
 
 @message('inventory:adjust', { requestType: InventoryAdjustmentV3, responseType: InventoryAdjustmentV3 })
@@ -199,11 +199,11 @@ response downcast **V3→V2→V1** — there is deliberately no direct V1⇄V3 c
 
 ```ts
 // versioning.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   registerPayloadSchemaVersions,
   registerSchemaCastDefinitions,
-} from '@benzene/core-versioning';
+} from '@benzenejs/core-versioning';
 import {
   InventoryAdjustmentV1,
   InventoryAdjustmentV2,
@@ -289,7 +289,7 @@ export function addInventoryVersioning(services: IBenzeneServiceContainer): void
 
 > **Port divergence — explicit downcasters.** The .NET `AddPayloadVersioning` auto-synthesises the
 > field-drop downcasters from the declared upcasters (via a reflection + expression-tree auto-mapper).
-> TypeScript has no runtime property reflection, so `@benzene/core-versioning` deliberately does **not**
+> TypeScript has no runtime property reflection, so `@benzenejs/core-versioning` deliberately does **not**
 > port the auto-mapper — casters are explicit `(from) => to` functions (idiomatic TS anyway). You therefore
 > declare the adjacent **downcasters** too; the expander still **chains** them (V3→V2→V1), which is the
 > mechanism that matters. This bend is recorded in
@@ -314,16 +314,16 @@ The full composition root, booting the same way a deployed host would:
 
 ```ts
 // startUp.ts
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { usePayloadVersionCasting } from '@benzene/core-versioning';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { usePayloadVersionCasting } from '@benzenejs/core-versioning';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AdjustInventoryHandler } from './handlers/inventory.js';
 import { CreateOrderV1Handler, CreateOrderV2Handler } from './handlers/order.js';
 import { addInventoryVersioning } from './versioning.js';
@@ -363,8 +363,8 @@ Boot the real app and set the version like any other header — a plain string. 
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageRequest } from '@benzene/core-messages';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { buildApp } from '../src/startUp.js';
 import { InventoryAdjustmentV1 } from '../src/contracts/inventory.js';
 import { OrderAcceptedV1 } from '../src/contracts/order.js';

@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IMessageDefinitionFinder } from './IMessageDefinitionFinder';
 import { IMessageSenderDefinition } from './IMessageSenderDefinition';
 

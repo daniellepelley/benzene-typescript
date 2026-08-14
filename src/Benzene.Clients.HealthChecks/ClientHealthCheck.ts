@@ -1,5 +1,5 @@
 /** Port of Benzene.Clients.HealthChecks.ClientHealthCheck. */
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
 import {
   HealthCheckDependency,
   HealthCheckResponse,
@@ -8,7 +8,7 @@ import {
   IHealthCheck,
   IHealthCheckResult,
   SchemaHealthCheckConstants,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { ClientHashMatch } from './ClientHashMatch';
 import { IHasHealthCheck } from './IHasHealthCheck';
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { capability, isCapability } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { capability, isCapability } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 
 /**
  * `builder.use(capability(...))` is the TypeScript-idiomatic answer to .NET's `app.UseXml()` /

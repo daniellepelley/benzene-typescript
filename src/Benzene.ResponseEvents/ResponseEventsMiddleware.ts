@@ -1,7 +1,7 @@
-import { ILoggerFactory, IServiceResolver } from '@benzene/abstractions';
-import { IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { ILoggerFactory, IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import { IResponseEventPublisher } from './IResponseEventPublisher';
 import { PublishFailureMode } from './PublishFailureMode';
 import { ResponseEventMappings } from './ResponseEventMappings';

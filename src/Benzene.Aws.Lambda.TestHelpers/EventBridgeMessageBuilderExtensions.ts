@@ -1,6 +1,6 @@
 /** Port of Benzene.Aws.Lambda.EventBridge.TestHelpers.MessageBuilderExtensions. */
 import { EventBridgeEvent } from 'aws-lambda';
-import { IMessageBuilder } from '@benzene/abstractions';
+import { IMessageBuilder } from '@benzenejs/abstractions';
 
 export interface AsEventBridgeOptions {
   /** The event `source` (default `"benzene.test"`). */

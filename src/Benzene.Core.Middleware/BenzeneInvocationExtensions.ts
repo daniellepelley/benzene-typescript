@@ -3,13 +3,13 @@ import {
   IServiceResolver,
   tryAddScoped,
   tryAddScopedFactory,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import {
   IBenzeneInvocation,
   IBenzeneInvocationAccessor,
   IMiddlewarePipelineBuilder,
-} from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
+} from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
 import { BenzeneInvocation, BenzeneInvocationAccessor } from './BenzeneInvocation';
 
 /**
@@ -53,7 +53,7 @@ export function addBenzeneInvocation(
  * Mirrors the C# `UseBenzeneInvocation<TContext>(builder, factory)`: it registers the invocation
  * services and then adds a "BenzeneInvocation" middleware that populates the accessor from `factory`
  * before continuing the pipeline. Hosting platforms expose their own zero-`factory` overload that
- * supplies this factory (e.g. `@benzene/aws-lambda-core`'s `useBenzeneInvocation`).
+ * supplies this factory (e.g. `@benzenejs/aws-lambda-core`'s `useBenzeneInvocation`).
  *
  * @param app The pipeline builder to add the invocation middleware to.
  * @param factory Builds the invocation for a given resolver + context.

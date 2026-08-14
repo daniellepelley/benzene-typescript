@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { QueueClient } from '@azure/storage-queue';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   OutboundQueueStorageContextConverter,
   QueueStorageSendMessageContext,
   useQueueStorage,
-} from '@benzene/clients-azure-queue-storage';
+} from '@benzenejs/clients-azure-queue-storage';
 
 /**
  * Port of the C# Benzene.Clients.Azure.QueueStorage tests (the OutboundContext send path — the generic
  * `QueueStorageContextConverter<T>`/`QueueStorageBenzeneMessageClient` are deferred, matching the
- * `@benzene/clients-*` siblings). Queue Storage has no per-message properties, so the topic/headers/body
+ * `@benzenejs/clients-*` siblings). Queue Storage has no per-message properties, so the topic/headers/body
  * are packed into a serialized `BenzeneMessageRequest` envelope that is the queue message text.
  */
 

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.QueueStorage.QueueStorageMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { QueueStorageContext } from './QueueStorageContext';
 
 /**

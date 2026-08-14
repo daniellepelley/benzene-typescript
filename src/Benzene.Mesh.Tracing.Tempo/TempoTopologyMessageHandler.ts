@@ -1,9 +1,9 @@
 /** Port of Benzene.Mesh.Tracing.Tempo.TempoTopologyMessageHandler. */
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IMeshArtifactStore } from '@benzene/mesh-aggregator';
-import { MeshTopology } from '@benzene/mesh-contracts';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IMeshArtifactStore } from '@benzenejs/mesh-aggregator';
+import { MeshTopology } from '@benzenejs/mesh-contracts';
+import { BenzeneResult } from '@benzenejs/results';
 import { TempoServiceGraphTopologyBuilder } from './TempoServiceGraphTopologyBuilder';
 
 /**

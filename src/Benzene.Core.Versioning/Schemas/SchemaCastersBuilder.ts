@@ -1,5 +1,5 @@
 /** Port of Benzene.Core.Versioning.Schemas.SchemaCastersBuilder. */
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 import { ISchemaCaster } from './ISchemaCaster';
 import { CasterInput, SchemaCasterBuilder } from './SchemaCasterBuilder';
 

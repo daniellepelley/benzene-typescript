@@ -1,8 +1,8 @@
 /** Port of Benzene.Mesh.GoogleCloud.Storage.Extensions. */
 import { Storage } from '@google-cloud/storage';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addMeshAggregator } from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addMeshAggregator } from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry } from '@benzenejs/mesh-contracts';
 import { GcsMeshArtifactStore } from './GcsMeshArtifactStore';
 
 /**

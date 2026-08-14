@@ -1,6 +1,6 @@
 import { ServiceBusSender } from '@azure/service-bus';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { OutboundServiceBusContextConverter } from './OutboundServiceBusContextConverter';
 import { ServiceBusClientMiddleware } from './ServiceBusClientMiddleware';
 import { ServiceBusSendMessageContext } from './ServiceBusSendMessageContext';
@@ -9,7 +9,7 @@ import { ServiceBusSendMessageContext } from './ServiceBusSendMessageContext';
  * Port of Benzene.Clients.Azure.ServiceBus.Extensions (C# fluent extension methods -> free functions
  * taking the builder first).
  *
- * PORT SCOPE: like the AWS `@benzene/clients-aws-*` siblings, this ports the `OutboundContext` send
+ * PORT SCOPE: like the AWS `@benzenejs/clients-aws-*` siblings, this ports the `OutboundContext` send
  * path; the generic `IBenzeneClientContext<T,Void>` overloads, the standalone
  * `ServiceBusBenzeneMessageClient`, and the native `ServiceBusBatchMessageClient` are deferred (see the
  * README structure table). The C# `.UseServiceBus(action, …)` (custom-middleware) overload is also

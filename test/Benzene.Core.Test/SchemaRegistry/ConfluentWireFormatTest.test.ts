@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConfluentWireFormat } from '@benzene/schema-registry-core';
+import { ConfluentWireFormat } from '@benzenejs/schema-registry-core';
 
 /**
  * Port of test/Benzene.Core.Test/SchemaRegistry/ConfluentWireFormatTest.cs. The interop-critical byte

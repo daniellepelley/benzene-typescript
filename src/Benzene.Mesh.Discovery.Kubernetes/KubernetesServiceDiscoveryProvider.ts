@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Discovery.Kubernetes.KubernetesServiceDiscoveryProvider. */
-import { IMeshDiscoveryProvider, MeshDiscoveryFilter, MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+import { IMeshDiscoveryProvider, MeshDiscoveryFilter, MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 import { IKubernetesServiceLister } from './IKubernetesServiceLister';
 
 const DefaultSpecPath = '/benzene/spec?type=benzene';

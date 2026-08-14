@@ -1,12 +1,12 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IMessageHandlerDefinitionLookUp,
   IMessageHandlerResultSetter,
   IMessageTopicGetter,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { MessageHandlerResult } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { MetadataName, RateLimitLease, RateLimiter } from './RateLimiters';
 
 /**

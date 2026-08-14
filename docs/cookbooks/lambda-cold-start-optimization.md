@@ -57,7 +57,7 @@ export const handler = async (event, context) => {
 Keep `build()` at module scope. `toLambdaHandler(entryPoint)` closes over the built entry point and
 returns the correctly-bound function AWS invokes — and it's also the fix for the classic detached-`this`
 bug: never `export const handler = entryPoint.functionHandlerAsync` (it compiles, but assigning the method
-detaches `this` and the pipeline is lost). See [AWS Lambda Setup](../getting-started-aws.md#4-wire-up-the-lambda-entry-point).
+detaches `this` and the pipeline is lost). See [AWS Lambda Setup](../getting-started-aws.md#4-write-the-composition-root-and-the-entry-point).
 
 ### 2. Keep `configureServices` cheap — defer expensive initialization to first use
 
@@ -98,8 +98,8 @@ concurrency, step 5).
 Every import in your entry module is evaluated on cold start, and every dependency adds to bundle size.
 
 - **Only pull in the [packages](../getting-started-aws.md#supported-event-sources) you use.** Benzene's
-  packages are small and focused — install one transport package per event source (`@benzene/aws-lambda-api-gateway`,
-  `@benzene/aws-lambda-sqs`, …), not the whole family.
+  packages are small and focused — install one transport package per event source (`@benzenejs/aws-lambda-api-gateway`,
+  `@benzenejs/aws-lambda-sqs`, …), not the whole family.
 - **Prefer AWS SDK v3's per-service clients** (`@aws-sdk/client-dynamodb`, not the monolithic v2 `aws-sdk`)
   so the bundler only includes the API you call.
 - **Bundle and tree-shake with esbuild**, and minify — this is the Node analog of .NET's trimming. A

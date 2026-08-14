@@ -3,17 +3,17 @@
  * worker startup / service container as their first argument).
  *
  * Adds a standalone Cosmos DB Change Feed consumer to a Benzene worker. Unlike
- * `@benzene/azure-function-cosmos-db`, which processes batches delivered via an Azure Functions
+ * `@benzenejs/azure-function-cosmos-db`, which processes batches delivered via an Azure Functions
  * `CosmosDBTrigger`, this package consumes the change feed directly using
- * {@link BenzeneCosmosChangeFeedWorker} — intended for long-running workers (e.g. `@benzene/self-host`)
+ * {@link BenzeneCosmosChangeFeedWorker} — intended for long-running workers (e.g. `@benzenejs/self-host`)
  * rather than Azure Functions, and for handlers that want manual per-batch checkpoint control.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { ITransportInfo, TransportNames } from '@benzene/abstractions-message-handlers';
-import { TransportInfo } from '@benzene/core-message-handlers';
-import { StreamContext } from '@benzene/core-middleware';
-import { IBenzeneWorkerStartup } from '@benzene/self-host';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { ITransportInfo, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { TransportInfo } from '@benzenejs/core-message-handlers';
+import { StreamContext } from '@benzenejs/core-middleware';
+import { IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { BenzeneCosmosAllVersionsChangeFeedConfig } from './BenzeneCosmosAllVersionsChangeFeedConfig';
 import { BenzeneCosmosAllVersionsChangeFeedWorker } from './BenzeneCosmosAllVersionsChangeFeedWorker';
 import { BenzeneCosmosChangeFeedConfig } from './BenzeneCosmosChangeFeedConfig';

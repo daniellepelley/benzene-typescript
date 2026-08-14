@@ -1,5 +1,5 @@
 /** Port of Benzene.Testing.HttpBuilder. */
-import { IHttpBuilder } from '@benzene/abstractions';
+import { IHttpBuilder } from '@benzenejs/abstractions';
 
 /**
  * A fluent builder for an HTTP-shaped test request (method + path + typed body + headers), the input

@@ -1,9 +1,9 @@
 /** Port of Benzene.Mesh.Dispatch.MeshDispatchMessageHandler. */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { RawStringMessage } from '@benzene/core-messages';
-import { MeshServiceRegistry } from '@benzene/mesh-contracts';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { RawStringMessage } from '@benzenejs/core-messages';
+import { MeshServiceRegistry } from '@benzenejs/mesh-contracts';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { IMeshServiceDispatcher } from './IMeshServiceDispatcher';
 import { MeshDispatchEnvelope } from './MeshDispatchEnvelope';
 import { MeshDispatchGate } from './MeshDispatchGate';

@@ -4,8 +4,8 @@
  * the shared `PlaceOrderHandler` instead of one it defines itself.
  */
 import express, { type Express } from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
 import { PlaceOrderHandler } from './domain.js';
 
 export function createOrderApp(): Express {

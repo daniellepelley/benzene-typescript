@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolver } from '@benzene/abstractions';
-import { Constants, XmlMediaFormat, XmlSerializer } from '@benzene/xml';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { Constants, XmlMediaFormat, XmlSerializer } from '@benzenejs/xml';
 
 /**
  * Port of the Benzene.Xml serialization scenarios, adapted to the fast-xml-parser library. XML is

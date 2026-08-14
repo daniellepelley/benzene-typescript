@@ -5,8 +5,8 @@
  * `useKafka(workerStartup, config, consumerFactory, action)` adds a long-running
  * {@link BenzeneKafkaWorker} that consumes topics via `kafkajs` (`consumer.run({ eachMessage })`) and
  * runs each record through a Benzene middleware pipeline (transport `"kafka"`). Intended for
- * `@benzene/self-host` workers rather than a cloud trigger (for those, use `@benzene/aws-lambda-kafka` /
- * `@benzene/azure-function-kafka`).
+ * `@benzenejs/self-host` workers rather than a cloud trigger (for those, use `@benzenejs/aws-lambda-kafka` /
+ * `@benzenejs/azure-function-kafka`).
  *
  * PORTING NOTE: .NET's synchronous `IConsumer.Consume()` poll loop + `BoundedConcurrentDispatcher` maps
  * to kafkajs's push-based `consumer.run({ eachMessage, partitionsConsumedConcurrently, autoCommit })`.

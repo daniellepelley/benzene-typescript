@@ -5,11 +5,11 @@
  * Same unified `BenzeneStartUp` + `new AwsLambdaHost(StartUp).lambdaHandler` one-liner as every other
  * transport here — only the `useSqs` line differs.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
 import { NotifyWarehouseHandler } from '../handlers';
 
 class SqsStartUp implements BenzeneStartUp {

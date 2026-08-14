@@ -7,8 +7,8 @@ import {
   MeshTimeRange,
   TraceSummary,
   TraceView,
-} from '@benzene/mesh-collector';
-import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-collector';
+import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzenejs/mesh-contracts';
 
 /**
  * Port of test/Benzene.Mesh.Test/CompositeMeshFleetReadModelTest.cs. The backend-composed fleet read model:

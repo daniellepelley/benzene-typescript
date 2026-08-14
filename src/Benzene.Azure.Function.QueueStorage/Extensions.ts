@@ -1,8 +1,8 @@
 /** Port of Benzene.Azure.Function.QueueStorage.Extensions. */
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { addBenzeneMessage } from '@benzene/core-message-handlers';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { addBenzeneMessage } from '@benzenejs/core-message-handlers';
 import { BenzeneMessageQueueStorageHandler } from './BenzeneMessageQueueStorageHandler';
 import { QueueStorageContext } from './QueueStorageContext';
 import { QueueStorageMessage } from './QueueStorageMessage';

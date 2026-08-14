@@ -6,7 +6,7 @@
  * {@link RabbitMqWorker} that consumes a queue via `amqplib` (`channel.consume(queue, onMessage, { noAck })`)
  * and runs each delivery through a Benzene middleware pipeline (transport `"rabbitmq"`), settling it per
  * {@link RabbitMqAckMode}. RabbitMQ is the first vendor-neutral, self-hosted broker in Benzene; intended
- * for `@benzene/self-host` workers (console, container, Kubernetes) rather than a cloud trigger.
+ * for `@benzenejs/self-host` workers (console, container, Kubernetes) rather than a cloud trigger.
  *
  * ACK POLICY — safe by default. {@link RabbitMqConfig.ackMode} defaults to {@link RabbitMqAckMode.Explicit}:
  * a delivery is `ack`ed on handler success and `nack`ed on a failure result **or** a thrown exception,

@@ -1,4 +1,4 @@
-import { IServiceResolver, LogContextDictionaryFunc } from '@benzene/abstractions';
+import { IServiceResolver, LogContextDictionaryFunc } from '@benzenejs/abstractions';
 
 /**
  * Accumulates functions producing log-context dictionaries from the resolver and context.

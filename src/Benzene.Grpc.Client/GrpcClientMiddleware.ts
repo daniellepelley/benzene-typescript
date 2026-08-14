@@ -1,6 +1,6 @@
 import { Client, ServiceError, status } from '@grpc/grpc-js';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { IGrpcMessageAdapter } from '@benzene/grpc';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { IGrpcMessageAdapter } from '@benzenejs/grpc';
 import { GrpcSendMessageContext } from './GrpcSendMessageContext';
 import { IGrpcClientRouteRegistry } from './IGrpcClientRouteRegistry';
 

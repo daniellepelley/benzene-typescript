@@ -3,7 +3,7 @@
  * `/benzene/health` endpoint serves, so the mesh reads it identically across languages. A real service would
  * run its registered health checks here; the example reports a single healthy self-check.
  */
-import { HealthCheckResponse, HealthCheckResult } from '@benzene/health-checks-core';
+import { HealthCheckResponse, HealthCheckResult } from '@benzenejs/health-checks-core';
 
 /** Builds the health document JSON. */
 export function buildHealth(): string {

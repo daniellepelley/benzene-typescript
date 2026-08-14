@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   ContextPredicateBuilder,
   HeaderContextPredicate,
   InlineContextPredicate,
   MediaTypeHeaderContextPredicate,
-} from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * Port of Benzene.Test.Core.Core.Predicates.MediaTypeHeaderContextPredicateTest, extended to also

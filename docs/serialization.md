@@ -18,7 +18,7 @@ JSON format and any additional `IMediaFormat<TContext>` you register. For each m
 - picks the **write** format from the request's `accept` header (falling back to the read format, then to
   JSON).
 
-**JSON is the default** — it ships in `@benzene/core-message-handlers` (`JsonMediaFormat` over `JsonSerializer`)
+**JSON is the default** — it ships in `@benzenejs/core-message-handlers` (`JsonMediaFormat` over `JsonSerializer`)
 and is always present, so you never install anything to use it. When no header matches a registered format,
 the negotiator falls back to JSON. Adding a format is opt-in: install its package and register it into a
 pipeline, and content negotiation starts routing matching requests to it while everything else stays JSON.
@@ -37,27 +37,27 @@ conventions](../README.md#porting-conventions)).
 
 | Package | Adapts (real dependency) | Content type | Register on a pipeline |
 |---|---|---|---|
-| [`@benzene/xml`](common-middleware.md#usexml) | [`fast-xml-parser`](https://www.npmjs.com/package/fast-xml-parser) | `application/xml` | `useXml(app)` |
-| [`@benzene/messagepack`](common-middleware.md#usemessagepack) | [`@msgpack/msgpack`](https://www.npmjs.com/package/@msgpack/msgpack) | `application/msgpack` | `useMessagePack(app)` |
-| `@benzene/avro` | [`avsc`](https://www.npmjs.com/package/avsc) | `application/avro` | `useAvro(app)` |
+| [`@benzenejs/xml`](common-middleware.md#usexml) | [`fast-xml-parser`](https://www.npmjs.com/package/fast-xml-parser) | `application/xml` | `useXml(app)` |
+| [`@benzenejs/messagepack`](common-middleware.md#usemessagepack) | [`@msgpack/msgpack`](https://www.npmjs.com/package/@msgpack/msgpack) | `application/msgpack` | `useMessagePack(app)` |
+| `@benzenejs/avro` | [`avsc`](https://www.npmjs.com/package/avsc) | `application/avro` | `useAvro(app)` |
 
 Each adapter takes its underlying library as a real runtime dependency — that is the whole point of an
 adapter package. Install whichever you need:
 
 ```bash
-npm install @benzene/xml          # over fast-xml-parser
+npm install @benzenejs/xml          # over fast-xml-parser
 # or
-npm install @benzene/messagepack  # over @msgpack/msgpack
+npm install @benzenejs/messagepack  # over @msgpack/msgpack
 # or
-npm install @benzene/avro         # over avsc
+npm install @benzenejs/avro         # over avsc
 ```
 
 Prerequisite: Node 22+. You can install more than one and register them on the same pipeline — the
 negotiator then picks whichever matches each request's headers, JSON included.
 
-## XML — `@benzene/xml`
+## XML — `@benzenejs/xml`
 
-`@benzene/xml` adapts [`fast-xml-parser`](https://www.npmjs.com/package/fast-xml-parser). Registering it
+`@benzenejs/xml` adapts [`fast-xml-parser`](https://www.npmjs.com/package/fast-xml-parser). Registering it
 adds `XmlMediaFormat<TContext>` (content type `application/xml`) alongside the default JSON format, so a
 request whose `content-type` is `application/xml` is read as XML, and a request whose `accept` asks for
 `application/xml` is written as XML.
@@ -69,12 +69,12 @@ element. Element text is kept as strings so values round-trip faithfully (`'007'
 
 ```ts
 import express from 'express';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, useMessageHandlers } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { benzene } from '@benzene/express';
-import { useXml } from '@benzene/xml';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { benzene } from '@benzenejs/express';
+import { useXml } from '@benzenejs/xml';
 
 class CreateOrder {
   orderId: string | undefined;
@@ -111,9 +111,9 @@ negotiation is entirely at the media-format seam.
 adds `XmlMediaFormat` as an `IMediaFormat`. See [Common Middleware →
 useXml](common-middleware.md#usexml) for the signature.
 
-## MessagePack — `@benzene/messagepack`
+## MessagePack — `@benzenejs/messagepack`
 
-`@benzene/messagepack` adapts [`@msgpack/msgpack`](https://www.npmjs.com/package/@msgpack/msgpack).
+`@benzenejs/messagepack` adapts [`@msgpack/msgpack`](https://www.npmjs.com/package/@msgpack/msgpack).
 Registering it adds `MessagePackMediaFormat<TContext>` (content type `application/msgpack`) alongside JSON,
 negotiated the same way — `content-type`/`accept: application/msgpack`.
 
@@ -126,9 +126,9 @@ own shape, so there is nothing to register per type.
 
 ```ts
 import express from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { useMessagePack } from '@benzene/messagepack';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { useMessagePack } from '@benzenejs/messagepack';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 
 const app = express();
@@ -146,9 +146,9 @@ A request with `Content-Type: application/msgpack` and a Base64-encoded MessageP
 MessagePack. See [Common Middleware → useMessagePack](common-middleware.md#usemessagepack) for the
 signature.
 
-## Avro — `@benzene/avro`
+## Avro — `@benzenejs/avro`
 
-`@benzene/avro` adapts [`avsc`](https://www.npmjs.com/package/avsc). Registering it adds
+`@benzenejs/avro` adapts [`avsc`](https://www.npmjs.com/package/avsc). Registering it adds
 `AvroMediaFormat<TContext>` (content type `application/avro`) alongside JSON. Avro is genuine binary too, so
 `AvroSerializer` Base64-armors the bytes on the string path exactly like MessagePack.
 
@@ -159,7 +159,7 @@ over a CLR type's properties to generate one. TypeScript erases types at runtime
 fallback in the port — **you must register a schema for every message class Avro serializes.** An
 unregistered type throws at (de)serialize time. This mirrors the way the [validation
 adapters](validation.md#the-schema-registry) recover "which validator for `TRequest`" and the way
-`@benzene/avro`'s registry is keyed by the message **class** rather than an erased type.
+`@benzenejs/avro`'s registry is keyed by the message **class** rather than an erased type.
 
 Register a schema on the process-wide global registry with `registerAvroSchema(MessageClass, schema)`,
 passing either a compiled `avro.Type` or a plain Avro schema object (`{ type: 'record', … }`, compiled
@@ -168,9 +168,9 @@ lazily on first use). `getAvroSchema(MessageClass)` looks the compiled `avro.Typ
 ```ts
 import express from 'express';
 import * as avro from 'avsc';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { registerAvroSchema, useAvro } from '@benzene/avro';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { registerAvroSchema, useAvro } from '@benzenejs/avro';
 import { CreateOrder, OrderCreated, CreateOrderHandler } from './CreateOrderHandler.js';
 
 // Every class Avro (de)serializes needs a registered schema — there is no reflection fallback.
@@ -219,7 +219,7 @@ rarely call the serializer directly.
 
 > **Central schema registration.** To publish Avro schemas to a Confluent-style registry so other services
 > (including non-Benzene ones) can resolve the exact writer schema, layer
-> [`@benzene/schema-registry-core`](schema-registry.md) on top of `@benzene/avro` — it frames Avro bytes in
+> [`@benzenejs/schema-registry-core`](schema-registry.md) on top of `@benzenejs/avro` — it frames Avro bytes in
 > the Confluent wire format and registers each type's schema under a subject.
 
 ## Troubleshooting

@@ -3,9 +3,9 @@ import {
   CorrelationQueryMessageHandler,
   IssuesMessageHandler,
   MeshCollectorStore,
-} from '@benzene/mesh-collector';
-import { MeshIssue, MeshIssueBatch, MeshTraceEvent } from '@benzene/mesh-wire';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/mesh-collector';
+import { MeshIssue, MeshIssueBatch, MeshTraceEvent } from '@benzenejs/mesh-wire';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshCollectorStoreTest.cs. Store behaviors the conformance sequences

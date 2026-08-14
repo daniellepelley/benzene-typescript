@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { useWorker, WorkerApplicationBuilder } from '@benzene/self-host';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { useWorker, WorkerApplicationBuilder } from '@benzenejs/self-host';
 import {
   IKafkaConsumerFactory,
   KafkaApplication,
   KafkaRecordContext,
   useKafka,
-} from '@benzene/kafka-core';
-import { FakeBenzeneMessageSender, messageBuilder } from '@benzene/testing';
-import { asKafkaBenzeneMessage } from '@benzene/kafka-core-test-helpers';
+} from '@benzenejs/kafka-core';
+import { FakeBenzeneMessageSender, messageBuilder } from '@benzenejs/testing';
+import { asKafkaBenzeneMessage } from '@benzenejs/kafka-core-test-helpers';
 
 /**
  * Regression test for the type-erasure routing fix: booting the full `useKafka(...)` +

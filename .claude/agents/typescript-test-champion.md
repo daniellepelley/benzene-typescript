@@ -161,7 +161,7 @@ anything that took the C# form literally:
   camelCased (`sendEventAsync`); `CancellationToken` → an optional trailing
   `AbortSignal`; long overloads → an options object.
 - **Native-event builders** are the `as*` free functions already established in
-  `@benzene/*-testing`, built on `messageBuilder`/`httpBuilder` from `Benzene.Testing`
+  `@benzenejs/*-testing`, built on `messageBuilder`/`httpBuilder` from `Benzene.Testing`
   — keep them parallel and consistently named across transports.
 - **Fakes are structural** (`FakeBenzeneMessageSender` implements the sender
   interface) — no mock framework needed; use `vi.fn()` spies only where they help.

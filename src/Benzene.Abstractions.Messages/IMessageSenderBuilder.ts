@@ -1,5 +1,5 @@
-import { VoidResult } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+import { VoidResult } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { IBenzeneClientContext } from './BenzeneClient/IBenzeneClientContext';
 
 /**

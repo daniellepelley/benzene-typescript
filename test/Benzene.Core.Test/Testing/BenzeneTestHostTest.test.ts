@@ -20,24 +20,24 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyResult, SQSBatchResponse } from 'aws-lambda';
 import { HttpResponseInit } from '@azure/functions';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useAzureHttp } from '@benzene/azure-function-http';
-import { useServiceBus } from '@benzene/azure-function-service-bus';
+} from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useAzureHttp } from '@benzenejs/azure-function-http';
+import { useServiceBus } from '@benzenejs/azure-function-service-bus';
 import {
   benzeneTestHost,
   FakeBenzeneMessageSender,
@@ -45,13 +45,13 @@ import {
   messageBuilder,
   type BenzeneConfiguration,
   type BenzeneStartUp,
-} from '@benzene/testing';
-import { asApiGatewayRequest, asSqs } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/testing';
+import { asApiGatewayRequest, asSqs } from '@benzenejs/aws-lambda-testing';
 import {
   asAzureHttpRequest,
   asAzureServiceBusMessage,
   type AzureFunctionStartUp,
-} from '@benzene/azure-function-testing';
+} from '@benzenejs/azure-function-testing';
 
 // ---------------------------------------------------------------------------------------------------
 // The shared domain — one set of handlers, hosted on both clouds (the "write once, host anywhere" core).

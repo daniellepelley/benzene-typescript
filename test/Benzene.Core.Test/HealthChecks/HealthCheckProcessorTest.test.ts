@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer, IRegisterDependency } from '@benzene/abstractions';
-import { BenzeneResultStatus } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneResultOf, IBenzeneServiceContainer, IRegisterDependency } from '@benzenejs/abstractions';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   HealthCheckDependency,
   HealthCheckResult,
@@ -10,12 +10,12 @@ import {
   IHealthCheck,
   IHealthCheckResult,
   addHealthCheckInstance,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import {
   getHealthCheckerBuilder,
   HealthCheckProcessor,
   IHealthCheckFinder,
-} from '@benzene/health-checks';
+} from '@benzenejs/health-checks';
 
 /**
  * Ports the spirit of the C# health-check tests: register a couple of fake `IHealthCheck`s (one

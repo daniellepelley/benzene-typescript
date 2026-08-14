@@ -11,7 +11,7 @@
  * This is a documented divergence (README "Porting conventions"): the §2.1 mapping table is normative
  * and unchanged; only its *source* moves from CLR reflection to an injected provider.
  */
-import { ITopic } from '@benzene/abstractions-messages';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { JsonObject } from './MeshJson';
 
 /** A topic's derived request/response schemas (either may be absent -> unconstrained). */

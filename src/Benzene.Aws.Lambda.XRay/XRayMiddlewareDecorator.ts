@@ -1,12 +1,12 @@
 /** Port of Benzene.Aws.Lambda.XRay.XRayMiddlewareDecorator. */
-import { IServiceResolver, serviceIdentifierName } from '@benzene/abstractions';
+import { IServiceResolver, serviceIdentifierName } from '@benzenejs/abstractions';
 import {
   ICurrentTransport,
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { IXRayRecorder, XRayRecorder } from './IXRayRecorder';
 
 // The value ICurrentTransport reports before any transport pipeline has recorded itself; the subsegment

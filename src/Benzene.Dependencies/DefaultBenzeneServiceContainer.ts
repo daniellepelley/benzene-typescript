@@ -5,8 +5,8 @@ import {
   InjectableConstructor,
   ServiceFactory,
   ServiceIdentifier,
-} from '@benzene/abstractions';
-import { BenzeneException } from '@benzene/core';
+} from '@benzenejs/abstractions';
+import { BenzeneException } from '@benzenejs/core';
 import { DefaultServiceResolverFactory } from './DefaultServiceResolverFactory';
 import { ServiceCollection, ServiceLifetime } from './ServiceCollection';
 

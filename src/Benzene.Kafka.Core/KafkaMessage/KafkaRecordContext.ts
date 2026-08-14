@@ -1,6 +1,6 @@
 /** Port of Benzene.Kafka.Core.KafkaMessage.KafkaRecordContext. */
 import { EachMessagePayload } from 'kafkajs';
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Provides the middleware pipeline context for a single record consumed by the self-hosted Kafka

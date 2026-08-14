@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.EventHub.EventHubConsumerMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { EventHubConsumerContext } from './EventHubConsumerContext';
 
 /**

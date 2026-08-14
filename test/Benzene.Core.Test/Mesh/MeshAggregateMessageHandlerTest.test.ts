@@ -2,14 +2,14 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { VoidResult } from '@benzene/abstractions';
+import { VoidResult } from '@benzenejs/abstractions';
 import {
   FileSystemMeshArtifactStore,
   IMeshServiceSource,
   MeshAggregateMessageHandler,
   MeshAggregator,
-} from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry, MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry, MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 
 /** Port of test/Benzene.Mesh.Test/MeshAggregateMessageHandlerTest.cs. `Void` -> `VoidResult`. */
 describe('MeshAggregateMessageHandler', () => {

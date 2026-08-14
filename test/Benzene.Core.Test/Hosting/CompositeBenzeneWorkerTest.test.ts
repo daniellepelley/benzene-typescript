@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
-import { CompositeBenzeneWorker } from '@benzene/self-host';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
+import { CompositeBenzeneWorker } from '@benzenejs/self-host';
 
 /**
  * Port of test/Benzene.Core.Test/Hosting/CompositeBenzeneWorkerTest.cs. The Moq worker is replaced by a

@@ -2,10 +2,10 @@
 import {
   IMessageGetter,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IMeshStatusReader } from './IMeshStatusReader';
 import { IMeshTraceExporter } from './IMeshTraceExporter';
 import { MeshServiceDescriptor } from './MeshServiceDescriptor';

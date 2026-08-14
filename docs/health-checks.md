@@ -25,28 +25,28 @@ endpoint. For the Kubernetes liveness/readiness split built on top of this, see
 
 | Package | What it adds |
 | --- | --- |
-| `@benzene/health-checks-core` | The abstractions: `IHealthCheck`, `IHealthCheckResult`, `IHealthCheckResponse<T>`, `HealthCheckStatus`, `HealthCheckDependency`, `IHealthCheckBuilder`, `IHealthCheckFactory`. Pulled in transitively by the packages below. |
-| `@benzene/health-checks` | The processor, `HealthCheckBuilder`, the `useHealthCheck`/`useLivenessCheck`/`useReadinessCheck` middleware, and the built-in `SimpleHealthCheck`/`InlineHealthCheck`/`FailedHealthCheck` checks. |
-| `@benzene/health-checks-disk` | `DiskHealthCheck` / `addDiskSpaceCheck` — free space on a drive. |
-| `@benzene/health-checks-http` | `HttpPingHealthCheck` / `addHttpPing` — pings a downstream HTTP URL. |
-| `@benzene/health-checks-tcp` | `TcpHealthCheck` / `addTcpPing` — opens a TCP connection to a host/port. |
-| `@benzene/health-checks-typeorm` | `DatabaseConnectionHealthCheck` / `addDatabaseConnectionHealthCheck` and `DatabaseHealthCheck` / `addDatabaseHealthCheck` — connectivity (and applied-migration) checks over a TypeORM `DataSource`. |
-| `@benzene/health-checks-dynamodb` | `DynamoDbHealthCheck` / `addDynamoDbHealthCheck` — a read-only `DescribeTable` reachability probe for a DynamoDB table. |
-| `@benzene/health-checks-azure-service-bus` | `ServiceBusHealthCheck` / `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` — a read-only `peekMessages` reachability probe for a queue or a topic subscription. |
-| `@benzene/health-checks-schema` | `SchemaHealthCheck` / `addSchemaHealthCheck` — publishes a hash of the service's own message contract under the `schema` check, so a consumer can detect contract drift. |
-| `@benzene/clients-health-checks` | `ClientHealthCheck` / `addContractCheck` — the consumer-side companion: probes a downstream provider via its generated client and reports whether its contract has drifted. |
+| `@benzenejs/health-checks-core` | The abstractions: `IHealthCheck`, `IHealthCheckResult`, `IHealthCheckResponse<T>`, `HealthCheckStatus`, `HealthCheckDependency`, `IHealthCheckBuilder`, `IHealthCheckFactory`. Pulled in transitively by the packages below. |
+| `@benzenejs/health-checks` | The processor, `HealthCheckBuilder`, the `useHealthCheck`/`useLivenessCheck`/`useReadinessCheck` middleware, and the built-in `SimpleHealthCheck`/`InlineHealthCheck`/`FailedHealthCheck` checks. |
+| `@benzenejs/health-checks-disk` | `DiskHealthCheck` / `addDiskSpaceCheck` — free space on a drive. |
+| `@benzenejs/health-checks-http` | `HttpPingHealthCheck` / `addHttpPing` — pings a downstream HTTP URL. |
+| `@benzenejs/health-checks-tcp` | `TcpHealthCheck` / `addTcpPing` — opens a TCP connection to a host/port. |
+| `@benzenejs/health-checks-typeorm` | `DatabaseConnectionHealthCheck` / `addDatabaseConnectionHealthCheck` and `DatabaseHealthCheck` / `addDatabaseHealthCheck` — connectivity (and applied-migration) checks over a TypeORM `DataSource`. |
+| `@benzenejs/health-checks-dynamodb` | `DynamoDbHealthCheck` / `addDynamoDbHealthCheck` — a read-only `DescribeTable` reachability probe for a DynamoDB table. |
+| `@benzenejs/health-checks-azure-service-bus` | `ServiceBusHealthCheck` / `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` — a read-only `peekMessages` reachability probe for a queue or a topic subscription. |
+| `@benzenejs/health-checks-schema` | `SchemaHealthCheck` / `addSchemaHealthCheck` — publishes a hash of the service's own message contract under the `schema` check, so a consumer can detect contract drift. |
+| `@benzenejs/clients-health-checks` | `ClientHealthCheck` / `addContractCheck` — the consumer-side companion: probes a downstream provider via its generated client and reports whether its contract has drifted. |
 
 ```bash
-npm install @benzene/health-checks
+npm install @benzenejs/health-checks
 # plus whichever built-in checks you need:
-npm install @benzene/health-checks-disk @benzene/health-checks-http @benzene/health-checks-tcp
+npm install @benzenejs/health-checks-disk @benzenejs/health-checks-http @benzenejs/health-checks-tcp
 # ...a database check over your TypeORM data source:
-npm install @benzene/health-checks-typeorm typeorm
+npm install @benzenejs/health-checks-typeorm typeorm
 # ...and the reachability/contract checks where you depend on those resources:
-npm install @benzene/health-checks-dynamodb @benzene/health-checks-azure-service-bus @benzene/health-checks-schema
+npm install @benzenejs/health-checks-dynamodb @benzenejs/health-checks-azure-service-bus @benzenejs/health-checks-schema
 ```
 
-Add `@benzene/health-checks` to any project that wires up a pipeline; add the disk/http/tcp/dynamodb/
+Add `@benzenejs/health-checks` to any project that wires up a pipeline; add the disk/http/tcp/dynamodb/
 service-bus packages only where you need those specific checks.
 
 Beyond the standalone check packages, several **consumer workers and client packages auto-wire their
@@ -56,7 +56,7 @@ own dependency reachability check** for the resource they talk to — see
 > **Porting note.** The .NET library also ships a `MemoryHealthCheck`, a `ShutdownReadinessHealthCheck`,
 > a per-check `Timeout`/`IsNonCritical` override, and a grpc.health.v1 bridge. Those have no TypeScript
 > port yet — this doc only covers what exists in `src/`. (`Benzene.HealthChecks.EntityFramework` **is**
-> ported now, as `@benzene/health-checks-typeorm` — see the [built-in checks](#built-in-health-checks)
+> ported now, as `@benzenejs/health-checks-typeorm` — see the [built-in checks](#built-in-health-checks)
 > below; so are the AWS/Azure/Kafka/RabbitMq reachability probes — see
 > [Dependency reachability checks](#dependency-reachability-checks).) See
 > [Not yet ported](#not-yet-ported).
@@ -68,14 +68,14 @@ Health check middleware goes inside the same pipeline callback as everything els
 etc.):
 
 ```ts
-import { useHealthCheck } from '@benzene/health-checks';
+import { useHealthCheck } from '@benzenejs/health-checks';
 import {
   addInlineHealthCheck,
   addBoolHealthCheck,
   addBoolHealthCheckWithType,
-} from '@benzene/health-checks';
-import { HealthCheckResult } from '@benzene/health-checks-core';
-import { SimpleHealthCheck } from '@benzene/health-checks';
+} from '@benzenejs/health-checks';
+import { HealthCheckResult } from '@benzenejs/health-checks-core';
+import { SimpleHealthCheck } from '@benzenejs/health-checks';
 
 useHealthCheck(app, 'healthcheck', (checks) => {
   checks.addHealthCheck(SimpleHealthCheck);                        // a DI-resolved check class
@@ -213,7 +213,7 @@ There are two fundamentally different ways a check gets registered, and it matte
 > their types, so they split by name — `addHealthCheck` takes the check *class*, `addHealthCheckFn`
 > takes the resolver *function*.
 
-`@benzene/health-checks-core` adds these free-function builder helpers on top of the two members
+`@benzenejs/health-checks-core` adds these free-function builder helpers on top of the two members
 (C# extension methods become free functions taking the builder first):
 
 ```ts
@@ -221,14 +221,14 @@ import {
   addHealthCheckInstance,   // register an already-constructed instance
   addHealthChecks,          // register several instances at once
   addHealthCheckFactory,    // register via an IHealthCheckFactory (e.g. HttpPingHealthCheckFactory)
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 
 addHealthCheckInstance(checks, new SimpleHealthCheck());
 addHealthChecks(checks, new SimpleHealthCheck(), new SimpleHealthCheck());
 addHealthCheckFactory(checks, new HttpPingHealthCheckFactory('https://svc/health'));
 ```
 
-`@benzene/health-checks` adds inline helpers for one-off checks that don't need their own class,
+`@benzenejs/health-checks` adds inline helpers for one-off checks that don't need their own class,
 covering sync/async and `boolean`/`IHealthCheckResult` return types, with or without an explicit type:
 
 ```ts
@@ -237,7 +237,7 @@ import {
   addInlineHealthCheck,           // unnamed (empty type), returns an IHealthCheckResult
   addBoolHealthCheckWithType,     // named, returns a boolean (sync or async)
   addBoolHealthCheck,             // unnamed (type "inline"), returns a boolean
-} from '@benzene/health-checks';
+} from '@benzenejs/health-checks';
 ```
 
 > **Port note.** Each C# inline helper appears twice (a sync delegate and a `Task`-returning one),
@@ -248,19 +248,19 @@ import {
 
 ## Built-in health checks
 
-### `SimpleHealthCheck` (`@benzene/health-checks`)
+### `SimpleHealthCheck` (`@benzenejs/health-checks`)
 
 Always succeeds. `type` is `'Simple'`. Useful as a smoke test that the health pipeline itself is
 reachable, or as a placeholder while you build out real checks.
 
-### `InlineHealthCheck` (`@benzene/health-checks`)
+### `InlineHealthCheck` (`@benzenejs/health-checks`)
 
 Wraps a `() => Promise<IHealthCheckResult>` with an optional leading `type` (defaulting to `''`,
 which the response namer then names `'HealthCheck-1'` — the bare `'HealthCheck'` key is pre-reserved,
 so an empty type never lands on it; see [naming](#result-naming-and-deduplication)). This is what
 every inline `add*HealthCheck` helper above constructs for you.
 
-### `FailedHealthCheck` (`@benzene/health-checks`)
+### `FailedHealthCheck` (`@benzenejs/health-checks`)
 
 Wraps a pre-existing error. `type` is `'Failed'`; `executeAsync()` always returns a `failed` result
 with the error's **class name** (not its message — the same secret-safety convention the rest of the
@@ -268,12 +268,12 @@ health checks follow) in `data.Exception`. `buildHealthCheck(func)` uses this to
 *construction* failure (a factory that throws) into a reportable result instead of an unhandled error:
 
 ```ts
-import { buildHealthCheck } from '@benzene/health-checks';
+import { buildHealthCheck } from '@benzenejs/health-checks';
 
 addHealthCheckInstance(checks, buildHealthCheck(() => new MyCheck(mustNotThrow())));
 ```
 
-### `DiskHealthCheck` / `addDiskSpaceCheck` (`@benzene/health-checks-disk`)
+### `DiskHealthCheck` / `addDiskSpaceCheck` (`@benzenejs/health-checks-disk`)
 
 A host self-check on free disk space for the drive containing a given path. Reports `failed` below a
 hard minimum, an optional `warning` below a soft threshold (degraded but not fatal — does not flip
@@ -281,7 +281,7 @@ aggregate `isHealthy`), otherwise healthy. `type` is `'Disk'`; `data` includes `
 `TotalBytes`, and `MinimumFreeBytes`.
 
 ```ts
-import { addDiskSpaceCheck } from '@benzene/health-checks-disk';
+import { addDiskSpaceCheck } from '@benzenejs/health-checks-disk';
 
 useHealthCheck(app, 'healthcheck', (checks) =>
   addDiskSpaceCheck(checks, '/', 500 * 1024 * 1024, 1024 * 1024 * 1024),
@@ -293,14 +293,14 @@ useHealthCheck(app, 'healthcheck', (checks) =>
 > so the checked `path` stands in as the drive identifier. Byte counts are `number` (64-bit doubles,
 > exact for real disk sizes) rather than C#'s `long`.
 
-### `HttpPingHealthCheck` / `addHttpPing` (`@benzene/health-checks-http`)
+### `HttpPingHealthCheck` / `addHttpPing` (`@benzenejs/health-checks-http`)
 
 `GET`s a URL and reports healthy only on a `200 OK` response (any other status code, including other
 2xx codes, is `failed`). `type` is `'HttpPing'`; `data` includes `Url` and `StatusCode`, and it
 attaches one `HealthCheckDependency('Http', url)`.
 
 ```ts
-import { addHttpPing } from '@benzene/health-checks-http';
+import { addHttpPing } from '@benzenejs/health-checks-http';
 
 useHealthCheck(app, 'healthcheck', (checks) =>
   addHttpPing(checks, 'https://downstream-service/health'));
@@ -311,7 +311,7 @@ useHealthCheck(app, 'healthcheck', (checks) =>
 > `(url) => Promise<Response>`) defaulting to the Node global `fetch`. Pass a stub in tests to avoid a
 > real network call — the ported test does exactly this. `addHttpPing(checks, url, fetchFn?)`.
 
-### `TcpHealthCheck` / `addTcpPing` (`@benzene/health-checks-tcp`)
+### `TcpHealthCheck` / `addTcpPing` (`@benzenejs/health-checks-tcp`)
 
 Verifies a dependency is reachable at the TCP level by opening a connection to a host and port — the
 lowest-common-denominator check for anything without a first-class client (a database port, an SMTP
@@ -320,7 +320,7 @@ server, a custom service). Healthy if the connection is accepted; `failed` on an
 failure), with one `HealthCheckDependency('Tcp', 'host:port')`.
 
 ```ts
-import { addTcpPing } from '@benzene/health-checks-tcp';
+import { addTcpPing } from '@benzenejs/health-checks-tcp';
 
 useHealthCheck(app, 'healthcheck', (checks) =>
   addTcpPing(checks, 'db.internal', 5432));
@@ -331,7 +331,7 @@ useHealthCheck(app, 'healthcheck', (checks) =>
 > `CancellationToken` becomes an optional `AbortSignal` on the `TcpHealthCheck` constructor;
 > `TcpHealthCheckFactory` / `addTcpPing` don't wire one up today.
 
-### `DatabaseConnectionHealthCheck` / `DatabaseHealthCheck` (`@benzene/health-checks-typeorm`)
+### `DatabaseConnectionHealthCheck` / `DatabaseHealthCheck` (`@benzenejs/health-checks-typeorm`)
 
 Two checks over a TypeORM [`DataSource`](https://typeorm.io/data-source) — the port of .NET's
 `Benzene.HealthChecks.EntityFramework`, with a `DataSource` standing in for EF Core's `DbContext`. Both
@@ -357,7 +357,7 @@ import { DataSource } from 'typeorm';
 import {
   addDatabaseConnectionHealthCheck,
   addDatabaseHealthCheck,
-} from '@benzene/health-checks-typeorm';
+} from '@benzenejs/health-checks-typeorm';
 
 const dataSource = new DataSource({ /* ...your TypeORM config... */ });
 
@@ -381,7 +381,7 @@ their outcomes. It's what every `useHealthCheck`/`useLivenessCheck`/`useReadines
 calls; you can also call it directly (e.g. in tests — see [Testing](testing-benzene.md)).
 
 ```ts
-import { HealthCheckProcessor } from '@benzene/health-checks';
+import { HealthCheckProcessor } from '@benzenejs/health-checks';
 
 const result = await HealthCheckProcessor.performHealthChecksAsync('healthcheck', checks);
 ```
@@ -451,8 +451,8 @@ up under a custom topic like `'orders-service:healthcheck'`, it's still reachabl
 `'healthcheck'` topic too. If neither matches, the middleware calls `next()` and gets out of the way.
 
 ```ts
-import { useHealthCheck } from '@benzene/health-checks';
-import { addHttpPing } from '@benzene/health-checks-http';
+import { useHealthCheck } from '@benzenejs/health-checks';
+import { addHttpPing } from '@benzenejs/health-checks-http';
 
 useHealthCheck(app, 'orders-service:healthcheck', (checks) => {
   checks.addHealthCheck(OrdersDbHealthCheck);
@@ -469,11 +469,11 @@ a route that maps that path to the health topic, then wire the middleware by top
 
 ```ts
 import express from 'express';
-import { benzene } from '@benzene/express';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzene/http';
-import { useHealthCheck, Constants } from '@benzene/health-checks';
-import { addHttpPing } from '@benzene/health-checks-http';
+import { benzene } from '@benzenejs/express';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzenejs/http';
+import { useHealthCheck, Constants } from '@benzenejs/health-checks';
+import { addHttpPing } from '@benzenejs/health-checks-http';
 
 const container = new DefaultBenzeneServiceContainer();
 // Map GET /healthz onto the health topic so the Express host resolves it to a topic Benzene owns.
@@ -503,7 +503,7 @@ rest of your Express app.
 ### Kubernetes-style liveness/readiness
 
 `useHealthCheck` runs one undifferentiated set of checks. For Kubernetes (or any platform with a
-liveness-vs-readiness distinction) `@benzene/health-checks` also provides `useLivenessCheck` and
+liveness-vs-readiness distinction) `@benzenejs/health-checks` also provides `useLivenessCheck` and
 `useReadinessCheck` — see [Kubernetes Health Checks](kubernetes-health-checks.md) for the full guide,
 including which checks belong in which and example probe YAML.
 
@@ -578,7 +578,7 @@ import {
   HealthCheckDependency,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 
 export class OrdersDbHealthCheck implements IHealthCheck {
   constructor(private readonly db: OrdersDb) {}
@@ -643,16 +643,16 @@ underlying error message; it reports the dependency, a status code, and an error
 
 | Package | Check | Wiring |
 | --- | --- | --- |
-| `@benzene/azure-service-bus` | `ServiceBusHealthCheck` (peek) for the consumed queue/subscription | `useServiceBus(app, config, …, healthCheck = true)` |
-| `@benzene/rabbitmq` | `RabbitMqHealthCheck` (passive `checkQueue`) | `useRabbitMq(app, config, …, healthCheck = true)` |
-| `@benzene/kafka-core` | `KafkaHealthCheck` (cluster metadata, subscribed topics present) | `useKafka(app, config, consumerFactory, action, adminClientFactory, healthCheck = true)` |
-| `@benzene/clients-aws-sns` · `-sqs` · `-eventbridge` · `-step-functions` | Send-side reachability for the target resource | Auto-registered by the client's `use*` wiring (`healthCheck = true` default) |
-| `@benzene/clients-aws-lambda` | `AwsLambdaHealthCheck` (`GetFunctionConfiguration`) | Shipped, registered explicitly (no auto-wiring) |
-| `@benzene/health-checks-dynamodb` | `DynamoDbHealthCheck` (`DescribeTable`) | `addDynamoDbHealthCheck(builder, tableName, dynamoDb)` (explicit) |
-| `@benzene/health-checks-azure-service-bus` | `ServiceBusHealthCheck` (peek) | `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` (explicit) |
+| `@benzenejs/azure-service-bus` | `ServiceBusHealthCheck` (peek) for the consumed queue/subscription | `useServiceBus(app, config, …, healthCheck = true)` |
+| `@benzenejs/rabbitmq` | `RabbitMqHealthCheck` (passive `checkQueue`) | `useRabbitMq(app, config, …, healthCheck = true)` |
+| `@benzenejs/kafka-core` | `KafkaHealthCheck` (cluster metadata, subscribed topics present) | `useKafka(app, config, consumerFactory, action, adminClientFactory, healthCheck = true)` |
+| `@benzenejs/clients-aws-sns` · `-sqs` · `-eventbridge` · `-step-functions` | Send-side reachability for the target resource | Auto-registered by the client's `use*` wiring (`healthCheck = true` default) |
+| `@benzenejs/clients-aws-lambda` | `AwsLambdaHealthCheck` (`GetFunctionConfiguration`) | Shipped, registered explicitly (no auto-wiring) |
+| `@benzenejs/health-checks-dynamodb` | `DynamoDbHealthCheck` (`DescribeTable`) | `addDynamoDbHealthCheck(builder, tableName, dynamoDb)` (explicit) |
+| `@benzenejs/health-checks-azure-service-bus` | `ServiceBusHealthCheck` (peek) | `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` (explicit) |
 
 (The SQS and Event Hub **consumer** workers carry no reachability check — neither does the .NET original;
-the send-side `@benzene/clients-aws-sqs` covers SQS reachability.)
+the send-side `@benzenejs/clients-aws-sqs` covers SQS reachability.)
 
 The Service Bus and Rabbit MQ consumer workers default `healthCheck` to `true`; pass `false` to opt out
 (e.g. in a test that only exercises routing). Kafka is the one exception — its probe needs
@@ -678,7 +678,7 @@ useKafka(app, { topics: ['orders'] }, consumerFactory, (pipeline) => { /* … */
 
 To register a dependency check yourself (a resource with no auto-wiring, or a bespoke probe), use
 `addDependencyHealthCheck(services, () => new MyCheck(), 'MyResource:name')` from
-`@benzene/health-checks-core` — the same primitive the auto-wiring uses.
+`@benzenejs/health-checks-core` — the same primitive the auto-wiring uses.
 
 ## Troubleshooting
 
@@ -714,8 +714,8 @@ The transport/resource **reachability probes** (DynamoDB, Azure Service Bus, Kaf
 send-side AWS clients) and their read-only IAM/claim requirements **are** ported — see
 [Dependency reachability checks](#dependency-reachability-checks).
 
-The consumer-side **contract-drift** check also has a partial port (`@benzene/clients-health-checks`'
-`ClientHealthCheck` / `addContractCheck`), paired with the provider-side `@benzene/health-checks-schema`
+The consumer-side **contract-drift** check also has a partial port (`@benzenejs/clients-health-checks`'
+`ClientHealthCheck` / `addContractCheck`), paired with the provider-side `@benzenejs/health-checks-schema`
 (`SchemaHealthCheck` / `addSchemaHealthCheck`) that publishes the hash it compares against — but no
 `useContractsCheck` middleware exists yet — see
 [Kubernetes Health Checks](kubernetes-health-checks.md#client--contract-drift-checks-belong-in-neither-probe).

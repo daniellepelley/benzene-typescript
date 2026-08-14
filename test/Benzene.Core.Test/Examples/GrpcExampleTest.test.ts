@@ -4,8 +4,8 @@
  *
  * Two seams, matching how this port itself tests gRPC:
  *  - UNARY runs over a REAL grpc-js socket: the greeter server is bound to an ephemeral loopback port and
- *    called through the Benzene `@benzene/grpc-client` message client — proof `@benzene/grpc` (server) and
- *    `@benzene/grpc-client` talk over the wire — plus a front-door call through `@benzene/grpc-test-helpers`.
+ *    called through the Benzene `@benzenejs/grpc-client` message client — proof `@benzenejs/grpc` (server) and
+ *    `@benzenejs/grpc-client` talk over the wire — plus a front-door call through `@benzenejs/grpc-test-helpers`.
  *  - The three STREAMING shapes run through the `useGrpc` bridge with in-memory fake grpc-js streams, the
  *    same deterministic seam the port's own `GrpcStreamingTest` uses (a live grpc-js bidi half-close is not
  *    reliably testable in-process). This still boots the real StartUp — `greeterBridge()` — and pushes a
@@ -25,9 +25,9 @@ import {
   ServerWritableStream,
 } from '@grpc/grpc-js';
 import { Client } from '@grpc/grpc-js';
-import { sendMessageAsync } from '@benzene/clients';
-import { BenzeneResultStatus } from '@benzene/results';
-import { createServerUnaryCall } from '@benzene/grpc-test-helpers';
+import { sendMessageAsync } from '@benzenejs/clients';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { createServerUnaryCall } from '@benzenejs/grpc-test-helpers';
 import {
   createGreeterClient,
   GreeterMethods,

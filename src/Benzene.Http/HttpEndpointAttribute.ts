@@ -1,4 +1,4 @@
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 
 /**
  * Marks a message-handler class as an HTTP endpoint (method + URL pattern), the routing counterpart

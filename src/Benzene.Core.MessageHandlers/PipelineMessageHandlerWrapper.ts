@@ -1,11 +1,11 @@
-import { Constructor, IServiceResolver } from '@benzene/abstractions';
+import { Constructor, IServiceResolver } from '@benzenejs/abstractions';
 import {
   IHandlerPipelineBuilder,
   IMessageHandler,
   IMessageHandlerNoResponse,
   IMessageHandlerWrapper,
-} from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { MessageHandlerNoResultWrapper } from './MessageHandlerNoResultWrapper';
 import { PipelineMessageHandler } from './PipelineMessageHandler';
 

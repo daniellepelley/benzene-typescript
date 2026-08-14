@@ -21,7 +21,7 @@ The TypeScript port gives you two complementary mechanisms:
 
 > **Port note.** The .NET original of this cookbook also ships a build-time compatibility gate
 > (`SchemaCompatibility.EnsureBackwardCompatible`, from `Benzene.Schema.OpenApi.Compatibility`) that
-> throws on breaking changes in a unit test. **That gate is not ported yet** — `@benzene/schema-openapi`
+> throws on breaking changes in a unit test. **That gate is not ported yet** — `@benzenejs/schema-openapi`
 > ports the `EventServiceDocument` builder but not the `Compatibility` comparer. Until it lands, use the
 > runtime drift check plus the black-box probe below, and — for a lightweight CI gate — snapshot the
 > service's `/benzene/spec` document and diff it (see [A lightweight CI gate](#a-lightweight-ci-gate)).
@@ -39,24 +39,24 @@ provider's contract has moved.
 
 ### Provider — publish the live contract hash
 
-`addSchemaHealthCheck` (`@benzene/health-checks-schema`) registers a check that hashes every registered
+`addSchemaHealthCheck` (`@benzenejs/health-checks-schema`) registers a check that hashes every registered
 handler's topic + request/response schema and publishes it under the `schema` health check. Register it on
 the general `healthcheck` topic via `useHealthCheck`:
 
 ```bash
-npm install @benzene/health-checks @benzene/health-checks-schema
+npm install @benzenejs/health-checks @benzenejs/health-checks-schema
 ```
 
 ```ts
 // OrderServiceStartUp.ts (provider)
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useHealthCheck } from '@benzene/health-checks';
-import { addSchemaHealthCheck } from '@benzene/health-checks-schema';
-import { BenzeneStartUp } from '@benzene/testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useHealthCheck } from '@benzenejs/health-checks';
+import { addSchemaHealthCheck } from '@benzenejs/health-checks-schema';
+import { BenzeneStartUp } from '@benzenejs/testing';
 import { CreateOrderHandler } from './handlers.js';
 
 export class OrderServiceStartUp implements BenzeneStartUp {
@@ -77,7 +77,7 @@ export class OrderServiceStartUp implements BenzeneStartUp {
 }
 ```
 
-> The hash `@benzene/health-checks-schema` publishes is stable across every TypeScript component that hashes
+> The hash `@benzenejs/health-checks-schema` publishes is stable across every TypeScript component that hashes
 > a contract (the mesh descriptor, the `/benzene/spec` endpoint, and this check), which is exactly what the
 > drift loop needs. Its **value** differs from the .NET port's — the two serialize the spec document
 > differently — so this loop is TypeScript-provider ↔ TypeScript-consumer; a cross-language drift check is
@@ -91,16 +91,16 @@ hash, compares it, and annotates the response with a `ClientHashMatch` verdict. 
 `IHasHealthCheck` so the drift check can drive it:
 
 ```bash
-npm install @benzene/clients-health-checks
+npm install @benzenejs/clients-health-checks
 ```
 
 ```ts
 // OrderServiceClient.ts (consumer)
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { HealthCheckResponse } from '@benzene/health-checks-core';
-import { ClientHealthCheckProcessor, IHasHealthCheck } from '@benzene/clients-health-checks';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
+import { ClientHealthCheckProcessor, IHasHealthCheck } from '@benzenejs/clients-health-checks';
 
 export const IOrderServiceClient: ServiceToken<IHasHealthCheck> =
   serviceToken<IHasHealthCheck>('IOrderServiceClient');
@@ -132,8 +132,8 @@ reachable + matching → `ok`, reachable + drifted → `warning`, unreachable �
 
 ```ts
 // ConsumerStartUp.ts
-import { useHealthCheck } from '@benzene/health-checks';
-import { addContractCheck } from '@benzene/clients-health-checks';
+import { useHealthCheck } from '@benzenejs/health-checks';
+import { addContractCheck } from '@benzenejs/clients-health-checks';
 import { IOrderServiceClient, OrderServiceClient } from './OrderServiceClient.js';
 
 // in configureServices:
@@ -154,25 +154,25 @@ useHealthCheck(api, 'contracts', (health) => {
 
 > **Port note.** .NET ships a dedicated probe-less `contracts` topic and a `UseContractsCheck` middleware
 > for exactly this. The port has `ClientHealthCheck` and `addContractCheck`/`addContractCheckInstance`
-> (`@benzene/clients-health-checks`) but **no `useContractsCheck` middleware yet** — register the contract
+> (`@benzenejs/clients-health-checks`) but **no `useContractsCheck` middleware yet** — register the contract
 > check on a topic of your own via the general `useHealthCheck` and scrape it directly, as above.
 
 ## Mechanism 2 — a deploy-time black-box conformance probe
 
-`CloudServiceProbe` (`@benzene/cloud-service-probe`) is an external, black-box auditor: it POSTs a small set
+`CloudServiceProbe` (`@benzenejs/cloud-service-probe`) is an external, black-box auditor: it POSTs a small set
 of fixed synthetic envelopes at a live service's `/benzene/*` surfaces and returns a **tri-state**
 assessment of the Cloud Service Profile's R1–R8, built only from what it observed — it never trusts what the
 service claims about itself. Run it against a freshly-deployed service (a smoke/gate step in CI) to confirm
 it is reachable and wire-conformant before promoting it:
 
 ```bash
-npm install --save-dev @benzene/cloud-service-probe
+npm install --save-dev @benzenejs/cloud-service-probe
 ```
 
 ```ts
 // conformance.smoke.test.ts
 import { describe, expect, it } from 'vitest';
-import { CloudServiceProbe } from '@benzene/cloud-service-probe';
+import { CloudServiceProbe } from '@benzenejs/cloud-service-probe';
 
 describe('deployed OrderService conformance', () => {
   it('is wire-conformant to the Cloud Service Profile', async () => {
@@ -204,7 +204,7 @@ Point it at non-default paths with `CloudServiceProbeOptions` (`invokePath`, `sp
 
 Until the compatibility comparer is ported, the simplest pre-merge stop is to snapshot the service's
 contract document and diff it. The `/benzene/spec` endpoint (served by `useSpec` from
-`@benzene/schema-openapi`) is the same contract the schema health check hashes:
+`@benzenejs/schema-openapi`) is the same contract the schema health check hashes:
 
 1. In CI, fetch `/benzene/spec` from the service (or render it from the handler definitions) and write it to
    `spec.baseline.json`, committed to the repo.
@@ -217,7 +217,7 @@ breaking changes) — it flags *any* change — but it needs nothing beyond the 
 and stops an unnoticed contract change from merging.
 
 To browse that contract interactively while developing, mount the Spec UI with `useSpecUi`
-(`@benzene/spec-ui`), which renders the `useSpec` document in-browser.
+(`@benzenejs/spec-ui`), which renders the `useSpec` document in-browser.
 
 ## Troubleshooting
 
@@ -243,7 +243,7 @@ classifies a service whether it's up or down. An externally-supplied `AbortSigna
 
 - [Schema Registry (applied)](schema-registry.md) — registering payload schemas centrally so a producer
   can't ship a breaking wire change silently.
-- [Schema Registry (reference)](../schema-registry.md) — the `@benzene/schema-registry-core` surface.
+- [Schema Registry (reference)](../schema-registry.md) — the `@benzenejs/schema-registry-core` surface.
 - [Health Checks](../health-checks.md) — the `IHealthCheck` model and the `schema` check.
 - [Kubernetes Health Checks](../kubernetes-health-checks.md) — why the contract check belongs on neither
   probe.

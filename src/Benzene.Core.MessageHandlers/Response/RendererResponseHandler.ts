@@ -1,10 +1,10 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
   IMessageHandlerResult,
   IResponseHandler,
   IResponseRenderer,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * The single `IResponseHandler<TContext>` every transport registers to write response bodies:

@@ -12,7 +12,7 @@
  */
 import { Context, Handler } from 'aws-lambda';
 import { InvocationType, LambdaClient, ListFunctionsCommand, ListTagsCommand } from '@aws-sdk/client-lambda';
-import { IAwsLambdaClient } from '@benzene/clients-aws-lambda';
+import { IAwsLambdaClient } from '@benzenejs/clients-aws-lambda';
 
 const fakeContext = {} as Context;
 

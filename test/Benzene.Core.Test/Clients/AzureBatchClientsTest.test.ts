@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { EventHubProducerClient } from '@azure/event-hubs';
 import { ServiceBusSender } from '@azure/service-bus';
 import { EventGridPublisherClient, InputSchema } from '@azure/eventgrid';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { EventHubBatchMessageClient } from '@benzene/clients-azure-event-hub';
-import { ServiceBusBatchMessageClient } from '@benzene/clients-azure-service-bus';
-import { EventGridBatchMessageClient } from '@benzene/clients-azure-event-grid';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { EventHubBatchMessageClient } from '@benzenejs/clients-azure-event-hub';
+import { ServiceBusBatchMessageClient } from '@benzenejs/clients-azure-service-bus';
+import { EventGridBatchMessageClient } from '@benzenejs/clients-azure-event-grid';
 
 /**
  * The native-batch outbound clients for Azure: each event/message is built by the same converter the

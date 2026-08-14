@@ -1,14 +1,17 @@
 {
-  "name": "@benzene/mesh-discovery-aws",
-  "version": "0.1.0",
+  "name": "@benzenejs/mesh-discovery-aws",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Mesh.Discovery.Aws",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
     "@aws-sdk/client-lambda": "^3.700.0"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

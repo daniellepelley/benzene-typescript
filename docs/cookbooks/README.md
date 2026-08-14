@@ -38,7 +38,7 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
 - [Global Error Handling](global-error-handling.md) — catch any thrown error at the pipeline edge, log it,
   and map it to a safe error result without leaking internals.
 - [Resilience with Cockatiel](cockatiel-resilience.md) — wrap handlers and outbound calls in retry, timeout,
-  and circuit-breaker policies via `@benzene/cockatiel` (the Polly analog).
+  and circuit-breaker policies via `@benzenejs/cockatiel` (the Polly analog).
 - [Transactional Outbox](transactional-outbox.md) — persist the outgoing event in the same transaction as
   the state change, then relay it reliably through an outbound client.
 - [Per-Request Unit of Work](unit-of-work.md) — commit a scoped unit of work when the pipeline succeeds
@@ -49,9 +49,9 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
 - [Response as Event](response-as-event.md) — publish a domain event derived from a handler's result,
   either by explicit mapping or the CRUD naming convention.
 - [Message Versioning](message-versioning.md) — evolve a payload's schema across versions, dispatching by
-  the `benzene-version` header and up-casting older payloads with `@benzene/core-versioning`.
+  the `benzene-version` header and up-casting older payloads with `@benzenejs/core-versioning`.
 - [Schema Registry](schema-registry.md) — serialize with a Confluent-style schema registry, enforce
-  compatibility, and evolve schemas safely with `@benzene/schema-registry-core` and `@benzene/avro`.
+  compatibility, and evolve schemas safely with `@benzenejs/schema-registry-core` and `@benzenejs/avro`.
 - [Multi-Tenancy](multi-tenancy.md) — resolve the tenant from the message into per-request scope and
   resolve tenant-scoped dependencies.
 
@@ -90,7 +90,7 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
   convention, and adapting an external container against Benzene's DI contracts.
 - [TypeORM Integration](typeorm-integration.md) — inject a TypeORM `DataSource` and repository into a handler
   and wire the database health check (the Entity Framework analog).
-- [Redis Caching](redis-caching.md) — cache with `@benzene/cache-redis` (ioredis), using lazy-load,
+- [Redis Caching](redis-caching.md) — cache with `@benzenejs/cache-redis` (ioredis), using lazy-load,
   write-through, and invalidation patterns, with a cache health check.
 - [Mocking External Dependencies](mocking-dependencies.md) — test a handler in isolation by swapping its
   real dependencies (databases, HTTP clients, cloud SDKs) for fakes registered in the container, while
@@ -105,7 +105,7 @@ If you're new to Benzene, start with [Getting Started](../getting-started.md) an
 Each cookbook follows the same shape:
 
 1. **Problem Statement** — what you're trying to achieve.
-2. **Prerequisites / Installation** — what you need, and the `npm install @benzene/…` packages.
+2. **Prerequisites / Installation** — what you need, and the `npm install @benzenejs/…` packages.
 3. **Step-by-Step Implementation** — a detailed walkthrough with complete, runnable code.
 4. **Testing** — how to verify it with vitest.
 5. **Troubleshooting** — common issues and fixes.

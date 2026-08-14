@@ -2,9 +2,9 @@
 
 A **runnable, mesh-discoverable TypeScript Benzene HTTP service** — the "live TypeScript service in a
 multi-language mesh" example. It's a real Benzene service (message handlers routed by the
-`@benzene/express` adapter) that also serves the two language-neutral mesh-contract endpoints a mesh
+`@benzenejs/express` adapter) that also serves the two language-neutral mesh-contract endpoints a mesh
 aggregator interrogates, so a mesh aggregator **written in any language** — the ported TypeScript
-`@benzene/mesh-aggregator`, or the .NET `Benzene.Mesh.Aggregator` — can discover and catalog it.
+`@benzenejs/mesh-aggregator`, or the .NET `Benzene.Mesh.Aggregator` — can discover and catalog it.
 
 ## What it exposes
 
@@ -53,6 +53,6 @@ Two self-description shapes are served here: the aggregator-polled **spec descri
 topics + HTTP mappings, no per-topic schemas — the aggregator handles a schema-less descriptor fine) and
 the normative **ServiceDescriptor** (`/benzene/descriptor`, `mesh.md` §2), which *does* carry per-topic
 request/response JSON schemas and a `descriptorHash`. Because TypeScript erases the request/response types,
-`@benzene/mesh-wire` derives those schemas from a pluggable `IMeshSchemaProvider` (here a hand-written
-`MapMeshSchemaProvider`; in a real service a `@benzene/zod`/`joi`/`yup` registry) rather than CLR-type
+`@benzenejs/mesh-wire` derives those schemas from a pluggable `IMeshSchemaProvider` (here a hand-written
+`MapMeshSchemaProvider`; in a real service a `@benzenejs/zod`/`joi`/`yup` registry) rather than CLR-type
 reflection. See the root README's "Multi-language interoperability" section.

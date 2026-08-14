@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
 import {
   compositeAwsLambda,
   InlineAwsLambdaStartUp,
   isBenzeneMessageEvent,
   toLambdaHandler,
   useBenzeneMessage,
-} from '@benzene/aws-lambda-core';
+} from '@benzenejs/aws-lambda-core';
 
 /**
  * The direct-invoke BenzeneMessage surface (`useBenzeneMessage`): a service answers a synchronous Lambda

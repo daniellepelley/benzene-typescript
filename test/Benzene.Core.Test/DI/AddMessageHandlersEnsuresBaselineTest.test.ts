@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, ISerializer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, ISerializer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addMessageHandlers,
   IDefaultStatuses,
   message,
   MessageHandlersRegistry,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 
 /**
  * Registering message handlers pulls in the `addBenzene` baseline on its own — the router and factory

@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Aggregator.MeshReportMessageHandler. */
-import { IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { IMeshReportPublisher, MeshServiceReport } from '@benzene/mesh-contracts';
+import { IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { IMeshReportPublisher, MeshServiceReport } from '@benzenejs/mesh-contracts';
 
 /**
  * The push/self-report ingestion endpoint - accepts a `MeshServiceReport` and hands it to whichever

@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusHealthCheckExtensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addDependencyHealthCheck } from '@benzene/health-checks-core';
-import { ServiceBusHealthCheck } from '@benzene/health-checks-azure-service-bus';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addDependencyHealthCheck } from '@benzenejs/health-checks-core';
+import { ServiceBusHealthCheck } from '@benzenejs/health-checks-azure-service-bus';
 import { BenzeneServiceBusConfig } from './BenzeneServiceBusConfig';
 import { IServiceBusClientFactory } from './IServiceBusClientFactory';
 

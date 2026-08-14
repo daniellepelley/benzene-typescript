@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { partitionBy, window } from '@benzene/core-middleware';
+import { partitionBy, window } from '@benzenejs/core-middleware';
 
 /**
  * Port of Benzene.Test.Core.Middleware.Streaming.StreamOperatorsTest

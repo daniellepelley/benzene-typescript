@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { StreamContext } from '@benzene/core-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { StreamContext } from '@benzenejs/core-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   BenzeneCosmosChangeFeedConfig,
   BenzeneCosmosChangeFeedWorker,
@@ -13,7 +13,7 @@ import {
   ChangeFeedProcessorContext,
   CosmosChangeFeedApplication,
   ICosmosChangeFeedProcessorFactory,
-} from '@benzene/azure-cosmos-db';
+} from '@benzenejs/azure-cosmos-db';
 
 /**
  * Port of Benzene.Core.Test/Azure/CosmosDbWorker/BenzeneCosmosChangeFeedWorkerTest.cs: config defaults,

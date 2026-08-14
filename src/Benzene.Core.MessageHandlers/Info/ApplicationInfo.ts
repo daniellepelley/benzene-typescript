@@ -1,4 +1,4 @@
-import { IApplicationInfo } from '@benzene/abstractions-message-handlers';
+import { IApplicationInfo } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Default IApplicationInfo implementation, populated via `SetApplicationInfo` with the

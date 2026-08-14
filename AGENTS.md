@@ -19,7 +19,7 @@ a TS developer would never write; record every bend in the README "Porting conve
 
 ## Documentation
 Documentation written **in this repo is for the TypeScript community**: idiomatic TypeScript, the
-real `@benzene/*` npm packages, ESM imports, `vitest` — the concrete "how to build, host, test, and
+real `@benzenejs/*` npm packages, ESM imports, `vitest` — the concrete "how to build, host, test, and
 operate a Benzene service in TypeScript". Write it the way a TypeScript developer expects to read it
 (not as a transliteration of the C# prose).
 
@@ -53,8 +53,8 @@ the shared spec.
 - **Third-party integrations are adapted, not reimplemented.** When a .NET package exists only to
   wrap a third-party library (DataAnnotations, FluentValidation, Autofac, ...), keep the shared
   abstraction core and aligned, but re-create the integration against the popular JavaScript-
-  ecosystem equivalent(s) — one adapter package per library (e.g. `@benzene/zod`, `@benzene/joi`,
-  `@benzene/yup`), each mirroring the integration's shape. Pick the 2–3 most-used equivalents; skip
+  ecosystem equivalent(s) — one adapter package per library (e.g. `@benzenejs/zod`, `@benzenejs/joi`,
+  `@benzenejs/yup`), each mirroring the integration's shape. Pick the 2–3 most-used equivalents; skip
   little-used ones. See the README "Third-party library integrations" convention for detail.
 
 ## Do NOT

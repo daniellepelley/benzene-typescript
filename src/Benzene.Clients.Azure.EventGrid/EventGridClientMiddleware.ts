@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.Azure.EventGrid.EventGridClientMiddleware. */
 import { EventGridPublisherClient, InputSchema } from '@azure/eventgrid';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { EventGridSendMessageContext } from './EventGridSendMessageContext';
 
 /**

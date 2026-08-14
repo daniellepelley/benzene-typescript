@@ -1,14 +1,17 @@
 {
-  "name": "@benzene/health-checks-azure-service-bus",
-  "version": "0.1.0",
+  "name": "@benzenejs/health-checks-azure-service-bus",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.HealthChecks.Azure.ServiceBus (Service Bus entity reachability health check)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@azure/service-bus": "^7",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/health-checks-core": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

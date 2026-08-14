@@ -9,23 +9,23 @@
  * Divergences from the C# original:
  * - The C# `[Message(topic)]` attribute has no TypeScript equivalent (there is no reflection/assembly-scan);
  *   the reserved topic each handler answers is published as {@link MeshCollectorTopics} for the host's
- *   container wiring, mirroring how `@benzene/mesh-aggregator` supplies topics at registration time.
- * - The `mesh:query:*` topic constants live here rather than in `@benzene/mesh-wire`'s `MeshTopics` (which
+ *   container wiring, mirroring how `@benzenejs/mesh-aggregator` supplies topics at registration time.
+ * - The `mesh:query:*` topic constants live here rather than in `@benzenejs/mesh-wire`'s `MeshTopics` (which
  *   predates the query surface in this snapshot); the ingest topics (`register`/`heartbeat`/`traces`/`issues`)
  *   are re-used from `MeshTopics`. Their string VALUES follow the wire-port's existing `mesh:` prefix.
  * - `IBenzeneResult<T>` -> `IBenzeneResultOf<T>`; `Task<...>` -> `Promise<...>`; the C# `Type[]` handler
  *   lists -> arrays of handler constructors.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
 import {
   MeshHeartbeat,
   MeshIssueBatch,
   MeshServiceDescriptor,
   MeshTopics,
   MeshTraceBatch,
-} from '@benzene/mesh-wire';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/mesh-wire';
+import { BenzeneResult } from '@benzenejs/results';
 import { IMeshFleetReadModel } from './IMeshFleetReadModel';
 import { MeshCollectorStore } from './MeshCollectorStore';
 import {
@@ -44,7 +44,7 @@ import {
 
 /**
  * The reserved wire topics the collector's handlers answer (docs/specification/mesh.md §4). The ingest
- * topics come from `@benzene/mesh-wire`'s {@link MeshTopics}; the `mesh:query:*` read-model topics are
+ * topics come from `@benzenejs/mesh-wire`'s {@link MeshTopics}; the `mesh:query:*` read-model topics are
  * defined here because the wire-port snapshot predates them. A host binds each {@link MeshCollectorHandlers}
  * entry to its topic here (the TS analog of the C# `[Message]` attribute).
  */

@@ -1,6 +1,6 @@
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 
 /**
  * Core-side builder for registering outbound senders — the richer counterpart of the abstractions

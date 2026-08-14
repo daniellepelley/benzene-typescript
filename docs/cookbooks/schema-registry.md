@@ -14,23 +14,23 @@ consumer can resolve the writer schema, and a startup check that fails the deplo
 subject's compatibility rules.
 
 This is the **applied** companion to the [Schema Registry reference](../schema-registry.md) — that page is
-the type-by-type surface of `@benzene/schema-registry-core`; this one wires it into a service end to end.
+the type-by-type surface of `@benzenejs/schema-registry-core`; this one wires it into a service end to end.
 Read them together.
 
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and a Benzene service — see [Getting Started](../getting-started.md).
-- Familiarity with [Serialization](../serialization.md), especially `@benzene/avro`, since the registry
+- Familiarity with [Serialization](../serialization.md), especially `@benzenejs/avro`, since the registry
   frames Avro bytes rather than producing them.
 
 ## Installation
 
 ```bash
-npm install @benzene/schema-registry-core @benzene/avro
+npm install @benzenejs/schema-registry-core @benzenejs/avro
 ```
 
-`@benzene/schema-registry-core` is in-workspace and dependency-free — it adds the registry *framing* over
-whatever inner serializer you give it. `@benzene/avro` produces the Avro bytes it frames (and takes
+`@benzenejs/schema-registry-core` is in-workspace and dependency-free — it adds the registry *framing* over
+whatever inner serializer you give it. `@benzenejs/avro` produces the Avro bytes it frames (and takes
 [`avsc`](https://www.npmjs.com/package/avsc) as its runtime dependency).
 
 ## Step 1 — the message types and their Avro schemas
@@ -54,7 +54,7 @@ export class OrderShipped {
 
 ```ts
 // schemas.ts
-import { registerAvroSchema } from '@benzene/avro';
+import { registerAvroSchema } from '@benzenejs/avro';
 import { OrderCreated, OrderShipped } from './messages.js';
 
 export const orderCreatedSchema = {
@@ -89,7 +89,7 @@ objects and the registry meet, stringified into schema text:
 
 ```ts
 // resolver.ts
-import { DelegateSchemaResolver, SchemaDefinition, SchemaFormat } from '@benzene/schema-registry-core';
+import { DelegateSchemaResolver, SchemaDefinition, SchemaFormat } from '@benzenejs/schema-registry-core';
 import { orderCreatedSchema, orderShippedSchema } from './schemas.js';
 
 const schemaByName: Record<string, object> = {
@@ -114,15 +114,15 @@ use — for anything multi-node, back `ISchemaRegistryClient` with a real regist
 
 ```ts
 // serialization.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   addSchemaRegistry,
   ConfluentWireFormat,
   InMemorySchemaRegistryClient,
   SchemaCompatibilityMode,
   SchemaRegistrar,
-} from '@benzene/schema-registry-core';
-import { AvroSerializer } from '@benzene/avro';
+} from '@benzenejs/schema-registry-core';
+import { AvroSerializer } from '@benzenejs/avro';
 import { OrderCreated, OrderShipped } from './messages.js';
 import { resolver } from './resolver.js';
 import './schemas.js'; // ensure the Avro schemas are registered
@@ -166,7 +166,7 @@ startup bug, not a silent runtime one.
 producer/consumer expects, and `ConfluentWireFormat` is exported for manual framing or interop tests:
 
 ```ts
-import { ConfluentWireFormat } from '@benzene/schema-registry-core';
+import { ConfluentWireFormat } from '@benzenejs/schema-registry-core';
 
 const framed = ConfluentWireFormat.encode(schemaId, bodyBytes); // 0x00 | id(4, BE) | body
 const { schemaId: id, body } = ConfluentWireFormat.decode(framed);
@@ -200,7 +200,7 @@ import {
   SchemaCompatibilityMode,
   SchemaDefinition,
   SchemaIncompatibleException,
-} from '@benzene/schema-registry-core';
+} from '@benzenejs/schema-registry-core';
 
 describe('order schema evolution', () => {
   it('assigns a stable id and dedups an identical re-registration', async () => {
@@ -250,7 +250,7 @@ runtime.
 ### `registerAvroSchema(Type, schema)` won't accept my schema string
 
 `registerAvroSchema` takes an avsc **schema object** (`{ type: 'record', ... }`) or a compiled `avro.Type`,
-not a JSON string. Keep the schema as an object for `@benzene/avro`, and `JSON.stringify` it only where the
+not a JSON string. Keep the schema as an object for `@benzenejs/avro`, and `JSON.stringify` it only where the
 registry needs schema **text** (the `SchemaDefinition` in your resolver, step 2).
 
 ### A backward-compatible change is rejected
@@ -261,8 +261,8 @@ structural evolution — see [Compatibility checking](../schema-registry.md#comp
 
 ## Further reading
 
-- [Schema Registry (reference)](../schema-registry.md) — the full `@benzene/schema-registry-core` surface,
+- [Schema Registry (reference)](../schema-registry.md) — the full `@benzenejs/schema-registry-core` surface,
   remote-client adapters, and the compatibility seam.
-- [Serialization](../serialization.md) — `@benzene/avro` and the payload formats the registry frames.
+- [Serialization](../serialization.md) — `@benzenejs/avro` and the payload formats the registry frames.
 - [Contract Testing](contract-testing.md) — the runtime drift check and conformance probe this complements.
 - [Message Results](../message-result.md) — the message envelope the framed payload rides in.

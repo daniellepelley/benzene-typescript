@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IMessageDefinition } from '@benzene/abstractions-messages';
+import { IMessageDefinition } from '@benzenejs/abstractions-messages';
 import {
   CrudConventionResponseEventMapping,
   ExplicitResponseEventMapping,
@@ -9,7 +9,7 @@ import {
   ResponseEventDeclarations,
   ResponseEventDefinition,
   ResponseEventMappings,
-} from '@benzene/response-events';
+} from '@benzenejs/response-events';
 
 /** Port of test/Benzene.Core.Test/ResponseEvents/ResponseEventCatalogTest.cs. */
 

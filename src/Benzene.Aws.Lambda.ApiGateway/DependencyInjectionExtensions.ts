@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer, tryAddScoped, tryAddScopedFactory } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped, tryAddScopedFactory } from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
   IMediaFormatNegotiator,
@@ -12,8 +12,8 @@ import {
   IResponseRenderer,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   addMediaFormatNegotiation,
   JsonSerializer,
@@ -21,7 +21,7 @@ import {
   RendererResponseHandler,
   SerializerResponseRenderer,
   TransportInfo,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import {
   addHttpMessageHandlers,
   DefaultHttpHeaderMappings,
@@ -31,7 +31,7 @@ import {
   IHttpRequestAdapter,
   IHttpStatusCodeMapper,
   IRouteFinder,
-} from '@benzene/http';
+} from '@benzenejs/http';
 import { ApiGatewayContext } from './ApiGatewayContext';
 import { ApiGatewayHttpRequestAdapter } from './ApiGatewayHttpRequestAdapter';
 import { ApiGatewayMessageBodyGetter } from './ApiGatewayMessageBodyGetter';

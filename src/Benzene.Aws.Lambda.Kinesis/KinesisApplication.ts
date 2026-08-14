@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kinesis.KinesisStreamApplication (adapted — see the ADAPTATION note). */
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { KinesisStreamEvent } from 'aws-lambda';
 import { KinesisMessageContext } from './KinesisMessageContext';
 

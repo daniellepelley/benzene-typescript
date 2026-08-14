@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { useW3CTraceContext } from '@benzene/diagnostics';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { useW3CTraceContext } from '@benzenejs/diagnostics';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { OtelHarness } from './otelHarness';
 
 /**

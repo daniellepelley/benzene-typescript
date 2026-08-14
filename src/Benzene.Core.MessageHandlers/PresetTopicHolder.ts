@@ -1,4 +1,4 @@
-import { ITopic } from '@benzene/abstractions-messages';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * Carries a preset `ITopic` for the current message, set by `PresetTopicMiddleware<TContext>` (via

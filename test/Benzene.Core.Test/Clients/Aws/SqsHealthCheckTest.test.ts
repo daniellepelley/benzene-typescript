@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SQSClient } from '@aws-sdk/client-sqs';
-import { HealthCheckMode, HealthCheckStatus } from '@benzene/health-checks-core';
-import { SqsHealthCheck } from '@benzene/clients-aws-sqs';
+import { HealthCheckMode, HealthCheckStatus } from '@benzenejs/health-checks-core';
+import { SqsHealthCheck } from '@benzenejs/clients-aws-sqs';
 
 /**
  * Ports Benzene.Clients.Aws.Sqs.SqsHealthCheck: a non-destructive `GetQueueAttributes` reachability

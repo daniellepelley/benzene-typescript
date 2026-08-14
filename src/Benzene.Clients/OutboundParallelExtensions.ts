@@ -1,5 +1,5 @@
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { createMiddlewarePipeline } from '@benzene/core-middleware';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { OutboundContext } from './OutboundContext';
 import { ParallelOutboundMiddleware } from './ParallelOutboundMiddleware';
 

@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { SnsRecordContext } from './SnsRecordContext';
 
 /**

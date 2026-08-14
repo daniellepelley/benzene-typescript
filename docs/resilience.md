@@ -2,16 +2,16 @@
 
 Retry the rest of a Benzene pipeline on failure, with exponential backoff.
 
-> **Boundary:** `@benzene/resilience` ships **retry-with-backoff only**, with zero runtime
+> **Boundary:** `@benzenejs/resilience` ships **retry-with-backoff only**, with zero runtime
 > dependencies. The broader toolkit — circuit breaker, timeout, bulkhead, and fallback — lives in the
-> sibling **`@benzene/cockatiel`** package, which adapts
+> sibling **`@benzenejs/cockatiel`** package, which adapts
 > [cockatiel](https://github.com/connor4312/cockatiel) (the JS analogue of the .NET original's
 > [Polly](https://www.pollydocs.org/)-based `Benzene.Resilience.Polly`). See
 > [Beyond retry](#beyond-retry).
 
 ## Overview
 
-`@benzene/resilience` implements exactly one resilience pattern: **retry with exponential backoff**,
+`@benzenejs/resilience` implements exactly one resilience pattern: **retry with exponential backoff**,
 as a normal Benzene middleware (`RetryMiddleware<TContext>`) added to a pipeline via the
 `useRetry(...)` free function. It's a small, hand-rolled loop over `next()` — no external library.
 
@@ -37,10 +37,10 @@ middleware — re-running that entire sub-pipeline on each attempt.
 ## Installation
 
 ```
-npm install @benzene/resilience
+npm install @benzenejs/resilience
 ```
 
-The package depends only on `@benzene/abstractions-middleware` — no third-party runtime dependencies.
+The package depends only on `@benzenejs/abstractions-middleware` — no third-party runtime dependencies.
 
 ## Basic Usage
 
@@ -48,8 +48,8 @@ Add `useRetry(app)` at the point in the pipeline you want retried. Everything ne
 re-run on each retry:
 
 ```ts
-import { useRetry } from '@benzene/resilience';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useRetry } from '@benzenejs/resilience';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 
 useRetry(app, { numberOfRetries: 3 });
 useMessageHandlers(app, ProcessOrderHandler);
@@ -104,8 +104,8 @@ If your pipeline represents failure via a result on the context rather than by t
 `shouldRetryContext`:
 
 ```ts
-import { useRetry } from '@benzene/resilience';
-import { BenzeneResultStatus } from '@benzene/results';
+import { useRetry } from '@benzenejs/resilience';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 useRetry<MyMessageContext>(app, {
   numberOfRetries: 3,
@@ -132,11 +132,11 @@ further retries.
 ### Not retrying cancellation
 
 The default `shouldRetry` deliberately excludes `OperationCanceledException` (exported from
-`@benzene/resilience`) — a cancelled operation is treated as intentional, not transient, mirroring
+`@benzenejs/resilience`) — a cancelled operation is treated as intentional, not transient, mirroring
 the .NET default `ex is not OperationCanceledException`:
 
 ```ts
-import { OperationCanceledException } from '@benzene/resilience';
+import { OperationCanceledException } from '@benzenejs/resilience';
 
 // thrown from your own code to signal an intentional cancellation the retry loop should honor
 throw new OperationCanceledException();
@@ -160,24 +160,24 @@ Pass a no-op `delay` to avoid real waits in tests — this is exactly how the pa
 suite exercises retry timing instantly:
 
 ```ts
-import { RetryMiddleware } from '@benzene/resilience';
+import { RetryMiddleware } from '@benzenejs/resilience';
 
 const middleware = new RetryMiddleware<object>({ numberOfRetries: 3, delay: () => Promise.resolve() });
 ```
 
 ## Retrying outbound client calls
 
-Retrying an *outbound* call — e.g. a `@benzene/clients` message client that returns
+Retrying an *outbound* call — e.g. a `@benzenejs/clients` message client that returns
 `service-unavailable` — is a **separate** decorator in the TypeScript port, not the same middleware.
 
 > **Port note.** In .NET, `UseRetry(...)` works on the outbound `OutboundContext` unmodified. The
 > TypeScript port instead ships a dedicated client decorator, `RetryBenzeneMessageClient`
-> (`@benzene/clients`), which wraps an `IBenzeneMessageClient`. Use `useRetry` for inbound
+> (`@benzenejs/clients`), which wraps an `IBenzeneMessageClient`. Use `useRetry` for inbound
 > pipelines and `RetryBenzeneMessageClient` for outbound calls.
 
 ```ts
-import { RetryBenzeneMessageClient } from '@benzene/clients';
-import { BenzeneResultStatus } from '@benzene/results';
+import { RetryBenzeneMessageClient } from '@benzenejs/clients';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 // default: retries service-unavailable / too-many-requests, up to 3 attempts, NOT timeout
 const client = new RetryBenzeneMessageClient(innerClient);
@@ -209,19 +209,19 @@ retrying successful, non-throwing calls until `numberOfRetries` is exhausted, th
 without an error — so the failure may not show up in a stack trace.
 
 **I need a circuit breaker / timeout / bulkhead, not just retry.**
-Reach for the sibling `@benzene/cockatiel` package — see [Beyond retry](#beyond-retry).
+Reach for the sibling `@benzenejs/cockatiel` package — see [Beyond retry](#beyond-retry).
 
 ## Beyond retry
 
 The .NET original offers the full [Polly](https://www.pollydocs.org/) strategy set (circuit breaker,
 timeout, bulkhead, fallback, and compositions) through a sibling `Benzene.Resilience.Polly` package. The
-TypeScript port ships the same capability as **`@benzene/cockatiel`**, which adapts
+TypeScript port ships the same capability as **`@benzenejs/cockatiel`**, which adapts
 [cockatiel](https://github.com/connor4312/cockatiel) — the closest JS analogue of Polly — under the
-"adapted, not reimplemented" convention. Unlike `@benzene/resilience`, it takes `cockatiel` as a runtime
+"adapted, not reimplemented" convention. Unlike `@benzenejs/resilience`, it takes `cockatiel` as a runtime
 dependency, in exchange for the whole toolkit.
 
 ```
-npm install @benzene/cockatiel
+npm install @benzenejs/cockatiel
 ```
 
 `useResiliencePipeline(app, policy, isFailure?)` runs everything nested after it through a cockatiel
@@ -229,8 +229,8 @@ npm install @benzene/cockatiel
 and pass it in — there is no separate builder to configure:
 
 ```ts
-import { useResiliencePipeline } from '@benzene/cockatiel';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useResiliencePipeline } from '@benzenejs/cockatiel';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 import { wrap, retry, circuitBreaker, handleAll, ConsecutiveBreaker, ExponentialBackoff } from 'cockatiel';
 
 const policy = wrap(
@@ -248,9 +248,9 @@ pass an `isFailure` predicate *and* configure the policy to handle the `BenzeneF
 sentinel the middleware raises for it:
 
 ```ts
-import { useResiliencePipeline, BenzeneFailureResultException } from '@benzene/cockatiel';
+import { useResiliencePipeline, BenzeneFailureResultException } from '@benzenejs/cockatiel';
 import { retry, handleType, ExponentialBackoff } from 'cockatiel';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 useResiliencePipeline(
   app,

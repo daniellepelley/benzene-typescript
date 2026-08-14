@@ -1,8 +1,8 @@
 /** Port of Benzene.GoogleCloud.Functions.Http.GoogleCloudFunctionHost. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUpOf } from '@benzene/abstractions-middleware';
-import { withStartUpChecks } from '@benzene/core-message-handlers';
-import { GoogleCloudStartUpRunner } from '@benzene/google-cloud-functions-core';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUpOf } from '@benzenejs/abstractions-middleware';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
+import { GoogleCloudStartUpRunner } from '@benzenejs/google-cloud-functions-core';
 import { HttpFunction, Request, Response } from '@google-cloud/functions-framework';
 import {
   GoogleCloudFunctionApplicationBuilder,

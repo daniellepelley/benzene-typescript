@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { HttpRequest, IHttpContext, IHttpRequestAdapter } from '@benzene/http';
-import { DefaultSpecUrl, normalizePath, SpecUiMiddleware, SpecUiPage } from '@benzene/spec-ui';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { HttpRequest, IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
+import { DefaultSpecUrl, normalizePath, SpecUiMiddleware, SpecUiPage } from '@benzenejs/spec-ui';
 
 /**
  * Tests the ported Benzene.Spec.Ui: `SpecUiPage` (the inlined explorer HTML + `data-spec-url` injection) and

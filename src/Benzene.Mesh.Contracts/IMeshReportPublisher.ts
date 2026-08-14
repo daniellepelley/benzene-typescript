@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Contracts.IMeshReportPublisher. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { MeshServiceReport } from './MeshServiceReport';
 
 /**

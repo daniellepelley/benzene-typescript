@@ -1,12 +1,12 @@
 /**
- * Assembles the runnable Express app: `@benzene/express` owns the message routes (`POST /orders`,
+ * Assembles the runnable Express app: `@benzenejs/express` owns the message routes (`POST /orders`,
  * `GET /orders`), and everything else falls through to ordinary Express routes — the strangler-fig pattern.
  * The order store is registered on a container handed to `benzene(...)`, so the handlers get it injected.
  */
 import express, { type Express } from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { CreateOrderHandler, ListOrdersHandler } from './handlers';
 import { IOrderStore, InMemoryOrderStore } from './orderStore';
 

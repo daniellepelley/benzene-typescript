@@ -1,6 +1,6 @@
-import { IMessageGetter } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyBytesGetter, ITopic } from '@benzene/abstractions-messages';
-import { BenzeneMessageContext, Constants, Topic } from '@benzene/core-messages';
+import { IMessageGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyBytesGetter, ITopic } from '@benzenejs/abstractions-messages';
+import { BenzeneMessageContext, Constants, Topic } from '@benzenejs/core-messages';
 
 /**
  * Default `IMessageGetter<BenzeneMessageContext>` for the transport-agnostic `BenzeneMessage`

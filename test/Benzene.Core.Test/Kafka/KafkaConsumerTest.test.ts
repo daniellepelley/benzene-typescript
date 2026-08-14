@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Consumer, ConsumerRunConfig, EachMessagePayload } from 'kafkajs';
-import { IBenzeneInvocation, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneInvocation, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   addBenzene,
   addBenzeneMessage,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addKafkaConsumer,
   BenzeneKafkaConfig,
@@ -22,7 +22,7 @@ import {
   KafkaRecordContext,
   useBenzeneInvocation,
   withKafkaConfigDefaults,
-} from '@benzene/kafka-core';
+} from '@benzenejs/kafka-core';
 
 /**
  * Port of the C# Benzene.Kafka.Core consumer tests (KafkaCoreMappersTest, BenzeneKafkaConfigTest,

@@ -1,7 +1,7 @@
 /** Port of Benzene.MessagePack.DependencyInjectionExtensions. */
-import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { MessagePackMediaFormat } from './MessagePackMediaFormat';
 import { MessagePackSerializer } from './MessagePackSerializer';
 

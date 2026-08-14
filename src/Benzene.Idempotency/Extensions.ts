@@ -1,7 +1,7 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { HeaderOrBodyHashIdempotencyKeyStrategy } from './HeaderOrBodyHashIdempotencyKeyStrategy';
 import { IIdempotencyKeyStrategy } from './IIdempotencyKeyStrategy';
 import { IIdempotencyStore } from './IIdempotencyStore';

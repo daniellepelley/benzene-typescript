@@ -4,11 +4,11 @@
  * bodies, the health vocabulary, and the time-range/window shapes (docs/specification/mesh.md §4-§6).
  *
  * C# `[JsonIgnore(WhenWritingNull)]` optional fields -> `undefined` (never `null`) so `MeshJson.serialize`
- * omits them, exactly as `@benzene/mesh-wire` does. `DateTimeOffset`/`DateTimeOffset?` -> epoch-millisecond
+ * omits them, exactly as `@benzenejs/mesh-wire` does. `DateTimeOffset`/`DateTimeOffset?` -> epoch-millisecond
  * `number`/`number | undefined` (the same choice `MeshTraceEvent.startedAt` makes in the wire port).
  * `List<T>`/`Dictionary<string,long>` -> arrays / `Record<string, number>`.
  */
-import { MeshIssue, MeshServiceDescriptor, MeshPlacement, MeshTraceEvent } from '@benzene/mesh-wire';
+import { MeshIssue, MeshServiceDescriptor, MeshPlacement, MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 /** Health classification of a service, from its instances' latest heartbeats. */
 export const MeshHealth = {

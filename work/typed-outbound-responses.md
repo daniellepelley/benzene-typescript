@@ -1,6 +1,6 @@
 # Design note: typed outbound responses (the `TResponse` question)
 
-Status: **implemented (in-process cut, Option A)** · Scope: `@benzene/clients` + `@benzene/clients-in-process`
+Status: **implemented (in-process cut, Option A)** · Scope: `@benzenejs/clients` + `@benzenejs/clients-in-process`
 
 > Implemented: `asBenzeneResult<TResponse>` (reusing the existing `BenzeneMessageClientResponse` envelope),
 > the envelope-aware `DefaultBenzeneMessageSender`, and the in-process converter now returns the handler's
@@ -60,7 +60,7 @@ of the call. So the body is deserialized (thrown away) before the frame that kno
 Thread the **raw response envelope** up to the sender, and deserialize there — the one frame that still has
 `TResponse`.
 
-### 3.1 Port the envelope (`@benzene/clients`)
+### 3.1 Port the envelope (`@benzenejs/clients`)
 
 Port `Benzene.Clients.BenzeneMessageClientResponse` — a raw, un-deserialized response:
 
@@ -79,7 +79,7 @@ export class BenzeneMessageClientResponse {
 The deserialize-into-`TResponse` step, currently deferred (see the note in `Common/ClientResultExtensions.ts`):
 
 ```ts
-// @benzene/clients/Common/ClientResultExtensions.ts
+// @benzenejs/clients/Common/ClientResultExtensions.ts
 export function asBenzeneResult<TResponse>(
   response: BenzeneMessageClientResponse,
   serializer: ISerializer,
@@ -137,7 +137,7 @@ row:
 
 1. **No runtime validation.** A body that doesn't match `TResponse` yields a mis-shaped object silently
    rather than an error. (`.NET`'s field-mapping deserializer is only marginally stricter.) A caller that
-   wants validation composes a validator (`@benzene/zod` / `ajv`) on the response — the seam already exists.
+   wants validation composes a validator (`@benzenejs/zod` / `ajv`) on the response — the seam already exists.
 2. **No class-instance revival.** `JSON.parse` produces a plain object; methods on a response class are not
    restored. Benzene payloads are DTOs, so this matches real usage.
 
@@ -149,7 +149,7 @@ row:
 - **Defer — Option B (runtime type token):** add an optional `responseType` (a constructor, or a registered
   `SchemaCasters`/schema) to `sendAsync` / the client for callers who need class revival or validated
   responses. More faithful to `.NET`'s `typeof(TResponse)`, but it is an API-surface change and the caster
-  seam (`SchemaCasters` in `@benzene/core-versioning`) can layer it on later without redesign. Not needed to
+  seam (`SchemaCasters` in `@benzenejs/core-versioning`) can layer it on later without redesign. Not needed to
   close the audit gaps.
 
 ## 6. What this closes
@@ -165,7 +165,7 @@ row:
 
 | Step | Files | Risk |
 |---|---|---|
-| Port `BenzeneMessageClientResponse` | `@benzene/clients` (+ index) | none |
+| Port `BenzeneMessageClientResponse` | `@benzenejs/clients` (+ index) | none |
 | Port `asBenzeneResult<TResponse>` | `Common/ClientResultExtensions.ts` | low |
 | Envelope-aware sender | `DefaultBenzeneMessageSender.ts` | **medium** — core send path; guarded by `instanceof`, so existing `IBenzeneResult` behaviour is untouched |
 | In-process converter → envelope | `InProcessContextConverter.ts` | low; update its PORT DIVERGENCE note |

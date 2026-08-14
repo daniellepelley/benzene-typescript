@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
 import {
   IMediaFormat,
   IMediaFormatNegotiator,
   IRequestEnricher,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import {
   JsonMediaFormat,
   JsonSerializer,
   MediaFormatNegotiator,
   MultiSerializerOptionsRequestMapper,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /** Port of Benzene.Test.Core.Core.MessageHandling.MultiSerializerOptionsRequestMapperTest scenarios. */
 class TestContext {

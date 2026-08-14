@@ -5,7 +5,7 @@ import {
   SchemaCastDefinitionsExpander,
   SchemaCasters,
   SchemaCastersBuilder,
-} from '@benzene/core-versioning';
+} from '@benzenejs/core-versioning';
 import {
   V1OrderPayload,
   V2OrderPayload,

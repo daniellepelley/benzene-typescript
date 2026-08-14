@@ -1,15 +1,15 @@
 /** Port of Benzene.Kafka.Core.BenzeneKafkaWorker. */
 import { Consumer, EachMessagePayload } from 'kafkajs';
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BenzeneKafkaConfig, withKafkaConfigDefaults } from './BenzeneKafkaConfig';
 import { IKafkaConsumerFactory } from './IKafkaConsumerFactory';
 import { KafkaApplication } from './KafkaMessage/KafkaApplication';
 
 /**
  * A long-running worker that consumes Kafka records and dispatches each through the middleware
- * pipeline — for `@benzene/self-host`, not a cloud trigger (use `@benzene/aws-lambda-kafka` /
- * `@benzene/azure-function-kafka` for those).
+ * pipeline — for `@benzenejs/self-host`, not a cloud trigger (use `@benzenejs/aws-lambda-kafka` /
+ * `@benzenejs/azure-function-kafka` for those).
  *
  * PORTING NOTE — the SDK's consume model. .NET hand-rolls a synchronous `IConsumer.Consume()` poll loop
  * on a background task and dispatches each `ConsumeResult` through a `BoundedConcurrentDispatcher`

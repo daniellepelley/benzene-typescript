@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Channel, ChannelModel } from 'amqplib';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { HealthCheckStatus, IDependencyHealthCheck } from '@benzene/health-checks-core';
-import { getHealthCheckerBuilder, IHealthCheckFinder } from '@benzene/health-checks';
-import { useWorker, WorkerApplicationBuilder } from '@benzene/self-host';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { HealthCheckStatus, IDependencyHealthCheck } from '@benzenejs/health-checks-core';
+import { getHealthCheckerBuilder, IHealthCheckFinder } from '@benzenejs/health-checks';
+import { useWorker, WorkerApplicationBuilder } from '@benzenejs/self-host';
 import {
   addRabbitMqDependencyHealthCheck,
   IRabbitMqConnectionFactory,
@@ -12,7 +12,7 @@ import {
   RabbitMqConnectionProvider,
   RabbitMqHealthCheck,
   useRabbitMq,
-} from '@benzene/rabbitmq';
+} from '@benzenejs/rabbitmq';
 
 /**
  * Ports Benzene.Test.RabbitMq.RabbitMqHealthCheckTest + RabbitMqAutoWireHealthCheckTest: the passive

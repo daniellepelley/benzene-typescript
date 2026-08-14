@@ -1,8 +1,8 @@
 /** Port of Benzene.Azure.EventHub.TestHelpers.EventHubWorkerBenzeneTestHost. */
 import type { ReceivedEventData } from '@azure/event-hubs';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
-import { EventHubConsumerApplication } from '@benzene/azure-event-hub';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { EventHubConsumerApplication } from '@benzenejs/azure-event-hub';
 
 /**
  * A test host that drives the Event Hub consumer pipeline a `StartUp` configured, without a running hub.
@@ -13,7 +13,7 @@ import { EventHubConsumerApplication } from '@benzene/azure-event-hub';
  * IDIOM MAP: C# `IDisposable.Dispose` → `dispose()`; `HandleAsync` → `handleAsync` (keeping the `Async`
  * suffix). C# returns `Task<IBenzeneResult?>`; the port returns the consumer application's recorded
  * result type, `IMessageResult | undefined` (the same `IBenzeneResult`→`IMessageResult` mapping the
- * `@benzene/azure-event-hub` consumer already uses).
+ * `@benzenejs/azure-event-hub` consumer already uses).
  */
 export class EventHubWorkerBenzeneTestHost {
   constructor(

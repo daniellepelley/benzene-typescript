@@ -1,5 +1,5 @@
 /** Port of Benzene.Kafka.Core.Kafka.KafkaMessageBodyGetter (class `KafkaSendMessageBodyGetter`). */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { KafkaSendMessageContext } from './KafkaSendMessageContext';
 
 /**

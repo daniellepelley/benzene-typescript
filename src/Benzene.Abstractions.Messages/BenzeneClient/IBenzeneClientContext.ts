@@ -1,4 +1,4 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
 import { IBenzeneClientRequest } from './IBenzeneClientRequest';
 
 /**

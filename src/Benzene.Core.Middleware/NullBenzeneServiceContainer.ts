@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzenejs/abstractions';
 import { NullServiceResolverFactory } from './NullServiceResolverFactory';
 
 const notSupportedMessage =

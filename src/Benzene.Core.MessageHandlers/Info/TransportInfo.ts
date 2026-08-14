@@ -1,4 +1,4 @@
-import { ITransportInfo } from '@benzene/abstractions-message-handlers';
+import { ITransportInfo } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Default ITransportInfo implementation. Typically registered once per transport adapter

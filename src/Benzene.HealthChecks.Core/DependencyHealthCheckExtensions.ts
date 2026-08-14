@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.Core.DependencyHealthCheckExtensions. */
-import { IBenzeneServiceContainer, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, IServiceResolver } from '@benzenejs/abstractions';
 import { DependencyHealthCheck } from './DependencyHealthCheck';
 import { IDependencyHealthCheck } from './IDependencyHealthCheck';
 import { IHealthCheck } from './IHealthCheck';
@@ -11,7 +11,7 @@ import { IHealthCheck } from './IHealthCheck';
  * `healthcheck` layer and off the liveness/readiness/contracts probes (see `IDependencyHealthCheck`
  * for the cascading-failure reasoning).
  *
- * Lives in `@benzene/health-checks-core` — not the middleware package — so a client package can
+ * Lives in `@benzenejs/health-checks-core` — not the middleware package — so a client package can
  * auto-wire using only its existing lightweight core reference, without pulling in the full
  * health-check middleware.
  *

@@ -1,5 +1,5 @@
-import { IBenzeneResultOf, ISerializer } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, ISerializer } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
 import { BenzeneMessageClientResponse } from '../BenzeneMessageClientResponse';
 import { BenzeneResultHttpMapper } from './BenzeneResultHttpMapper';
 

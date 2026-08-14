@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Reporting.Extensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { IMeshReportPublisher } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { IMeshReportPublisher } from '@benzenejs/mesh-contracts';
 import { HttpMeshReportPublisher } from './HttpMeshReportPublisher';
 import { MeshReportingOptions } from './MeshReportingOptions';
 import { MeshSelfReportMiddleware } from './MeshSelfReportMiddleware';

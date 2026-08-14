@@ -11,19 +11,19 @@
  *
  * The neutral core stays cloud-import-free: a {@link TransportDescriptor} supplies the transport's
  * `addServices` (its `addApiGateway`/… DI) and `createApplication` (its `Application` class), and lives in
- * the per-platform testing package (`@benzene/aws-lambda-testing`), not here.
+ * the per-platform testing package (`@benzenejs/aws-lambda-testing`), not here.
  */
-import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzenejs/abstractions';
 import {
   Capability,
   IMiddleware,
   IMiddlewarePipeline,
   IMiddlewarePipelineBuilder,
   MiddlewareFactoryFunc,
-} from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /** Describes how to run a built pipeline for one transport: its DI registration and its application. */
 export interface TransportDescriptor<TContext, TEvent, TResult> {

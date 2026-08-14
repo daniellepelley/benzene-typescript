@@ -12,18 +12,18 @@
  */
 import { describe, expect, it } from 'vitest';
 import { HttpResponseInit } from '@azure/functions';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { BenzeneException } from '@benzene/core';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { AzureFunctionHost, useAzureFunctions } from '@benzene/azure-function-core';
-import { useAzureHttp } from '@benzene/azure-function-http';
-import { useServiceBus } from '@benzene/azure-function-service-bus';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
-import { asAzureHttpRequest, asAzureServiceBusMessage } from '@benzene/azure-function-testing';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneException } from '@benzenejs/core';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { AzureFunctionHost, useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useAzureHttp } from '@benzenejs/azure-function-http';
+import { useServiceBus } from '@benzenejs/azure-function-service-bus';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
+import { asAzureHttpRequest, asAzureServiceBusMessage } from '@benzenejs/azure-function-testing';
 
 class Order {
   orderId?: string;

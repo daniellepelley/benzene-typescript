@@ -1,5 +1,5 @@
 /** Port of Benzene.Extras.Broadcast.BroadcastEventChecker. */
-import { IMessageDefinition } from '@benzene/abstractions-messages';
+import { IMessageDefinition } from '@benzenejs/abstractions-messages';
 import { IBroadcastEventChecker } from './IBroadcastEventChecker';
 
 /**

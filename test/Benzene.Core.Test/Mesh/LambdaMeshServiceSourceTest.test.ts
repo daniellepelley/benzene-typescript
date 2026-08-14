@@ -1,11 +1,11 @@
 import { InvocationType } from '@aws-sdk/client-lambda';
 import { context as otelContext, trace } from '@opentelemetry/api';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BenzeneMessageClientResponse } from '@benzene/clients';
-import { BenzeneMessageClientRequest, IAwsLambdaClient } from '@benzene/clients-aws-lambda';
-import { Constants as HealthCheckConstants } from '@benzene/health-checks';
-import { LambdaMeshServiceSource } from '@benzene/mesh-aws-lambda';
-import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzene/mesh-contracts';
+import { BenzeneMessageClientResponse } from '@benzenejs/clients';
+import { BenzeneMessageClientRequest, IAwsLambdaClient } from '@benzenejs/clients-aws-lambda';
+import { Constants as HealthCheckConstants } from '@benzenejs/health-checks';
+import { LambdaMeshServiceSource } from '@benzenejs/mesh-aws-lambda';
+import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
 import { OtelHarness } from '../Diagnostics/otelHarness';
 
 /**

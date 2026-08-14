@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Ui.MeshSpecUiMiddleware. */
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { MeshSpecUiPage } from './MeshSpecUiPage';
 import { normalizePath } from './MeshUiMiddleware';
 

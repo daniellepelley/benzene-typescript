@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { VoidResult } from '@benzene/abstractions';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundRoutingBuilder, useParallel } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+import { VoidResult } from '@benzenejs/abstractions';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundRoutingBuilder, useParallel } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 
 /** Port of test/Benzene.Core.Test/Clients/ParallelOutboundTest.cs. */
 

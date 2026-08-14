@@ -16,10 +16,10 @@ authentication at the Benzene level itself, as opt-in middleware you add only wh
 
 This cookbook covers:
 
-- **`@benzene/auth-oauth2`** — validating an inbound `Authorization: Bearer <token>` JWT against an
+- **`@benzenejs/auth-oauth2`** — validating an inbound `Authorization: Bearer <token>` JWT against an
   identity provider's JWKS endpoint (`useOAuth2Bearer`), plus scope-based authorization (`requireScope`)
-- **`@benzene/auth-basic`** — RFC 7617 username/password authentication (`useBasicAuth`)
-- **`@benzene/auth-core`** — mechanism-agnostic role (`requireRole`), named-policy (`requirePolicy`),
+- **`@benzenejs/auth-basic`** — RFC 7617 username/password authentication (`useBasicAuth`)
+- **`@benzenejs/auth-core`** — mechanism-agnostic role (`requireRole`), named-policy (`requirePolicy`),
   and resource-based (`requireAuthorization`) authorization over any authenticated caller
 
 Benzene provides the authorization *enforcement* primitives and pluggable policy/resource seams, but
@@ -29,25 +29,25 @@ no built-in adapter for a specific external policy engine — see
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and a Benzene service hosted behind an HTTP transport — the
-  Express host (`@benzene/express`), AWS Lambda API Gateway (`@benzene/aws-lambda-api-gateway`), or the
-  Azure Functions HTTP trigger (`@benzene/azure-function-http`). Every package here targets
+  Express host (`@benzenejs/express`), AWS Lambda API Gateway (`@benzenejs/aws-lambda-api-gateway`), or the
+  Azure Functions HTTP trigger (`@benzenejs/azure-function-http`). Every package here targets
   `TContext extends IHttpContext`, so it works on any of them the same way.
-- For `@benzene/auth-oauth2`: an identity provider that exposes either full OIDC discovery (Auth0,
+- For `@benzenejs/auth-oauth2`: an identity provider that exposes either full OIDC discovery (Auth0,
   Cognito, Azure AD, Okta all do) or a bare JWKS document.
 
 ## Installation
 
 ```bash
-npm install @benzene/auth-oauth2
+npm install @benzenejs/auth-oauth2
 # or, for Basic auth
-npm install @benzene/auth-basic
+npm install @benzenejs/auth-basic
 ```
 
-Both depend on `@benzene/auth-core` (the shared `ClaimsPrincipal`/authorization primitives), which npm
-pulls in transitively. `@benzene/auth-oauth2` adapts [`jose`](https://github.com/panva/jose) — the
+Both depend on `@benzenejs/auth-core` (the shared `ClaimsPrincipal`/authorization primitives), which npm
+pulls in transitively. `@benzenejs/auth-oauth2` adapts [`jose`](https://github.com/panva/jose) — the
 popular Node JWT/JWKS library — as its one runtime dependency (the analog of the .NET package's
 `Microsoft.IdentityModel` stack), so the same middleware works identically behind Express, Lambda, or
-Azure Functions. `@benzene/auth-basic` has no third-party dependency.
+Azure Functions. `@benzenejs/auth-basic` has no third-party dependency.
 
 ## How the middleware composes
 
@@ -71,7 +71,7 @@ property on the transport context. This is the port's "context purity" pattern: 
 the shape of a transport message and stays free of optional cross-cutting state, so a pipeline that
 never adds an authentication middleware never even allocates a holder. `ClaimsPrincipal`,
 `ClaimsIdentity`, `Claim`, and `ClaimTypes` are a minimal port of `System.Security.Claims` living in
-`@benzene/auth-core` — the .NET auth stack carries the caller as a BCL `ClaimsPrincipal` every JWT
+`@benzenejs/auth-core` — the .NET auth stack carries the caller as a BCL `ClaimsPrincipal` every JWT
 library already produces, and JavaScript has no such shared type, so the small slice the middleware
 actually reads is ported rather than inventing a Benzene-specific principal.
 
@@ -81,7 +81,7 @@ actually reads is ported rather than inventing a Benzene-specific principal.
 permissive silent default — see [Why `validAlgorithms` has no default](#why-validalgorithms-has-no-default).
 
 ```ts
-import { OAuth2BearerOptions, useOAuth2Bearer } from '@benzene/auth-oauth2';
+import { OAuth2BearerOptions, useOAuth2Bearer } from '@benzenejs/auth-oauth2';
 
 const oauth2Options = new OAuth2BearerOptions();
 
@@ -170,8 +170,8 @@ For a simpler gate than full OAuth2 — a single service account, an internal ad
 `IBasicAuthCredentialValidator` and pass it to `useBasicAuth`:
 
 ```ts
-import { Claim, ClaimsIdentity, ClaimsPrincipal, ClaimTypes } from '@benzene/auth-core';
-import { IBasicAuthCredentialValidator } from '@benzene/auth-basic';
+import { Claim, ClaimsIdentity, ClaimsPrincipal, ClaimTypes } from '@benzenejs/auth-core';
+import { IBasicAuthCredentialValidator } from '@benzenejs/auth-basic';
 
 export class ServiceAccountValidator implements IBasicAuthCredentialValidator {
   async validateAsync(username: string, password: string): Promise<ClaimsPrincipal | undefined> {
@@ -187,7 +187,7 @@ export class ServiceAccountValidator implements IBasicAuthCredentialValidator {
 ```
 
 ```ts
-import { useBasicAuth } from '@benzene/auth-basic';
+import { useBasicAuth } from '@benzenejs/auth-basic';
 
 useApiGateway(app, (api) => {
   useBasicAuth(api, new ServiceAccountValidator()); // optional 3rd arg: realm, defaults to "Benzene"
@@ -195,7 +195,7 @@ useApiGateway(app, (api) => {
 });
 ```
 
-`@benzene/auth-basic` ships no default `IBasicAuthCredentialValidator` on purpose — hardcoding a
+`@benzenejs/auth-basic` ships no default `IBasicAuthCredentialValidator` on purpose — hardcoding a
 credential store in the package would be a footgun waiting to be deployed. Implement it against whatever
 your service actually uses: an environment variable for a single service account (above), a secrets
 manager, a user table. Return `undefined` for bad credentials — never throw; that's an ordinary
@@ -213,7 +213,7 @@ silently drops invalid characters, so malformed input is rejected rather than mi
 Once a caller is authenticated via `useOAuth2Bearer`, require a scope before reaching a route:
 
 ```ts
-import { requireScope, useOAuth2Bearer } from '@benzene/auth-oauth2';
+import { requireScope, useOAuth2Bearer } from '@benzenejs/auth-oauth2';
 
 useApiGateway(app, (api) => {
   useOAuth2Bearer(api, oauth2Options);
@@ -243,9 +243,9 @@ apart from "you're logged in but don't have permission" from the response code a
 
 ## Authorization: Roles, Policies & Resource Checks
 
-Scopes are an OAuth2/JWT concept, so `requireScope` lives in `@benzene/auth-oauth2`. For authorization
+Scopes are an OAuth2/JWT concept, so `requireScope` lives in `@benzenejs/auth-oauth2`. For authorization
 that reads off any authenticated caller — regardless of whether the principal came from a bearer token,
-Basic auth, or a custom mechanism — `@benzene/auth-core` adds three mechanism-agnostic checks. Benzene
+Basic auth, or a custom mechanism — `@benzenejs/auth-core` adds three mechanism-agnostic checks. Benzene
 owns the *enforcement* (each short-circuits with `unauthorized` when there's no caller and `forbidden`
 when the caller lacks permission, the same distinction `requireScope` keeps); *what a role/policy means*
 stays in your app.
@@ -256,7 +256,7 @@ sets a principal.
 ### Roles — `requireRole`
 
 ```ts
-import { requireRole } from '@benzene/auth-core';
+import { requireRole } from '@benzenejs/auth-core';
 
 requireRole(api, 'admin', 'operator'); // any one role is sufficient
 ```
@@ -271,7 +271,7 @@ A policy is a named rule over the principal. Define it inline, or register it on
 name:
 
 ```ts
-import { addAuthorizationPolicy, requirePolicy } from '@benzene/auth-core';
+import { addAuthorizationPolicy, requirePolicy } from '@benzenejs/auth-core';
 
 // Inline (a sync or async predicate over the principal), named for the failure detail message:
 requirePolicy(api, 'employees-only', (principal) => principal.hasClaim('department', 'engineering'));
@@ -311,8 +311,8 @@ When the decision depends on *which* resource is being acted on (ownership, tena
 `IAuthorizationHandler<TResource>` and map the message to the resource it targets:
 
 ```ts
-import { ClaimsPrincipal, IAuthorizationHandler, requireAuthorization } from '@benzene/auth-core';
-import { ApiGatewayContext } from '@benzene/aws-lambda-api-gateway';
+import { ClaimsPrincipal, IAuthorizationHandler, requireAuthorization } from '@benzenejs/auth-core';
+import { ApiGatewayContext } from '@benzenejs/aws-lambda-api-gateway';
 
 class OrderResource {
   constructor(readonly tenant: string) {}
@@ -367,9 +367,9 @@ mounts coexist cleanly — each builds its own DI container and only answers its
 
 ```ts
 import express from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { useOAuth2Bearer, requireScope } from '@benzene/auth-oauth2';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { useOAuth2Bearer, requireScope } from '@benzenejs/auth-oauth2';
 
 const app = express();
 
@@ -407,7 +407,7 @@ locally-generated fake JWKS server (`FakeJwksServer.ts`, plain-HTTP loopback —
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { OAuth2BearerOptions, requireScope, useOAuth2Bearer } from '@benzene/auth-oauth2';
+import { OAuth2BearerOptions, requireScope, useOAuth2Bearer } from '@benzenejs/auth-oauth2';
 import { createSecureEvent, runSecure } from './authHost';
 import { FakeJwksServer, withJwks } from './FakeJwksServer';
 
@@ -477,7 +477,7 @@ handler.
   `requireRole`/`requirePolicy`/`requireAuthorization` — and the pluggable
   `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams to plug such an engine into, but ships
   no adapter for any particular one. What a policy *means* stays in your app.
-- **Issuing or refreshing tokens, or driving an OAuth2 login/consent flow.** `@benzene/auth-oauth2` only
+- **Issuing or refreshing tokens, or driving an OAuth2 login/consent flow.** `@benzenejs/auth-oauth2` only
   validates inbound bearer tokens; it's not an OAuth2 client or authorization server.
 - **mTLS, session/cookie authentication, or SOAP/WS-Security** — not addressed by this feature.
 

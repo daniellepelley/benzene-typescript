@@ -1,4 +1,4 @@
-import { IServiceResolver, ISerializer, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IServiceResolver, ISerializer, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * A single wire format (e.g. JSON, XML) available for both reading requests and writing responses.

@@ -1,7 +1,7 @@
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneInvocation, useBenzeneInvocation as coreUseBenzeneInvocation } from '@benzene/core-middleware';
-import { WorkerApplicationBuilder } from '@benzene/self-host';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneInvocation, useBenzeneInvocation as coreUseBenzeneInvocation } from '@benzenejs/core-middleware';
+import { WorkerApplicationBuilder } from '@benzenejs/self-host';
 import { SqsConsumerMessageContext } from './SqsConsumerMessageContext';
 
 /**

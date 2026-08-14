@@ -2,7 +2,7 @@ import {
   IBenzeneResponseAdapter,
   IMessageHandlerResult,
   IResponseHandler,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { IHttpStatusCodeMapper } from './IHttpStatusCodeMapper';
 
 /**

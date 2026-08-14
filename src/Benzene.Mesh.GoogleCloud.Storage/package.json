@@ -1,15 +1,18 @@
 {
-  "name": "@benzene/mesh-google-cloud-storage",
-  "version": "0.1.0",
+  "name": "@benzenejs/mesh-google-cloud-storage",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Mesh.GoogleCloud.Storage",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/mesh-aggregator": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/mesh-aggregator": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
     "@google-cloud/storage": "^7"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

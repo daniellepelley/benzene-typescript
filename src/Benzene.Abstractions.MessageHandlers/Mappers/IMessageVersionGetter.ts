@@ -1,5 +1,5 @@
 /** Port of Benzene.Abstractions.MessageHandlers.Mappers.IMessageVersionGetter. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Extracts the payload schema version from a transport-specific message context, so a router can

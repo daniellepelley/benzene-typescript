@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { IIdempotencyKeyStrategy } from './IIdempotencyKeyStrategy';
 import { IdempotencyOptions } from './IdempotencyOptions';
 

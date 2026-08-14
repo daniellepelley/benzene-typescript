@@ -1,18 +1,21 @@
 {
-  "name": "@benzene/azure-event-hub-test-helpers",
-  "version": "0.1.0",
-  "description": "Test helpers for @benzene/azure-event-hub (ports the Benzene.Azure.EventHub.TestHelpers project) - for testing purposes only",
+  "name": "@benzenejs/azure-event-hub-test-helpers",
+  "version": "0.1.0-beta.1",
+  "description": "Test helpers for @benzenejs/azure-event-hub (ports the Benzene.Azure.EventHub.TestHelpers project) - for testing purposes only",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@azure/event-hubs": "^6",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/azure-event-hub": "0.1.0",
-    "@benzene/self-host": "0.1.0",
-    "@benzene/testing": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/azure-event-hub": "0.1.0-beta.1",
+    "@benzenejs/self-host": "0.1.0-beta.1",
+    "@benzenejs/testing": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

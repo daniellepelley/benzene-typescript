@@ -1,7 +1,7 @@
 /** Port of Benzene.Extras.Broadcast.DependencyExtensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageDefinition, IMessageDefinitionFinder } from '@benzene/abstractions-messages';
-import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageDefinition, IMessageDefinitionFinder } from '@benzenejs/abstractions-messages';
+import { IMessageRouterBuilder } from '@benzenejs/abstractions-message-handlers';
 import { BroadcastEventChecker } from './BroadcastEventChecker';
 import { BroadcastEventMiddlewareBuilder } from './BroadcastEventMiddlewareBuilder';
 import { IBroadcastEventChecker } from './IBroadcastEventChecker';

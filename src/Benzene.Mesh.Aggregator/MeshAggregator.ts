@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.MeshAggregator. */
-import { HealthCheckResponse } from '@benzene/health-checks-core';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 import {
   IMeshUsageSource,
   MeshManifest,
@@ -23,8 +23,8 @@ import {
   MeshUsageEntry,
   TopologyEdge,
   TopologyEdgeSource,
-} from '@benzene/mesh-contracts';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/mesh-contracts';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { AsyncApiCompositor, ServiceDocument } from './AsyncApiCompositor';
 import { IMeshArtifactStore } from './IMeshArtifactStore';
 import { IMeshServiceSource } from './IMeshServiceSource';

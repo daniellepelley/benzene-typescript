@@ -4,11 +4,11 @@ import type {
   ServiceBusReceivedMessage,
   ServiceBusSessionReceiverOptions,
 } from '@azure/service-bus';
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addServiceBusConsumer,
   BenzeneServiceBusConfig,
@@ -19,7 +19,7 @@ import {
   ServiceBusConsumerContext,
   ServiceBusSettlement,
   ServiceBusSettlementHolder,
-} from '@benzene/azure-service-bus';
+} from '@benzenejs/azure-service-bus';
 
 /**
  * Covers the session pump — the BEND that replaces .NET's `ServiceBusSessionProcessor` (which the JS

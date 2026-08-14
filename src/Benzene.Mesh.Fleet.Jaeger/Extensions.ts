@@ -1,11 +1,11 @@
 /** Port of Benzene.Mesh.Fleet.Jaeger.Extensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   CompositeMeshFleetReadModel,
   IMeshFleetReadModel,
   IMeshTraceSource,
-} from '@benzene/mesh-collector';
-import { IMeshUsageSource } from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-collector';
+import { IMeshUsageSource } from '@benzenejs/mesh-contracts';
 import { JaegerTraceSource } from './JaegerTraceSource';
 import { JaegerTraceSourceOptions } from './JaegerTraceSourceOptions';
 
@@ -22,7 +22,7 @@ import { JaegerTraceSourceOptions } from './JaegerTraceSourceOptions';
  *
  * Divergence from the C# original: the C# registers an `HttpClient` (unless one is already registered); this
  * port injects Node's global `fetch` into the source instead (`HttpClient` -> `fetch`, mirroring
- * `@benzene/mesh-tracing-tempo`), so there is no `HttpClient` service to register.
+ * `@benzenejs/mesh-tracing-tempo`), so there is no `HttpClient` service to register.
  *
  * @param services The service container to register with.
  * @param options Where and over what windows to query Jaeger.

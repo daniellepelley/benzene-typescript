@@ -1,6 +1,6 @@
 /** Port of the connection-check half of Benzene.HealthChecks.EntityFramework's factory/registration. */
-import { IServiceResolver } from '@benzene/abstractions';
-import { IHealthCheck, IHealthCheckFactory } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IHealthCheck, IHealthCheckFactory } from '@benzenejs/health-checks-core';
 import { DatabaseConnectionHealthCheck } from './DatabaseConnectionHealthCheck';
 import { ITypeOrmDatabase } from './TypeOrmDatabase';
 

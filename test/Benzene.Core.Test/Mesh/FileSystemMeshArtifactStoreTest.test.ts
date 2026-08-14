@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FileSystemMeshArtifactStore } from '@benzene/mesh-aggregator';
+import { FileSystemMeshArtifactStore } from '@benzenejs/mesh-aggregator';
 
 /**
  * Port of test/Benzene.Mesh.Test/FileSystemMeshArtifactStoreTest.cs. `IDisposable` temp-dir cleanup ->

@@ -3,7 +3,7 @@
  * mesh: the artifacts a mesh aggregator publishes (`manifest.json`, `topics.json`, `usage.json`,
  * `topology.json`, `annotations.json`, per-service snapshots), the `mesh.json` registry + its
  * discovery/serialization helpers, and the seams a service-source/usage-source/report-publisher/discovery
- * adapter implements. Depends only on `@benzene/health-checks-core` (for `HealthCheckResponse`), so the
+ * adapter implements. Depends only on `@benzenejs/health-checks-core` (for `HealthCheckResponse`), so the
  * rest of the mesh (aggregator, wire, collector, discovery adapters) can build on it.
  *
  * `DateTimeOffset` -> epoch-millisecond `number`; `System.Text.Json.Nodes.JsonObject` -> arbitrary

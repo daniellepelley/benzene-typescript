@@ -1,9 +1,9 @@
 /** Port of Benzene.Mesh.Aws.Lambda.Extensions. */
 import { LambdaClient } from '@aws-sdk/client-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { AwsLambdaClient, IAwsLambdaClient } from '@benzene/clients-aws-lambda';
-import { IMeshServiceSource } from '@benzene/mesh-aggregator';
-import { IMeshServiceDispatcher } from '@benzene/mesh-dispatch';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { AwsLambdaClient, IAwsLambdaClient } from '@benzenejs/clients-aws-lambda';
+import { IMeshServiceSource } from '@benzenejs/mesh-aggregator';
+import { IMeshServiceDispatcher } from '@benzenejs/mesh-dispatch';
 import { AwsLambdaMeshServiceDispatcher } from './AwsLambdaMeshServiceDispatcher';
 import { LambdaMeshServiceSource } from './LambdaMeshServiceSource';
 

@@ -28,7 +28,7 @@ const TEMPLATES_DIR = fs.existsSync(BUNDLED_TEMPLATES_DIR) ? BUNDLED_TEMPLATES_D
 const PROJECT_NAME_TOKEN = '__PROJECT_NAME__';
 
 // devDependencies + scripts that only exist for the optional component-test project, pruned by --no-tests.
-const TEST_DEV_DEPENDENCIES = ['vitest', '@benzene/testing', '@benzene/aws-lambda-testing'];
+const TEST_DEV_DEPENDENCIES = ['vitest', '@benzenejs/testing', '@benzenejs/aws-lambda-testing'];
 
 // Text file extensions that get token substitution on copy (everything else is copied byte-for-byte).
 const TEXT_EXTENSIONS = new Set(['.json', '.md', '.ts', '.tsx', '.js', '.mjs', '.cjs', '.yaml', '.yml', '.txt']);
@@ -58,7 +58,7 @@ Arguments
 
 Options
   -t, --template <id>   Starter template to use (see below). Prompted for if omitted.
-      --no-tests        Skip the component-test project (vitest + @benzene/*-testing).
+      --no-tests        Skip the component-test project (vitest + @benzenejs/*-testing).
       --overwrite       Allow generating into a non-empty directory.
   -h, --help            Show this help.
 
@@ -229,7 +229,7 @@ Next steps:
   npm install${includeTests ? '\n  npm test        # run the component test' : ''}
   npm run build   # typecheck
 
-Note: the generated package.json references the real @benzene/* npm packages. Until those are
+Note: the generated package.json references the real @benzenejs/* npm packages. Until those are
 published to the registry, install/build/test resolve them locally (see the project README).
 `);
 }

@@ -1,4 +1,4 @@
-import { ILogger } from '@benzene/abstractions';
+import { ILogger } from '@benzenejs/abstractions';
 import { BoundedChannel } from './BoundedChannel';
 
 /** The async handler each dispatched item is passed to. Port of C# `Func<T, CancellationToken, Task>`. */
@@ -39,7 +39,7 @@ export interface BoundedConcurrentDispatcherOptions<T> {
  *
  * Node is single-threaded, so C#'s `Interlocked`/`Volatile` accesses on the outstanding-count array and
  * round-robin counter become plain reads/writes (only ever touched between `await` points on one event
- * loop); C#'s `ILogger` maps to `@benzene/abstractions`' `ILogger`.
+ * loop); C#'s `ILogger` maps to `@benzenejs/abstractions`' `ILogger`.
  */
 export class BoundedConcurrentDispatcher<T> {
   private readonly lanes: BoundedChannel<T>[];

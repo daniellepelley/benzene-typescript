@@ -1,8 +1,8 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { AuthenticationHolder, AuthResults } from '@benzene/auth-core';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { AuthenticationHolder, AuthResults } from '@benzenejs/auth-core';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { IBasicAuthCredentialValidator } from './IBasicAuthCredentialValidator';
 
 const schemePrefix = 'Basic ';

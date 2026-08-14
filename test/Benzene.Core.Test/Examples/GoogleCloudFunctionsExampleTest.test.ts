@@ -6,13 +6,13 @@
  * `Benzene.Examples.Google.Tests` HTTP round-trip.
  */
 import { describe, expect, it } from 'vitest';
-import { httpBuilder } from '@benzene/testing';
+import { httpBuilder } from '@benzenejs/testing';
 import {
   asGoogleCloudHttpRequest,
   buildGoogleCloudFunctionHost,
-} from '@benzene/google-cloud-functions-http-testing';
+} from '@benzenejs/google-cloud-functions-http-testing';
 import { GoogleCloudOrdersStartUp, OrderList } from '@benzene-example/google-cloud-functions';
-import { benzeneTestHost } from '@benzene/testing';
+import { benzeneTestHost } from '@benzenejs/testing';
 
 describe('@benzene-example/google-cloud-functions', () => {
   it('POST /orders creates an order and returns 201 with the mapped body', async () => {

@@ -1,6 +1,6 @@
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { PermitCost, RateLimitingMiddleware } from './RateLimitingMiddleware';
 import { FixedWindowRateLimiter } from './RateLimiters/FixedWindowRateLimiter';
 import { TokenBucketRateLimiter } from './RateLimiters/TokenBucketRateLimiter';

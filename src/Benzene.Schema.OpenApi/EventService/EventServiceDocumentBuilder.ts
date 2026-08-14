@@ -1,7 +1,7 @@
 /** Port of Benzene.Schema.OpenApi.EventService.EventServiceDocumentBuilder (the `benzene` document format). */
-import { IApplicationInfo, ITransportsInfo, IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { IMessageDefinition } from '@benzene/abstractions-messages';
-import { IHttpEndpointDefinition } from '@benzene/http';
+import { IApplicationInfo, ITransportsInfo, IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { IMessageDefinition } from '@benzenejs/abstractions-messages';
+import { IHttpEndpointDefinition } from '@benzenejs/http';
 import { ISchemaBuilder } from '../ISchemaBuilder';
 import { ReservedTopics } from '../ReservedTopics';
 import { Event } from './Event';

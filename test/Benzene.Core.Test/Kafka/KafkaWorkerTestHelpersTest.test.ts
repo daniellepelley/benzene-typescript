@@ -1,5 +1,5 @@
 /**
- * Port-verification test for `@benzene/kafka-core-test-helpers` (ports Benzene.Kafka.Core.TestHelpers).
+ * Port-verification test for `@benzenejs/kafka-core-test-helpers` (ports Benzene.Kafka.Core.TestHelpers).
  * Two complementary halves:
  *
  * 1. `asKafkaBenzeneMessage` — faithful native-shape checks (literal record topic, headers, serialized
@@ -13,21 +13,21 @@
  *    `addBenzeneMessage` so `useKafka` + `useMessageHandlers` route).
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { useWorker } from '@benzene/self-host';
-import { IKafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { useWorker } from '@benzenejs/self-host';
+import { IKafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
 import {
   benzeneTestHost,
   FakeBenzeneMessageSender,
   messageBuilder,
   type BenzeneStartUp,
-} from '@benzene/testing';
-import { asKafkaBenzeneMessage } from '@benzene/kafka-core-test-helpers';
+} from '@benzenejs/testing';
+import { asKafkaBenzeneMessage } from '@benzenejs/kafka-core-test-helpers';
 
 // Kafka routes on the literal record topic — the builder topic must be the Kafka topic name.
 const Topics = { placeOrder: 'order-place', orderCreated: 'order-created' } as const;

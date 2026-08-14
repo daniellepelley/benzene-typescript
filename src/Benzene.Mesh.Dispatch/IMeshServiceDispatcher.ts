@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Dispatch.IMeshServiceDispatcher. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 import { MeshDispatchEnvelope, MeshDispatchResult } from './MeshDispatchEnvelope';
 
 /**

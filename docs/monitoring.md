@@ -6,7 +6,7 @@ the standard OpenTelemetry surface for Node.
 
 ## Overview
 
-The `@benzene/diagnostics` package layers three kinds of telemetry onto the middleware pipeline:
+The `@benzenejs/diagnostics` package layers three kinds of telemetry onto the middleware pipeline:
 
 - **Tracing** — every middleware in every pipeline is automatically wrapped in an OpenTelemetry span,
   tagged with `benzene.*` attributes, once you call `addDiagnostics()`.
@@ -34,10 +34,10 @@ You never opt in per middleware.
 ## Installation
 
 ```bash
-npm install @benzene/diagnostics
+npm install @benzenejs/diagnostics
 ```
 
-`@opentelemetry/api` comes in as a dependency of `@benzene/diagnostics`. To actually export the
+`@opentelemetry/api` comes in as a dependency of `@benzenejs/diagnostics`. To actually export the
 telemetry you also install an SDK and exporter (peer to your app, not to Benzene) — for example:
 
 ```bash
@@ -57,8 +57,8 @@ enrichment — see [Correlation Ids](correlation-ids.md) and
 Enable per-middleware spans once, at startup, alongside `addBenzene`:
 
 ```ts
-import { addBenzene } from '@benzene/core-message-handlers';
-import { addDiagnostics } from '@benzene/diagnostics';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { addDiagnostics } from '@benzenejs/diagnostics';
 
 addBenzene(services);
 addDiagnostics(services);
@@ -95,7 +95,7 @@ costs effectively nothing until you attach an exporter.
 [Named timers](#named-timers)). If you want *only* the per-middleware spans, use the narrower opt-in:
 
 ```ts
-import { addActivityPerMiddleware } from '@benzene/diagnostics';
+import { addActivityPerMiddleware } from '@benzenejs/diagnostics';
 
 addActivityPerMiddleware(services);
 ```
@@ -109,7 +109,7 @@ To measure a specific stretch of pipeline by name, `useTimer(app, name)` opens a
 name around the rest of the pipeline:
 
 ```ts
-import { useTimer } from '@benzene/diagnostics';
+import { useTimer } from '@benzenejs/diagnostics';
 
 useTimer(app, 'my-application');
 ```
@@ -157,7 +157,7 @@ argument type: a `string` selects the named-timer form above, a callback selects
 
 ## Logging
 
-Benzene logs through the `ILogger` / `ILoggerFactory` abstraction in `@benzene/abstractions`, resolved
+Benzene logs through the `ILogger` / `ILoggerFactory` abstraction in `@benzenejs/abstractions`, resolved
 from the container. There is no Benzene-specific logger to configure: the framework and your handlers
 log through whatever `ILoggerFactory` the host registers. With none registered, a null logger makes
 log calls no-ops. Handlers take a logger by injecting `ILoggerFactory` (or an `ILogger`) through the
@@ -174,7 +174,7 @@ For a single portable call that covers `invocationId`/`traceId`/`spanId`/`topic`
 on every platform — rather than hand-composing those extensions — use `useBenzeneEnrichment`:
 
 ```ts
-import { useBenzeneEnrichment } from '@benzene/diagnostics';
+import { useBenzeneEnrichment } from '@benzenejs/diagnostics';
 
 useBenzeneEnrichment(app);
 ```
@@ -190,7 +190,7 @@ to the trace. See also [Common Middleware → useBenzeneEnrichment](common-middl
 `Benzene` meter:
 
 ```ts
-import { useBenzeneMetrics } from '@benzene/diagnostics';
+import { useBenzeneMetrics } from '@benzenejs/diagnostics';
 
 useBenzeneMetrics(app);
 ```
@@ -226,7 +226,7 @@ trace as its parent — so a distributed trace continues across services instead
 new, disconnected trace. Add it as the **first** middleware in the pipeline:
 
 ```ts
-import { useW3CTraceContext } from '@benzene/diagnostics';
+import { useW3CTraceContext } from '@benzenejs/diagnostics';
 
 useW3CTraceContext(app);
 ```
@@ -244,17 +244,17 @@ root span — so it is always safe to add. See also
 ### Propagating to downstream calls (outbound)
 
 To carry the current trace onto an outbound Benzene message, add the outbound counterpart —
-`useW3CTraceContext` from `@benzene/clients` — to an outbound route pipeline. It stamps the active
+`useW3CTraceContext` from `@benzenejs/clients` — to an outbound route pipeline. It stamps the active
 span's `traceparent`/`tracestate` onto the outgoing message headers:
 
 ```ts
-import { useW3CTraceContext } from '@benzene/clients';
+import { useW3CTraceContext } from '@benzenejs/clients';
 
 useW3CTraceContext(outboundRoute);
 ```
 
 A queue/stream consumer on the receiving end picks the parent back up, as long as the inbound
-`useW3CTraceContext` (from `@benzene/diagnostics`) is the first middleware in its pipeline. See
+`useW3CTraceContext` (from `@benzenejs/diagnostics`) is the first middleware in its pipeline. See
 [Clients](clients.md) for outbound routing and per-transport header forwarding.
 
 ## Reaching a real OpenTelemetry backend
@@ -289,7 +289,7 @@ exported) and `useBenzeneMetrics()`'s instruments are collected — no other cha
 setup is needed. Benzene resolves the tracer and meter lazily on each use, so it always binds to
 whatever provider is registered at the time.
 
-> `BenzeneDiagnostics` (`@benzene/diagnostics`) exposes the shared `tracer` and `meter` (both named
+> `BenzeneDiagnostics` (`@benzenejs/diagnostics`) exposes the shared `tracer` and `meter` (both named
 > `Benzene`) and the `messagesProcessed` / `messageDuration` instruments, should you want to record
 > against them directly.
 

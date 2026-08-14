@@ -1,6 +1,6 @@
 /**
  * Port of Benzene.Mesh.Fleet.Aws.XRay - the AWS realisation of the trace-backed fleet reader (alongside
- * `@benzene/mesh-fleet-tempo` and `@benzene/mesh-fleet-jaeger`): it answers the mesh's `mesh:query:trace`,
+ * `@benzenejs/mesh-fleet-tempo` and `@benzenejs/mesh-fleet-jaeger`): it answers the mesh's `mesh:query:trace`,
  * `mesh:query:correlation`, and the fleet view's recent-flows from **AWS X-Ray**, reusing the same
  * `CompositeMeshFleetReadModel`, query handlers, and mesh UI - a backend on the `IMeshTraceSource` seam with
  * zero upstream change.
@@ -26,7 +26,7 @@
  *   resolving a container-registered `IAmazonXRay` (there is no ambient AWS client token in the TS DI), the
  *   same pattern as the `addSqs*` extensions.
  * - Unlike the Tempo/Jaeger ports, `MeshTraceEvent.exceptionType` IS carried here: this port adds the
- *   `exceptionType` field to `@benzene/mesh-wire`'s `MeshTraceEvent` (it was missing from the snapshot), and
+ *   `exceptionType` field to `@benzenejs/mesh-wire`'s `MeshTraceEvent` (it was missing from the snapshot), and
  *   the mapper reads `benzene.exception.type` into it (spec §3 "the failure's WHY").
  */
 export * from './XRayTraceSourceOptions';

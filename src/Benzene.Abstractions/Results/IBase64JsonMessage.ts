@@ -4,7 +4,7 @@
  *
  * Deviation: as with {@link IRawJsonMessage}, in .NET this lives in the
  * `Benzene.Abstractions.Pipelines` assembly (under the `Benzene.Abstractions.Results` namespace);
- * the port folds it into `@benzene/abstractions`.
+ * the port folds it into `@benzenejs/abstractions`.
  */
 export interface IBase64JsonMessage {
   /** The Base64-encoded JSON string to deliver. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { getZodSchema, registerZodSchema, ZodSchemaRegistry } from '@benzene/zod';
+import { getZodSchema, registerZodSchema, ZodSchemaRegistry } from '@benzenejs/zod';
 
 /**
  * Unit tests for `ZodSchemaRegistry` — the adapter's replacement for FluentValidation's

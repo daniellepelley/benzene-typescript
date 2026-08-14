@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   MeshServiceRegistry,
   MeshServiceRegistryEntry,
   MeshServiceSource,
-} from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-contracts';
 import {
   HttpMeshServiceDispatcher,
   IMeshDispatchEnvironment,
@@ -15,7 +15,7 @@ import {
   MeshDispatchOptions,
   MeshDispatchRequest,
   MeshDispatchResult,
-} from '@benzene/mesh-dispatch';
+} from '@benzenejs/mesh-dispatch';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshDispatchTest.cs (the gate + message-handler classes; the AWS Lambda

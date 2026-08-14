@@ -1,7 +1,7 @@
-import { Constructor, IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
-import { BenzeneResult } from '@benzene/results';
+import { Constructor, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { BenzeneResult } from '@benzenejs/results';
 
 /**
  * Default `IMessageHandlerContext<TRequest, TResponse>` implementation: the per-invocation context

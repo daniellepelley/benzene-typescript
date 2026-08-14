@@ -1,11 +1,11 @@
 /** Port of Benzene.Azure.ServiceBus.TestHelpers.MessageBuilderExtensions. */
 import type { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 /**
- * Turns a platform-neutral `@benzene/testing` `messageBuilder(...)` into a `ServiceBusReceivedMessage`,
+ * Turns a platform-neutral `@benzenejs/testing` `messageBuilder(...)` into a `ServiceBusReceivedMessage`,
  * so a component test can push the demo message through a {@link ServiceBusWorkerBenzeneTestHost} exactly
  * as the broker would deliver it: the topic rides as the `"topic"` application property, every header as
  * a further application property, and the serialized message as the body — the exact shape
@@ -20,7 +20,7 @@ import { jsonMessageSerializer } from './defaults';
  *
  * IDIOM MAP: the two C# overloads (`AsAzureServiceBusMessage()` / `AsAzureServiceBusMessage(ISerializer)`)
  * collapse to one free function with an optional trailing `serializer`, defaulting to JSON — matching the
- * `MessageSerializer` shape reused across the `@benzene/*-test-helpers` builders.
+ * `MessageSerializer` shape reused across the `@benzenejs/*-test-helpers` builders.
  *
  * @param source The message builder.
  * @param serializer The serializer used to render the message body (defaults to JSON).

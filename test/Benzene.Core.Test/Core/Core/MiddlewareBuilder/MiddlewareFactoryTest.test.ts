@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareWrapper, NextFunc } from '@benzene/abstractions-middleware';
-import { FuncWrapperMiddleware, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareWrapper, NextFunc } from '@benzenejs/abstractions-middleware';
+import { FuncWrapperMiddleware, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   DefaultBenzeneServiceContainer,
   DefaultServiceResolverFactory,
   ServiceCollection,
-} from '@benzene/dependencies';
+} from '@benzenejs/dependencies';
 
 /**
  * Verifies that registered IMiddlewareWrapper instances are applied to every

@@ -11,23 +11,23 @@
  * spans/instruments from every API tracer/meter once an SDK is registered, so wiring an exporter is done
  * entirely in the OTel SDK (see `main.ts` / the test harness), not in Benzene.
  */
-import { IBenzeneServiceContainer, ILoggerFactory, NullLoggerFactory } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, ILoggerFactory, NullLoggerFactory } from '@benzenejs/abstractions';
 import { Span, SpanKind } from '@opentelemetry/api';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import {
   addDiagnostics,
   useBenzeneEnrichment,
   useBenzeneMetrics,
   useW3CTraceContext,
-} from '@benzene/diagnostics';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/diagnostics';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { ExampleDiagnostics } from './exampleDiagnostics';
 import {
   CreateOrderMessageHandler,

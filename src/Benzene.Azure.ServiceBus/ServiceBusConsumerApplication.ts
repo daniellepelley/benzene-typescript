@@ -1,9 +1,9 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusConsumerApplication. */
 import { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportNames } from '@benzene/abstractions-message-handlers';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
 import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
 import { ServiceBusSettlementDecision } from './ServiceBusSettlementDecision';
 import { ServiceBusSettlementHolder } from './ServiceBusSettlementHolder';

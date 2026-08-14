@@ -1,10 +1,10 @@
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IRequestEnricher,
   IRequestMapper,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyBytesGetter, IMessageBodyGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyBytesGetter, IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { EnrichingRequestMapper } from './EnrichingRequestMapper';
 import { RequestMapper } from './RequestMapper';
 

@@ -1,6 +1,6 @@
 /** Port of Benzene.HealthChecks.HealthCheckBuilder. */
-import { InjectableConstructor, IRegisterDependency, IServiceResolver } from '@benzene/abstractions';
-import { IDependencyHealthCheck, IHealthCheck, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { InjectableConstructor, IRegisterDependency, IServiceResolver } from '@benzenejs/abstractions';
+import { IDependencyHealthCheck, IHealthCheck, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { HealthCheckFinder } from './HealthCheckFinder';
 import { IHealthCheckFinder } from './IHealthCheckFinder';
 import { InlineHealthCheck } from './InlineHealthCheck';

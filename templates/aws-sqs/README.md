@@ -3,13 +3,13 @@
 A [Benzene](https://github.com/daniellepelley/benzene-typescript) service on AWS Lambda, triggered by
 SQS, generated from the `aws-sqs` template of `create-benzene`.
 
-## Prerequisite: the `@benzene/*` packages
+## Prerequisite: the `@benzenejs/*` packages
 
-This project references the real `@benzene/*` npm packages (see `package.json`). They are **not yet
+This project references the real `@benzenejs/*` npm packages (see `package.json`). They are **not yet
 published to the npm registry**, so a plain `npm install` from the registry will fail until they are.
 To build and test today, resolve them from a local Benzene TypeScript checkout — e.g. generate this
 project next to the [`benzene-typescript`](https://github.com/daniellepelley/benzene-typescript)
-workspace so its `node_modules/@benzene/*` symlinks are on the resolution path, or add a `paths`
+workspace so its `node_modules/@benzenejs/*` symlinks are on the resolution path, or add a `paths`
 mapping / `file:` links to the local packages. Once published, `npm install` works unmodified.
 
 ## Layout
@@ -32,8 +32,8 @@ npm run build   # tsc --noEmit
 npm test        # vitest — boots the app and pushes a message through the real pipeline
 ```
 
-The component test uses `benzeneTestHost(StartUp).buildAwsLambdaHost()` (from `@benzene/testing` +
-`@benzene/aws-lambda-testing`) to boot the exact app `StartUp` configures, swaps `IGreeter` for a spy,
+The component test uses `benzeneTestHost(StartUp).buildAwsLambdaHost()` (from `@benzenejs/testing` +
+`@benzenejs/aws-lambda-testing`) to boot the exact app `StartUp` configures, swaps `IGreeter` for a spy,
 and asserts the handler ran — no deployment needed.
 
 ## Deploy

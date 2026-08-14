@@ -5,11 +5,11 @@
  * The composition root is the unified `BenzeneStartUp` — the SAME shape on every cloud — booted by the
  * one-liner `new AwsLambdaHost(StartUp).lambdaHandler`. Only the `useApiGateway` line is transport-specific.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { PlaceOrderHandler } from '../handlers';
 
 class ApiGatewayStartUp implements BenzeneStartUp {

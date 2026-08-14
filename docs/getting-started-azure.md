@@ -57,28 +57,28 @@ shape the `@azure/functions` v4 model expects.
 ## 2. Install the packages
 
 ```bash
-npm install @benzene/azure-function-core @benzene/azure-function-http \
-  @benzene/azure-function-service-bus @benzene/azure-function-event-hub \
-  @benzene/core-message-handlers @benzene/http @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers
+npm install @benzenejs/azure-function-core @benzenejs/azure-function-http \
+  @benzenejs/azure-function-service-bus @benzenejs/azure-function-event-hub \
+  @benzenejs/core-message-handlers @benzenejs/http @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers
 npm install @azure/functions @azure/service-bus @azure/event-hubs
 npm install --save-dev typescript
 ```
 
 Each Azure trigger has its own transport package:
 
-- `@benzene/azure-function-core` — the `AzureFunctionHost` that boots your `StartUp`, and the
+- `@benzenejs/azure-function-core` — the `AzureFunctionHost` that boots your `StartUp`, and the
   `useAzureFunctions` selector you wire triggers on inside `configure`.
-- `@benzene/azure-function-http` — the HTTP transport (`useAzureHttp`) and its `handleHttpRequest`
+- `@benzenejs/azure-function-http` — the HTTP transport (`useAzureHttp`) and its `handleHttpRequest`
   dispatch helper.
-- `@benzene/azure-function-service-bus` — the Service Bus transport (`useServiceBus`) and
+- `@benzenejs/azure-function-service-bus` — the Service Bus transport (`useServiceBus`) and
   `handleServiceBusMessages`.
-- `@benzene/azure-function-event-hub` — the Event Hub transport (`useEventHub` / `useBenzeneMessage`) and
+- `@benzenejs/azure-function-event-hub` — the Event Hub transport (`useEventHub` / `useBenzeneMessage`) and
   `handleEventHub`.
 
-`@benzene/core-message-handlers` brings the message-handler infrastructure (`addBenzene`,
-`useMessageHandlers`, the `@message` decorator); `@benzene/http` adds the `httpEndpoint` helper;
-`@benzene/results` provides `BenzeneResult`. The `@azure/*` packages are the trigger runtime and its
+`@benzenejs/core-message-handlers` brings the message-handler infrastructure (`addBenzene`,
+`useMessageHandlers`, the `@message` decorator); `@benzenejs/http` adds the `httpEndpoint` helper;
+`@benzenejs/results` provides `BenzeneResult`. The `@azure/*` packages are the trigger runtime and its
 message types.
 
 ## 3. Write a message handler
@@ -87,11 +87,11 @@ Create `src/handlers.ts`. This is where your logic lives — the file you'd carr
 later moved to Express or AWS Lambda:
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -140,11 +140,11 @@ graph, and `configure` wires the transport pipeline on the unified `IBenzeneAppl
 Azure inside it with `useAzureFunctions(app, az => …)`:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useAzureHttp } from '@benzene/azure-function-http';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useAzureHttp } from '@benzenejs/azure-function-http';
 import { PlaceOrderHandler } from './handlers';
 
 export class HttpStartUp implements BenzeneStartUp {
@@ -173,12 +173,12 @@ export class HttpStartUp implements BenzeneStartUp {
 
 Create `src/functions.ts`. This is the only file that knows it's running on Azure Functions: it boots one
 `AzureFunctionHost` per trigger (once, at module load) and exports the native-trigger handler the runtime
-registers. For HTTP that's `.httpFunction`; importing `@benzene/azure-function-http` lights the getter up
+registers. For HTTP that's `.httpFunction`; importing `@benzenejs/azure-function-http` lights the getter up
 (the same import your `StartUp` already needs for `useAzureHttp`):
 
 ```ts
-import { AzureFunctionHost } from '@benzene/azure-function-core';
-import '@benzene/azure-function-http';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+import '@benzenejs/azure-function-http';
 import { HttpStartUp } from './startUp';
 
 /** HTTP trigger (request/response): `POST /orders` returns an order confirmation. */
@@ -245,8 +245,8 @@ the same shape as `HttpStartUp`, only the transport verb differs):
 
 ```ts
 // add to src/startUp.ts
-import { useServiceBus } from '@benzene/azure-function-service-bus';
-import { useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
+import { useServiceBus } from '@benzenejs/azure-function-service-bus';
+import { useBenzeneMessage, useEventHub } from '@benzenejs/azure-function-event-hub';
 import { NotifyWarehouseHandler } from './handlers';
 
 /** Service Bus trigger (batched): each message routes by its `topic` application property. */
@@ -276,8 +276,8 @@ Then boot each in `src/functions.ts` — one `AzureFunctionHost` per trigger, ex
 native getter:
 
 ```ts
-import '@benzene/azure-function-service-bus';
-import '@benzene/azure-function-event-hub';
+import '@benzenejs/azure-function-service-bus';
+import '@benzenejs/azure-function-event-hub';
 import { EventHubStartUp, ServiceBusStartUp } from './startUp';
 
 /** Service Bus trigger (batched): each message routes by its `topic` application property. */
@@ -333,9 +333,9 @@ Each trigger is a transport package with a `use…` function you call inside `co
 
 | Azure trigger | Transport function | Host getter | Package |
 |---|---|---|---|
-| HTTP | `useAzureHttp` | `.httpFunction` | `@benzene/azure-function-http` |
-| Service Bus | `useServiceBus` | `.serviceBusFunction` | `@benzene/azure-function-service-bus` |
-| Event Hub | `useEventHub` / `useBenzeneMessage` | `.eventHubFunction` | `@benzene/azure-function-event-hub` |
+| HTTP | `useAzureHttp` | `.httpFunction` | `@benzenejs/azure-function-http` |
+| Service Bus | `useServiceBus` | `.serviceBusFunction` | `@benzenejs/azure-function-service-bus` |
+| Event Hub | `useEventHub` / `useBenzeneMessage` | `.eventHubFunction` | `@benzenejs/azure-function-event-hub` |
 
 The [`examples/azure-functions`](../examples/azure-functions) project hosts one order domain on all three
 triggers — the handlers identical in shape to the AWS Lambda example's, proving the same handler runs on

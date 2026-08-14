@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.DynamoDbMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 import { DynamoDbUtils } from './DynamoDbUtils';
 

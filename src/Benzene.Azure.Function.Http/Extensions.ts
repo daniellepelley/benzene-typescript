@@ -1,5 +1,5 @@
 import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
 import { AzureHttpRequestEvent } from './AzureHttpApplication';
 
 /**

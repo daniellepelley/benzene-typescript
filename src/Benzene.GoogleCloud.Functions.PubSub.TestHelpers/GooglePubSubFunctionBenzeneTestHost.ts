@@ -1,5 +1,5 @@
-import { IEntryPointMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { MessagePublishedData } from '@benzene/google-cloud-functions-pubsub';
+import { IEntryPointMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { MessagePublishedData } from '@benzenejs/google-cloud-functions-pubsub';
 
 /**
  * In-memory Google Cloud Functions Pub/Sub test host — the GCP Pub/Sub counterpart of

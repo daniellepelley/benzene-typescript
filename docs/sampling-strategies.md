@@ -10,7 +10,7 @@ exporter call. *Sampling* is how you keep a representative fraction of traces in
 
 Benzene does **not** implement its own sampling logic. It emits spans through
 [`@opentelemetry/api`](https://www.npmjs.com/package/@opentelemetry/api) once you call `addDiagnostics()`
-(`@benzene/diagnostics`) — every middleware in every pipeline is wrapped in a span, tagged with
+(`@benzenejs/diagnostics`) — every middleware in every pipeline is wrapped in a span, tagged with
 `benzene.*` attributes. Whether any given span is *recorded and exported* is decided by the `Sampler`
 configured on the OpenTelemetry SDK your app registers. There is no `@benzene` sampling API to learn:
 the sampler is a standard OpenTelemetry construct, applied to Benzene's spans exactly as it would be to
@@ -26,13 +26,13 @@ runs directly — so sampling only becomes relevant once you actually attach an 
 ## Prerequisites / Installation
 
 Node 22+, plus the OpenTelemetry SDK, a sampler source, and an exporter. These are **OpenTelemetry**
-packages (peers of your app), not `@benzene/*` packages:
+packages (peers of your app), not `@benzenejs/*` packages:
 
 ```bash
 npm install @opentelemetry/sdk-node @opentelemetry/sdk-trace-base @opentelemetry/exporter-trace-otlp-http
 ```
 
-`@benzene/diagnostics` (which you already have from `addDiagnostics()`) brings `@opentelemetry/api` in
+`@benzenejs/diagnostics` (which you already have from `addDiagnostics()`) brings `@opentelemetry/api` in
 transitively. The `Sampler` implementations live in `@opentelemetry/sdk-trace-base` (also re-exported by
 `@opentelemetry/sdk-trace-node`); the `NodeSDK` that accepts the `sampler` option comes from
 `@opentelemetry/sdk-node`. Nothing else is needed on the Benzene side — there is no
@@ -100,7 +100,7 @@ backend charges to ingest spans.
 If an inbound request already carries a `traceparent` header with a sampling decision, you usually want
 to honor it rather than re-sample independently, so a distributed trace stays complete across services
 instead of having gaps where one service's sampler disagreed with an upstream one. Benzene's inbound
-`useW3CTraceContext(app)` (`@benzene/diagnostics`) parses `traceparent`, marks the parent
+`useW3CTraceContext(app)` (`@benzenejs/diagnostics`) parses `traceparent`, marks the parent
 `isRemote: true`, and starts the pipeline's root span under it — which is exactly what a `ParentBased`
 sampler keys off:
 

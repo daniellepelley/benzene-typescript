@@ -1,8 +1,8 @@
 import { MessageAttributeValue, SendMessageCommandInput } from '@aws-sdk/client-sqs';
-import { ISerializer, VoidResult } from '@benzene/abstractions';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { convertStatusCode, OutboundContext } from '@benzene/clients';
+import { ISerializer, VoidResult } from '@benzenejs/abstractions';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { convertStatusCode, OutboundContext } from '@benzenejs/clients';
 import { SqsSendMessageContext } from './SqsSendMessageContext';
 
 /**

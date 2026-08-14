@@ -1,6 +1,6 @@
 /** Port of Benzene.HealthChecks.EntityFramework.Extensions, adapted to TypeORM. */
 import { DataSource } from 'typeorm';
-import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { DataSourceTypeOrmDatabase } from './TypeOrmDatabase';
 import { DatabaseConnectionHealthCheckFactory } from './DatabaseConnectionHealthCheckFactory';
 import { DatabaseHealthCheckFactory } from './DatabaseHealthCheckFactory';

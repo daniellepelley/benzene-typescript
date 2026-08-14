@@ -1,7 +1,7 @@
 import {
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Finds handler definitions registered with the dependency injection container

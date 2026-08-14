@@ -11,7 +11,7 @@ than the publisher knowing about every consumer, you publish once to an SNS topi
 subscribe independently. This cookbook covers:
 
 - Publishing a message to SNS with the `topic` message attribute that Benzene subscribers route on.
-- Wiring an SNS-triggered Lambda to Benzene's message handler pipeline with `@benzene/aws-lambda-sns`.
+- Wiring an SNS-triggered Lambda to Benzene's message handler pipeline with `@benzenejs/aws-lambda-sns`.
 - Subscribing multiple Lambda functions to the same SNS topic, and how SNS's failure/retry model differs
   from SQS's.
 
@@ -32,13 +32,13 @@ subscribe independently. This cookbook covers:
 Each subscriber Lambda:
 
 ```bash
-npm install @benzene/aws-lambda
+npm install @benzenejs/aws-lambda
 # for the Testing section:
-npm install --save-dev @benzene/aws-lambda-testing
+npm install --save-dev @benzenejs/aws-lambda-testing
 ```
 
 Publisher (whichever service raises the event). Benzene ships an SNS outbound client —
-`@benzene/clients-aws-sns`'s `useSns` / `useSnsClient` (`SnsClientMiddleware`) — for publishing from
+`@benzenejs/clients-aws-sns`'s `useSns` / `useSnsClient` (`SnsClientMiddleware`) — for publishing from
 inside a Benzene outbound-routing pipeline (see [Clients](../clients.md) and
 [Response as Event](response-as-event.md)). For a standalone publisher like the one below that isn't
 itself a Benzene pipeline, publish with the AWS SDK directly:
@@ -92,9 +92,9 @@ one entry point over the shared startup.
 **Lambda 1 — sends the customer a notification email:**
 
 ```ts
-import { IBenzeneResultOf, IMessageHandler, message, useMessageHandlers, AwsLambdaHost, useAwsLambda, useSns, BenzeneResult } from '@benzene/aws-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneResultOf, IMessageHandler, message, useMessageHandlers, AwsLambdaHost, useAwsLambda, useSns, BenzeneResult } from '@benzenejs/aws-lambda';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
 import { IEmailService } from './EmailService.js';
 
 export class OrderPlacedMessage {
@@ -160,7 +160,7 @@ functions with separate SNS subscriptions, each function receives its own indepe
 from SNS and runs it through its own pipeline. This is fan-out: the publisher sent one message; both
 Lambdas received and processed it, each doing something different.
 
-A few things to know about `@benzene/aws-lambda-sns` from reading `SnsApplication` directly:
+A few things to know about `@benzenejs/aws-lambda-sns` from reading `SnsApplication` directly:
 
 - **It's fire-and-forget.** `SnsApplication.handleAsync` returns `Promise<void>` — unlike SQS's
   `SqsApplication`, there is no `batchItemFailures`-style partial-failure reporting for SNS (SNS-to-Lambda
@@ -177,7 +177,7 @@ A few things to know about `@benzene/aws-lambda-sns` from reading `SnsApplicatio
 in the TypeScript port (purely additive/opt-in):
 
 ```ts
-import { useSns, useMessageHandlers } from '@benzene/aws-lambda';
+import { useSns, useMessageHandlers } from '@benzenejs/aws-lambda';
 
 useSns(
   app,
@@ -249,12 +249,12 @@ returns `null`).
 ```ts
 import { describe, expect, it } from 'vitest';
 import { SNSEvent } from 'aws-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda, useSns } from '@benzene/aws-lambda';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asSns } from '@benzene/aws-lambda-testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda, useSns } from '@benzenejs/aws-lambda';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
+import { asSns } from '@benzenejs/aws-lambda-testing';
 import { SendOrderConfirmationEmailHandler } from '../src/SendOrderConfirmationEmailHandler.js';
 import { IEmailService } from '../src/EmailService.js';
 
@@ -325,7 +325,7 @@ escalated and redelivered — and make the handler idempotent, since SNS redeliv
 
 If a subscriber needs message durability/backpressure (rather than raw SNS-to-Lambda, which has no queue
 in front of it), subscribe an SQS queue to the topic instead of the Lambda directly (`protocol = "sqs"`),
-then trigger that subscriber's Lambda from the queue with `@benzene/aws-lambda-sqs` as covered in
+then trigger that subscriber's Lambda from the queue with `@benzenejs/aws-lambda-sqs` as covered in
 [Handling SQS Message Failures](handling-sqs-failures.md). This gets you SQS's partial-batch-failure
 reporting and DLQ support for that specific subscriber, at the cost of an extra hop.
 

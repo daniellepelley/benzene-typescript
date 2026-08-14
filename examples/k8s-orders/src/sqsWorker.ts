@@ -9,9 +9,9 @@
  * inline: `startAsync` is this worker's own poll loop and does not resolve until stopped).
  */
 import { SQSClient } from '@aws-sdk/client-sqs';
-import { SqsClientFactory, useSqs } from '@benzene/aws-sqs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { SqsClientFactory, useSqs } from '@benzenejs/aws-sqs';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { PlaceOrderHandler } from './domain.js';
 
 function requireEnv(name: string): string {

@@ -1,7 +1,7 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message, MessageHandlersRegistry } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 /** The registry the conformance handlers register with, keeping them out of the global one. */
 export const conformanceRegistry = new MessageHandlersRegistry();

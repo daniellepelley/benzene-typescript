@@ -1,5 +1,5 @@
 /** Port of Benzene.Diagnostics.Timers.Extensions (both `UseTimer` overloads). */
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { OnTimer, TimerMiddleware } from './TimerMiddleware';
 import { IProcessTimerFactory } from './Timers/IProcessTimerFactory';
 
@@ -11,7 +11,7 @@ import { IProcessTimerFactory } from './Timers/IProcessTimerFactory';
  * cannot add a method to the builder base class from a separate package, so this is a free
  * function taking the builder as its first argument and returning it for chaining — the same
  * shape the non-fluent extension-method convention already uses across the port (cf.
- * `useRetry` in `@benzene/resilience`).
+ * `useRetry` in `@benzenejs/resilience`).
  *
  * C# overloads `UseTimer` twice; they are distinguishable at runtime here (a `string` timer name
  * vs an `onTimer` callback), so the two collapse into one function that dispatches on `typeof`:

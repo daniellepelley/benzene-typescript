@@ -1,6 +1,6 @@
 /** Port of Benzene.Cache.Redis.IRedisConnectionFactory. */
 import type { RedisOptions } from 'ioredis';
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The subset of the ioredis `Redis` client surface the cache adapter uses. Declaring our own

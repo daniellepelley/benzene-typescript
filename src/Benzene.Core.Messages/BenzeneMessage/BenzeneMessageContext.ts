@@ -9,7 +9,7 @@ import { BenzeneMessageResponse } from './BenzeneMessageResponse';
  * Port of Benzene.Core.Messages.BenzeneMessage.BenzeneMessageContext.
  *
  * IMPORTANT: this is DISTINCT from the handler-pipeline `MessageHandlerContext`
- * (`@benzene/core-message-handlers`'s `BenzeneMessageContext.ts` file) — that one is the
+ * (`@benzenejs/core-message-handlers`'s `BenzeneMessageContext.ts` file) — that one is the
  * per-invocation request/response context a single handler sees; this one is the transport envelope
  * a whole pipeline runs over.
  */

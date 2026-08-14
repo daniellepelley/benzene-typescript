@@ -1,7 +1,7 @@
-import { ISerializer } from '@benzene/abstractions';
-import { IMessageHandlerResult, IResponsePayloadMapper } from '@benzene/abstractions-message-handlers';
-import { isRawStringMessage } from '@benzene/abstractions-messages';
-import { ErrorPayload } from '@benzene/results';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IMessageHandlerResult, IResponsePayloadMapper } from '@benzenejs/abstractions-message-handlers';
+import { isRawStringMessage } from '@benzenejs/abstractions-messages';
+import { ErrorPayload } from '@benzenejs/results';
 
 /**
  * Default `IResponsePayloadMapper<TContext>` implementation: serializes the handler's success

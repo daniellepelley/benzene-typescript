@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IGrpcMethodDefinition } from './IGrpcMethodDefinition';
 
 /** Port of Benzene.Grpc.IGrpcRouteFinder. Case-insensitive gRPC method-path → definition lookup. */

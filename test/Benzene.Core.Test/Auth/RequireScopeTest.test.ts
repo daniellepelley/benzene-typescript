@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OAuth2BearerOptions, requireScope, useOAuth2Bearer } from '@benzene/auth-oauth2';
+import { OAuth2BearerOptions, requireScope, useOAuth2Bearer } from '@benzenejs/auth-oauth2';
 import { createSecureEvent, runSecure } from './authHost';
 import { FakeJwksServer, withJwks } from './FakeJwksServer';
 

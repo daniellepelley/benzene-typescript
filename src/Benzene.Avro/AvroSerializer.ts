@@ -1,5 +1,5 @@
 /** Port of Benzene.Avro.AvroSerializer. */
-import { Constructor, IPayloadSerializer, ISerializer } from '@benzene/abstractions';
+import { Constructor, IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
 import { AvroOptions } from './AvroOptions';
 import { AvroSchemaResolver } from './AvroSchemaResolver';
 import { IAvroSchemaResolver } from './IAvroSchemaResolver';

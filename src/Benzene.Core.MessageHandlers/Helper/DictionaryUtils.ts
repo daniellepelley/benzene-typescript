@@ -1,12 +1,12 @@
-import { DictionaryUtils as CoreDictionaryUtils } from '@benzene/core';
+import { DictionaryUtils as CoreDictionaryUtils } from '@benzenejs/core';
 
 /**
  * Dictionary merge/enrich helpers used mainly by `EnrichingRequestMapper<TContext>` to fold
  * enricher-supplied values onto an already-mapped request.
  * Port of Benzene.Core.MessageHandlers.Helper.DictionaryUtils (a DIFFERENT type from
- * `@benzene/core`'s `DictionaryUtils`).
+ * `@benzenejs/core`'s `DictionaryUtils`).
  *
- * `mapOnto` is re-exported unchanged from `@benzene/core`'s `DictionaryUtils`: its already-ported
+ * `mapOnto` is re-exported unchanged from `@benzenejs/core`'s `DictionaryUtils`: its already-ported
  * `mapOnto` (lower-case keys, only filling missing/undefined/null entries) is behaviourally
  * identical to this C# type's `MapOnto(IDictionary<string, object>, ...)` overload, so it is reused
  * rather than duplicated. Only `enrich` is genuinely new here.
@@ -23,7 +23,7 @@ import { DictionaryUtils as CoreDictionaryUtils } from '@benzene/core';
  * a `null`/`undefined` `source` is defaulted to `{}` (the port of `Activator.CreateInstance<T>()`).
  */
 export const DictionaryUtils = {
-  /** Reused from `@benzene/core`; see the type doc comment. Port of C# `MapOnto`. */
+  /** Reused from `@benzenejs/core`; see the type doc comment. Port of C# `MapOnto`. */
   mapOnto: CoreDictionaryUtils.mapOnto,
 
   /**

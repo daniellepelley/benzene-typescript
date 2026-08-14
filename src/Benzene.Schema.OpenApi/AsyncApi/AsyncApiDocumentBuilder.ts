@@ -1,7 +1,7 @@
 /** Port of Benzene.Schema.OpenApi.AsyncApi.AsyncApiDocumentBuilder (the `asyncapi` document format). */
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IApplicationInfo, IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { IMessageDefinition } from '@benzene/abstractions-messages';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IApplicationInfo, IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { IMessageDefinition } from '@benzenejs/abstractions-messages';
 import { ISchemaBuilder } from '../ISchemaBuilder';
 import { SchemaBuilder } from '../SchemaBuilder';
 import { DEFAULT_RESPONSE_TOPIC_SUFFIX } from './AsyncApiSpecOptions';

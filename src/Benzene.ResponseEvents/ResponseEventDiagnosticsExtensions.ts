@@ -4,8 +4,8 @@ import {
   IServiceResolver,
   serviceIdentifierName,
   VoidResult,
-} from '@benzene/abstractions';
-import { IMessageHandlersFinder } from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions';
+import { IMessageHandlersFinder } from '@benzenejs/abstractions-message-handlers';
 import { IResponseEventCatalog } from './ResponseEventCatalog';
 import { ResponseEventGap } from './ResponseEventGap';
 

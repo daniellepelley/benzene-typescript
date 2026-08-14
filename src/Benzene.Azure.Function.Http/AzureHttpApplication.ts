@@ -1,10 +1,10 @@
 import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   EntryPointMiddlewareApplicationWithResult,
   MiddlewareApplicationWithResult,
-} from '@benzene/core-middleware';
+} from '@benzenejs/core-middleware';
 import { AzureHttpContext, ensureResponseExists } from './AzureHttpContext';
 
 /**

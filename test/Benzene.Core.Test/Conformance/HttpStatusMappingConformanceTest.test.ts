@@ -9,8 +9,8 @@
  * mapper the .NET reverse test exercises.
  */
 import { describe, expect, it } from 'vitest';
-import { convertHttpStatusCode } from '@benzene/results';
-import { DefaultHttpStatusCodeMapper } from '@benzene/http';
+import { convertHttpStatusCode } from '@benzenejs/results';
+import { DefaultHttpStatusCodeMapper } from '@benzenejs/http';
 import { load } from './ConformanceFixtures';
 
 interface MappingRow {

@@ -2,7 +2,7 @@
 
 /**
  * Benzene's own model of a blob trigger delivery — dependency-free, mirroring how the .NET package
- * models it (and how `@benzene/aws-lambda-kinesis` models its Lambda event). Built from what the
+ * models it (and how `@benzenejs/aws-lambda-kinesis` models its Lambda event). Built from what the
  * isolated-worker `BlobTrigger` hands the function: the blob's content (bind `byte[]`) and its name
  * (bind the `{name}` expression as a `string` parameter).
  *

@@ -1,7 +1,7 @@
-import { ISerializer } from '@benzene/abstractions';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { BenzeneMessageClientResponse, OutboundContext } from '@benzene/clients';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageClientResponse, OutboundContext } from '@benzenejs/clients';
 import { buildInProcessRequest } from './InProcessRequestBuilder';
 import { InProcessSendMessageContext } from './InProcessSendMessageContext';
 

@@ -1,8 +1,8 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IMessageRouterBuilder,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Default `IMessageRouterBuilder` implementation, passed to the configuration callback given to the

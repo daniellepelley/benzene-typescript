@@ -1,6 +1,6 @@
 /** Port of Benzene.Avro.AvroMediaFormat. */
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { AcceptHeaderMediaFormatBase } from '@benzene/core-message-handlers';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { AcceptHeaderMediaFormatBase } from '@benzenejs/core-message-handlers';
 import { AvroSerializer } from './AvroSerializer';
 import { Constants } from './Constants';
 

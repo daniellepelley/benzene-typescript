@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kinesis.Extensions (adapted — see the ADAPTATION note). */
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext } from '@benzene/aws-lambda-core';
-import { createMiddlewarePipeline } from '@benzene/core-middleware';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext } from '@benzenejs/aws-lambda-core';
+import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { addKinesis } from './DependencyInjectionExtensions';
 import { KinesisApplication } from './KinesisApplication';
 import { KinesisLambdaHandler } from './KinesisLambdaHandler';

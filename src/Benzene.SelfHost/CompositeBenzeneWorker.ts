@@ -1,4 +1,4 @@
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 
 /**
  * Aggregates several {@link IBenzeneWorker}s as one, starting and stopping them together.

@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.Core.IAzureFunctionAppBuilder. */
-import { IRegisterDependency, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IRegisterDependency, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
 import { AzureEntryPointApplication } from './AzureFunctionApp';
 

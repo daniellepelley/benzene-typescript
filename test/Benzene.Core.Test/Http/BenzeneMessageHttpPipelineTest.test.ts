@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyResult } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { BenzeneMessageHttpOptions, httpEndpoint, useBenzeneMessage } from '@benzene/http';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+} from '@benzenejs/core-message-handlers';
+import { BenzeneMessageHttpOptions, httpEndpoint, useBenzeneMessage } from '@benzenejs/http';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 
 /**
  * Port of Benzene.Test.Http.BenzeneMessageHttpPipelineTest: wire the BenzeneMessage-over-HTTP endpoint

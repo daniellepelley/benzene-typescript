@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Discovery.Aws.AwsLambdaDiscoveryProvider. */
 import { FunctionConfiguration, LambdaClient, ListFunctionsCommand, ListTagsCommand } from '@aws-sdk/client-lambda';
-import { IMeshDiscoveryProvider, MeshDiscoveryFilter, MeshServiceRegistryEntry, MeshServiceSource } from '@benzene/mesh-contracts';
+import { IMeshDiscoveryProvider, MeshDiscoveryFilter, MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
 
 /**
  * Upper bound on concurrent `ListTags` calls during discovery. Keeps a large account from firing hundreds of

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IServiceResolver, serviceToken } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneResultOf, IServiceResolver, serviceToken } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   HealthCheckResponse,
   HealthCheckResult,
@@ -9,7 +9,7 @@ import {
   IHealthCheck,
   IHealthCheckBuilder,
   SchemaHealthCheckConstants,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import {
   addContractCheck,
   addContractCheckInstance,
@@ -17,10 +17,10 @@ import {
   ClientHealthCheck,
   ClientHealthCheckProcessor,
   IHasHealthCheck,
-} from '@benzene/clients-health-checks';
+} from '@benzenejs/clients-health-checks';
 
 /**
- * Port-verification tests for `@benzene/clients-health-checks`. The C# package `Benzene.Clients.HealthChecks`
+ * Port-verification tests for `@benzenejs/clients-health-checks`. The C# package `Benzene.Clients.HealthChecks`
  * ships no test suite, so these are new tests that exercise the ported behaviour (contract-drift verdict,
  * status mapping, reachability) rather than a mirror of C# scenarios.
  */

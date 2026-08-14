@@ -2,9 +2,9 @@
  * Port of Benzene.Aws.Lambda.Sns.Extensions (C# fluent extension method -> free function taking the
  * builder as its first argument).
  */
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext } from '@benzene/aws-lambda-core';
-import { createMiddlewarePipeline } from '@benzene/core-middleware';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext } from '@benzenejs/aws-lambda-core';
+import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { addSns } from './DependencyInjectionExtensions';
 import { SnsApplication } from './SnsApplication';
 import { SnsLambdaHandler } from './SnsLambdaHandler';

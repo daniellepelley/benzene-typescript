@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { decode, encode } from '@msgpack/msgpack';
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   Constants,
   MessagePackMediaFormat,
   MessagePackSerializer,
-} from '@benzene/messagepack';
+} from '@benzenejs/messagepack';
 
 /**
  * Port of the Benzene.MessagePack serialization scenarios, adapted to the @msgpack/msgpack library.

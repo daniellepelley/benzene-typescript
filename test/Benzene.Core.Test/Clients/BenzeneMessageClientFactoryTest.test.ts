@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IServiceResolver } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneResultOf, IServiceResolver } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   BenzeneMessageClientFactory,
   ClientMapping,
   IBenzeneMessageClient,
   TopicAndServiceKey,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 
 /**
  * Port of Benzene.Test.Clients.BenzeneMessageClientFactoryTest: the (service, topic) -> client

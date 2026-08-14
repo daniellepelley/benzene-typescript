@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { KafkaContext } from './KafkaContext';
 
 /**

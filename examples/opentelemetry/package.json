@@ -2,19 +2,19 @@
   "name": "@benzene-example/opentelemetry",
   "version": "0.1.0",
   "private": true,
-  "description": "A BenzeneMessage service instrumented with @benzene/diagnostics: a span per pipeline middleware plus business child spans, exported through any OpenTelemetry SDK",
+  "description": "A BenzeneMessage service instrumented with @benzenejs/diagnostics: a span per pipeline middleware plus business child spans, exported through any OpenTelemetry SDK",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/core-messages": "0.1.0",
-    "@benzene/core-middleware": "0.1.0",
-    "@benzene/diagnostics": "0.1.0",
-    "@benzene/dependencies": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/core-messages": "0.1.0-beta.1",
+    "@benzenejs/core-middleware": "0.1.0-beta.1",
+    "@benzenejs/diagnostics": "0.1.0-beta.1",
+    "@benzenejs/dependencies": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1"
   }
 }

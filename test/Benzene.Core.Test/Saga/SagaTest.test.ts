@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
-import { SagaBuilder, SagaOutcome, SagaStepState } from '@benzene/saga';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
+import { SagaBuilder, SagaOutcome, SagaStepState } from '@benzenejs/saga';
 
 /**
  * Port of test/Benzene.Core.Test/Saga/SagaTest.cs. The one C# case that relied on the type-keyed

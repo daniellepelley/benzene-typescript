@@ -1,6 +1,6 @@
 /** Port of Benzene.Schema.OpenApi.OpenApi.OpenApiDocumentBuilder (the `openapi` document format). */
-import { IApplicationInfo, IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { IHttpEndpointDefinition } from '@benzene/http';
+import { IApplicationInfo, IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { IHttpEndpointDefinition } from '@benzenejs/http';
 import { ISchemaBuilder } from '../ISchemaBuilder';
 import { SchemaBuilder } from '../SchemaBuilder';
 

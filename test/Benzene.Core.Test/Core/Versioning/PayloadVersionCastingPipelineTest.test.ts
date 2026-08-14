@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzene,
   addBenzeneMessage,
@@ -11,13 +11,13 @@ import {
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   registerPayloadSchemaVersions,
   registerSchemaCastDefinitions,
   usePayloadVersionCasting,
-} from '@benzene/core-versioning';
+} from '@benzenejs/core-versioning';
 import { V1OrderPayload, V2OrderPayload } from './exampleSchemas';
 
 /**

@@ -1,5 +1,5 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IContextPredicate } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IContextPredicate } from '@benzenejs/abstractions-middleware';
 
 /**
  * An `IContextPredicate` backed by an inline function.

@@ -1,9 +1,9 @@
 /**
- * `@benzene/google-cloud-functions-http-testing` — the in-memory test harness for a Benzene service hosted
+ * `@benzenejs/google-cloud-functions-http-testing` — the in-memory test harness for a Benzene service hosted
  * on Google Cloud Functions Gen2 HTTP. Port of Benzene.GoogleCloud.Functions.Http.TestHelpers, and the GCP
- * counterpart of `@benzene/aws-lambda-testing` / `@benzene/azure-function-testing`.
+ * counterpart of `@benzenejs/aws-lambda-testing` / `@benzenejs/azure-function-testing`.
  *
- * Boot a real startup with `benzeneTestHost(MyStartUp)` (from `@benzene/testing`), override any dependency
+ * Boot a real startup with `benzeneTestHost(MyStartUp)` (from `@benzenejs/testing`), override any dependency
  * with `.withServices(...)`, then finish with the single GCP-specific line `buildGoogleCloudFunctionHost(...)`
  * to get a {@link GoogleCloudFunctionBenzeneTestHost}. Turn a neutral `httpBuilder(method, path, body)` into
  * the native Functions Framework request with `asGoogleCloudHttpRequest`, push it in with

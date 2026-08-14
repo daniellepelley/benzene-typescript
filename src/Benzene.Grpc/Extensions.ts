@@ -1,9 +1,9 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
-import { addBenzene, TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
+import { addBenzene, TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   handleBidiStreamingCall,
   handleClientStreamingCall,
@@ -206,7 +206,7 @@ export class GrpcBenzeneBridge {
 
 /**
  * Wires Benzene message handlers to gRPC and returns the {@link GrpcBenzeneBridge} the grpc-js `Server`
- * dispatches through. Modeled on `@benzene/express`'s `benzene()`: build a container, register the
+ * dispatches through. Modeled on `@benzenejs/express`'s `benzene()`: build a container, register the
  * Benzene + gRPC services, build the pipeline from `configure` (tagging the transport `"grpc"`), then wire
  * the method-handler factory into the accessor and resolve the route finder once.
  *

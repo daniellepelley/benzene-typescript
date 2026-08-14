@@ -1,9 +1,9 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IBenzeneClientContext,
   IBenzeneClientContextMiddlewareBuilder,
-} from '@benzene/abstractions-messages';
-import { IMiddleware } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-messages';
+import { IMiddleware } from '@benzenejs/abstractions-middleware';
 import { ValidationClientMiddleware } from './ValidationClientMiddleware';
 
 /**

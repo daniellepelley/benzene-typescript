@@ -1,8 +1,8 @@
 /** Port of Benzene.Azure.Function.BlobStorage.BlobStorageApplication. */
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { EntryPointMiddlewareApplication, MiddlewareApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { EntryPointMiddlewareApplication, MiddlewareApplication } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { BlobStorageContext } from './BlobStorageContext';
 import { BlobTriggerEvent } from './BlobTriggerEvent';
 

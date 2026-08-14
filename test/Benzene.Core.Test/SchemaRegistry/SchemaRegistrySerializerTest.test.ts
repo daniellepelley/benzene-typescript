@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Constructor, IPayloadSerializer, ISerializer } from '@benzene/abstractions';
+import { Constructor, IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
 import {
   ConfluentWireFormat,
   DelegateSchemaResolver,
@@ -9,7 +9,7 @@ import {
   SchemaDefinition,
   SchemaRegistrar,
   SchemaRegistrySerializer,
-} from '@benzene/schema-registry-core';
+} from '@benzenejs/schema-registry-core';
 
 /**
  * Port of test/Benzene.Core.Test/SchemaRegistry/SchemaRegistrySerializerTest.cs. C#'s `typeof(string)`

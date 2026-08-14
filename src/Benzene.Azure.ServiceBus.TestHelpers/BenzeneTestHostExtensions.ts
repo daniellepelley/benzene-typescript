@@ -9,17 +9,17 @@
  * extension method becomes a TypeScript **fluent method** added to the builder by module augmentation +
  * a prototype assignment — the same shape the sibling AWS Lambda helper's `buildAwsLambdaHost()` uses,
  * keeping the `benzeneTestHost(StartUp).withServices(...).buildServiceBusWorkerHost()` chain intact. The
- * neutral `@benzene/testing` core stays free of any cloud import; importing this package (for its
+ * neutral `@benzenejs/testing` core stays free of any cloud import; importing this package (for its
  * `asAzureServiceBusMessage` builder) is what lights the method up. A `this` constraint pins it to a
  * startup whose `configure` receives the unified `IBenzeneApplicationBuilder`.
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { ServiceBusConsumerApplication } from '@benzene/azure-service-bus';
-import { WorkerApplicationBuilder } from '@benzene/self-host';
-import { BenzeneTestHostBuilder } from '@benzene/testing';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { ServiceBusConsumerApplication } from '@benzenejs/azure-service-bus';
+import { WorkerApplicationBuilder } from '@benzenejs/self-host';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
 import { ServiceBusWorkerBenzeneTestHost } from './ServiceBusWorkerBenzeneTestHost';
 
-declare module '@benzene/testing' {
+declare module '@benzenejs/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {
     /**
      * Builds a {@link ServiceBusWorkerBenzeneTestHost} from the startup + any `withServices`/

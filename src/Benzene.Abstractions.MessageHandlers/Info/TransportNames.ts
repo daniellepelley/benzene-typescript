@@ -22,7 +22,7 @@ export const TransportNames = {
   Http: 'http',
   Asp: 'asp',
   /**
-   * TS-only addition (no C# counterpart): the Express host adapter (`@benzene/express`, the analog of
+   * TS-only addition (no C# counterpart): the Express host adapter (`@benzenejs/express`, the analog of
    * `Benzene.AspNet.Core`) reports this transport. Added here so its name is centralized like the rest.
    */
   Express: 'express',
@@ -30,7 +30,7 @@ export const TransportNames = {
   Grpc: 'grpc',
   Benzene: 'benzene',
   /**
-   * The in-process transport (`@benzene/clients-in-process`): a topic dispatched straight to a
+   * The in-process transport (`@benzenejs/clients-in-process`): a topic dispatched straight to a
    * handler registered in the same runtime, never over any wire. Matches .NET's
    * `TransportNames.InProcess` (hyphenated, matching `service-bus`/`queue-storage`).
    */

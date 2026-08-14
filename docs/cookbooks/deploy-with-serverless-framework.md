@@ -56,11 +56,11 @@ exports the bound handler:
 
 ```ts
 // src/startUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { PlaceOrderHandler } from './handlers.js';
 
 export class StartUp implements BenzeneStartUp {
@@ -76,7 +76,7 @@ export class StartUp implements BenzeneStartUp {
 
 ```ts
 // src/index.ts
-import { AwsLambdaHost } from '@benzene/aws-lambda-core';
+import { AwsLambdaHost } from '@benzenejs/aws-lambda-core';
 import { StartUp } from './startUp.js';
 
 // The function the Serverless Framework's `handler:` string points at.
@@ -174,17 +174,17 @@ each transport in its own isolated route, selected by an event-shape predicate
 
 ```ts
 // src/index.ts — one function fronting HTTP + SQS + SNS
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
 import {
   compositeAwsLambda,
   isApiGatewayEvent,
   isSqsEvent,
   isSnsEvent,
   toLambdaHandler,
-} from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useSns } from '@benzene/aws-lambda-sns';
+} from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useSns } from '@benzenejs/aws-lambda-sns';
 import { PlaceOrderHandler, NotifyWarehouseHandler, AuditOrderHandler } from './handlers.js';
 
 const entryPoint = compositeAwsLambda((c) => {
@@ -235,24 +235,24 @@ functions:
 `serverless-offline` emulates API Gateway/Lambda for Node functions, so it *can* run a Benzene handler
 locally. But Benzene's own local paths are a faster inner loop and need no AWS emulation:
 
-- **Host the same handlers on [Express](../getting-started.md)** (`@benzene/express`) for a plain local
+- **Host the same handlers on [Express](../getting-started.md)** (`@benzenejs/express`) for a plain local
   HTTP server — the point of "write your handlers once, host them anywhere".
-- **Drive the pipeline in-process from a test** with `@benzene/aws-lambda-testing` — no bundle, no deploy
+- **Drive the pipeline in-process from a test** with `@benzenejs/aws-lambda-testing` — no bundle, no deploy
   (see [Testing](#testing)).
 
 ## Testing
 
 Deployment config isn't unit-testable, but the handler behind it is — and the same handler runs identically
 whether SAM, CDK, or the Serverless Framework deployed it. Test the pipeline in-process: build the native
-event with `@benzene/aws-lambda-testing`'s `asApiGatewayRequest` over `@benzene/testing`'s `httpBuilder`,
+event with `@benzenejs/aws-lambda-testing`'s `asApiGatewayRequest` over `@benzenejs/testing`'s `httpBuilder`,
 and invoke the exported `handler`:
 
 ```ts
 // test/api.test.ts
 import { describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { httpBuilder } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+import { httpBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { handler } from '../src/index.js';
 
 const context = {} as Context;

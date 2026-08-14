@@ -1,7 +1,7 @@
 /** Port of Benzene.Avro.DependencyInjectionExtensions. */
-import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import { AvroMediaFormat } from './AvroMediaFormat';
 import { AvroOptions } from './AvroOptions';
 import { AvroSchemaResolver } from './AvroSchemaResolver';

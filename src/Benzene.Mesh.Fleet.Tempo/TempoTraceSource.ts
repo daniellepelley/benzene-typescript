@@ -6,8 +6,8 @@ import {
   MeshTimeRangeResolver,
   TraceSummary,
   TraceView,
-} from '@benzene/mesh-collector';
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-collector';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 import { TempoTraceMapper } from './TempoTraceMapper';
 import { TempoTraceSourceOptions } from './TempoTraceSourceOptions';
 
@@ -38,14 +38,14 @@ type JsonObject = Record<string, unknown>;
  * same `CompositeMeshFleetReadModel`, handlers, and UI as the X-Ray/Jaeger adapters, differing only in the
  * backend it reads.
  *
- * Unlike the topology adapter (`@benzene/mesh-tracing-tempo`, which queries Tempo's metrics-generator via
+ * Unlike the topology adapter (`@benzenejs/mesh-tracing-tempo`, which queries Tempo's metrics-generator via
  * PromQL), this reads Tempo's *trace* API directly. Trace stats and service health are deliberately not
  * sourced here (see {@link IMeshTraceSource}): traces are sampled and Tempo has no heartbeat feed. Following
  * the topology adapter's philosophy, a reachable-but-unsuccessful response (HTTP error, or an
  * unexpected/empty body) surfaces as undefined/empty rather than throwing; a genuine connection failure (the
  * `fetch` rejecting) still throws (and the composite's fetch-isolation degrades that slice).
  *
- * `HttpClient` -> injectable `fetch` (mirroring `@benzene/mesh-tracing-tempo`'s query client); the body is
+ * `HttpClient` -> injectable `fetch` (mirroring `@benzenejs/mesh-tracing-tempo`'s query client); the body is
  * read on any `response.ok`, like `GetAsync` + `ReadAsStringAsync`. `CancellationToken` -> optional
  * `AbortSignal`; `DateTimeOffset` -> epoch-ms `number` (search params are epoch **seconds**, as Tempo's
  * `/api/search` expects, matching the C# `ToUnixTimeSeconds()`).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneResultOf, IServiceResolver } from '@benzenejs/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IHasMessageResult,
@@ -12,11 +12,11 @@ import {
   IMessageResult,
   IMessageTopicGetter,
   IRequestMapper,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter, ITopic } from '@benzene/abstractions-messages';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { Topic } from '@benzene/core-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter, ITopic } from '@benzenejs/abstractions-messages';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   DefaultStatuses,
   HandlerPipelineBuilder,
@@ -34,8 +34,8 @@ import {
   VersionSelector,
   message,
   MessageHandlersRegistry,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /** End-to-end port of the message-routing scenarios exercised across Benzene.Core.Test. */
 

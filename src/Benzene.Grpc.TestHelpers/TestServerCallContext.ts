@@ -28,7 +28,7 @@ const DEFAULT_METHOD = '/benzene.test.TestService/Echo';
  * context distinct from the request message; `@grpc/grpc-js` has no such separate object — the call *is* the
  * context (it carries `request`, `metadata`, `cancelled`, `getDeadline()`, `getPath()`), so this fakes a
  * `ServerUnaryCall` rather than a standalone context. It satisfies the {@link GrpcServerCall} surface
- * `@benzene/grpc` reads, so `new GrpcContext(topic, createServerUnaryCall({ ... }))` drives the whole unary
+ * `@benzenejs/grpc` reads, so `new GrpcContext(topic, createServerUnaryCall({ ... }))` drives the whole unary
  * pipeline with no live gRPC server or socket — exactly how every other transport worker is unit-tested.
  *
  * @typeParam TRequest The request message type.

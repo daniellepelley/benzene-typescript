@@ -1,4 +1,4 @@
-import { IServiceResolver, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IServiceResolver, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IMessageHandlerResult } from '../IMessageHandlerResult';
 import { IBenzeneResponseAdapter } from './IBenzeneResponseAdapter';
 

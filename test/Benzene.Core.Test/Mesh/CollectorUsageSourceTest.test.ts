@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CollectorUsageSource, MeshCollectorStore } from '@benzene/mesh-collector';
-import { MeshUsageSource } from '@benzene/mesh-contracts';
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+import { CollectorUsageSource, MeshCollectorStore } from '@benzenejs/mesh-collector';
+import { MeshUsageSource } from '@benzenejs/mesh-contracts';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 /**
  * Port of test/Benzene.Mesh.Test/CollectorUsageSourceTest.cs. The collector->aggregator usage bridge:

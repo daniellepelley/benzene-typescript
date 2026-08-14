@@ -5,7 +5,7 @@
  * builder into a `BenzeneMessageRequest`, and `asRawHttpRequest` renders an HTTP builder as raw HTTP/1.1.
  *
  * Transport-specific `as*` builders (turning a builder into a native SQS/SNS/API Gateway/… event) live
- * in the per-platform testing packages, e.g. `@benzene/aws-lambda-testing`, which build on these.
+ * in the per-platform testing packages, e.g. `@benzenejs/aws-lambda-testing`, which build on these.
  *
  * `benzeneTestHost(StartUp)` is the neutral startup-host builder (port of `BenzeneTestHost` /
  * `BenzeneTestHostBuilder`): boot a real app from its `BenzeneStartUp`, override any dependency with

@@ -24,12 +24,12 @@ asserts the end result.
 Each service is **one Lambda** — a composite entry point (`compositeAwsLambda`) that:
 
 - answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
-  mesh interrogates — via `useBenzeneMessage` (`@benzene/aws-lambda-core`). The `spec` topic is served by the
-  **library `useSpec`** (`@benzene/schema-openapi`) — the standard, dogfooded self-description path — which
+  mesh interrogates — via `useBenzeneMessage` (`@benzenejs/aws-lambda-core`). The `spec` topic is served by the
+  **library `useSpec`** (`@benzenejs/schema-openapi`) — the standard, dogfooded self-description path — which
   builds the benzene spec document (`{ requests, events, transports, components.schemas }`, payload schemas
   as `$ref`s) from the service's own DI feeds. There is **no hand-built spec**: `useSpec` is the single
   source of truth, so running the example proves `useSpec` emits the correct spec end-to-end. The reserved
-  `healthcheck` topic is likewise served by the **library `useHealthCheck`** (`@benzene/health-checks`, the
+  `healthcheck` topic is likewise served by the **library `useHealthCheck`** (`@benzenejs/health-checks`, the
   same path .NET's `.UseHealthCheck("benzene:healthcheck", …)` takes), which runs the service's registered
   `IHealthCheck`s (`src/healthChecks.ts`, one per .NET `examples/AwsMesh/<Service>/HealthChecks` class) and
   aggregates a `HealthCheckResponse` — `{ isHealthy, healthChecks: { <type>: { status, type, data,
@@ -72,7 +72,7 @@ Running the test asserts the full mesh story on a real, non-trivial graph:
 
 The services don't just *declare* their edges — they **send** them. `orders`, `payments`, and `shipping`
 inject `IBenzeneMessageSender` and publish their downstream topics through the real outbound clients
-(`@benzene/clients-aws-{sqs,sns,eventbridge}`, wired via `addOutboundRouting`). A single `POST /orders`
+(`@benzenejs/clients-aws-{sqs,sns,eventbridge}`, wired via `addOutboundRouting`). A single `POST /orders`
 therefore fans all the way through the estate — orders → payments → shipping over SQS, plus the SNS and
 EventBridge fan-outs to inventory / notifications / analytics — in one call. The
 `AwsLambdaMeshExampleTest` "runtime cascade" case asserts every service is reached.
@@ -109,10 +109,10 @@ the live estate, and the (documented) divergences from the .NET stack.
 ## Notes on the port
 
 - The load-bearing new library piece this example needed is `useBenzeneMessage` /
-  `BenzeneMessageLambdaHandler` (`@benzene/aws-lambda-core`) — the direct-invoke surface a service exposes
+  `BenzeneMessageLambdaHandler` (`@benzenejs/aws-lambda-core`) — the direct-invoke surface a service exposes
   so it can be interrogated with no HTTP. It is the port of .NET's
   `Benzene.Aws.Lambda.Core.BenzeneMessage.DirectMessageLambdaHandler`.
-- The runtime sends use the ported outbound clients `@benzene/clients-aws-{sqs,sns,eventbridge}`; each
+- The runtime sends use the ported outbound clients `@benzenejs/clients-aws-{sqs,sns,eventbridge}`; each
   `useX(app, target, client)` takes the AWS SDK client explicitly (the port's documented divergence from
   .NET's DI-resolved client).
 

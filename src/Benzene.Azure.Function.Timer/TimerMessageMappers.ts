@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.Timer.TimerMessageMappers. */
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter, ITopic } from '@benzene/abstractions-messages';
-import { JsonSerializer, MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter, ITopic } from '@benzenejs/abstractions-messages';
+import { JsonSerializer, MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { TimerContext } from './TimerContext';
 
 /**

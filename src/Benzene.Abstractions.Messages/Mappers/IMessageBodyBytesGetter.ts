@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Optional byte-oriented companion to `IMessageBodyGetter<TContext>`: exposes the raw message body

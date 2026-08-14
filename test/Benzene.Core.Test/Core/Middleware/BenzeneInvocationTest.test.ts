@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ServiceIdentifier, serviceToken } from '@benzene/abstractions';
-import { IBenzeneInvocation } from '@benzene/abstractions-middleware';
-import { BenzeneInvocation } from '@benzene/core-middleware';
+import { ServiceIdentifier, serviceToken } from '@benzenejs/abstractions';
+import { IBenzeneInvocation } from '@benzenejs/abstractions-middleware';
+import { BenzeneInvocation } from '@benzenejs/core-middleware';
 
 /**
  * Port of the BenzeneInvocation scenarios: `invocationId`/`platform` are exposed, and `getFeature`

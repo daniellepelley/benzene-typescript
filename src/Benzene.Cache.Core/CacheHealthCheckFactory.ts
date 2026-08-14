@@ -1,6 +1,6 @@
 /** Port of Benzene.Cache.Core.CacheHealthCheckFactory. */
-import { IServiceResolver } from '@benzene/abstractions';
-import { IHealthCheck, IHealthCheckFactory } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IHealthCheck, IHealthCheckFactory } from '@benzenejs/health-checks-core';
 import { CacheHealthCheck } from './CacheHealthCheck';
 import { ICacheService } from './ICacheService';
 

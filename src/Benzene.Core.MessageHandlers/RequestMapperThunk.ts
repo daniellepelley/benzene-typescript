@@ -1,5 +1,5 @@
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IRequestMapper, IRequestMapperThunk } from '@benzene/abstractions-message-handlers';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IRequestMapper, IRequestMapperThunk } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Binds a request mapper to a specific context.

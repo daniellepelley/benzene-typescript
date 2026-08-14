@@ -2,15 +2,15 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { VoidResult } from '@benzene/abstractions';
-import { FileSystemMeshArtifactStore } from '@benzene/mesh-aggregator';
-import { TopologyEdgeSource } from '@benzene/mesh-contracts';
+import { VoidResult } from '@benzenejs/abstractions';
+import { FileSystemMeshArtifactStore } from '@benzenejs/mesh-aggregator';
+import { TopologyEdgeSource } from '@benzenejs/mesh-contracts';
 import {
   PrometheusQueryClient,
   TempoServiceGraphTopologyBuilder,
   TempoTopologyMessageHandler,
   TempoTopologyOptions,
-} from '@benzene/mesh-tracing-tempo';
+} from '@benzenejs/mesh-tracing-tempo';
 
 /** Port of test/Benzene.Mesh.Test/TempoTopologyMessageHandlerTest.cs. `Void` -> `VoidResult`. */
 function fixedResponseFetch(body: string): typeof fetch {

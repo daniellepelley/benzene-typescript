@@ -1,6 +1,6 @@
-import { ISerializer } from '@benzene/abstractions';
-import { OutboundContext } from '@benzene/clients';
-import { BenzeneMessageRequest, IBenzeneMessageRequest } from '@benzene/core-messages';
+import { ISerializer } from '@benzenejs/abstractions';
+import { OutboundContext } from '@benzenejs/clients';
+import { BenzeneMessageRequest, IBenzeneMessageRequest } from '@benzenejs/core-messages';
 
 /**
  * Builds the `BenzeneMessageRequest` an `OutboundContext` becomes for in-process dispatch - shared by

@@ -7,7 +7,7 @@ import {
   CloudServiceProbePaths,
   CloudServiceProbeReport,
   CloudServiceProbeVerdict,
-} from '@benzene/cloud-service-probe';
+} from '@benzenejs/cloud-service-probe';
 
 /**
  * Port of test/Benzene.Core.Test/CloudService/Probe/CloudServiceProbeTest.cs. The C# loopback

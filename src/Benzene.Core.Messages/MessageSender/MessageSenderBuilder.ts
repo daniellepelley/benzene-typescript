@@ -1,12 +1,12 @@
-import { IRegisterDependency, tryAddScoped, tryAddScopedFactory, VoidResult } from '@benzene/abstractions';
+import { IRegisterDependency, tryAddScoped, tryAddScopedFactory, VoidResult } from '@benzenejs/abstractions';
 import {
   IBenzeneClientContext,
   IGetTopic,
   IMessageSender,
   IMessageSenderNoResponse,
-} from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { createMiddlewarePipeline } from '@benzene/core-middleware';
+} from '@benzenejs/abstractions-messages';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { DefaultGetTopic } from './DefaultGetTopic';
 import { IMessageSenderBuilder } from './IMessageSenderBuilder';
 import { MessageSender, MessageSenderNoResponse } from './MessageSender';

@@ -1,7 +1,7 @@
 import { Context } from 'aws-lambda';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { IAwsLambdaEntryPoint } from '@benzene/aws-lambda-core';
-import { asBenzeneMessage, messageBuilder } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { IAwsLambdaEntryPoint } from '@benzenejs/aws-lambda-core';
+import { asBenzeneMessage, messageBuilder } from '@benzenejs/testing';
 
 /**
  * Port of Benzene.Aws.Lambda.Core.TestHelpers.AwsLambdaBenzeneTestHost — an in-memory AWS Lambda test

@@ -1,5 +1,5 @@
 /**
- * The test harness in action: each AWS Lambda transport builder (`@benzene/aws-lambda-testing`) turns a
+ * The test harness in action: each AWS Lambda transport builder (`@benzenejs/aws-lambda-testing`) turns a
  * single platform-neutral `messageBuilder`/`httpBuilder` into that transport's native event, which is
  * then driven through the *real* Benzene pipeline for that transport (via `InlineAwsLambdaStartUp`). A
  * green assertion proves the generated event actually routes and deserializes - i.e. the builder is a
@@ -10,27 +10,27 @@
  */
 import { describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
   usePresetTopic,
-} from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { InlineAwsLambdaStartUp } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useSns } from '@benzene/aws-lambda-sns';
-import { useEventBridge } from '@benzene/aws-lambda-eventbridge';
-import { useKafka } from '@benzene/aws-lambda-kafka';
-import { useDynamoDb } from '@benzene/aws-lambda-dynamodb';
-import { useKinesis } from '@benzene/aws-lambda-kinesis';
-import { useS3 } from '@benzene/aws-lambda-s3';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
+} from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { InlineAwsLambdaStartUp } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useSns } from '@benzenejs/aws-lambda-sns';
+import { useEventBridge } from '@benzenejs/aws-lambda-eventbridge';
+import { useKafka } from '@benzenejs/aws-lambda-kafka';
+import { useDynamoDb } from '@benzenejs/aws-lambda-dynamodb';
+import { useKinesis } from '@benzenejs/aws-lambda-kinesis';
+import { useS3 } from '@benzenejs/aws-lambda-s3';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
 import {
   asApiGatewayRequest,
   asAwsKafkaEvent,
@@ -40,7 +40,7 @@ import {
   asS3,
   asSns,
   asSqs,
-} from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-testing';
 
 class Order {
   orderId: string | undefined;

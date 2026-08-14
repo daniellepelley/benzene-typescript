@@ -1,4 +1,4 @@
-import { IContextPredicate } from '@benzene/abstractions-middleware';
+import { IContextPredicate } from '@benzenejs/abstractions-middleware';
 import { HeaderContextPredicate } from './HeaderContextPredicate';
 import { InlineContextPredicate } from './InlineContextPredicate';
 
