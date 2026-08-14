@@ -1,7 +1,7 @@
-import { Constructor, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
-import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { Topic } from '@benzene/core-messages';
+import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
 
 /**
  * Port of Benzene.Core.MessageHandlers.MessageHandlerDefinition.

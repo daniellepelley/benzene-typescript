@@ -1,7 +1,7 @@
 # TypeORM Integration
 
 Use [TypeORM](https://typeorm.io/) for data access in a Benzene service — injected into your handlers the
-standard way — and add a database health check with `@benzene/health-checks-typeorm`.
+standard way — and add a database health check with `@benzenejs/health-checks-typeorm`.
 
 ## Problem Statement
 
@@ -14,21 +14,21 @@ You want to:
 
 > **Port note.** The .NET original uses EF Core and `Benzene.HealthChecks.EntityFramework`. Per the port's
 > [third-party-integration convention](../../README.md#porting-conventions), the TypeScript port adapts to
-> **TypeORM**: a `DataSource` stands in for EF's `DbContext`, and `@benzene/health-checks-typeorm` ports the
+> **TypeORM**: a `DataSource` stands in for EF's `DbContext`, and `@benzenejs/health-checks-typeorm` ports the
 > EF health checks (`SELECT 1` for connectivity; TypeORM's `MigrationExecutor` for applied migrations).
 
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and a Benzene service.
 - TypeORM and a database driver (`pg` for PostgreSQL, `mysql2`, …).
-- `@benzene/health-checks-typeorm` for the health check.
+- `@benzenejs/health-checks-typeorm` for the health check.
 
 ```bash
 npm install typeorm pg
-npm install @benzene/health-checks-typeorm @benzene/health-checks
+npm install @benzenejs/health-checks-typeorm @benzenejs/health-checks
 ```
 
-`@benzene/health-checks-typeorm` depends on `typeorm` directly.
+`@benzenejs/health-checks-typeorm` depends on `typeorm` directly.
 
 ## Step-by-Step Implementation
 
@@ -66,8 +66,8 @@ Rather than injecting the `DataSource` straight into handlers, put it behind a r
 ```ts
 // OrderRepository.ts
 import { DataSource } from 'typeorm';
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
 import { OrderEntity } from './OrderEntity.js';
 
 export class OrderDto {
@@ -102,10 +102,10 @@ Handlers then depend only on `IOrderRepository` — no TypeORM types leak into y
 
 ```ts
 // handlers.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
 import { IOrderRepository, OrderDto } from './OrderRepository.js';
 
 export class GetOrderRequest {
@@ -134,11 +134,11 @@ Register it as a **singleton instance** (one pool shared across the process) and
 ```ts
 // index.ts
 import { DataSource } from 'typeorm';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { OrderEntity } from './OrderEntity.js';
 import { IOrderRepository, OrdersDataSource, TypeOrmOrderRepository } from './OrderRepository.js';
 import { GetOrderHandler } from './handlers.js';
@@ -176,16 +176,16 @@ The registration is identical on any host — this example uses AWS Lambda; on
 
 ### 4. Add a database health check
 
-`@benzene/health-checks-typeorm` provides two checks over a `DataSource`, both taking it directly (the port
+`@benzenejs/health-checks-typeorm` provides two checks over a `DataSource`, both taking it directly (the port
 has no DI token for an arbitrary data source, so it's supplied to the `add*` helper). Wire them into a
 [health-check](../health-checks.md) topic:
 
 ```ts
-import { useHealthCheck } from '@benzene/health-checks';
+import { useHealthCheck } from '@benzenejs/health-checks';
 import {
   addDatabaseConnectionHealthCheck,
   addDatabaseHealthCheck,
-} from '@benzene/health-checks-typeorm';
+} from '@benzenejs/health-checks-typeorm';
 
 .configure((app) =>
   useApiGateway(app, (api) => {
@@ -215,7 +215,7 @@ needed:
 ```ts
 // test/getOrder.test.ts
 import { describe, expect, it } from 'vitest';
-import { BenzeneResult } from '@benzene/results';
+import { BenzeneResult } from '@benzenejs/results';
 import { GetOrderHandler, GetOrderRequest } from '../src/handlers.js';
 import { IOrderRepository, OrderDto } from '../src/OrderRepository.js';
 

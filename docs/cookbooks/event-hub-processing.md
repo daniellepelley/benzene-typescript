@@ -25,8 +25,8 @@ carried:
 
 | Host | Package | How the topic is found | Guide |
 | --- | --- | --- | --- |
-| Azure Functions trigger | `@benzene/azure-function-event-hub` | A message **envelope** in each event body (`{ topic, headers, body }`) | [Azure Functions Setup](../azure-functions.md#event-hub) |
-| Self-hosted worker | `@benzene/azure-event-hub` | A `"topic"` **event property** on each event | [Unified Hosting Model](../hosting.md#ready-made-self-hosted-consumers) |
+| Azure Functions trigger | `@benzenejs/azure-function-event-hub` | A message **envelope** in each event body (`{ topic, headers, body }`) | [Azure Functions Setup](../azure-functions.md#event-hub) |
+| Self-hosted worker | `@benzenejs/azure-event-hub` | A `"topic"` **event property** on each event | [Unified Hosting Model](../hosting.md#ready-made-self-hosted-consumers) |
 
 This cookbook works through both, citing the actual source in `src/Benzene.Azure.Function.EventHub/` and
 `src/Benzene.Azure.EventHub/`.
@@ -47,10 +47,10 @@ The handler is transport-agnostic — the *same* one you'd write for any host:
 
 ```ts
 // src/handlers.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { ITelemetryStore } from './TelemetryStore.js';
 
 export class TelemetryReading {
@@ -80,7 +80,7 @@ export class TelemetryReadingHandler implements IMessageHandler<TelemetryReading
 `ITelemetryStore` is an injected dependency behind a service token (`src/TelemetryStore.ts`):
 
 ```ts
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface ITelemetryStore {
   recordAsync(deviceId: string, value: number): Promise<void>;
@@ -95,9 +95,9 @@ export const ITelemetryStore: ServiceToken<ITelemetryStore> =
 ### 1. Install and wire the trigger
 
 ```bash
-npm install @benzene/azure-function-event-hub @benzene/azure-function-core \
-  @benzene/core-message-handlers @benzene/results @benzene/abstractions \
-  @benzene/abstractions-message-handlers @azure/functions @azure/event-hubs
+npm install @benzenejs/azure-function-event-hub @benzenejs/azure-function-core \
+  @benzenejs/core-message-handlers @benzenejs/results @benzenejs/abstractions \
+  @benzenejs/abstractions-message-handlers @azure/functions @azure/event-hubs
 ```
 
 Event Hub events carry no routable topic of their own, so — under the Functions trigger — Benzene reads a
@@ -108,11 +108,11 @@ from [Azure Functions Setup, step 4](../azure-functions.md#4-write-a-startup)), 
 `useAzureFunctions(app, az => …)`. Create `src/startUp.ts`:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useBenzeneMessage, useEventHub } from '@benzenejs/azure-function-event-hub';
 import { TelemetryReadingHandler } from './handlers.js';
 
 export class EventHubStartUp implements BenzeneStartUp {
@@ -128,12 +128,12 @@ export class EventHubStartUp implements BenzeneStartUp {
 }
 ```
 
-Then boot it and expose the trigger handler. Importing `@benzene/azure-function-event-hub` lights up the
+Then boot it and expose the trigger handler. Importing `@benzenejs/azure-function-event-hub` lights up the
 host's `.eventHubFunction` getter. Create `src/functions.ts`:
 
 ```ts
-import { AzureFunctionHost } from '@benzene/azure-function-core';
-import '@benzene/azure-function-event-hub';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+import '@benzenejs/azure-function-event-hub';
 import { EventHubStartUp } from './startUp.js';
 
 /** Event Hub trigger (batched): each event routes by its embedded envelope topic. */
@@ -202,9 +202,9 @@ producer set are all on that object, but none flow into the handler's request au
 add your own middleware to the Event Hub pipeline, **before** `useBenzeneMessage`:
 
 ```ts
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useEventHub, useBenzeneMessage, EventHubContext } from '@benzene/azure-function-event-hub';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useEventHub, useBenzeneMessage, EventHubContext } from '@benzenejs/azure-function-event-hub';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 
 // Inside your StartUp's `configure(app, config)`:
 useAzureFunctions(app, (az) =>
@@ -229,12 +229,12 @@ untouched.
 ### 5. Testing the trigger
 
 Turn a `messageBuilder` into a native event whose body is a serialized Benzene envelope with
-`asEventHubBenzeneMessage` from `@benzene/azure-function-testing`:
+`asEventHubBenzeneMessage` from `@benzenejs/azure-function-testing`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asEventHubBenzeneMessage } from '@benzene/azure-function-testing';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
+import { asEventHubBenzeneMessage } from '@benzenejs/azure-function-testing';
 import { EventHubStartUp } from '../src/startUp.js';
 import { ITelemetryStore } from '../src/TelemetryStore.js';
 
@@ -303,27 +303,27 @@ Benzene's, configured rather than worked around.
 
 ## Part B — the self-hosted worker
 
-For consuming an event hub from a long-running process you own, use `@benzene/azure-event-hub`. The key
+For consuming an event hub from a long-running process you own, use `@benzenejs/azure-event-hub`. The key
 inversion from the trigger: **Benzene owns what the runtime owned above** — checkpointing, failure
 handling, and the starting position — and routing is by a plain event **property**, not an envelope.
 
 ### 1. Install and wire the consumer
 
 ```bash
-npm install @benzene/azure-event-hub @benzene/self-host @benzene/core-message-handlers \
-  @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers @azure/event-hubs
+npm install @benzenejs/azure-event-hub @benzenejs/self-host @benzenejs/core-message-handlers \
+  @benzenejs/results @benzenejs/abstractions @benzenejs/abstractions-message-handlers @azure/event-hubs
 ```
 
 ```ts
 // src/worker.ts
 import { EventHubConsumerClient, earliestEventPosition } from '@azure/event-hubs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 import {
   BenzeneEventHubConfig,
   EventProcessorClientFactory,
   useEventHub,
-} from '@benzene/azure-event-hub';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+} from '@benzenejs/azure-event-hub';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { TelemetryReadingHandler } from './handlers.js';
 import { ITelemetryStore, TelemetryStore } from './TelemetryStore.js';
 

@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Collector.IMeshTraceSource. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { CorrelationView, MeshTimeRange, TraceSummary, TraceView } from './Views';
 
 /**

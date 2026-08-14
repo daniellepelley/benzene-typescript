@@ -5,13 +5,13 @@ import {
   LogLevel,
   ServiceIdentifier,
   VoidResult,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import {
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
-} from '@benzene/abstractions-message-handlers';
-import { Topic } from '@benzene/core-messages';
-import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
+import { MessageHandlerDefinition } from '@benzenejs/core-message-handlers';
 import {
   CrudConventionResponseEventMapping,
   ExplicitResponseEventMapping,
@@ -22,7 +22,7 @@ import {
   PublishFailureMode,
   ResponseEventCatalog,
   ResponseEventMappings,
-} from '@benzene/response-events';
+} from '@benzenejs/response-events';
 
 /** Port of test/Benzene.Core.Test/ResponseEvents/ResponseEventDiagnosticsTest.cs. */
 

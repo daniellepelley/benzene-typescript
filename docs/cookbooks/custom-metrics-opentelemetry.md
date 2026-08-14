@@ -12,7 +12,7 @@ You want to:
 - Export those metrics to your monitoring backend.
 - Add your own domain metrics (orders placed, payments failed) alongside them.
 
-> **The big difference from .NET:** there is **no `@benzene/opentelemetry` package and no
+> **The big difference from .NET:** there is **no `@benzenejs/opentelemetry` package and no
 > `AddBenzeneInstrumentation()` / `AddMeter("…")` call.** In .NET a `MeterProviderBuilder` must opt
 > into each meter by name. OpenTelemetry JS collects instruments from **every** API meter once a
 > `MeterProvider` is registered globally — Benzene's `"Benzene"` meter *and* your own — so there's no
@@ -26,12 +26,12 @@ You want to:
 
 ## Installation
 
-`@benzene/diagnostics` brings `@opentelemetry/api` in transitively — enough to *record* instruments. To
+`@benzenejs/diagnostics` brings `@opentelemetry/api` in transitively — enough to *record* instruments. To
 *export* them, add the Node SDK, the metrics SDK, and an exporter (OpenTelemetry packages, peers of
 your app):
 
 ```bash
-npm install @benzene/diagnostics
+npm install @benzenejs/diagnostics
 npm install @opentelemetry/sdk-node @opentelemetry/sdk-metrics @opentelemetry/exporter-metrics-otlp-http
 ```
 
@@ -59,10 +59,10 @@ Register diagnostics at startup, then add `useBenzeneMetrics` around the stage y
 (typically the whole pipeline — it's once-per-message, not per middleware):
 
 ```ts
-import { addBenzene, addBenzeneMessage, useMessageHandlers } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { addDiagnostics, useBenzeneMetrics } from '@benzene/diagnostics';
+import { addBenzene, addBenzeneMessage, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { addDiagnostics, useBenzeneMetrics } from '@benzenejs/diagnostics';
 import { PlaceOrderHandler } from './placeOrderHandler.js';
 
 addBenzene(container);
@@ -86,10 +86,10 @@ your choosing and record from inside a handler. No registration is needed beyond
 
 ```ts
 import { Attributes, Counter, metrics } from '@opentelemetry/api';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 /** Your own domain meter and instruments. */
 const OrderMetrics = {
@@ -126,7 +126,7 @@ registered when the instrument is first used — so, exactly like Benzene's own 
 counter starts collecting the moment you register an SDK in Step 3, with no wiring between the two.
 
 > If you'd rather record against Benzene's own instruments directly, `BenzeneDiagnostics` (from
-> `@benzene/diagnostics`) exposes `meter`, `messagesProcessed`, and `messageDuration` — e.g.
+> `@benzenejs/diagnostics`) exposes `meter`, `messagesProcessed`, and `messageDuration` — e.g.
 > `BenzeneDiagnostics.meter.createHistogram('myapp.order.value').record(9.99, { currency: 'GBP' })`.
 
 ## Step 3 — export via OpenTelemetry

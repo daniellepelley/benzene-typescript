@@ -1,9 +1,9 @@
-import { IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
 import {
   IMiddlewareApplication,
   IMiddlewareApplicationWithResult,
   IMiddlewarePipeline,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 
 /**
  * Maps an event to multiple contexts and runs the pipeline concurrently for each,

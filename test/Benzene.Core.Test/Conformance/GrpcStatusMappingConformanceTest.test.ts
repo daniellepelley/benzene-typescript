@@ -11,8 +11,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { status } from '@grpc/grpc-js';
-import { DefaultGrpcStatusCodeMapper } from '@benzene/grpc';
-import { DefaultGrpcStatusReverseMapper } from '@benzene/grpc-client';
+import { DefaultGrpcStatusCodeMapper } from '@benzenejs/grpc';
+import { DefaultGrpcStatusReverseMapper } from '@benzenejs/grpc-client';
 import { load } from './ConformanceFixtures';
 
 interface MappingRow {

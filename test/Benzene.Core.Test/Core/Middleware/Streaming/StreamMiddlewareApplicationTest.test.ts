@@ -5,8 +5,8 @@ import {
   StreamContext,
   StreamMiddlewareApplication,
   useStream,
-} from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * Port of Benzene.Test.Core.Middleware.Streaming.StreamMiddlewareApplicationTest

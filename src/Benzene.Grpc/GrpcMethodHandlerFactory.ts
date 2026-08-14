@@ -1,5 +1,5 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { GrpcContext } from './GrpcContext';
 import { GrpcMethodHandler } from './GrpcMethodHandler';
 import { IGrpcMethodDefinition } from './IGrpcMethodDefinition';

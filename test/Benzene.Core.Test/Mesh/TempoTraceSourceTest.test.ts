@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TempoFetch, TempoTraceSource, TempoTraceSourceOptions } from '@benzene/mesh-fleet-tempo';
+import { TempoFetch, TempoTraceSource, TempoTraceSourceOptions } from '@benzenejs/mesh-fleet-tempo';
 
 /**
  * Port of test/Benzene.Mesh.Test/TempoTraceSourceTest.cs. The Tempo-backed trace source: trace-by-id
@@ -10,7 +10,7 @@ import { TempoFetch, TempoTraceSource, TempoTraceSourceOptions } from '@benzene/
  *
  * `HttpMessageHandler`/`HttpClient` -> a `fetch`-like router keyed by `request.RequestUri.PathAndQuery` (the
  * URL's `pathname + search`), so trace-by-id and search stub independently in one client. The C#
- * `evt.ExceptionType` assertion is preserved (the `exceptionType` field was added to `@benzene/mesh-wire`
+ * `evt.ExceptionType` assertion is preserved (the `exceptionType` field was added to `@benzenejs/mesh-wire`
  * with the X-Ray port).
  */
 

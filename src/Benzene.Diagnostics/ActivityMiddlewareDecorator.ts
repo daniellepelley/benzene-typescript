@@ -1,13 +1,13 @@
 import { context as otelContext, Span, SpanStatusCode, trace } from '@opentelemetry/api';
-import { IServiceResolver, serviceIdentifierName } from '@benzene/abstractions';
+import { IServiceResolver, serviceIdentifierName } from '@benzenejs/abstractions';
 import {
   ICurrentTransport,
   IHasMessageResult,
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
 
 // The value ICurrentTransport reports before any transport pipeline has recorded itself; the span skips

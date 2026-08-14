@@ -1,12 +1,12 @@
 /** Port of Benzene.CloudService.CloudServiceDescriptorSource. */
-import { Constructor, IServiceResolver } from '@benzene/abstractions';
+import { Constructor, IServiceResolver } from '@benzenejs/abstractions';
 import {
   IMessageHandlerDefinition,
   IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
-import { CacheMessageHandlersFinder, RegistryMessageHandlersFinder } from '@benzene/core-message-handlers';
-import { MeshDescriptorFactory, MeshServiceDescriptor, MeshServiceInfo } from '@benzene/mesh-wire';
+} from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { CacheMessageHandlersFinder, RegistryMessageHandlersFinder } from '@benzenejs/core-message-handlers';
+import { MeshDescriptorFactory, MeshServiceDescriptor, MeshServiceInfo } from '@benzenejs/mesh-wire';
 import { CloudServiceProfileReport } from './CloudServiceProfileReport';
 
 /**

@@ -1,5 +1,5 @@
-import { IMessageHandler, IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMessageHandler, IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 
 /**
  * The terminal middleware in a handler's pipeline (see `HandlerPipelineBuilder`): invokes the

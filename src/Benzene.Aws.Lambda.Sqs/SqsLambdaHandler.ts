@@ -1,6 +1,6 @@
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplicationWithResult } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isSqsEvent } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplicationWithResult } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isSqsEvent } from '@benzenejs/aws-lambda-core';
 import { SQSBatchResponse, SQSEvent } from 'aws-lambda';
 
 /**

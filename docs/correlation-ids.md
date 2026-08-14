@@ -1,7 +1,7 @@
 # Correlation Ids
 
 > Cross-service correlation is handled by automatic W3C `traceparent` propagation
-> (`useW3CTraceContext(app)`, in `@benzene/diagnostics`), which continues a distributed trace from the
+> (`useW3CTraceContext(app)`, in `@benzenejs/diagnostics`), which continues a distributed trace from the
 > incoming `traceparent` header on every transport. See
 > [Common Middleware](common-middleware.md) for that surface. This page covers the smaller,
 > still-useful `ICorrelationId` — a per-invocation marker you can put in your logs and forward to
@@ -9,7 +9,7 @@
 
 ## Overview
 
-`ICorrelationId` (`@benzene/abstractions`) tracks a single correlation id for the current
+`ICorrelationId` (`@benzenejs/abstractions`) tracks a single correlation id for the current
 invocation. It is a scoped service — one instance per request — with two methods:
 
 ```ts
@@ -19,7 +19,7 @@ export interface ICorrelationId {
 }
 ```
 
-The default implementation, `CorrelationId` (`@benzene/diagnostics`), self-generates a value with
+The default implementation, `CorrelationId` (`@benzenejs/diagnostics`), self-generates a value with
 `crypto.randomUUID()` when it is constructed, so `get()` always returns a non-empty id even if
 nothing ever calls `set()`. That makes it a zero-configuration per-invocation marker for logs.
 `set()` only overwrites the id with a non-empty value — passing `''` or `undefined` leaves the
@@ -31,11 +31,11 @@ generated id in place.
 ## Installation
 
 ```bash
-npm install @benzene/diagnostics
+npm install @benzenejs/diagnostics
 ```
 
-`ICorrelationId` itself lives in `@benzene/abstractions` (already a transitive dependency of the
-core packages); `@benzene/diagnostics` supplies the `CorrelationId` implementation and the
+`ICorrelationId` itself lives in `@benzenejs/abstractions` (already a transitive dependency of the
+core packages); `@benzenejs/diagnostics` supplies the `CorrelationId` implementation and the
 registration/log-scope helpers.
 
 ## Adding the correlation id to your logs
@@ -46,7 +46,7 @@ functions). `withCorrelationId` attaches the current `correlationId` to the requ
 registering the `CorrelationId` service for the pipeline if it is not already:
 
 ```ts
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 app.useLogResult((x) => CorrelationExtensions.withCorrelationId(x));
 ```
@@ -63,12 +63,12 @@ register the service with `addCorrelationId` at startup and call `ICorrelationId
 own middleware:
 
 ```ts
-import { IBenzeneServiceContainer, ICorrelationId } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { IBenzeneServiceContainer, ICorrelationId } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 export class StartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
@@ -108,11 +108,11 @@ Because `addCorrelationId` registers the service as **scoped**, each invocation 
 ## Forwarding it to outbound calls
 
 An outbound message client can stamp the current invocation's correlation id onto every request it
-sends. `withCorrelationId` on a `ClientBuilder` (`@benzene/clients`) wraps the client in a decorator
+sends. `withCorrelationId` on a `ClientBuilder` (`@benzenejs/clients`) wraps the client in a decorator
 that copies `ICorrelationId.get()` into the outgoing headers before delegating:
 
 ```ts
-import { withCorrelationId } from '@benzene/clients';
+import { withCorrelationId } from '@benzenejs/clients';
 
 // on your outbound client builder
 withCorrelationId(clientBuilder);

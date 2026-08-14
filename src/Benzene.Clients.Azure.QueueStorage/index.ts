@@ -6,7 +6,7 @@
  * the routed message, topic, and headers are packed into a `BenzeneMessageRequest` envelope serialized as
  * the queue message text (the same envelope the Benzene queue-storage ingress rehydrates).
  *
- * PORT SCOPE (matching the `@benzene/clients-*` siblings): the `OutboundContext` send path only; the
+ * PORT SCOPE (matching the `@benzenejs/clients-*` siblings): the `OutboundContext` send path only; the
  * generic `IBenzeneClientContext<T,Void>` converter, standalone `QueueStorageBenzeneMessageClient`, and
  * the queue-reachability health-check auto-wiring are deferred.
  */

@@ -1,15 +1,15 @@
 /** Port of Benzene.Mesh.Usage.ApplicationInsights.Extensions. */
 import { DefaultAzureCredential } from '@azure/identity';
 import { LogsQueryClient } from '@azure/monitor-query';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMeshUsageSource } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMeshUsageSource } from '@benzenejs/mesh-contracts';
 import { ApplicationInsightsUsageOptions } from './ApplicationInsightsUsageOptions';
 import { ApplicationInsightsUsageSource } from './ApplicationInsightsUsageSource';
 import { IApplicationInsightsUsageQuery } from './IApplicationInsightsUsageQuery';
 import { LogsQueryUsageQuery } from './LogsQueryUsageQuery';
 
 /**
- * Registers an `ApplicationInsightsUsageSource` as an `IMeshUsageSource`, so `@benzene/mesh-aggregator` reads
+ * Registers an `ApplicationInsightsUsageSource` as an `IMeshUsageSource`, so `@benzenejs/mesh-aggregator` reads
  * the `benzene.messages.processed` counter back from the Application Insights / Log Analytics workspace each
  * run and merges it into `usage.json`.
  *

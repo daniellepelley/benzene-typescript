@@ -1,7 +1,7 @@
 import {
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Caches the wrapped finder's results after the first call.

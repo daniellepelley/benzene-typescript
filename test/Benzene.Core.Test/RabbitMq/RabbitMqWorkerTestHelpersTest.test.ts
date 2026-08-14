@@ -1,5 +1,5 @@
 /**
- * Port-verification test for `@benzene/rabbitmq-test-helpers` (ports Benzene.RabbitMq.TestHelpers). Two
+ * Port-verification test for `@benzenejs/rabbitmq-test-helpers` (ports Benzene.RabbitMq.TestHelpers). Two
  * complementary halves:
  *
  * 1. `asRabbitMqBenzeneMessage` — faithful native-shape checks (topic header, extra headers, routing-key
@@ -13,21 +13,21 @@
  *    rather than `addBenzeneMessage` so `useRabbitMq` + `useMessageHandlers` route).
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { useWorker } from '@benzene/self-host';
-import { IRabbitMqConnectionFactory, useRabbitMq } from '@benzene/rabbitmq';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { useWorker } from '@benzenejs/self-host';
+import { IRabbitMqConnectionFactory, useRabbitMq } from '@benzenejs/rabbitmq';
 import {
   benzeneTestHost,
   FakeBenzeneMessageSender,
   messageBuilder,
   type BenzeneStartUp,
-} from '@benzene/testing';
-import { asRabbitMqBenzeneMessage } from '@benzene/rabbitmq-test-helpers';
+} from '@benzenejs/testing';
+import { asRabbitMqBenzeneMessage } from '@benzenejs/rabbitmq-test-helpers';
 
 const Topics = { placeOrder: 'order:place', orderCreated: 'order:created' } as const;
 

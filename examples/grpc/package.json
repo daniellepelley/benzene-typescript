@@ -9,13 +9,13 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@grpc/grpc-js": "^1.14.4",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/clients": "0.1.0",
-    "@benzene/dependencies": "0.1.0",
-    "@benzene/grpc": "0.1.0",
-    "@benzene/grpc-client": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/clients": "0.1.0",
+    "@benzenejs/dependencies": "0.1.0",
+    "@benzenejs/grpc": "0.1.0",
+    "@benzenejs/grpc-client": "0.1.0",
+    "@benzenejs/results": "0.1.0"
   }
 }

@@ -1,5 +1,5 @@
 /** Port of Benzene.Extras.Broadcast.IEventSender. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Sends an outbound event on a topic — the port the broadcast middleware calls to publish a

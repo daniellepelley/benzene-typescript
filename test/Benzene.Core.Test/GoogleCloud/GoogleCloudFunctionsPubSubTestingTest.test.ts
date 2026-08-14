@@ -13,27 +13,27 @@
  * tests.
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { benzeneTestHost, FakeBenzeneMessageSender, messageBuilder } from '@benzene/testing';
+} from '@benzenejs/core-message-handlers';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { benzeneTestHost, FakeBenzeneMessageSender, messageBuilder } from '@benzenejs/testing';
 import {
   GooglePubSubFunctionApplicationBuilder,
   GooglePubSubFunctionStartUp,
   usePubSub,
-} from '@benzene/google-cloud-functions-pubsub';
+} from '@benzenejs/google-cloud-functions-pubsub';
 import {
   asPubSubEvent,
   buildGooglePubSubFunctionHost,
   PubSubMessageBuilder,
-} from '@benzene/google-cloud-functions-pubsub-testing';
+} from '@benzenejs/google-cloud-functions-pubsub-testing';
 
 const MessageTopics = {
   placeOrder: 'order:place',

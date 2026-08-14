@@ -1,5 +1,5 @@
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { ISagaStep } from './ISagaStep';
 import { SagaContext } from './SagaContext';
 import { SagaStepState } from './SagaStepState';

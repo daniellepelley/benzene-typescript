@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { BenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   AjvSchemaRegistry,
   formatValidationErrors,
   registerJsonSchema,
   ValidationClientMiddleware,
-} from '@benzene/ajv';
+} from '@benzenejs/ajv';
 
 /**
  * Unit tests for the ajv adapter's registry, error formatting, and client-side middleware — the ajv

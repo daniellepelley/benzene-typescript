@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LoggingProcessTimer, LoggingProcessTimerFactory } from '@benzene/diagnostics';
+import { LoggingProcessTimer, LoggingProcessTimerFactory } from '@benzenejs/diagnostics';
 import { FakeLoggerFactory } from '../Logging/Helpers/FakeLoggerFactory';
 
 /** Port of Benzene.Test.Diagnostics.LoggingProcessTimerTest. */

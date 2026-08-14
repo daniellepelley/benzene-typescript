@@ -1,9 +1,9 @@
 /** Port of Benzene.Schema.OpenApi.Extensions (the UseSpec half). */
-import { tryAddSingletonFactory } from '@benzene/abstractions';
-import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
-import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
-import { RawStringMessage } from '@benzene/core-messages';
+import { tryAddSingletonFactory } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzenejs/abstractions-middleware';
+import { MessageHandlerDefinition } from '@benzenejs/core-message-handlers';
+import { RawStringMessage } from '@benzenejs/core-messages';
 import { AsyncApiSpecOptions } from './AsyncApi/AsyncApiSpecOptions';
 import { Constants } from './Constants';
 import { SpecCache } from './SpecCache';

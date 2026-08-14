@@ -5,19 +5,19 @@ import type {
   SendCloudEventInput,
   SendEventGridEventInput,
 } from '@azure/eventgrid';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   EventGridSendMessageContext,
   OutboundEventGridContextConverter,
   OutboundEventGridEventSchemaContextConverter,
   useEventGrid,
   useEventGridEventSchema,
-} from '@benzene/clients-azure-event-grid';
+} from '@benzenejs/clients-azure-event-grid';
 
 /**
  * Port of the C# Benzene.Clients.Azure.EventGrid tests (the OutboundContext send path — the generic
- * `EventGridContextConverter<T>`/message+batch clients are deferred, matching the `@benzene/clients-*`
+ * `EventGridContextConverter<T>`/message+batch clients are deferred, matching the `@benzenejs/clients-*`
  * siblings). Both schemas are covered: CloudEvents 1.0 (`useEventGrid`) and the classic schema
  * (`useEventGridEventSchema`), driven end-to-end over a capturing fake `EventGridPublisherClient`.
  */

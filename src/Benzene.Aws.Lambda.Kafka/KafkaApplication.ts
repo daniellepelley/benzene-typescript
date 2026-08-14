@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaApplication. */
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { MiddlewareMultiApplication } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { MiddlewareMultiApplication } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { MSKEvent } from 'aws-lambda';
 import { KafkaContext } from './KafkaContext';
 

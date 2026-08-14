@@ -1,5 +1,5 @@
 import { CallOptions, Client, ServiceError, StatusObject, status } from '@grpc/grpc-js';
-import { IGrpcMessageAdapter } from '@benzene/grpc';
+import { IGrpcMessageAdapter } from '@benzenejs/grpc';
 import { GrpcSendMessageContext } from './GrpcSendMessageContext';
 import { IGrpcClientRoute } from './IGrpcClientRoute';
 
@@ -9,7 +9,7 @@ import { IGrpcClientRoute } from './IGrpcClientRoute';
  *
  * BEND (protobuf `Marshallers.Create` → a `serialize`/`deserialize` `Buffer` pair): `@grpc/grpc-js` ships
  * no framework message type, so `makeUnaryRequest` takes an explicit serialize/deserialize pair. The
- * default (see {@link jsonGrpcMarshaller}) is a JSON codec — the exact analog of `@benzene/grpc`'s
+ * default (see {@link jsonGrpcMarshaller}) is a JSON codec — the exact analog of `@benzenejs/grpc`'s
  * {@link JsonGrpcMessageAdapter} bend. A caller talking to a protobuf service passes a protobuf-aware
  * marshaller matching that method instead.
  */

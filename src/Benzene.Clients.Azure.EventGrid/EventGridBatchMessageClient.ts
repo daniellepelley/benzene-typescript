@@ -1,12 +1,12 @@
 import { EventGridPublisherClient, InputSchema, SendCloudEventInput } from '@azure/eventgrid';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import {
   BatchSend,
   BatchSendResult,
   FailedBatchEntry,
   IBenzeneBatchMessageClient,
   OutboundContext,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 import { OutboundEventGridContextConverter } from './OutboundEventGridContextConverter';
 
 /** The default number of events per Event Grid request; the ~1 MB request cap still applies. */

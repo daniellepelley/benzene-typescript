@@ -1,4 +1,4 @@
-import { IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
 
 /**
  * A middleware application that processes events without returning a result

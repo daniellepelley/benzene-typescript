@@ -15,18 +15,18 @@
  * no analogue and each binding carries its own default constant — every one of which is pinned here.
  */
 import { describe, expect, it } from 'vitest';
-import { MessageVersionHeaders } from '@benzene/abstractions-messages';
-import { SqsMessageTopicGetter } from '@benzene/aws-lambda-sqs';
-import { SnsMessageTopicGetter } from '@benzene/aws-lambda-sns';
-import { SqsConsumerMessageTopicGetter } from '@benzene/aws-sqs';
-import { EventHubConsumerMessageTopicGetter } from '@benzene/azure-event-hub';
-import { PubSubMessageTopicGetter } from '@benzene/google-cloud-functions-pubsub';
-import { RabbitMqConstants } from '@benzene/rabbitmq';
-import { OutboundServiceBusContextConverter } from '@benzene/clients-azure-service-bus';
-import { OutboundEventHubContextConverter } from '@benzene/clients-azure-event-hub';
-import { OutboundPubSubContextConverter } from '@benzene/clients-google-cloud-pubsub';
-import { OutboundSqsContextConverter } from '@benzene/clients-aws-sqs';
-import { OutboundSnsContextConverter } from '@benzene/clients-aws-sns';
+import { MessageVersionHeaders } from '@benzenejs/abstractions-messages';
+import { SqsMessageTopicGetter } from '@benzenejs/aws-lambda-sqs';
+import { SnsMessageTopicGetter } from '@benzenejs/aws-lambda-sns';
+import { SqsConsumerMessageTopicGetter } from '@benzenejs/aws-sqs';
+import { EventHubConsumerMessageTopicGetter } from '@benzenejs/azure-event-hub';
+import { PubSubMessageTopicGetter } from '@benzenejs/google-cloud-functions-pubsub';
+import { RabbitMqConstants } from '@benzenejs/rabbitmq';
+import { OutboundServiceBusContextConverter } from '@benzenejs/clients-azure-service-bus';
+import { OutboundEventHubContextConverter } from '@benzenejs/clients-azure-event-hub';
+import { OutboundPubSubContextConverter } from '@benzenejs/clients-google-cloud-pubsub';
+import { OutboundSqsContextConverter } from '@benzenejs/clients-aws-sqs';
+import { OutboundSnsContextConverter } from '@benzenejs/clients-aws-sns';
 import { load } from './ConformanceFixtures';
 
 interface MetadataFixture {
@@ -38,9 +38,9 @@ const expectedTopicKey = fixture.defaultMetadataKeys.topic;
 const expectedVersionKey = fixture.defaultMetadataKeys.version;
 
 // Every binding that exposes its default topic key as a constant and loads without an (uninstalled)
-// cloud health-check package. The inbound Azure Service Bus getter (@benzene/azure-service-bus) is
+// cloud health-check package. The inbound Azure Service Bus getter (@benzenejs/azure-service-bus) is
 // omitted: its package fails to load here because it re-exports the not-yet-published
-// @benzene/health-checks-azure-service-bus (a pre-existing gap, unrelated to the topic key). Its
+// @benzenejs/health-checks-azure-service-bus (a pre-existing gap, unrelated to the topic key). Its
 // outbound converter is covered below.
 const conformantTopicKeys: [string, string][] = [
   ['sqs (inbound, lambda)', SqsMessageTopicGetter.DefaultTopicAttribute],

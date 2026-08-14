@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/cache-core",
+  "name": "@benzenejs/cache-core",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Cache.Core",
   "license": "MIT",
@@ -7,9 +7,9 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/health-checks-core": "0.1.0",
+    "@benzenejs/results": "0.1.0"
   }
 }

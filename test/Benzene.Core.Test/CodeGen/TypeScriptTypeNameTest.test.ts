@@ -1,5 +1,5 @@
 /**
- * Pins the §2.1 JSON-Schema -> TypeScript type mapping (`@benzene/codegen-client`'s `typeExpression`)
+ * Pins the §2.1 JSON-Schema -> TypeScript type mapping (`@benzenejs/codegen-client`'s `typeExpression`)
  * and the ported name-formatting rules. This is the language-neutral half of the generator: two ports
  * reading the same schema must produce equivalent client types.
  */
@@ -11,7 +11,7 @@ import {
   TopicMethodName,
   TopicReversedMethodName,
   typeExpression,
-} from '@benzene/codegen-client';
+} from '@benzenejs/codegen-client';
 
 describe('typeExpression', () => {
   it('maps the §2.1 primitive schemas', () => {

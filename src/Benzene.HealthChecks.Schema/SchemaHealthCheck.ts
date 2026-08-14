@@ -1,25 +1,25 @@
 /** Port of Benzene.HealthChecks.Schema.SchemaHealthCheck. */
-import { IMessageHandlerDefinitionLookUp } from '@benzene/abstractions-message-handlers';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { IMessageHandlerDefinitionLookUp } from '@benzenejs/abstractions-message-handlers';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
   SchemaHealthCheckConstants,
-} from '@benzene/health-checks-core';
-import { MeshHashing } from '@benzene/mesh-contracts';
-import { EventServiceDocumentBuilder, SchemaBuilder } from '@benzene/schema-openapi';
+} from '@benzenejs/health-checks-core';
+import { MeshHashing } from '@benzenejs/mesh-contracts';
+import { EventServiceDocumentBuilder, SchemaBuilder } from '@benzenejs/schema-openapi';
 
 /**
  * A provider-side contract health check: it hashes the service's current message contract (every
  * registered handler's topic + request/response schema) and publishes the hash so consumers can tell
  * whether the contract still matches what their client was built against. The consumer side of the loop
- * is `@benzene/clients-health-checks`'s `ClientHealthCheckProcessor`.
+ * is `@benzenejs/clients-health-checks`'s `ClientHealthCheckProcessor`.
  *
  * PORTING NOTES:
  * - C#'s `CodeGenHelpers.GenerateHash(handlers)` builds an `EventServiceDocument` from the handlers,
  *   strips the non-contract decoration (generated `example` payloads and the `messageEndpoint`
- *   advertisement), serializes it, and HMAC-hashes the JSON. `@benzene/schema-openapi`'s ported document
+ *   advertisement), serializes it, and HMAC-hashes the JSON. `@benzenejs/schema-openapi`'s ported document
  *   already omits examples/`messageEndpoint`, so `EventServiceDocumentBuilder.generateJson()` is the
  *   normalized serialization directly; the HMAC is the shared `MeshHashing.computeHash` primitive (C#
  *   keeps it in `CodeGen.Core`, which isn't ported — `MeshHashing` documents itself as deliberately the

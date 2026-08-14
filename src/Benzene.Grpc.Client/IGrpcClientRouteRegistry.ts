@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { GrpcClientMarshaller } from './GrpcClientRoute';
 import { IGrpcClientRoute } from './IGrpcClientRoute';
 

@@ -1,4 +1,4 @@
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
 import { ApiGatewayContext, ensureResponseExists } from './ApiGatewayContext';
 import { Constants } from './Constants';
 
@@ -13,7 +13,7 @@ import { Constants } from './Constants';
  * (`Convert.ToInt32(statusCode)`), `setStatusCode` receives an already-numeric HTTP code *string*
  * (e.g. `"200"`) and stores it as the numeric `APIGatewayProxyResult.statusCode` via `Number(...)`.
  * The Benzene-status(`"Ok"`/`"NotFound"`)-to-code(`"200"`/`"404"`) translation happens one step
- * upstream in `HttpStatusCodeResponseHandler` + `DefaultHttpStatusCodeMapper` (from `@benzene/http`),
+ * upstream in `HttpStatusCodeResponseHandler` + `DefaultHttpStatusCodeMapper` (from `@benzenejs/http`),
  * which `addApiGateway` registers into the response-handler chain in place of the `BenzeneMessage`
  * transport's `DefaultResponseStatusHandler`.
  */

@@ -1,6 +1,6 @@
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { IBenzeneMessageClient } from './IBenzeneMessageClient';
 
 /**

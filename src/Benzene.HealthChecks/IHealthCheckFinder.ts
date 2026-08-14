@@ -1,6 +1,6 @@
 /** Port of Benzene.HealthChecks.IHealthCheckFinder. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IDependencyHealthCheck, IHealthCheck } from '@benzene/health-checks-core';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IDependencyHealthCheck, IHealthCheck } from '@benzenejs/health-checks-core';
 
 /** Discovers the set of `IHealthCheck`s that have been registered with the dependency container. */
 export interface IHealthCheckFinder {

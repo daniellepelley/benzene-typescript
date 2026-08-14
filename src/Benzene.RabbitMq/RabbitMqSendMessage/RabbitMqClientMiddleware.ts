@@ -1,5 +1,5 @@
 /** Port of Benzene.RabbitMq.RabbitMqSendMessage.RabbitMqClientMiddleware. */
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { Channel } from 'amqplib';
 import { RabbitMqSendMessageContext } from './RabbitMqSendMessageContext';
 

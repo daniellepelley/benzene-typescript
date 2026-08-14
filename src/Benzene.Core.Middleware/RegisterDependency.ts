@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer, IRegisterDependency } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, IRegisterDependency } from '@benzenejs/abstractions';
 
 /**
  * Applies registration actions directly to a service container.

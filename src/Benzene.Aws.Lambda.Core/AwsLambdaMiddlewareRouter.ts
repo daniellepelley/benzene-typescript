@@ -1,5 +1,5 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { MiddlewareRouter } from '@benzene/core-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { MiddlewareRouter } from '@benzenejs/core-middleware';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 
 /**

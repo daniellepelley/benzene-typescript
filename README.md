@@ -23,134 +23,134 @@ Mirrors the .NET repository:
 
 | Package | npm name | .NET counterpart |
 | --- | --- | --- |
-| `src/Benzene.Abstractions` | `@benzene/abstractions` | `Benzene.Abstractions` |
-| `src/Benzene.Abstractions.Middleware` | `@benzene/abstractions-middleware` | `Benzene.Abstractions.Middleware` |
-| `src/Benzene.Core` | `@benzene/core` | `Benzene.Core` |
-| `src/Benzene.Core.Middleware` | `@benzene/core-middleware` | `Benzene.Core.Middleware` |
-| `src/Benzene.Abstractions.Messages` | `@benzene/abstractions-messages` | `Benzene.Abstractions.Messages` (partial) |
-| `src/Benzene.Abstractions.MessageHandlers` | `@benzene/abstractions-message-handlers` | `Benzene.Abstractions.MessageHandlers` (partial) |
-| `src/Benzene.Core.Messages` | `@benzene/core-messages` | `Benzene.Core.Messages` (partial) |
-| `src/Benzene.Core.MessageHandlers` | `@benzene/core-message-handlers` | `Benzene.Core.MessageHandlers` (partial) |
-| `src/Benzene.Results` | `@benzene/results` | `Benzene.Results` (partial) |
-| `src/Benzene.Abstractions.Validation` | `@benzene/abstractions-validation` | `Benzene.Abstractions.Validation` |
-| `src/Benzene.Zod` | `@benzene/zod` | `Benzene.FluentValidation`† (Zod adapter) |
-| `src/Benzene.Joi` | `@benzene/joi` | `Benzene.FluentValidation`† (Joi adapter) |
-| `src/Benzene.Yup` | `@benzene/yup` | `Benzene.FluentValidation`† (Yup adapter) |
-| `src/Benzene.Ajv` | `@benzene/ajv` | `Benzene.JsonSchema` (ajv adapter; handler-level, supplied-schema — see below) |
-| `src/Benzene.Resilience` | `@benzene/resilience` | `Benzene.Resilience` |
-| `src/Benzene.Cockatiel` | `@benzene/cockatiel` | `Benzene.Resilience.Polly`† (cockatiel adapter) |
-| `src/Benzene.Diagnostics` | `@benzene/diagnostics` | `Benzene.Diagnostics` (partial) |
-| `src/Benzene.Http` | `@benzene/http` | `Benzene.Http` |
-| `src/Benzene.Express` | `@benzene/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
-| `src/Benzene.Grpc` | `@benzene/grpc` | `Benzene.Grpc` (server bridge for **all four RPC shapes** — unary + server-/client-/bidi-streaming — on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; protobuf-descriptor/rich-error specifics deferred — the outbound client is `@benzene/grpc-client`) |
-| `src/Benzene.Grpc.Client` | `@benzene/grpc-client` | `Benzene.Grpc.Client` (outbound **unary** gRPC message client, on `@grpc/grpc-js`; caller supplies the grpc-js `Client`; reverse status mapper, JSON marshaller default; health check, streaming + inbound-deadline/cancellation propagation deferred) |
-| `src/Benzene.Aws.Lambda.Core` | `@benzene/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
-| `src/Benzene.Aws.Lambda.Sqs` | `@benzene/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
-| `src/Benzene.Aws.Sqs` | `@benzene/aws-sqs` | `Benzene.Aws.Sqs` (standalone SQS polling consumer; `IAmazonSQS`→`ISqsConsumerClient` seam over aws-sdk v3) |
-| `src/Benzene.Aws.Lambda.ApiGateway` | `@benzene/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
-| `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzene/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
-| `src/Benzene.Aws.Lambda.XRay` | `@benzene/aws-lambda-xray` | `Benzene.Aws.Lambda.XRay` (per-middleware X-Ray subsegments over `aws-xray-sdk-core`; recorder behind an injectable `IXRayRecorder` seam) |
-| `src/Benzene.Aws.Lambda` | `@benzene/aws-lambda` | `Benzene.Aws.Lambda` (umbrella: re-exports `aws-lambda-core` + the event-source transports + the message-handler building blocks so a Lambda service installs one package; references-only in C#, wildcard re-export here — the building-block re-exports are a TS-idiom bend, since npm consumers don't see transitive types the way .NET does) |
-| `src/Benzene.Azure.Function.Core` | `@benzene/azure-function-core` | `Benzene.Azure.Function.Core` |
-| `src/Benzene.Azure.Function.ServiceBus` | `@benzene/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
-| `src/Benzene.Azure.ServiceBus` | `@benzene/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzene/health-checks-azure-service-bus`) |
-| `src/Benzene.Azure.EventHub` | `@benzene/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
-| `src/Benzene.Azure.CosmosDb` | `@benzene/azure-cosmos-db` | `Benzene.Azure.CosmosDb` (standalone change-feed consumer worker; the **push-model** `ChangeFeedProcessor` has no `@azure/cosmos` equivalent, so the SDK processor/context/delegates/`ChangeFeedItem` are declared in-package and `CosmosChangeFeedProcessorFactory` drives the **pull-model** `getChangeFeedIterator` in a poll loop, persisting the continuation token through a caller-supplied `ICosmosChangeFeedCheckpointStore` as the checkpoint; distinct from the trigger-delivered `@benzene/azure-function-cosmos-db`) |
-| `src/Benzene.Kafka.Core` | `@benzene/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); metadata dependency health-check auto-wired via an explicit `IKafkaAdminClientFactory`; dead-letter/`DrainOnRevoke` deferred) |
-| `src/Benzene.RabbitMq` | `@benzene/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); passive-declare dependency health-check auto-wired) |
-| `src/Benzene.Azure.Function.Http` | `@benzene/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
-| `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzene/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
-| `src/Benzene.Azure.Function.{QueueStorage,Timer}` | `@benzene/azure-function-{queue-storage,timer}` | same-named `Benzene.Azure.Function.*` (bespoke `QueueStorageMessage`/`TimerTriggerInfo` models — `@azure/functions` has no queue/timer payload type; `useTimerTrigger` avoids the `Benzene.Diagnostics` `useTimer` clash) |
-| `src/Benzene.Azure.Function.BlobStorage` | `@benzene/azure-function-blob-storage` | `Benzene.Azure.Function.BlobStorage` (non-routed: a blob is a file, not a message envelope, so a single-blob `MiddlewareApplication` + `useBlob(...)` terminal sugar, no getters/result-setter; bespoke `BlobTriggerEvent` — `@azure/functions` has no blob payload type — with `byte[]`→`Uint8Array`, `Encoding.UTF8`→`TextDecoder`/`TextEncoder`) |
-| `src/Benzene.Azure.Function.EventGrid` | `@benzene/azure-function-event-grid` | `Benzene.Azure.Function.EventGrid` (routes by event type; bespoke `EventGridTriggerEvent.parse` covers both the Event Grid schema and CloudEvents 1.0, payload as `JsonElement?`→`unknown`; `raiseOnFailureStatus` default true escalates a failure result so Event Grid retries/dead-letters) |
-| `src/Benzene.Azure.Function.CosmosDb` | `@benzene/azure-function-cosmos-db` | `Benzene.Azure.Function.CosmosDb` (change-feed fan-in: the whole batch as one `StreamContext<TDocument>` via `useCosmosDbChangeFeed`/`useStream`, generic over the document type; per-document-type dispatch relies on C# generic type checks that TS erases, so a single change-feed entry point per app is faithful) |
-| `src/Benzene.GoogleCloud.Functions.Core` | `@benzene/google-cloud-functions-core` | `Benzene.GoogleCloud.Functions.Core` (thin bootstrap foundation; the `(services, container)` pair collapses to `DefaultBenzeneServiceContainer` and the `IConfiguration` thread is deferred, like the AWS/Azure inline startups) |
-| `src/Benzene.GoogleCloud.Functions.Http` | `@benzene/google-cloud-functions-http` | `Benzene.GoogleCloud.Functions.Http`◊ |
-| `src/Benzene.GoogleCloud.Functions.PubSub` | `@benzene/google-cloud-functions-pubsub` | `Benzene.GoogleCloud.Functions.PubSub` (single-message CloudEvent trigger, on `@google-cloud/functions-framework`; `PresetTopic` override + registration-diagnostics deferred, as in the .NET package) |
-| `src/Benzene.Clients` | `@benzene/clients` | `Benzene.Clients` (partial) |
-| `src/Benzene.Clients.Http` | `@benzene/clients-http` | `Benzene.Clients.Http` (renamed from `Benzene.Client.Http` — folded into the plural `Clients` family so the singular/plural split no longer collides in autocomplete; see the package-naming convention below) |
-| `src/Benzene.Clients.Aws.Lambda` | `@benzene/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; reachability `AwsLambdaHealthCheck` ships (registered manually); high-level message-client/route pipeline + the health check's Active-invoke path deferred) |
-| `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzene/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path + native batch client + auto-wired reachability health check per transport; standalone generic-context client deferred) |
-| `src/Benzene.Clients.Aws.StepFunctions` | `@benzene/clients-aws-step-functions` | `Benzene.Clients.Aws.StepFunctions` (outbound Step Functions client + reachability health check over `@aws-sdk/client-sfn`) |
-| `src/Benzene.Clients.Aws` | `@benzene/clients-aws` | `Benzene.Clients.Aws` (umbrella re-exporting the five AWS client packages; references-only in C#, so a wildcard re-export here) |
-| `src/Benzene.Clients.Azure.ServiceBus` | `@benzene/clients-azure-service-bus` | `Benzene.Clients.Azure.ServiceBus` (outbound `OutboundContext` send path + native batch client over `@azure/service-bus`; generic-context client deferred) |
-| `src/Benzene.Clients.Azure.EventHub` | `@benzene/clients-azure-event-hub` | `Benzene.Clients.Azure.EventHub` (outbound `OutboundContext` send path + native batch client over `@azure/event-hubs`; generic-context client deferred) |
-| `src/Benzene.Clients.Azure.QueueStorage` | `@benzene/clients-azure-queue-storage` | `Benzene.Clients.Azure.QueueStorage` (outbound `OutboundContext` send path over `@azure/storage-queue`; generic-context client + health check deferred) |
-| `src/Benzene.Clients.Azure.EventGrid` | `@benzene/clients-azure-event-grid` | `Benzene.Clients.Azure.EventGrid` (outbound `OutboundContext` send path + native batch client over `@azure/eventgrid`, both CloudEvents + classic schemas; generic-context client deferred) |
-| `src/Benzene.Clients.GoogleCloud.PubSub` | `@benzene/clients-google-cloud-pubsub` | `Benzene.Clients.GoogleCloud.PubSub` (outbound `OutboundContext` publish path over `@google-cloud/pubsub`) |
-| `src/Benzene.Clients.InProcess` | `@benzene/clients-in-process` | `Benzene.Clients.InProcess` (named-pipeline registry + `useInProcess`/`useInProcessFanOut`; boot-time route validation via `InProcessRouteStartUpCheck`; single-target `useInProcess` returns the handler's typed response (structural `JSON.parse` into `TResponse`), fan-out stays `VoidResult`) |
-| `src/Benzene.Mesh.Aws.Lambda` | `@benzene/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
-| `src/Benzene.Cache.Core` | `@benzene/cache-core` | `Benzene.Cache.Core` (partial) |
-| `src/Benzene.Cache.Redis` | `@benzene/cache-redis` | `Benzene.Cache.Redis`§ |
-| `src/Benzene.HealthChecks.Core` | `@benzene/health-checks-core` | `Benzene.HealthChecks.Core` |
-| `src/Benzene.HealthChecks` | `@benzene/health-checks` | `Benzene.HealthChecks` |
-| `src/Benzene.HealthChecks.Http` | `@benzene/health-checks-http` | `Benzene.HealthChecks.Http` |
-| `src/Benzene.HealthChecks.Tcp` | `@benzene/health-checks-tcp` | `Benzene.HealthChecks.Tcp` (over `node:net`) |
-| `src/Benzene.HealthChecks.Disk` | `@benzene/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
-| `src/Benzene.HealthChecks.DynamoDb` | `@benzene/health-checks-dynamodb` | `Benzene.HealthChecks.DynamoDb` (`DescribeTable` reachability check over `@aws-sdk/client-dynamodb`) |
-| `src/Benzene.HealthChecks.Azure.ServiceBus` | `@benzene/health-checks-azure-service-bus` | `Benzene.HealthChecks.Azure.ServiceBus` (`peekMessages` reachability check over `@azure/service-bus`) |
-| `src/Benzene.HealthChecks.Schema` | `@benzene/health-checks-schema` | `Benzene.HealthChecks.Schema` (provider-side contract-drift hash; `CodeGen.Core` hashing → `MeshHashing` over the schema-openapi doc) |
-| `src/Benzene.HealthChecks.TypeOrm` | `@benzene/health-checks-typeorm` | `Benzene.HealthChecks.EntityFramework` (TypeORM adapter — `DbContext` → `DataSource`; `CanConnectAsync`/`GetAppliedMigrationsAsync` → a `SELECT 1` probe + `MigrationExecutor`) |
-| `src/Benzene.Clients.HealthChecks` | `@benzene/clients-health-checks` | `Benzene.Clients.HealthChecks` |
-| `src/Benzene.Avro` | `@benzene/avro` | `Benzene.Avro`† (avsc adapter) |
-| `src/Benzene.MessagePack` | `@benzene/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
-| `src/Benzene.Xml` | `@benzene/xml` | `Benzene.Xml`† (`fast-xml-parser` adapter) |
-| `src/Benzene.Extras` | `@benzene/extras` | `Benzene.Extras` |
-| `src/Benzene.Auth.Core` | `@benzene/auth-core` | `Benzene.Auth.Core` (+ minimal `System.Security.Claims`) |
-| `src/Benzene.Auth.Basic` | `@benzene/auth-basic` | `Benzene.Auth.Basic` |
-| `src/Benzene.Auth.OAuth2` | `@benzene/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
-| `src/Benzene.Idempotency` | `@benzene/idempotency` | `Benzene.Idempotency` |
-| `src/Benzene.RateLimiting` | `@benzene/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
-| `src/Benzene.SelfHost` | `@benzene/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
-| `src/Benzene.SchemaRegistry.Core` | `@benzene/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
-| `src/Benzene.Schema.OpenApi` | `@benzene/schema-openapi` | `Benzene.Schema.OpenApi` (benzene + openapi + asyncapi formats, JSON only; schema from validators, not reflection) |
-| `src/Benzene.Spec.Ui` | `@benzene/spec-ui` | `Benzene.Spec.Ui` (explorer page inlined as a string, not an embedded resource) |
-| `src/Benzene.Core.Versioning` | `@benzene/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
-| `src/Benzene.Mesh.Contracts` | `@benzene/mesh-contracts` | `Benzene.Mesh.Contracts` |
-| `src/Benzene.Mesh.Dispatch` | `@benzene/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
-| `src/Benzene.Mesh.Reporting` | `@benzene/mesh-reporting` | `Benzene.Mesh.Reporting` |
-| `src/Benzene.Mesh.Aggregator` | `@benzene/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
-| `src/Benzene.Mesh.Collector` | `@benzene/mesh-collector` | `Benzene.Mesh.Collector` |
-| `src/Benzene.Mesh.Ui` | `@benzene/mesh-ui` | `Benzene.Mesh.Ui` (product HTML copied verbatim, read from disk not embedded) |
-| `src/Benzene.Mesh.Fleet.Jaeger` | `@benzene/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
-| `src/Benzene.Mesh.Fleet.Tempo` | `@benzene/mesh-fleet-tempo` | `Benzene.Mesh.Fleet.Tempo` |
-| `src/Benzene.Mesh.Fleet.Aws.XRay` | `@benzene/mesh-fleet-aws-xray` | `Benzene.Mesh.Fleet.Aws.XRay` |
-| `src/Benzene.Mesh.Tracing.Tempo` | `@benzene/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
-| `src/Benzene.Mesh.Azure.Blob` | `@benzene/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
-| `src/Benzene.Mesh.Discovery.Azure` | `@benzene/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
-| `src/Benzene.Mesh.Usage.ApplicationInsights` | `@benzene/mesh-usage-application-insights` | `Benzene.Mesh.Usage.ApplicationInsights` |
-| `src/Benzene.Mesh.Aws.S3` | `@benzene/mesh-aws-s3` | `Benzene.Mesh.Aws.S3` |
-| `src/Benzene.Mesh.GoogleCloud.Storage` | `@benzene/mesh-google-cloud-storage` | `Benzene.Mesh.GoogleCloud.Storage` |
-| `src/Benzene.Mesh.Discovery.Aws` | `@benzene/mesh-discovery-aws` | `Benzene.Mesh.Discovery.Aws` |
-| `src/Benzene.Mesh.Usage.CloudWatch` | `@benzene/mesh-usage-cloudwatch` | `Benzene.Mesh.Usage.CloudWatch` |
-| `src/Benzene.Mesh.Discovery.Kubernetes` | `@benzene/mesh-discovery-kubernetes` | `Benzene.Mesh.Discovery.Kubernetes` |
-| `src/Benzene.Mesh.Wire` | `@benzene/mesh-wire` | `Benzene.Mesh.Wire`† |
-| `src/Benzene.CodeGen.Client` | `@benzene/codegen-client` | `Benzene.CodeGen.Client`§§ |
-| `src/Benzene.Testing` | `@benzene/testing` | `Benzene.Testing`¶ |
-| `src/Benzene.Aws.Lambda.TestHelpers` | `@benzene/aws-lambda-testing` | `Benzene.Aws.Lambda.*.TestHelpers`¶ |
-| `src/Benzene.Azure.Function.TestHelpers` | `@benzene/azure-function-testing` | `Benzene.Azure.Function.*.TestHelpers`¶ |
-| `src/Benzene.GoogleCloud.Functions.Http.TestHelpers` | `@benzene/google-cloud-functions-http-testing` | `Benzene.GoogleCloud.Functions.Http.TestHelpers` |
-| `src/Benzene.GoogleCloud.Functions.PubSub.TestHelpers` | `@benzene/google-cloud-functions-pubsub-testing` | `Benzene.GoogleCloud.Functions.PubSub.TestHelpers` |
-| `src/Benzene.Aws.Sqs.TestHelpers` | `@benzene/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
-| `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzene/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
-| `src/Benzene.Azure.EventHub.TestHelpers` | `@benzene/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
-| `src/Benzene.RabbitMq.TestHelpers` | `@benzene/rabbitmq-test-helpers` | `Benzene.RabbitMq.TestHelpers`¶ |
-| `src/Benzene.Kafka.Core.TestHelpers` | `@benzene/kafka-core-test-helpers` | `Benzene.Kafka.Core.TestHelpers`¶ |
-| `src/Benzene.Grpc.TestHelpers` | `@benzene/grpc-test-helpers` | `Benzene.Grpc.TestHelpers` (the `TestServerCallContext` fake-call factory only; the live `GrpcTestHost` in-memory ASP.NET `TestServer` has no counterpart — see below) |
-| `src/Benzene.CloudService.Probe` | `@benzene/cloud-service-probe` | `Benzene.CloudService.Probe` |
-| `src/Benzene.CloudService` | `@benzene/cloud-service` | `Benzene.CloudService` |
-| `src/Benzene.Configuration.Core` | `@benzene/configuration-core` | `Benzene.Configuration.Core` |
-| `src/Benzene.Saga` | `@benzene/saga` | `Benzene.Saga` |
-| `src/Benzene.ResponseEvents` | `@benzene/response-events` | `Benzene.ResponseEvents` |
-| `src/Benzene.Dependencies` | `@benzene/dependencies` | `Benzene.Microsoft.Dependencies`* |
-| `test/Benzene.Core.Test` | `@benzene/core-test` (private) | `Benzene.Core.Test` |
+| `src/Benzene.Abstractions` | `@benzenejs/abstractions` | `Benzene.Abstractions` |
+| `src/Benzene.Abstractions.Middleware` | `@benzenejs/abstractions-middleware` | `Benzene.Abstractions.Middleware` |
+| `src/Benzene.Core` | `@benzenejs/core` | `Benzene.Core` |
+| `src/Benzene.Core.Middleware` | `@benzenejs/core-middleware` | `Benzene.Core.Middleware` |
+| `src/Benzene.Abstractions.Messages` | `@benzenejs/abstractions-messages` | `Benzene.Abstractions.Messages` (partial) |
+| `src/Benzene.Abstractions.MessageHandlers` | `@benzenejs/abstractions-message-handlers` | `Benzene.Abstractions.MessageHandlers` (partial) |
+| `src/Benzene.Core.Messages` | `@benzenejs/core-messages` | `Benzene.Core.Messages` (partial) |
+| `src/Benzene.Core.MessageHandlers` | `@benzenejs/core-message-handlers` | `Benzene.Core.MessageHandlers` (partial) |
+| `src/Benzene.Results` | `@benzenejs/results` | `Benzene.Results` (partial) |
+| `src/Benzene.Abstractions.Validation` | `@benzenejs/abstractions-validation` | `Benzene.Abstractions.Validation` |
+| `src/Benzene.Zod` | `@benzenejs/zod` | `Benzene.FluentValidation`† (Zod adapter) |
+| `src/Benzene.Joi` | `@benzenejs/joi` | `Benzene.FluentValidation`† (Joi adapter) |
+| `src/Benzene.Yup` | `@benzenejs/yup` | `Benzene.FluentValidation`† (Yup adapter) |
+| `src/Benzene.Ajv` | `@benzenejs/ajv` | `Benzene.JsonSchema` (ajv adapter; handler-level, supplied-schema — see below) |
+| `src/Benzene.Resilience` | `@benzenejs/resilience` | `Benzene.Resilience` |
+| `src/Benzene.Cockatiel` | `@benzenejs/cockatiel` | `Benzene.Resilience.Polly`† (cockatiel adapter) |
+| `src/Benzene.Diagnostics` | `@benzenejs/diagnostics` | `Benzene.Diagnostics` (partial) |
+| `src/Benzene.Http` | `@benzenejs/http` | `Benzene.Http` |
+| `src/Benzene.Express` | `@benzenejs/express` | *(no C# counterpart — Express host adapter, analog of `Benzene.AspNet.Core`)* |
+| `src/Benzene.Grpc` | `@benzenejs/grpc` | `Benzene.Grpc` (server bridge for **all four RPC shapes** — unary + server-/client-/bidi-streaming — on `@grpc/grpc-js`; the grpc-js `Server` replaces the interceptor + `Benzene.Grpc.AspNet`; protobuf-descriptor/rich-error specifics deferred — the outbound client is `@benzenejs/grpc-client`) |
+| `src/Benzene.Grpc.Client` | `@benzenejs/grpc-client` | `Benzene.Grpc.Client` (outbound **unary** gRPC message client, on `@grpc/grpc-js`; caller supplies the grpc-js `Client`; reverse status mapper, JSON marshaller default; health check, streaming + inbound-deadline/cancellation propagation deferred) |
+| `src/Benzene.Aws.Lambda.Core` | `@benzenejs/aws-lambda-core` | `Benzene.Aws.Lambda.Core` |
+| `src/Benzene.Aws.Lambda.Sqs` | `@benzenejs/aws-lambda-sqs` | `Benzene.Aws.Lambda.Sqs` |
+| `src/Benzene.Aws.Sqs` | `@benzenejs/aws-sqs` | `Benzene.Aws.Sqs` (standalone SQS polling consumer; `IAmazonSQS`→`ISqsConsumerClient` seam over aws-sdk v3) |
+| `src/Benzene.Aws.Lambda.ApiGateway` | `@benzenejs/aws-lambda-api-gateway` | `Benzene.Aws.Lambda.ApiGateway` |
+| `src/Benzene.Aws.Lambda.{Sns,DynamoDb,Kinesis,S3,EventBridge,Kafka}` | `@benzenejs/aws-lambda-{sns,dynamodb,kinesis,s3,eventbridge,kafka}` | same-named `Benzene.Aws.Lambda.*` |
+| `src/Benzene.Aws.Lambda.XRay` | `@benzenejs/aws-lambda-xray` | `Benzene.Aws.Lambda.XRay` (per-middleware X-Ray subsegments over `aws-xray-sdk-core`; recorder behind an injectable `IXRayRecorder` seam) |
+| `src/Benzene.Aws.Lambda` | `@benzenejs/aws-lambda` | `Benzene.Aws.Lambda` (umbrella: re-exports `aws-lambda-core` + the event-source transports + the message-handler building blocks so a Lambda service installs one package; references-only in C#, wildcard re-export here — the building-block re-exports are a TS-idiom bend, since npm consumers don't see transitive types the way .NET does) |
+| `src/Benzene.Azure.Function.Core` | `@benzenejs/azure-function-core` | `Benzene.Azure.Function.Core` |
+| `src/Benzene.Azure.Function.ServiceBus` | `@benzenejs/azure-function-service-bus` | `Benzene.Azure.Function.ServiceBus` |
+| `src/Benzene.Azure.ServiceBus` | `@benzenejs/azure-service-bus` | `Benzene.Azure.ServiceBus` (standalone consumer worker; `ServiceBusProcessor`→`receiver.subscribe`; sessions via a bounded `acceptNextSession` pump; peek-based dependency health-check auto-wired via `@benzenejs/health-checks-azure-service-bus`) |
+| `src/Benzene.Azure.EventHub` | `@benzenejs/azure-event-hub` | `Benzene.Azure.EventHub` (standalone consumer worker; `EventProcessorClient`→`EventHubConsumerClient.subscribe`) |
+| `src/Benzene.Azure.CosmosDb` | `@benzenejs/azure-cosmos-db` | `Benzene.Azure.CosmosDb` (standalone change-feed consumer worker; the **push-model** `ChangeFeedProcessor` has no `@azure/cosmos` equivalent, so the SDK processor/context/delegates/`ChangeFeedItem` are declared in-package and `CosmosChangeFeedProcessorFactory` drives the **pull-model** `getChangeFeedIterator` in a poll loop, persisting the continuation token through a caller-supplied `ICosmosChangeFeedCheckpointStore` as the checkpoint; distinct from the trigger-delivered `@benzenejs/azure-function-cosmos-db`) |
+| `src/Benzene.Kafka.Core` | `@benzenejs/kafka-core` | `Benzene.Kafka.Core` (consumer worker only, on `kafkajs`; Confluent `IConsumer.Consume()` loop→`consumer.run({ eachMessage })`; `TKey`/`TValue` erased; outbound producer ported (`Kafka/` subdir); metadata dependency health-check auto-wired via an explicit `IKafkaAdminClientFactory`; dead-letter/`DrainOnRevoke` deferred) |
+| `src/Benzene.RabbitMq` | `@benzenejs/rabbitmq` | `Benzene.RabbitMq` (consumer worker only, on `amqplib`; `RabbitMQ.Client` `AsyncEventingBasicConsumer` + `BasicAck`/`BasicNack`→`channel.consume` + `channel.ack`/`channel.nack`; `BasicDeliverEventArgs`→`ConsumeMessage`; outbound publish ported (`RabbitMqSendMessage/` subdir); passive-declare dependency health-check auto-wired) |
+| `src/Benzene.Azure.Function.Http` | `@benzenejs/azure-function-http` | `Benzene.Azure.Function.AspNet`‡ |
+| `src/Benzene.Azure.Function.{EventHub,Kafka}` | `@benzenejs/azure-function-{event-hub,kafka}` | same-named `Benzene.Azure.Function.*` |
+| `src/Benzene.Azure.Function.{QueueStorage,Timer}` | `@benzenejs/azure-function-{queue-storage,timer}` | same-named `Benzene.Azure.Function.*` (bespoke `QueueStorageMessage`/`TimerTriggerInfo` models — `@azure/functions` has no queue/timer payload type; `useTimerTrigger` avoids the `Benzene.Diagnostics` `useTimer` clash) |
+| `src/Benzene.Azure.Function.BlobStorage` | `@benzenejs/azure-function-blob-storage` | `Benzene.Azure.Function.BlobStorage` (non-routed: a blob is a file, not a message envelope, so a single-blob `MiddlewareApplication` + `useBlob(...)` terminal sugar, no getters/result-setter; bespoke `BlobTriggerEvent` — `@azure/functions` has no blob payload type — with `byte[]`→`Uint8Array`, `Encoding.UTF8`→`TextDecoder`/`TextEncoder`) |
+| `src/Benzene.Azure.Function.EventGrid` | `@benzenejs/azure-function-event-grid` | `Benzene.Azure.Function.EventGrid` (routes by event type; bespoke `EventGridTriggerEvent.parse` covers both the Event Grid schema and CloudEvents 1.0, payload as `JsonElement?`→`unknown`; `raiseOnFailureStatus` default true escalates a failure result so Event Grid retries/dead-letters) |
+| `src/Benzene.Azure.Function.CosmosDb` | `@benzenejs/azure-function-cosmos-db` | `Benzene.Azure.Function.CosmosDb` (change-feed fan-in: the whole batch as one `StreamContext<TDocument>` via `useCosmosDbChangeFeed`/`useStream`, generic over the document type; per-document-type dispatch relies on C# generic type checks that TS erases, so a single change-feed entry point per app is faithful) |
+| `src/Benzene.GoogleCloud.Functions.Core` | `@benzenejs/google-cloud-functions-core` | `Benzene.GoogleCloud.Functions.Core` (thin bootstrap foundation; the `(services, container)` pair collapses to `DefaultBenzeneServiceContainer` and the `IConfiguration` thread is deferred, like the AWS/Azure inline startups) |
+| `src/Benzene.GoogleCloud.Functions.Http` | `@benzenejs/google-cloud-functions-http` | `Benzene.GoogleCloud.Functions.Http`◊ |
+| `src/Benzene.GoogleCloud.Functions.PubSub` | `@benzenejs/google-cloud-functions-pubsub` | `Benzene.GoogleCloud.Functions.PubSub` (single-message CloudEvent trigger, on `@google-cloud/functions-framework`; `PresetTopic` override + registration-diagnostics deferred, as in the .NET package) |
+| `src/Benzene.Clients` | `@benzenejs/clients` | `Benzene.Clients` (partial) |
+| `src/Benzene.Clients.Http` | `@benzenejs/clients-http` | `Benzene.Clients.Http` (renamed from `Benzene.Client.Http` — folded into the plural `Clients` family so the singular/plural split no longer collides in autocomplete; see the package-naming convention below) |
+| `src/Benzene.Clients.Aws.Lambda` | `@benzenejs/clients-aws-lambda` | `Benzene.Clients.Aws.Lambda` (low-level client; reachability `AwsLambdaHealthCheck` ships (registered manually); high-level message-client/route pipeline + the health check's Active-invoke path deferred) |
+| `src/Benzene.Clients.Aws.{Sqs,Sns,EventBridge}` | `@benzenejs/clients-aws-{sqs,sns,eventbridge}` | same-named `Benzene.Clients.Aws.*` (outbound `OutboundContext` send path + native batch client + auto-wired reachability health check per transport; standalone generic-context client deferred) |
+| `src/Benzene.Clients.Aws.StepFunctions` | `@benzenejs/clients-aws-step-functions` | `Benzene.Clients.Aws.StepFunctions` (outbound Step Functions client + reachability health check over `@aws-sdk/client-sfn`) |
+| `src/Benzene.Clients.Aws` | `@benzenejs/clients-aws` | `Benzene.Clients.Aws` (umbrella re-exporting the five AWS client packages; references-only in C#, so a wildcard re-export here) |
+| `src/Benzene.Clients.Azure.ServiceBus` | `@benzenejs/clients-azure-service-bus` | `Benzene.Clients.Azure.ServiceBus` (outbound `OutboundContext` send path + native batch client over `@azure/service-bus`; generic-context client deferred) |
+| `src/Benzene.Clients.Azure.EventHub` | `@benzenejs/clients-azure-event-hub` | `Benzene.Clients.Azure.EventHub` (outbound `OutboundContext` send path + native batch client over `@azure/event-hubs`; generic-context client deferred) |
+| `src/Benzene.Clients.Azure.QueueStorage` | `@benzenejs/clients-azure-queue-storage` | `Benzene.Clients.Azure.QueueStorage` (outbound `OutboundContext` send path over `@azure/storage-queue`; generic-context client + health check deferred) |
+| `src/Benzene.Clients.Azure.EventGrid` | `@benzenejs/clients-azure-event-grid` | `Benzene.Clients.Azure.EventGrid` (outbound `OutboundContext` send path + native batch client over `@azure/eventgrid`, both CloudEvents + classic schemas; generic-context client deferred) |
+| `src/Benzene.Clients.GoogleCloud.PubSub` | `@benzenejs/clients-google-cloud-pubsub` | `Benzene.Clients.GoogleCloud.PubSub` (outbound `OutboundContext` publish path over `@google-cloud/pubsub`) |
+| `src/Benzene.Clients.InProcess` | `@benzenejs/clients-in-process` | `Benzene.Clients.InProcess` (named-pipeline registry + `useInProcess`/`useInProcessFanOut`; boot-time route validation via `InProcessRouteStartUpCheck`; single-target `useInProcess` returns the handler's typed response (structural `JSON.parse` into `TResponse`), fan-out stays `VoidResult`) |
+| `src/Benzene.Mesh.Aws.Lambda` | `@benzenejs/mesh-aws-lambda` | `Benzene.Mesh.Aws.Lambda` |
+| `src/Benzene.Cache.Core` | `@benzenejs/cache-core` | `Benzene.Cache.Core` (partial) |
+| `src/Benzene.Cache.Redis` | `@benzenejs/cache-redis` | `Benzene.Cache.Redis`§ |
+| `src/Benzene.HealthChecks.Core` | `@benzenejs/health-checks-core` | `Benzene.HealthChecks.Core` |
+| `src/Benzene.HealthChecks` | `@benzenejs/health-checks` | `Benzene.HealthChecks` |
+| `src/Benzene.HealthChecks.Http` | `@benzenejs/health-checks-http` | `Benzene.HealthChecks.Http` |
+| `src/Benzene.HealthChecks.Tcp` | `@benzenejs/health-checks-tcp` | `Benzene.HealthChecks.Tcp` (over `node:net`) |
+| `src/Benzene.HealthChecks.Disk` | `@benzenejs/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
+| `src/Benzene.HealthChecks.DynamoDb` | `@benzenejs/health-checks-dynamodb` | `Benzene.HealthChecks.DynamoDb` (`DescribeTable` reachability check over `@aws-sdk/client-dynamodb`) |
+| `src/Benzene.HealthChecks.Azure.ServiceBus` | `@benzenejs/health-checks-azure-service-bus` | `Benzene.HealthChecks.Azure.ServiceBus` (`peekMessages` reachability check over `@azure/service-bus`) |
+| `src/Benzene.HealthChecks.Schema` | `@benzenejs/health-checks-schema` | `Benzene.HealthChecks.Schema` (provider-side contract-drift hash; `CodeGen.Core` hashing → `MeshHashing` over the schema-openapi doc) |
+| `src/Benzene.HealthChecks.TypeOrm` | `@benzenejs/health-checks-typeorm` | `Benzene.HealthChecks.EntityFramework` (TypeORM adapter — `DbContext` → `DataSource`; `CanConnectAsync`/`GetAppliedMigrationsAsync` → a `SELECT 1` probe + `MigrationExecutor`) |
+| `src/Benzene.Clients.HealthChecks` | `@benzenejs/clients-health-checks` | `Benzene.Clients.HealthChecks` |
+| `src/Benzene.Avro` | `@benzenejs/avro` | `Benzene.Avro`† (avsc adapter) |
+| `src/Benzene.MessagePack` | `@benzenejs/messagepack` | `Benzene.MessagePack`† (`@msgpack/msgpack` adapter) |
+| `src/Benzene.Xml` | `@benzenejs/xml` | `Benzene.Xml`† (`fast-xml-parser` adapter) |
+| `src/Benzene.Extras` | `@benzenejs/extras` | `Benzene.Extras` |
+| `src/Benzene.Auth.Core` | `@benzenejs/auth-core` | `Benzene.Auth.Core` (+ minimal `System.Security.Claims`) |
+| `src/Benzene.Auth.Basic` | `@benzenejs/auth-basic` | `Benzene.Auth.Basic` |
+| `src/Benzene.Auth.OAuth2` | `@benzenejs/auth-oauth2` | `Benzene.Auth.OAuth2`† (jose adapter) |
+| `src/Benzene.Idempotency` | `@benzenejs/idempotency` | `Benzene.Idempotency` |
+| `src/Benzene.RateLimiting` | `@benzenejs/rate-limiting` | `Benzene.RateLimiting` (+ `System.Threading.RateLimiting` subset) |
+| `src/Benzene.SelfHost` | `@benzenejs/self-host` | `Benzene.SelfHost` (+ `System.Threading.Channels` subset) |
+| `src/Benzene.SchemaRegistry.Core` | `@benzenejs/schema-registry-core` | `Benzene.SchemaRegistry.Core` |
+| `src/Benzene.Schema.OpenApi` | `@benzenejs/schema-openapi` | `Benzene.Schema.OpenApi` (benzene + openapi + asyncapi formats, JSON only; schema from validators, not reflection) |
+| `src/Benzene.Spec.Ui` | `@benzenejs/spec-ui` | `Benzene.Spec.Ui` (explorer page inlined as a string, not an embedded resource) |
+| `src/Benzene.Core.Versioning` | `@benzenejs/core-versioning` | `Benzene.Core.Versioning` (explicit casters; auto-mapper not ported) |
+| `src/Benzene.Mesh.Contracts` | `@benzenejs/mesh-contracts` | `Benzene.Mesh.Contracts` |
+| `src/Benzene.Mesh.Dispatch` | `@benzenejs/mesh-dispatch` | `Benzene.Mesh.Dispatch` |
+| `src/Benzene.Mesh.Reporting` | `@benzenejs/mesh-reporting` | `Benzene.Mesh.Reporting` |
+| `src/Benzene.Mesh.Aggregator` | `@benzenejs/mesh-aggregator` | `Benzene.Mesh.Aggregator` |
+| `src/Benzene.Mesh.Collector` | `@benzenejs/mesh-collector` | `Benzene.Mesh.Collector` |
+| `src/Benzene.Mesh.Ui` | `@benzenejs/mesh-ui` | `Benzene.Mesh.Ui` (product HTML copied verbatim, read from disk not embedded) |
+| `src/Benzene.Mesh.Fleet.Jaeger` | `@benzenejs/mesh-fleet-jaeger` | `Benzene.Mesh.Fleet.Jaeger` |
+| `src/Benzene.Mesh.Fleet.Tempo` | `@benzenejs/mesh-fleet-tempo` | `Benzene.Mesh.Fleet.Tempo` |
+| `src/Benzene.Mesh.Fleet.Aws.XRay` | `@benzenejs/mesh-fleet-aws-xray` | `Benzene.Mesh.Fleet.Aws.XRay` |
+| `src/Benzene.Mesh.Tracing.Tempo` | `@benzenejs/mesh-tracing-tempo` | `Benzene.Mesh.Tracing.Tempo` |
+| `src/Benzene.Mesh.Azure.Blob` | `@benzenejs/mesh-azure-blob` | `Benzene.Mesh.Azure.Blob` |
+| `src/Benzene.Mesh.Discovery.Azure` | `@benzenejs/mesh-discovery-azure` | `Benzene.Mesh.Discovery.Azure` |
+| `src/Benzene.Mesh.Usage.ApplicationInsights` | `@benzenejs/mesh-usage-application-insights` | `Benzene.Mesh.Usage.ApplicationInsights` |
+| `src/Benzene.Mesh.Aws.S3` | `@benzenejs/mesh-aws-s3` | `Benzene.Mesh.Aws.S3` |
+| `src/Benzene.Mesh.GoogleCloud.Storage` | `@benzenejs/mesh-google-cloud-storage` | `Benzene.Mesh.GoogleCloud.Storage` |
+| `src/Benzene.Mesh.Discovery.Aws` | `@benzenejs/mesh-discovery-aws` | `Benzene.Mesh.Discovery.Aws` |
+| `src/Benzene.Mesh.Usage.CloudWatch` | `@benzenejs/mesh-usage-cloudwatch` | `Benzene.Mesh.Usage.CloudWatch` |
+| `src/Benzene.Mesh.Discovery.Kubernetes` | `@benzenejs/mesh-discovery-kubernetes` | `Benzene.Mesh.Discovery.Kubernetes` |
+| `src/Benzene.Mesh.Wire` | `@benzenejs/mesh-wire` | `Benzene.Mesh.Wire`† |
+| `src/Benzene.CodeGen.Client` | `@benzenejs/codegen-client` | `Benzene.CodeGen.Client`§§ |
+| `src/Benzene.Testing` | `@benzenejs/testing` | `Benzene.Testing`¶ |
+| `src/Benzene.Aws.Lambda.TestHelpers` | `@benzenejs/aws-lambda-testing` | `Benzene.Aws.Lambda.*.TestHelpers`¶ |
+| `src/Benzene.Azure.Function.TestHelpers` | `@benzenejs/azure-function-testing` | `Benzene.Azure.Function.*.TestHelpers`¶ |
+| `src/Benzene.GoogleCloud.Functions.Http.TestHelpers` | `@benzenejs/google-cloud-functions-http-testing` | `Benzene.GoogleCloud.Functions.Http.TestHelpers` |
+| `src/Benzene.GoogleCloud.Functions.PubSub.TestHelpers` | `@benzenejs/google-cloud-functions-pubsub-testing` | `Benzene.GoogleCloud.Functions.PubSub.TestHelpers` |
+| `src/Benzene.Aws.Sqs.TestHelpers` | `@benzenejs/aws-sqs-test-helpers` | `Benzene.Aws.Sqs.TestHelpers`¶ |
+| `src/Benzene.Azure.ServiceBus.TestHelpers` | `@benzenejs/azure-service-bus-test-helpers` | `Benzene.Azure.ServiceBus.TestHelpers`¶ |
+| `src/Benzene.Azure.EventHub.TestHelpers` | `@benzenejs/azure-event-hub-test-helpers` | `Benzene.Azure.EventHub.TestHelpers`¶ |
+| `src/Benzene.RabbitMq.TestHelpers` | `@benzenejs/rabbitmq-test-helpers` | `Benzene.RabbitMq.TestHelpers`¶ |
+| `src/Benzene.Kafka.Core.TestHelpers` | `@benzenejs/kafka-core-test-helpers` | `Benzene.Kafka.Core.TestHelpers`¶ |
+| `src/Benzene.Grpc.TestHelpers` | `@benzenejs/grpc-test-helpers` | `Benzene.Grpc.TestHelpers` (the `TestServerCallContext` fake-call factory only; the live `GrpcTestHost` in-memory ASP.NET `TestServer` has no counterpart — see below) |
+| `src/Benzene.CloudService.Probe` | `@benzenejs/cloud-service-probe` | `Benzene.CloudService.Probe` |
+| `src/Benzene.CloudService` | `@benzenejs/cloud-service` | `Benzene.CloudService` |
+| `src/Benzene.Configuration.Core` | `@benzenejs/configuration-core` | `Benzene.Configuration.Core` |
+| `src/Benzene.Saga` | `@benzenejs/saga` | `Benzene.Saga` |
+| `src/Benzene.ResponseEvents` | `@benzenejs/response-events` | `Benzene.ResponseEvents` |
+| `src/Benzene.Dependencies` | `@benzenejs/dependencies` | `Benzene.Microsoft.Dependencies`* |
+| `test/Benzene.Core.Test` | `@benzenejs/core-test` (private) | `Benzene.Core.Test` |
 
 \* Node has no platform DI container equivalent to `Microsoft.Extensions.DependencyInjection`,
-so `@benzene/dependencies` ships a first-party `ServiceCollection` /
+so `@benzenejs/dependencies` ships a first-party `ServiceCollection` /
 `DefaultBenzeneServiceContainer` / `DefaultServiceResolverFactory` with the same
 singleton/scoped/transient semantics.
 
-† `@benzene/mesh-wire` ports both wire feeds of `Benzene.Mesh.Wire`. The **ServiceDescriptor path**
+† `@benzenejs/mesh-wire` ports both wire feeds of `Benzene.Mesh.Wire`. The **ServiceDescriptor path**
 (`mesh.md` §2): the descriptor types, `MeshDescriptorFactory` + §2.2 `descriptorHash`, the pluggable
 `IMeshSchemaProvider` (replacing C#'s CLR-reflection schema generator — TypeScript erases the
 request/response types), and `useMeshDescriptor`; `runtime` is `"node"`. And the **trace feed** (§3):
@@ -163,7 +163,7 @@ loop with a fire-and-forget sync `dispose()`.
 ‡ `Benzene.Azure.Function.AspNet` routes Azure Functions HTTP through the .NET-only ASP.NET Core
 stack (`HttpRequest`/`IActionResult`). Per the "Third-party library integrations" convention it is
 retargeted onto the ecosystem-native `@azure/functions` v4 HTTP model (`HttpRequest`/
-`HttpResponseInit`) and named `@benzene/azure-function-http`. Transport adapters likewise target the
+`HttpResponseInit`) and named `@benzenejs/azure-function-http`. Transport adapters likewise target the
 Node event types: the AWS Lambda packages depend on `@types/aws-lambda`, the Azure packages on
 `@azure/functions` (+ `@azure/service-bus`). The one structural adaptation across all AWS adapters:
 .NET Lambda takes a raw `Stream` and deserializes/sniffs it to route, whereas Node Lambda receives an
@@ -173,21 +173,21 @@ discriminates on its shape rather than deserializing a stream.
 ◊ `Benzene.GoogleCloud.Functions.Http` reuses `Benzene.AspNet.Core`'s `IAspApplicationBuilder`/
 `AspNetContext`/`UseHttp` machinery (its `GoogleCloudFunctionApplicationBuilder` implements
 `IAspApplicationBuilder` without a live ASP.NET Core pipeline). `Benzene.AspNet.Core` is .NET-specific
-and unported — `@benzene/express` is its Node analog — and the .NET Functions Framework itself hosts the
+and unported — `@benzenejs/express` is its Node analog — and the .NET Functions Framework itself hosts the
 function inside Kestrel, whereas Node's `@google-cloud/functions-framework` hands the handler Express
-req/res. So the port reuses `@benzene/express`'s already-tested `ExpressContext` + `addExpress` adapter
+req/res. So the port reuses `@benzenejs/express`'s already-tested `ExpressContext` + `addExpress` adapter
 machinery instead (see the Google Cloud Functions porting-conventions bullet). The transport therefore
 reports `express`, not `http`/`asp`.
 
 § `Benzene.Cache.Redis` wraps the .NET-only `StackExchange.Redis`; per the same convention it is
-re-created as an adapter over `ioredis`, the popular Node Redis client. (`@benzene/clients` also
+re-created as an adapter over `ioredis`, the popular Node Redis client. (`@benzenejs/clients` also
 depends on the Node global `fetch` rather than .NET's `HttpClient`.)
 
-¶ **Testing helpers.** `@benzene/testing` ports `Benzene.Testing`'s platform-neutral request builders
+¶ **Testing helpers.** `@benzenejs/testing` ports `Benzene.Testing`'s platform-neutral request builders
 (`messageBuilder`/`httpBuilder` + `asBenzeneMessage`/`asRawHttpRequest`); the C# static `MessageBuilder.
 Create`/`HttpBuilder.Create` factories become free functions, and the required `ISerializer` becomes an
-optional argument defaulting to JSON. `@benzene/aws-lambda-testing` and
-`@benzene/azure-function-testing` provide a transport test-event builder for **every** ported adapter —
+optional argument defaulting to JSON. `@benzenejs/aws-lambda-testing` and
+`@benzenejs/azure-function-testing` provide a transport test-event builder for **every** ported adapter —
 AWS: `asApiGatewayRequest`, `asApiGatewayV2Request`, `asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`,
 `asDynamoDb`, `asKinesis`, `asS3`; Azure: `asAzureHttpRequest`, `asAzureServiceBusMessage`,
 `asEventHubBenzeneMessage`, `asAzureKafkaEvent` — each turning one `messageBuilder`/`httpBuilder` into a
@@ -198,21 +198,21 @@ harness (below) or `Inline*StartUp`. **Two deliberate TS-DX bends,** both
 from the TypeScript-DX-champion lens (see `.claude/agents/typescript-dx-champion.md`): (1) the C# ships one
 `*.TestHelpers` project per transport to isolate each `Amazon.Lambda.*Events` NuGet, but in Node the event
 types come from a few shared packages (`@types/aws-lambda`; `@azure/functions`/`service-bus`/`event-hubs`),
-so there is no dependency to isolate — the idiomatic shape is one `@benzene/aws-lambda-testing` and one
-`@benzene/azure-function-testing` package, each with a builder per transport; (2) C#'s positional/overloaded
+so there is no dependency to isolate — the idiomatic shape is one `@benzenejs/aws-lambda-testing` and one
+`@benzenejs/azure-function-testing` package, each with a builder per transport; (2) C#'s positional/overloaded
 `As*(serializer, numberOfMessages)` parameters become a single trailing **options object**
 (`{ serializer?, numberOfMessages? }`), consistent across every builder. There is a builder for every
 ported transport; the DynamoDB one ships a small AttributeValue marshaller (the inverse of the adapter's
 `DynamoDbAttributeValueConverter`). The `BenzeneTestHost`/`BenzeneTestHostBuilder` **startup-host is now
-ported**: `benzeneTestHost(StartUp)` (in `@benzene/testing`) boots a real app from its `BenzeneStartUp`
-(the contract itself now lives in `@benzene/abstractions-middleware` — see the "Unified startup host" note),
+ported**: `benzeneTestHost(StartUp)` (in `@benzenejs/testing`) boots a real app from its `BenzeneStartUp`
+(the contract itself now lives in `@benzenejs/abstractions-middleware` — see the "Unified startup host" note),
 `.withServices((services) => ...)` overrides ANY registration (last-registration-wins over the port's
 first-party container), `.withConfiguration(...)` layers config, and a single transport specialization
 finishes it — `.buildAwsLambdaHost()` / `.buildAzureFunctionApp()` (in the transport `*-testing`
 packages), or `buildGoogleCloudFunctionHost(builder)` for GCP HTTP. Send native events in with
 `host.sendEventAsync<TResponse>(asX(...))`; assert on the native
 response AND on egress via the first-party `FakeBenzeneMessageSender`. The **Google Cloud Functions HTTP
-test host** (`@benzene/google-cloud-functions-http-testing`, porting
+test host** (`@benzenejs/google-cloud-functions-http-testing`, porting
 `Benzene.GoogleCloud.Functions.Http.TestHelpers`) follows the same law with two GCP-specific bends: (a) its
 specialization is a **free function** `buildGoogleCloudFunctionHost(benzeneTestHost(StartUp).withServices(...))`
 rather than a fluent `.build*Host()` method (bend #4), matching the settled decision that Google keeps its
@@ -224,7 +224,7 @@ type-checks), and the C# `BuildGoogleCloudFunctionHost` extension is likewise a 
 native `@google-cloud/functions-framework` `Request` (`method`/`url`/`path`/`headers`/`rawBody`), and
 `host.sendHttpAsync(request)` mints and captures the `Response` (`statusCode`/`setHeader`/`end`, the exact
 write surface `ExpressResponseAdapter.finalizeAsync` touches), returning `{ statusCode, headers, body }`.
-Its **Pub/Sub sibling** (`@benzene/google-cloud-functions-pubsub-testing`, porting
+Its **Pub/Sub sibling** (`@benzenejs/google-cloud-functions-pubsub-testing`, porting
 `Benzene.GoogleCloud.Functions.PubSub.TestHelpers`) completes the GCP Functions testing pair on the same law:
 `buildGooglePubSubFunctionHost(builder)` (free function, same rationale), then `asPubSubEvent(messageBuilder(...))`
 or a fluent `new PubSubMessageBuilder().withTopic(...).withBody(...).build()` produces a native
@@ -247,17 +247,17 @@ directly); the original `AzureFunctionAppBuilder` + the `BenzeneStartUpOf<TAppBu
 deprecated `AzureFunctionStartUp` alias) are retained for `InlineAzureFunctionStartUp` and existing Azure
 consumers. Google's builders (`GoogleCloudFunctionApplicationBuilder`, `GooglePubSubFunctionApplicationBuilder`)
 are already `BenzeneApplicationBuilder`s (hence `IBenzeneApplicationBuilder`), so its seam is the free function
-`useGoogleCloud` in `@benzene/google-cloud-functions-core`; it gates on the shared `platform` constant rather
+`useGoogleCloud` in `@benzenejs/google-cloud-functions-core`; it gates on the shared `platform` constant rather
 than `instanceof` (that neutral core cannot import the two concrete builders — they live in the `-http`/`-pubsub`
 packages that depend on it), and `useHttp`/`usePubSub` do the final concrete-builder `instanceof` narrow (each a
 no-op on the other's builder) — see bend (9). Either way `benzeneTestHost`/`.withServices`/`.withConfiguration`
 and the egress assertions stay identical across clouds (only the `build*Host` line and the `as*` builder name
 change); (4) the C# `Build*` **extension method on the builder** becomes a TypeScript **fluent method added
-by module augmentation** (`declare module '@benzene/testing'` + a prototype assignment) so the
+by module augmentation** (`declare module '@benzenejs/testing'` + a prototype assignment) so the
 `benzeneTestHost(...).withServices(...).buildAwsLambdaHost()` chain reads as in the reference while the
 neutral core keeps zero cloud imports — it lights up on importing the transport `*-testing` package, which
 a test always does for its `as*` builder; (5) `FakeBenzeneMessageSender` (the egress test double each .NET
-example re-declares as a local helper) is promoted into `@benzene/testing` so adopters get it first-party.
+example re-declares as a local helper) is promoted into `@benzenejs/testing` so adopters get it first-party.
 The startup-host builder is dogfooded by `test/Benzene.Core.Test/Testing/BenzeneTestHostTest.test.ts` (the
 AWS+Azure worked exemplars) and by the converted `ApiGatewayPipelineTest`/`AzureHttpPipelineTest`. Still not
 ported: an Azure Queue Storage builder (that transport itself isn't ported).
@@ -265,12 +265,12 @@ ported: an Azure Queue Storage builder (that transport itself isn't ported).
 **Unified startup host.** A production deployment now boots from the SAME `BenzeneStartUp` a component test
 boots — one composition root, `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`, mirroring
 Google's existing `new GoogleCloudFunctionHost(StartUp).httpFunction`. Two decisions record the shape:
-(6) **the canonical `BenzeneStartUp` contract + its `BenzeneConfiguration` moved from `@benzene/testing`
-to `@benzene/abstractions-middleware`** (the neutral hosting-abstractions package, alongside `IStartUp`
-and `IBenzeneApplicationBuilder`), so a **production** host — `@benzene/aws-lambda-core`'s new
+(6) **the canonical `BenzeneStartUp` contract + its `BenzeneConfiguration` moved from `@benzenejs/testing`
+to `@benzenejs/abstractions-middleware`** (the neutral hosting-abstractions package, alongside `IStartUp`
+and `IBenzeneApplicationBuilder`), so a **production** host — `@benzenejs/aws-lambda-core`'s new
 `AwsLambdaHost<TStartUp>` — can consume the very contract the test host does without depending on the
-testing package. `@benzene/testing` re-exports both unchanged, so every existing
-`import { BenzeneStartUp, BenzeneConfiguration } from '@benzene/testing'` keeps working. This is the TS
+testing package. `@benzenejs/testing` re-exports both unchanged, so every existing
+`import { BenzeneStartUp, BenzeneConfiguration } from '@benzenejs/testing'` keeps working. This is the TS
 counterpart of .NET's `Benzene.Microsoft.Dependencies.BenzeneStartUp : IStartUp<IServiceCollection,
 IConfiguration, IBenzeneApplicationBuilder>` — an **interface** (no abstract base ceremony), with
 `getConfiguration` **optional** (a host treats its absence as `emptyConfiguration`, so a startup reading
@@ -285,14 +285,14 @@ testing. The AWS boot sequence lives once in `AwsLambdaStartUpRunner` (mirroring
 its `buildEntryPoint`, so a component test boots byte-for-byte what deploys. This retires the template's
 hand-built `handler.ts` and moves `InlineAwsLambdaStartUp` off the taught path (kept for inline
 tests/samples). Proven by `test/Benzene.Core.Test/Aws/Hosting/AwsLambdaHostTest.test.ts` and by the
-`aws-apigateway` template. (8) **`AzureFunctionHost<TStartUp>` (`@benzene/azure-function-core`)** brings
+`aws-apigateway` template. (8) **`AzureFunctionHost<TStartUp>` (`@benzenejs/azure-function-core`)** brings
 Azure to the identical shape, over the shared `AzureFunctionStartUpRunner` (the Azure `AwsLambdaStartUpRunner`:
 its `bootstrap` and the test host's `buildAzureFunctionApp` both dispatch its `buildEntryPoint`). One
 SDK-model difference from AWS is recorded: AWS Lambda has ONE event-sniffing entry point, so `AwsLambdaHost`
 owns a single `.lambdaHandler`; the `@azure/functions` v4 model is **per-trigger**, and each trigger's payload
 adaptation lives in its own transport package. So the core host stays transport-agnostic (it exposes the built
 `IAzureFunctionApp` as `.app` plus the two neutral `handleAsync*` dispatch methods), and **each transport
-package ADDS the native-handler getter it owns** — `@benzene/azure-function-http` adds `.httpFunction`,
+package ADDS the native-handler getter it owns** — `@benzenejs/azure-function-http` adds `.httpFunction`,
 `-service-bus` adds `.serviceBusFunction`, `-event-hub` adds `.eventHubFunction` — via the SAME
 `declare module` + prototype pattern the `*-testing` packages use to add `buildAzureFunctionApp` to the neutral
 test host (see convention (4)), so a getter lights up only when its transport package is imported (which a
@@ -306,7 +306,7 @@ getters (`.httpFunction` / `.cloudEventFunction`) rather than moving the getter 
 host by module augmentation — the `new XHost(StartUp).xFunction` API surface is already uniform across clouds,
 so only the builder + startup CONTRACT is neutralized, not the host location. Concretely: both Google builders
 now source their `platform` from a shared `GoogleCloudFunctionsPlatform` constant so the neutral
-`useGoogleCloud(app, g => …)` seam (in `@benzene/google-cloud-functions-core`, mirroring `useAwsLambda`/
+`useGoogleCloud(app, g => …)` seam (in `@benzenejs/google-cloud-functions-core`, mirroring `useAwsLambda`/
 `useAzureFunctions` but `platform`-gated per bend (3)) can select them; `useHttp`/`usePubSub` widen to accept
 the neutral `IBenzeneApplicationBuilder` and `instanceof`-narrow internally; the two hosts widen their generic
 to `BenzeneStartUpOf<ConcreteBuilder>` so they accept BOTH the unified `BenzeneStartUp` and the (now
@@ -321,9 +321,9 @@ off the `InlineAwsLambdaStartUp` `lambda.ts` helper to per-transport `StartUp` +
 and the `hosting.md` intro note + AWS/Google getting-started guides now teach the host one-liner (the inline
 builders documented as the terse/advanced alternative).
 The **standalone (non-Functions)
-consumer workers** carry their own test-helper packages — `@benzene/aws-sqs-test-helpers`,
-`@benzene/azure-service-bus-test-helpers`, `@benzene/azure-event-hub-test-helpers`,
-`@benzene/rabbitmq-test-helpers`, `@benzene/kafka-core-test-helpers` — kept one-per-C#-project
+consumer workers** carry their own test-helper packages — `@benzenejs/aws-sqs-test-helpers`,
+`@benzenejs/azure-service-bus-test-helpers`, `@benzenejs/azure-event-hub-test-helpers`,
+`@benzenejs/rabbitmq-test-helpers`, `@benzenejs/kafka-core-test-helpers` — kept one-per-C#-project
 (unlike the consolidated `*-testing` packages, since each targets a distinct transport SDK, the very
 dependency the C# split isolates). They follow the same law: a native-message builder (`asSqsMessage` /
 `asAzureServiceBusMessage` / `asEventHubBenzeneMessage` / `asRabbitMqBenzeneMessage` / `asKafkaBenzeneMessage`)
@@ -336,14 +336,14 @@ faithful to its C# `.csproj`, which ships no worker host). The `KafkaBenzeneTest
 `<TKey, TValue>` generics — the port's `KafkaApplication` erases them (kafkajs delivers a raw
 `EachMessagePayload`), matching the erasure already documented on `useKafka`.
 
-§§ `@benzene/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
+§§ `@benzenejs/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
 from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
 types by reflecting over the service's CLR request/response types, which cannot cross a language
 boundary; this port generates the client from the service's mesh **ServiceDescriptor** (`mesh.md` §2),
 whose per-topic schemas are language-neutral JSON Schema (§2.1). So a C# service's descriptor and a
 TypeScript service's descriptor generate an identical, fully typed client. A bespoke emitter covers the
 §2.1 subset (keeping the zero-runtime-deps rule; `json-schema-to-typescript` is the drop-in for arbitrary
-schemas). `Benzene.Schema.OpenApi`'s **`benzene` spec document** IS ported (`@benzene/schema-openapi`:
+schemas). `Benzene.Schema.OpenApi`'s **`benzene` spec document** IS ported (`@benzenejs/schema-openapi`:
 `useSpec` serves `{ requests, events, transports?, components.schemas }` with payload schemas stored once and
 referenced by `$ref`, sourced from the `ITypeJsonSchemaSource` validators rather than CLR reflection — see
 the "Type → JSON Schema" convention). The **`openapi`** (OpenAPI 3.0) and **`asyncapi`** (AsyncAPI 3.0)
@@ -382,11 +382,11 @@ You write a **message handler once** and host it anywhere. A handler declares it
 `@message` (and, for HTTP, its route with `@httpEndpoint`):
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 class CreateOrder { customerId?: string; }
 class OrderCreated { orderId?: string; }
@@ -407,8 +407,8 @@ exactly this shape; start it with `npm start -w @benzene-example/mesh-service`):
 
 ```ts
 import express from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
 
 const app = express();
 app.use(benzene((pipeline) => useMessageHandlers(pipeline, CreateOrderHandler)));
@@ -421,11 +421,11 @@ contract — the SAME shape on every cloud) and boot it with the one-liner
 rather than the method, which would detach `this`):
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 
 class StartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
@@ -462,10 +462,10 @@ collision) but exposes them behind one exported `handler`. AWS delivers each tri
 handler; the composite picks the first route whose event-shape predicate matches and delegates:
 
 ```ts
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
 
 const entryPoint = compositeAwsLambda((c) => {
   c.configureServices((services) => addBenzene(services)); // runs against every route's container
@@ -489,8 +489,8 @@ function count).
 <details><summary>Under the hood: driving a pipeline directly (what the hosts build on)</summary>
 
 ```ts
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 const container = new DefaultBenzeneServiceContainer();
 const builder = new MiddlewarePipelineBuilder<MyContext>(container); // MyContext = your transport context
@@ -543,7 +543,7 @@ Each template gives you a complete, minimal service: a `StartUp` composition roo
 injected service (an `IGreeter`), the Lambda handler entry (`src/handler.ts`), and — unless you pass
 `--no-tests` — a `vitest` component test that boots the app and pushes a message through the real pipeline.
 
-> **Heads-up:** a generated `package.json` references the **real** `@benzene/*` npm package names. Those
+> **Heads-up:** a generated `package.json` references the **real** `@benzenejs/*` npm package names. Those
 > aren't published to the registry yet, so a fresh project can't `npm install` them from npm today — resolve
 > them from a local `benzene-typescript` workspace checkout instead (each template's own README explains
 > how). This is a stated prerequisite of the templates, not a bug in the generated code.
@@ -565,14 +565,14 @@ next to its C# counterpart:
 - **Package naming — family vs platform (two rules, by package kind).** The estate deliberately
   uses two orderings, and a new package follows the one for its kind:
   1. **Hosting / transport adapters** are **platform-first**: `Benzene.<Platform>.<Runtime>.<Transport>`
-     (`@benzene/aws-lambda-sns`, `@benzene/azure-function-service-bus`) — the platform *is* the product.
+     (`@benzenejs/aws-lambda-sns`, `@benzenejs/azure-function-service-bus`) — the platform *is* the product.
   2. **Cross-cutting product families** with a shared, platform-agnostic abstraction are **feature-first**:
-     `Benzene.<Family>.<Platform>.<Transport>` (`@benzene/clients-aws-sns`, `@benzene/mesh-aws-lambda`,
-     `@benzene/health-checks-azure-service-bus`) — the feature is the product; the platform is just which
-     backend fills it in, and the family's abstraction (`@benzene/clients`, `@benzene/mesh-contracts`)
+     `Benzene.<Family>.<Platform>.<Transport>` (`@benzenejs/clients-aws-sns`, `@benzenejs/mesh-aws-lambda`,
+     `@benzenejs/health-checks-azure-service-bus`) — the feature is the product; the platform is just which
+     backend fills it in, and the family's abstraction (`@benzenejs/clients`, `@benzenejs/mesh-contracts`)
      has no single platform to lead with.
-  3. **Platform-agnostic** packages take **no platform segment** (`@benzene/core`, `@benzene/results`,
-     `@benzene/abstractions`).
+  3. **Platform-agnostic** packages take **no platform segment** (`@benzenejs/core`, `@benzenejs/results`,
+     `@benzenejs/abstractions`).
   This is why the outbound clients are `clients-aws-*` (feature-first), **not** `aws-clients-*`: they sit
   with `mesh-*` and `health-checks-*`, not with the hosting adapters. Keep singular/plural consistent
   within a family (hence `Benzene.Clients.Http`, not `Benzene.Client.Http`).
@@ -585,7 +585,7 @@ next to its C# counterpart:
   Callers holding an interface-typed scope therefore **feature-detect** before awaiting: the migrated
   per-request transport teardowns use an inline
   `if (scope.disposeAsync) { await scope.disposeAsync(); } else { scope.dispose(); }` (the
-  `disposeInstanceAsync` helper in `@benzene/dependencies` does the same, preferring
+  `disposeInstanceAsync` helper in `@benzenejs/dependencies` does the same, preferring
   `disposeAsync()` / `Symbol.asyncDispose` and falling back to `dispose()`). A scope disposes its
   instances in reverse (LIFO) order; `disposeAsync()` awaits any instance exposing `disposeAsync()` /
   `Symbol.asyncDispose` — an explicit method rather than `await using`, since the packages target
@@ -594,17 +594,17 @@ next to its C# counterpart:
   skips one and emits a one-time `console.warn` naming the situation rather than silently dropping it.
   Note: `IUnitOfWork` + `UnitOfWorkMiddleware` are a TypeScript-first addition (no direct C#
   counterpart yet — parity is an open question). They are deliberately placed in
-  `@benzene/abstractions` (`IUnitOfWork`) + `@benzene/core-middleware` (`UnitOfWorkMiddleware`)
-  rather than a new `@benzene/unit-of-work` package, because .NET has no `Benzene.UnitOfWork` project
+  `@benzenejs/abstractions` (`IUnitOfWork`) + `@benzenejs/core-middleware` (`UnitOfWorkMiddleware`)
+  rather than a new `@benzenejs/unit-of-work` package, because .NET has no `Benzene.UnitOfWork` project
   to mirror — revisit and split them out if one ever ships. The captive-dependency and async-skip DI
   diagnostics use `console.warn` (not an injected logger) because the resolver underlies logger
   resolution itself, so it cannot depend on a logger being resolvable.
 - **Shared literals → constants.** Values that recur across packages are centralized in one `as const`
   object rather than repeated inline, so a rename is a single-point edit. The canonical case is
-  **`TransportNames`** (`@benzene/abstractions-message-handlers`, faithfully ported from the C# class of
+  **`TransportNames`** (`@benzenejs/abstractions-message-handlers`, faithfully ported from the C# class of
   the same name): every transport tag (`TransportMiddlewarePipeline`/`setTransport`) and startup
   `ITransportInfo` registration references `TransportNames.Sqs`/`.ApiGateway`/… instead of the raw string,
-  and it is re-exported from `@benzene/core-message-handlers` so adapters import it alongside the pipeline.
+  and it is re-exported from `@benzenejs/core-message-handlers` so adapters import it alongside the pipeline.
   One TS-only member (`Express`, no C# counterpart) is added for the Express host adapter. Centralizing
   also surfaced a drift the literals had hidden — the default in-process `ITransportInfo` had been
   registered as `'direct'` (a word only C#'s *doc comment* uses) where C# registers `TransportNames.Benzene`;
@@ -630,7 +630,7 @@ next to its C# counterpart:
   `MiddlewarePipelineBuilderBase`; non-fluent extensions (`TryAddSingleton`,
   `AddBenzeneMiddleware`, ...) become free functions in a file named after the C# extensions
   class. A fluent extension can only become a builder *member* when it lives in the builder's own
-  package: fluent extensions defined **downstream** (e.g. `@benzene/core-message-handlers`'s
+  package: fluent extensions defined **downstream** (e.g. `@benzenejs/core-message-handlers`'s
   `useMessageHandlers`/`usePresetTopic`, which would create a layering cycle if added to
   `IMiddlewarePipelineBuilder` upstream) instead become **free functions taking the builder as their
   first argument** (`useMessageHandlers(app, …)`) and return it, so they still chain at their own call
@@ -657,13 +657,13 @@ next to its C# counterpart:
   `IMiddlewareApplication<TEvent, TResult>` cannot share a name in TypeScript; the
   result-returning variants gain a `WithResult` suffix. Same for `IBenzeneResult<T>`
   (`IBenzeneResultOf<T>`) and C# `Void` (`VoidResult`, a reserved word).
-- **Logging.** `Microsoft.Extensions.Logging` has no Node equivalent; `@benzene/abstractions`
+- **Logging.** `Microsoft.Extensions.Logging` has no Node equivalent; `@benzenejs/abstractions`
   ships a minimal `ILogger`/`ILoggerFactory`/`LogLevel` with structured scopes, which adapters
   for concrete loggers can implement.
 - **Ambient state & concurrency primitives.** `AsyncLocal<T>` → Node's `AsyncLocalStorage` (a C#
   settable `Current` with a `finally` restore becomes `als.run(value, () => next())`, whose scope
   reverts automatically). `CancellationToken` → an optional `AbortSignal`. `SemaphoreSlim` → a
-  promise-chain mutex, and `Task.WhenAll` → `Promise.all` (bounded fan-out via `@benzene/core-middleware`'s
+  promise-chain mutex, and `Task.WhenAll` → `Promise.all` (bounded fan-out via `@benzenejs/core-middleware`'s
   `BoundedFanOut`). `System.Threading.Channels` has no Node built-in: the used subset is re-created
   in-package — a capacity-bounded buffer drained by a single re-entrancy-guarded loop (kicked by size and
   by an `unref`'d `setInterval`). Because JavaScript can't block a thread on a promise, a C# synchronous
@@ -696,9 +696,9 @@ next to its C# counterpart:
   `Benzene.FluentValidation` wraps FluentValidation, `Benzene.Autofac` wraps Autofac. These are
   **not** ported literally, because the wrapped library usually has no TypeScript existence. Instead
   the shared **abstraction** stays core and aligned (e.g. `Benzene.Abstractions.Validation` →
-  `@benzene/abstractions-validation`), and each integration is re-created against the *popular
+  `@benzenejs/abstractions-validation`), and each integration is re-created against the *popular
   equivalent library in the JavaScript ecosystem*, one adapter package per library. So .NET's
-  validation integrations become `@benzene/zod`, `@benzene/joi`, `@benzene/yup` (schema validation),
+  validation integrations become `@benzenejs/zod`, `@benzenejs/joi`, `@benzenejs/yup` (schema validation),
   each mirroring the `Benzene.FluentValidation` integration shape (a `ValidationMiddleware` that
   resolves the schema for the request type and maps failures to a Benzene result). Rule of thumb:
   when a .NET package's reason for existing is the third party, find the 2–3 most-used ecosystem
@@ -706,7 +706,7 @@ next to its C# counterpart:
   take their third-party library as a real runtime dependency (that is their whole purpose) — the
   "no runtime dependencies outside the workspace" rule applies to the core port, not to these
   deliberately library-specific adapters.
-- **gRPC: the server bridge for all four RPC shapes, hosted on `@grpc/grpc-js`.** `@benzene/grpc` ports the
+- **gRPC: the server bridge for all four RPC shapes, hosted on `@grpc/grpc-js`.** `@benzenejs/grpc` ports the
   **server-side slice** of `Benzene.Grpc` — routing gRPC calls into Benzene message handlers for **unary**
   *and* the three streaming shapes (**server-**, **client-**, **bidirectional**-streaming). **Ported:**
   `GrpcContext` (over the shared grpc-js `ServerSurfaceCall`; a unary request *or* an inbound request
@@ -754,8 +754,8 @@ next to its C# counterpart:
   half-built): the **ASP.NET hosting** package (`Benzene.Grpc.AspNet`, no JS analog); the **rich
   `google.rpc.Status`** error details (`grpc-status-details-bin` / `BadRequest` field violations —
   protobuf-only; the flat `benzene-status` trailer *is* ported); and any gRPC **health-check** type (another
-  package's concern). The outbound **client** is now ported as `@benzene/grpc-client` (next bullet).
-- **gRPC outbound client: the unary send side, on `@grpc/grpc-js`.** `@benzene/grpc-client` ports
+  package's concern). The outbound **client** is now ported as `@benzenejs/grpc-client` (next bullet).
+- **gRPC outbound client: the unary send side, on `@grpc/grpc-js`.** `@benzenejs/grpc-client` ports
   `Benzene.Grpc.Client` — a `GrpcBenzeneMessageClient` (an `IBenzeneMessageClient`) that sends **unary**
   calls through a `GrpcSendMessageContext` middleware pipeline, mirroring the Kafka/RabbitMQ send sides.
   **Ported:** `GrpcSendMessageContext`, `GrpcContextConverter`, `GrpcClientMiddleware`, the route registry
@@ -776,11 +776,11 @@ next to its C# counterpart:
   JSON/structural `GrpcClientMarshaller` by default (the exact analog of the server's `JsonGrpcMessageAdapter`
   bend); a caller talking to a protobuf service passes a protobuf marshaller. **Deferred** (documented in
   `index.ts`, not half-built): the gRPC **health check** (`GrpcHealthCheck`/`AddGrpcHealthCheck`/the
-  `healthCheck` param — the health-check domain, out of scope as for `@benzene/grpc`); non-unary **streaming**
-  client calls; and **inbound-deadline / cancellation-token propagation** (`@benzene/grpc`'s
+  `healthCheck` param — the health-check domain, out of scope as for `@benzenejs/grpc`); non-unary **streaming**
+  client calls; and **inbound-deadline / cancellation-token propagation** (`@benzenejs/grpc`'s
   `IGrpcServerCallAccessor` exposes no deadline, there is no ambient cancellation-token DI seam, and grpc-js
   `CallOptions` has no cancellation field — an explicit deadline can still be set via `GrpcContextConverter`).
-- **gRPC test helpers (`@benzene/grpc-test-helpers`).** Ports `Benzene.Grpc.TestHelpers` — a
+- **gRPC test helpers (`@benzenejs/grpc-test-helpers`).** Ports `Benzene.Grpc.TestHelpers` — a
   `createServerUnaryCall({ request, metadata, method, cancelled, deadline })` factory that builds a minimal
   hand-rolled grpc-js `ServerUnaryCall` exposing exactly the members Benzene reads (`request`, `metadata`,
   `cancelled`, `getDeadline()`, `getPath()`), so `new GrpcContext(topic, createServerUnaryCall({ ... }))`
@@ -790,14 +790,14 @@ next to its C# counterpart:
   helper fakes a `ServerUnaryCall` rather than a standalone context. **Non-port** (`GrpcTestHost` /
   `BuildGrpcHost`): the C# also ships a live in-memory host over an ASP.NET Core `TestServer`
   (`Benzene.AspNet.Core` + `Benzene.Grpc.AspNet` + a real `GrpcChannel`) — .NET-and-ASP.NET-specific
-  machinery `@benzene/grpc` deliberately replaced with a grpc-js `Server`; the port unit-tests the bridge
+  machinery `@benzenejs/grpc` deliberately replaced with a grpc-js `Server`; the port unit-tests the bridge
   with the fake call above (as every other transport worker is tested) rather than binding a real socket, so
   there is no `GrpcTestHost` counterpart (a live end-to-end test binds a grpc-js `Server` to an ephemeral
   loopback port directly). The port's own gRPC suite consumes this factory.
 - **Google Cloud Functions: hosted on `@google-cloud/functions-framework`.** The Google Cloud lane ports
   three .NET packages onto Node's Functions Framework, which registers named handlers rather than being
   the entry point: `functions.http(name, (req, res) => ...)` and `functions.cloudEvent(name,
-  (cloudEvent) => ...)`. **`@benzene/google-cloud-functions-core`** is the thin shared bootstrap
+  (cloudEvent) => ...)`. **`@benzenejs/google-cloud-functions-core`** is the thin shared bootstrap
   (`GoogleCloudStartUpRunner.bootstrap(StartUp)`), Google-neutral (no functions-framework dep) exactly
   like `Benzene.Aws.Lambda.Core`; the .NET `Bootstrap<TStartUp>()`'s 4-tuple `(StartUp, IConfiguration,
   IServiceCollection, IBenzeneServiceContainer)` collapses to `(startUp, DefaultBenzeneServiceContainer)`
@@ -808,15 +808,15 @@ next to its C# counterpart:
   `GoogleCloudFunctionStartUp` (`configureServices`/`configure`, no config param); the canonical unified
   `BenzeneStartUp` (with its `BenzeneConfiguration` thread) is now ported and consumed by AWS's
   `AwsLambdaHost<TStartUp>` (see the "Unified startup host" footnote) — converging Google onto it is a
-  follow-up. **HTTP** (`@benzene/google-cloud-functions-http`): the .NET reuses
+  follow-up. **HTTP** (`@benzenejs/google-cloud-functions-http`): the .NET reuses
   `Benzene.AspNet.Core`'s `IAspApplicationBuilder`/`UseHttp` without a live ASP.NET pipeline; that stack
-  is unported and `@benzene/express` is its Node analog, and the Functions Framework's HTTP signature is
-  itself Express req/res — so `useHttp` reuses `@benzene/express`'s `ExpressContext` + `addExpress`
+  is unported and `@benzenejs/express` is its Node analog, and the Functions Framework's HTTP signature is
+  itself Express req/res — so `useHttp` reuses `@benzenejs/express`'s `ExpressContext` + `addExpress`
   machinery to bridge req/res into the Benzene HTTP pipeline (transport reports `express`; see the `◊`
   footnote). `GoogleCloudFunctionApplicationBuilder` keeps the .NET's deferred-build shape (`add` stores,
   `build` invokes once the resolver factory is final) and `host.httpFunction` exposes the
   `functions.http` handler (a bound closure, the `toLambdaHandler` treatment). **Pub/Sub**
-  (`@benzene/google-cloud-functions-pubsub`): a **single-message** CloudEvent trigger (Pub/Sub delivers
+  (`@benzenejs/google-cloud-functions-pubsub`): a **single-message** CloudEvent trigger (Pub/Sub delivers
   exactly one message per invocation), so `PubSubMiddlewareApplication` is a single-message application
   with no batch/`Promise.all` loop — structurally like a request, and the closest existing template is
   the Azure Service Bus trigger. `PubSubContext` wraps the CloudEvent's `MessagePublishedData` (declared
@@ -838,9 +838,9 @@ next to its C# counterpart:
   derives a topic's request/response JSON Schema by *reflecting* over the CLR type and then enriches it
   with FluentValidation rules via `OpenApiValidationSchemaBuilder`. TypeScript erases types, so there is
   nothing to reflect over — instead the schema is *provided* by whatever knows the shape at runtime,
-  behind the `ITypeJsonSchemaSource` seam (`@benzene/abstractions-validation`: `getJsonSchema(type) →
+  behind the `ITypeJsonSchemaSource` seam (`@benzenejs/abstractions-validation`: `getJsonSchema(type) →
   JSON Schema | undefined`). The validation adapters implement it from the schema they already hold:
-  `@benzene/zod` via Zod 4's native `z.toJSONSchema` (zero new deps), `@benzene/joi`/`@benzene/yup` by
+  `@benzenejs/zod` via Zod 4's native `z.toJSONSchema` (zero new deps), `@benzenejs/joi`/`@benzenejs/yup` by
   mapping their `.describe()` introspection (no third-party converter). Because a validation schema
   encodes shape **and** rules, one conversion yields both — `required`, `minLength`/`maxLength`,
   `minimum`/`maximum`, `enum`, `format`, `pattern`, nested objects, arrays — so .NET's two-step
@@ -852,11 +852,11 @@ next to its C# counterpart:
 - **Embedded UI assets → inlined string constants.** .NET packages that serve a self-contained HTML page
   (e.g. `Benzene.Spec.Ui`'s Spec Explorer) ship it as an **assembly-embedded resource** read via reflection.
   A bundled Node/Lambda artifact can't rely on filesystem/resource access, so the port inlines the page as a
-  string constant in a `.ts` file (`@benzene/spec-ui`'s `SpecUiPage`) — no I/O, works in any bundle. The
+  string constant in a `.ts` file (`@benzenejs/spec-ui`'s `SpecUiPage`) — no I/O, works in any bundle. The
   page itself is written fresh as an idiomatic viewer (theme-aware, dependency-free, resolving `$ref`s
   against `components.schemas`) rather than transliterating the .NET HTML; same purpose, TS-native code.
   **Exception — a large cross-language product UI is copied verbatim and read from disk, not inlined or
-  rewritten.** `@benzene/mesh-ui` (the Mesh Explorer) serves the mesh **product** pages `mesh-ui.html`
+  rewritten.** `@benzenejs/mesh-ui` (the Mesh Explorer) serves the mesh **product** pages `mesh-ui.html`
   (~281KB) and `mesh-spec-ui.html`: these are the same UI every language port serves, so they must stay
   byte-identical to the reference (rewriting them would fork the product), and `mesh-ui.html`'s embedded
   client JS contains backticks and `${…}` so it cannot be a TS template literal. So the two files are copied
@@ -878,7 +878,7 @@ next to its C# counterpart:
   Two port shapes here differ from .NET and are recorded for that reason:
   - **HTTP reverse mapping — `HttpStatusCode.Convert()` → `convertHttpStatusCode(number)`.** The .NET
     reverse conformance rows run through `BenzeneResultExtensions.Convert(this HttpStatusCode)`. TS has no
-    `System.Net.HttpStatusCode` enum, so `@benzene/results` ports that overload as a free function taking
+    `System.Net.HttpStatusCode` enum, so `@benzenejs/results` ports that overload as a free function taking
     the numeric code (`convertHttpStatusCode(204) → deleted`). The mapping table is byte-identical; only
     the argument type bends to the TS idiom. (Note this is a *distinct* mapper from the client-side
     `BenzeneResultHttpMapper.mapBenzeneResultStatus`, which deliberately collapses `204 → ok`; the fixture
@@ -930,7 +930,7 @@ byte-identical to .NET so the two interoperate:
   the real aggregator against it in CI.
 - **The normative descriptor path.** The reserved `mesh` topic → `ServiceDescriptor` contract
   (`mesh.md` §2, the shape `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` use for the live .NET↔Go
-  cross-language fleets) is ported as `@benzene/mesh-wire`: `MeshServiceDescriptor` and friends,
+  cross-language fleets) is ported as `@benzenejs/mesh-wire`: `MeshServiceDescriptor` and friends,
   `MeshDescriptorFactory.create` (topic list derived from the running `IMessageHandlerDefinitionLookUp`,
   sorted by id then version), the §2.2 `descriptorHash` (`node:crypto` SHA-256 over the spec's canonical
   JSON — fixed descriptor field order, lexicographic schema-map keys, `instanceId`/`degraded`/`profile`
@@ -941,7 +941,7 @@ byte-identical to .NET so the two interoperate:
   TypeScript's erased types can't do, so the port injects a pluggable **`IMeshSchemaProvider`** keyed by
   topic (`NoMeshSchemaProvider` / `MapMeshSchemaProvider`) — the schema moves from CLR reflection to an
   explicit source; the §2.1 mapping table itself is normative and unchanged. That source is realized by
-  **`ValidationMeshSchemaProvider`**, which derives each topic's schema from the `@benzene/zod`/`joi`/`yup`
+  **`ValidationMeshSchemaProvider`**, which derives each topic's schema from the `@benzenejs/zod`/`joi`/`yup`
   schema the service registered to validate the payload type (via the `ITypeJsonSchemaSource` seam — see
   the "Type → JSON Schema" porting convention), with `MapTypeJsonSchemaSource` for hand-authored/bring-
   your-own schemas. So a service that validates automatically publishes its payload schemas to the
@@ -949,7 +949,7 @@ byte-identical to .NET so the two interoperate:
   is ported to `test/Benzene.Core.Test/Conformance/` and pins the derived descriptor + hash properties;
   `examples/mesh-service` serves its normative descriptor at `/benzene/descriptor`
   (`test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` reads it live).
-- **The mesh trace feed** (`mesh.md` §3) is also ported in `@benzene/mesh-wire`: `MeshTraceEvent` /
+- **The mesh trace feed** (`mesh.md` §3) is also ported in `@benzenejs/mesh-wire`: `MeshTraceEvent` /
   `MeshTraceBatch` / `MeshHeartbeat`, the ambient `MeshSpan` (W3C trace-context propagation over Node's
   `AsyncLocalStorage`, the port of C#'s `AsyncLocal`), the package-local `Traceparent` parser (join/reject
   per §3), the per-transport `IMeshStatusReader` (+ `BenzeneMessageMeshStatusReader`), the lossy batching
@@ -960,7 +960,7 @@ byte-identical to .NET so the two interoperate:
   traceparent rules and the invocation → semantic-status mapping (including a handler exception traced as
   `service-unavailable`). Not yet ported from `Benzene.Mesh.Wire`: nothing — but the collector side that
   consumes these feeds (`Benzene.Mesh.Collector`) is a separate package, not yet ported.
-- **Code generation from JSON Schema.** `@benzene/codegen-client` closes the loop: it turns a service's
+- **Code generation from JSON Schema.** `@benzenejs/codegen-client` closes the loop: it turns a service's
   ServiceDescriptor — whose per-topic `requestSchema`/`responseSchema` are language-neutral JSON Schema
   (§2.1) — into a fully typed TypeScript client (a payload interface per request/response, plus a
   `<Service>ServiceClient` calling `IBenzeneMessageSender.sendAsync`). Because the input is the JSON
@@ -1046,9 +1046,9 @@ Ported (with tests):
   `Activator.CreateInstance<T>()` empty-body fallback → `{} as TRequest`; `DictionaryUtils.Enrich`
   reflection → a case-insensitive first-key-wins key merge; C# `is`/`as` interface checks →
   duck-typing guards.
-- Validation: `@benzene/abstractions-validation` (schema interfaces, `IValidationStatusMapper` +
+- Validation: `@benzenejs/abstractions-validation` (schema interfaces, `IValidationStatusMapper` +
   shared `DefaultValidationStatusMapper`, `@validationStatus`) plus three ecosystem-native adapter
-  packages — `@benzene/zod`, `@benzene/joi`, `@benzene/yup` — each mirroring the
+  packages — `@benzenejs/zod`, `@benzenejs/joi`, `@benzenejs/yup` — each mirroring the
   `Benzene.FluentValidation` integration shape (handler- and client-side `ValidationMiddleware` +
   builders, a schema registry keyed by request class, and a `use<Lib>Validation` router helper). The
   schema plays the role of FluentValidation's `IValidator<TRequest>`; the erased request type is
@@ -1060,7 +1060,7 @@ Ported (with tests):
   reimplemented" convention in action — .NET's `Benzene.DataAnnotations` / `Benzene.FluentValidation`
   (both wrapping .NET-only libraries) become adapters over the popular JS validation libraries instead.
 - Resilience: `RetryMiddleware` (exponential backoff, faithful catch-filter semantics) + `useRetry`.
-  Its **sibling** `@benzene/cockatiel` ports `Benzene.Resilience.Polly` under the "adapted, not
+  Its **sibling** `@benzenejs/cockatiel` ports `Benzene.Resilience.Polly` under the "adapted, not
   reimplemented" convention — where the .NET package adapts Polly v8, this adapts its JS analogue
   [cockatiel](https://github.com/connor4312/cockatiel): `CockatielResilienceMiddleware` (Polly's
   `PollyResilienceMiddleware`, lib-swapped) runs the rest of the pipeline through a cockatiel `IPolicy`
@@ -1077,7 +1077,7 @@ Ported (with tests):
   correlation-id middleware and the process-timer surface. C# `Stopwatch` → `Date.now()` deltas;
   `Debug.WriteLine` → an injectable, silent-by-default sink; `Guid.NewGuid()` →
   `crypto.randomUUID()`.
-- Distributed tracing & metrics (`@benzene/diagnostics`, over **`@opentelemetry/api`**): the
+- Distributed tracing & metrics (`@benzenejs/diagnostics`, over **`@opentelemetry/api`**): the
   span-per-middleware surface (`ActivityMiddlewareDecorator`/`Wrapper` + `addActivityPerMiddleware`/
   `addDiagnostics`, tagging `benzene.topic`/`version`/`transport`/`handler`/`status`), `useW3CTraceContext`
   (continues an inbound `traceparent` as the root span's remote parent), `useBenzeneMetrics` (the
@@ -1093,7 +1093,7 @@ Ported (with tests):
   a metrics-derived mesh usage feed classifies the same across languages. `Benzene.OpenTelemetry` has no counterpart — OpenTelemetry
   JS exports every API tracer/meter once an SDK is registered, so there's no per-source `AddSource`/
   `AddMeter` step to port.
-- HTTP routing (`@benzene/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
+- HTTP routing (`@benzenejs/http`): `IHttpContext`, method+path routing via a `@httpEndpoint` decorator
   + `RouteFinder`/`UrlMatcher`, and the Benzene-status → HTTP-status-code mapping.
 - Transport adapters (entry points) — the **complete event-source matrix for both clouds**, each
   over the ecosystem-native event types, each reaching a `@message`-decorated handler end-to-end (a
@@ -1126,63 +1126,63 @@ Ported (with tests):
     self-diagnosing error naming what is registered and the `use*()` to wire.
 - Host/invocation layer: `IBenzeneApplicationBuilder`/`BenzeneApplicationBuilder`, `BenzeneInvocation`
   + `useBenzeneInvocation` (per-invocation correlation context), and the **`BenzeneStartUp` host base**:
-  the production `AwsLambdaHost<TStartUp>` (`@benzene/aws-lambda-core`) is ported alongside the existing
+  the production `AwsLambdaHost<TStartUp>` (`@benzenejs/aws-lambda-core`) is ported alongside the existing
   `GoogleCloudFunctionHost<TStartUp>`, so a deployment is the one-liner
   `export const handler = new AwsLambdaHost(StartUp).lambdaHandler` (see the "Unified startup host"
   footnote below). The `Microsoft.Extensions.Hosting` custom-runtime loop (`AwsLambdaBootstrap`,
   host-builder extensions), warm-up/start-up-checks, and the registration-diagnostics surface remain
   deferred; `InlineAwsLambdaStartUp` stays for fluent inline tests/samples.
-- Outbound HTTP client (`@benzene/clients-http` + `@benzene/clients` core): the client pipeline sends
+- Outbound HTTP client (`@benzenejs/clients-http` + `@benzenejs/clients` core): the client pipeline sends
   over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`, plus the full
   `Benzene.Clients` wrapper suite — retry, correlation-id and header-forwarding message-client
   decorators, their builders, and the client factory.
-- Caching (`@benzene/cache-core` + `@benzene/cache-redis`§): the lazy-load `CacheEntry` abstraction
+- Caching (`@benzenejs/cache-core` + `@benzenejs/cache-redis`§): the lazy-load `CacheEntry` abstraction
   and a Redis adapter over `ioredis`.
-- Streaming engine (`@benzene/core-middleware` `Streaming/`): `StreamContext`,
+- Streaming engine (`@benzenejs/core-middleware` `Streaming/`): `StreamContext`,
   `StreamMiddlewareApplication`, the `StreamOperators`, `IStreamCheckpointer`, and `useStream`. C#
   `IAsyncEnumerable<T>` → `AsyncIterable<T>` / `async function*`.
-- Health checks (`@benzene/health-checks-core` + `@benzene/health-checks` aggregator +
-  `@benzene/health-checks-http` ping + `@benzene/health-checks-tcp` + `@benzene/health-checks-disk`):
+- Health checks (`@benzenejs/health-checks-core` + `@benzenejs/health-checks` aggregator +
+  `@benzenejs/health-checks-http` ping + `@benzenejs/health-checks-tcp` + `@benzenejs/health-checks-disk`):
   the `IHealthCheck` abstraction, aggregating runner, an HTTP-ping check over the global `fetch`, a
   TCP-connect check over `node:net`, and a free-disk-space check over `node:fs`'s `statfs`
   (`System.IO.DriveInfo` → `statfs`; `statfs` exposes no mount name, so the checked path stands in as
   the drive identifier). The TCP check's ambient `ICancellationTokenAccessor` DI seam is not ported
   yet, so its factory constructs the check with no `AbortSignal` (the constructor accepts one for when
   a scoped-signal accessor is ported).
-- Contract-drift check (`@benzene/clients-health-checks`): the consumer side of the
+- Contract-drift check (`@benzenejs/clients-health-checks`): the consumer side of the
   provider/consumer contract-hash comparison — `ClientHealthCheck` probes a downstream provider via its
   generated client (`IHasHealthCheck`) and reports reachable+matching as `ok`, reachable+drifted as
   `warning` (does not flip aggregate `isHealthy`), unreachable as `failed`; `ClientHealthCheckProcessor`
   annotates the provider's `schema` health check with the `ClientHashMatch` verdict; `addContractCheck`
   (client resolved from DI via its `ServiceIdentifier`, since the C# generic `AddContractCheck<TClient>`
   erases) / `addContractCheckInstance` register it on the contracts diagnostic topic. Ported
-  `SchemaHealthCheckConstants` (the shared `schema`/`hashCode`/`match` keys) into `@benzene/health-checks-core`.
+  `SchemaHealthCheckConstants` (the shared `schema`/`hashCode`/`match` keys) into `@benzenejs/health-checks-core`.
   DIVERGENCE: C# treats a `null` payload as "provider unreachable"; the port's `BenzeneResult` never
   yields a null payload (a failure result carries the `VoidResult` sentinel), so the check treats
   null/undefined OR that sentinel as "no payload". The C# package ships no test suite, so its tests here
   are new port-verification tests rather than ported C# scenarios.
-- Provider-side & cloud reachability health checks — matching the `@benzene/clients-aws-*` convention,
+- Provider-side & cloud reachability health checks — matching the `@benzenejs/clients-aws-*` convention,
   all take their raw SDK client directly rather than via a synthetic DI token.
-  `@benzene/health-checks-azure-service-bus` (`peekMessages` over `@azure/service-bus`, queue or
+  `@benzenejs/health-checks-azure-service-bus` (`peekMessages` over `@azure/service-bus`, queue or
   subscription) classifies failures via the shared `HealthCheckError` policy — an authorization denial
   is a persistent failure, anything else transient; the SDK error code/status go into `data`, never the
-  error message — like the `@benzene/clients-aws-*` SQS/Step Functions checks. The JS Service Bus SDK
+  error message — like the `@benzenejs/clients-aws-*` SQS/Step Functions checks. The JS Service Bus SDK
   folds C#'s `UnauthorizedAccessException`/`ServiceBusException` into one `ServiceBusError`, so the port
   keys off `code === 'UnauthorizedAccess'` to reproduce the persistent/transient split. **DIVERGENCE:
-  `@benzene/health-checks-dynamodb` (`DescribeTable` over `@aws-sdk/client-dynamodb`) does _not_ run the
+  `@benzenejs/health-checks-dynamodb` (`DescribeTable` over `@aws-sdk/client-dynamodb`) does _not_ run the
   shared policy — faithfully mirroring its C# original, which predates it: any error is a flat transient
   `failed` carrying the error type name under `data.Error` (never the message), so an auth denial is
   softened by the non-critical downgrade rather than surfacing as a persistent failure. Tracked for an
   upstream fix to the .NET check; if that lands, the port would re-converge on `HealthCheckError`.**
-  `@benzene/health-checks-schema` is the **provider** side of the contract-drift loop
+  `@benzenejs/health-checks-schema` is the **provider** side of the contract-drift loop
   above: it hashes the service's handlers-only message contract and publishes it under the `schema`
   check for the consumer's `ClientHealthCheckProcessor` to compare. C#'s `CodeGenHelpers.GenerateHash`
-  isn't portable (`CodeGen.Core` isn't ported), so it reuses `@benzene/schema-openapi`'s
+  isn't portable (`CodeGen.Core` isn't ported), so it reuses `@benzenejs/schema-openapi`'s
   `EventServiceDocumentBuilder.generateJson()` (already the example/`messageEndpoint`-free normalized
   form) + `MeshHashing.computeHash`; DIVERGENCE: C#'s `SchemaBuilder` reflects the CLR type, the TS one
   sources schemas from the registered `ITypeJsonSchemaSource`s, so the check additionally takes them
   (resolved from DI by `addSchemaHealthCheck`, the same seam `SpecBuilder`/the mesh use).
-- Database health checks (`@benzene/health-checks-typeorm`): ports `Benzene.HealthChecks.EntityFramework`
+- Database health checks (`@benzenejs/health-checks-typeorm`): ports `Benzene.HealthChecks.EntityFramework`
   adapted to **TypeORM** — the structural EF Core analog (a `DataSource` in place of a `DbContext`, a
   migrations table, a DB-agnostic applied-migrations API). `addDatabaseConnectionHealthCheck(builder,
   dataSource)` verifies connectivity only; `addDatabaseHealthCheck(builder, dataSource, targetMigration)`
@@ -1202,9 +1202,9 @@ Ported (with tests):
   `ex.GetType().Name` — not `error.name`, which an `Error` subclass may leave as the inherited `"Error"`.
 - Serialization: three ecosystem-native adapter packages under the "adapted, not reimplemented"
   convention, each an `AcceptHeaderMediaFormatBase` format negotiated by `content-type`/`accept`
-  alongside the built-in JSON — `@benzene/avro` (over `avsc`, keyed by request class, mirroring the
-  schema-registry pattern the validation adapters use), `@benzene/messagepack` (over `@msgpack/msgpack`,
-  schemaless like the C# contractless resolver), and `@benzene/xml` (over `fast-xml-parser`). The two
+  alongside the built-in JSON — `@benzenejs/avro` (over `avsc`, keyed by request class, mirroring the
+  schema-registry pattern the validation adapters use), `@benzenejs/messagepack` (over `@msgpack/msgpack`,
+  schemaless like the C# contractless resolver), and `@benzenejs/xml` (over `fast-xml-parser`). The two
   binary formats implement `IPayloadSerializer`: the string path Base64-armors the binary so it flows
   through string-bodied transports, the byte path carries genuine binary. XML is text `ISerializer`
   only; erasure handling recovers the root element name from the payload's `constructor.name` (the C#
@@ -1213,13 +1213,13 @@ Ported (with tests):
 - The strongly-typed `IMessageHandlerResult<TResponse>` / `MessageHandlerResult<TResponse>` variant
   (ported as `IMessageHandlerResultOf` / `MessageHandlerResultOf`, with the C# explicit
   typed→untyped conversion operator as a `toUntyped()` method).
-- Extras (`@benzene/extras`): the assorted `Benzene.Extras` utilities — PATCH support (`IPatchMessage`
+- Extras (`@benzenejs/extras`): the assorted `Benzene.Extras` utilities — PATCH support (`IPatchMessage`
   / `PatchMessage` + `hasField` / `tryGet` / `set`, with C# expression trees mapped to typed property
   keys), the broadcast-event middleware (`BroadcastEventMiddleware` publishing `"<topic>d"` after a
   matching create/update/delete via an `IEventSender`), `ResponseBuilder`, `InlineMediaFormat`, and the
   `RawJsonMessage` / `Base64JsonMessage` result markers (their `IRawJsonMessage` / `IBase64JsonMessage`
-  interfaces folded into `@benzene/abstractions`).
-- Authentication & authorization (`@benzene/auth-core` + `@benzene/auth-basic`): the
+  interfaces folded into `@benzenejs/abstractions`).
+- Authentication & authorization (`@benzenejs/auth-core` + `@benzenejs/auth-basic`): the
   `AuthenticationHolder` scoped principal seam (Context Purity, like `PresetTopicHolder`), the
   `AuthResults` short-circuit helper (`Unauthorized`/`Forbidden` via the `IMessageHandlerResultSetter`
   idiom the health-check middleware uses), the mechanism-agnostic authorization layer (`requireRole` /
@@ -1231,7 +1231,7 @@ Ported (with tests):
   - **`System.Security.Claims` has no JS equivalent.** The .NET auth stack carries the caller as a BCL
     `ClaimsPrincipal` every JWT/OAuth2 library already produces; JavaScript has no such shared type, so
     the port re-creates the small slice the middleware actually reads (`Claim`, `ClaimsIdentity`,
-    `ClaimsPrincipal`, `ClaimTypes`) inside `@benzene/auth-core` rather than inventing a
+    `ClaimsPrincipal`, `ClaimTypes`) inside `@benzenejs/auth-core` rather than inventing a
     Benzene-specific principal abstraction. BCL comparison semantics are preserved (claim-type match
     case-insensitive, value case-sensitive); unused `Claim` fields (`ValueType`/`Issuer`/…) are omitted.
   - **`BenzeneResult.unauthorized` / `.forbidden`.** The two status factories the C# `BenzeneResult`
@@ -1242,7 +1242,7 @@ Ported (with tests):
     seed the authenticated principal directly to exercise the authorization primitives, plus one
     end-to-end case composing real `useBasicAuth` with `requireRole`. (OAuth2 bearer is now ported —
     see the next bullet — so the OAuth2 authorization tests could equally run over real tokens.)
-- OAuth2 bearer (`@benzene/auth-oauth2`): JWT bearer authentication and scope authorization —
+- OAuth2 bearer (`@benzenejs/auth-oauth2`): JWT bearer authentication and scope authorization —
   `useOAuth2Bearer` (`OAuth2BearerMiddleware` + `OAuth2BearerOptions` with fail-fast wire-up validation)
   and `requireScope` (`scope`/`scp` claim normalization, including Azure AD's JSON-array shape). This is
   the "adapted, not reimplemented" convention applied to auth: .NET's `Microsoft.IdentityModel`
@@ -1258,7 +1258,7 @@ Ported (with tests):
   algorithm allowlist (an HS256 token is rejected against an RS256-only allowlist — the algorithm-confusion
   guard) and mandatory issuer/audience/lifetime validation, all covered by the ported tests against a real
   loopback JWKS endpoint (`FakeJwksServer` over `node:http` + jose).
-- Idempotency (`@benzene/idempotency`): at-least-once de-duplication — `useIdempotency` +
+- Idempotency (`@benzenejs/idempotency`): at-least-once de-duplication — `useIdempotency` +
   `IdempotencyMiddleware` (claim → run-once → complete/release, releasing the claim when the handler
   throws or reports failure so a redelivery reprocesses), the pluggable `IIdempotencyStore` with an
   `InMemoryIdempotencyStore` default (lazy TTL expiry), the header-or-body-hash key strategy
@@ -1270,7 +1270,7 @@ Ported (with tests):
   store's `lock` is dropped (Node runs each method's synchronous body to completion, so the
   check-and-insert is already atomic). The `is IHasMessageResult` interface check → a `messageResult`
   duck-typing guard.
-- Rate limiting (`@benzene/rate-limiting`): best-effort, per-instance protection — `useRateLimiting`
+- Rate limiting (`@benzenejs/rate-limiting`): best-effort, per-instance protection — `useRateLimiting`
   (bring-your-own limiter + optional per-message permit cost), `useFixedWindowRateLimiting`,
   `useTokenBucketRateLimiting`, and `usePayloadSizeRateLimiting` (cost = the body's UTF-8 byte length
   via `Buffer.byteLength`), over `RateLimitingMiddleware` which acquires without queuing, short-circuits
@@ -1281,25 +1281,25 @@ Ported (with tests):
   .NET's timer-driven `AutoReplenishment` becomes lazy, clock-driven replenishment over an injectable
   `now` (`TimeSpan` windows/periods → millisecond `number`s), and `AttemptAcquire`'s over-capacity
   `ArgumentOutOfRangeException` → a `RangeError` the middleware catches as a rejection. This is the first
-  package to need `BenzeneResult.tooManyRequests`, added to `@benzene/results` to match the C# factory.
-- Self-hosted workers (`@benzene/self-host`): the platform-neutral worker model — `WorkerApplicationBuilder`
+  package to need `BenzeneResult.tooManyRequests`, added to `@benzenejs/results` to match the C# factory.
+- Self-hosted workers (`@benzenejs/self-host`): the platform-neutral worker model — `WorkerApplicationBuilder`
   + `useWorker`, `BenzeneWorkerBuilder`/`IBenzeneWorkerStartup`, `CompositeBenzeneWorker` (materializes its
   deferred worker sequence exactly once, so stop targets the started instances), `InlineSelfHostedStartUp`,
   and `BoundedConcurrentDispatcher` — a per-lane, key-ordered, backpressured fan-out for a poll loop.
   Because Node has no `System.Threading.Channels`, the used subset is re-created in-package as a
   capacity-1 single-reader `BoundedChannel`; `Interlocked`/`Volatile` on the outstanding-count array
   become plain reads/writes (single-threaded event loop), `CancellationToken` → optional `AbortSignal`,
-  `TimeSpan` timeouts → millisecond `number`s, and `ILogger` → `@benzene/abstractions`' `ILogger`.
+  `TimeSpan` timeouts → millisecond `number`s, and `ILogger` → `@benzenejs/abstractions`' `ILogger`.
   `IBenzeneWorkerStartup.Create(resolver)` is named `createWorker` to disambiguate from the generic
   pipeline-builder `create`. The 8 `Benzene.Abstractions.Pipelines` interfaces this package builds on were
-  already ported (merged into `@benzene/abstractions`/`@benzene/abstractions-middleware`/`@benzene/clients`),
+  already ported (merged into `@benzenejs/abstractions`/`@benzenejs/abstractions-middleware`/`@benzenejs/clients`),
   and `Benzene.HostedService` (the .NET generic-host `IHostedService` adapter) has no JS counterpart — see
   the roadmap.
-- Standalone SQS consumer (`@benzene/aws-sqs`): the non-Lambda SQS **polling** host — `useSqs(workerStartup,
+- Standalone SQS consumer (`@benzenejs/aws-sqs`): the non-Lambda SQS **polling** host — `useSqs(workerStartup,
   config, clientFactory, action)` registers an `SqsConsumer` (`IBenzeneWorker`) that long-polls a queue and
   runs each received message through a `SqsConsumerMessageContext` pipeline, tagged transport `"sqs"`, with
   per-message DI scopes fanned out by `BoundedFanOut` and PerMessage-vs-WholeBatch ack modes. Sibling of the
-  Lambda-delivered `@benzene/aws-lambda-sqs`; intended for `@benzene/self-host` workers. Divergences:
+  Lambda-delivered `@benzenejs/aws-lambda-sqs`; intended for `@benzenejs/self-host` workers. Divergences:
   `CancellationToken` → optional `AbortSignal` (and `Task.Delay(token)` → a signal-aware `delay` that
   resolves early rather than throwing on the backoff path); `IAmazonSQS` (which `SqsConsumer` calls directly)
   → a small `ISqsConsumerClient` seam (`receiveMessageAsync`/`deleteMessageBatchAsync`) because aws-sdk v3
@@ -1309,14 +1309,14 @@ Ported (with tests):
   `= 20` default applied by `withConfigDefaults`); and the container registration of `ISqsClientFactory` is
   dropped since the factory is passed to `useSqs` directly and its `SQSClient` isn't container-resolvable. The
   C# LocalStack integration test is replaced by a unit-level poll-loop test over a mock `ISqsConsumerClient`.
-- Standalone Service Bus consumer (`@benzene/azure-service-bus`): the non-Functions Service Bus **consumer**
+- Standalone Service Bus consumer (`@benzenejs/azure-service-bus`): the non-Functions Service Bus **consumer**
   worker — `useServiceBus(workerStartup, config, clientFactory, action)` registers a
   `BenzeneServiceBusWorker` (`IBenzeneWorker`) that consumes a queue or topic subscription and runs each
   message through a `ServiceBusConsumerContext` pipeline, tagged transport `"service-bus"`, settling it per
   `ServiceBusConsumerAckMode` (`Explicit` default — a failure result *or* a throw abandons for redelivery;
   `AutoComplete` opt-in). A handler can request an explicit settlement (complete/abandon/dead-letter/defer)
   via the scoped `ServiceBusSettlementHolder` (the "scoped DI state, not context" convention). Sibling of the
-  trigger-delivered `@benzene/azure-function-service-bus`; intended for `@benzene/self-host` workers.
+  trigger-delivered `@benzenejs/azure-function-service-bus`; intended for `@benzenejs/self-host` workers.
   Divergences: **the SDK push model** — .NET's `ServiceBusProcessor`/`ProcessMessageAsync` maps to
   `@azure/service-bus`'s `ServiceBusReceiver.subscribe({ processMessage, processError }, …)` (no
   `ServiceBusProcessor` type exists in the JS SDK), with settlement on the receiver rather than the delivery
@@ -1340,20 +1340,20 @@ Ported (with tests):
   keeps running. `stopAsync` signals the slots (AbortController), closes any open session receivers,
   drains the loops, then disposes the client. The peek-based dependency health-check **is auto-wired**:
   `useServiceBus(..., healthCheck = true)` (the default) registers a `ServiceBusHealthCheck` (from
-  `@benzene/health-checks-azure-service-bus`) on the dependency category via `addDependencyHealthCheck`,
+  `@benzenejs/health-checks-azure-service-bus`) on the dependency category via `addDependencyHealthCheck`,
   deduped by the consumed entity — a `ServiceBusClient` is created once from the factory and reused across
   probes; pass `healthCheck: false` to opt out. Still **deferred** (retained for API parity, documented,
   and fail-loud where applicable): `prefetchCount` (no `@azure/service-bus` receiver-option equivalent,
   accepted but not plumbed). The emulator integration test is replaced by unit tests that drive the
   `receiver.subscribe` push path (and the session pump) over a fake client/receiver.
-- Standalone Event Hubs consumer (`@benzene/azure-event-hub`): the non-Functions Event Hubs **consumer**
+- Standalone Event Hubs consumer (`@benzenejs/azure-event-hub`): the non-Functions Event Hubs **consumer**
   worker — `useEventHub(workerStartup, config, clientFactory, action)` registers a `BenzeneEventHubWorker`
   (`IBenzeneWorker`) that consumes a hub and runs each event through an `EventHubConsumerContext` pipeline,
   tagged transport `"event-hub"`, checkpointing per partition every `checkpointInterval` successfully handled
   events. `raiseOnFailureStatus` (default on) escalates a non-exception failure result into a
   not-checkpointed outcome (the partition doesn't advance past it); `catchHandlerExceptions` (default on)
   logs-and-skips vs. stops-the-worker on an unhandled throw. Sibling of the trigger-delivered
-  `@benzene/azure-function-event-hub`; intended for `@benzene/self-host` workers. Divergences: **the SDK
+  `@benzenejs/azure-function-event-hub`; intended for `@benzenejs/self-host` workers. Divergences: **the SDK
   processor model** — .NET's `EventProcessorClient` (`ProcessEventAsync`/`ProcessErrorAsync`/
   `PartitionInitializingAsync`) maps to a JS `EventHubConsumerClient` (built with a `CheckpointStore` by the
   caller's factory) whose `subscribe({ processEvents, processError }, { startPosition })` provides automatic
@@ -1367,7 +1367,7 @@ Ported (with tests):
   `withEventHubConfigDefaults`; `EventProcessorClient` → `EventHubConsumerClient` (the factory's created type,
   interface name kept). The emulator integration test is replaced by unit tests that drive the captured
   `processEvents` handler over a fake client with a checkpoint-recording `PartitionContext`.
-- Standalone Cosmos DB change-feed consumer (`@benzene/azure-cosmos-db`): the non-Functions Cosmos DB
+- Standalone Cosmos DB change-feed consumer (`@benzenejs/azure-cosmos-db`): the non-Functions Cosmos DB
   Change Feed **consumer** worker — `useCosmosDbChangeFeed(workerStartup, config, processorFactory, action)`
   registers a `BenzeneCosmosChangeFeedWorker` (`IBenzeneWorker`) that runs each delivered batch through a
   **streaming** `StreamContext<TDocument>` pipeline (fan-in, transport `"cosmos-db"`), and
@@ -1376,8 +1376,8 @@ Ported (with tests):
   `BenzeneCosmosChangeFeedConfig` (`autoCheckpointOnSuccess` default `true`, `catchHandlerExceptions` default
   `false` — deliberately the opposite of Event Hubs, as the change feed redelivers a failed batch natively) and
   `BenzeneCosmosAllVersionsChangeFeedConfig` (only `catchHandlerExceptions`, since the all-versions path is
-  automatic-checkpoint only). Sibling of the trigger-delivered `@benzene/azure-function-cosmos-db`; intended for
-  `@benzene/self-host` workers. Divergences: **the change-feed-processor fork** — the .NET
+  automatic-checkpoint only). Sibling of the trigger-delivered `@benzenejs/azure-function-cosmos-db`; intended for
+  `@benzenejs/self-host` workers. Divergences: **the change-feed-processor fork** — the .NET
   `Microsoft.Azure.Cosmos` SDK's **push-model** `ChangeFeedProcessor` (automatic lease-container ownership,
   cross-instance load balancing, batch-level manual/automatic checkpoint hooks) has **no** `@azure/cosmos`
   counterpart; the JS SDK offers only a **pull-model** iterator
@@ -1397,7 +1397,7 @@ Ported (with tests):
   faithful (it wraps a `() => Promise<void>` hook the factory wires to the continuation-token write).
   `CosmosChangeFeedApplication` composes the ported `MiddlewareApplicationWithResult` directly, because the
   result-producing (3-generic) `StreamMiddlewareApplication<TEvent, TItem, TResult>` — the C# base — was not
-  part of the `@benzene/core-middleware` port (only the 2-generic overload); the all-versions
+  part of the `@benzenejs/core-middleware` port (only the 2-generic overload); the all-versions
   `CosmosAllVersionsChangeFeedApplication` uses that 2-generic `StreamMiddlewareApplication` unchanged.
   `CosmosChangeType`/`ChangeFeedOperationType` C# enums → frozen-object + union (`CosmosChangeType` keeps the
   `0/1/2` values; `ChangeFeedOperationType` maps to the full-fidelity wire strings `"create"`/`"replace"`/
@@ -1414,11 +1414,11 @@ Ported (with tests):
   non-durable implementation) so tests/examples/local-dev are copy-paste-runnable — a production worker still
   supplies a durable store (Cosmos container, blob, table, …), because the in-memory one starts empty on
   restart and so resumes from `startFrom` rather than the last processed change.
-- Standalone Kafka consumer (`@benzene/kafka-core`): the **consumer-worker slice only** of
+- Standalone Kafka consumer (`@benzenejs/kafka-core`): the **consumer-worker slice only** of
   `Benzene.Kafka.Core`, on `kafkajs` — `useKafka(workerStartup, config, consumerFactory, action)` registers a
   `BenzeneKafkaWorker` (`IBenzeneWorker`) that consumes topics and runs each record through a
   `KafkaRecordContext` pipeline, tagged transport `"kafka"`. Sibling of the trigger-delivered
-  `@benzene/aws-lambda-kafka` / `@benzene/azure-function-kafka`; intended for `@benzene/self-host` workers.
+  `@benzenejs/aws-lambda-kafka` / `@benzenejs/azure-function-kafka`; intended for `@benzenejs/self-host` workers.
   Divergences: **the SDK consume model** — .NET hand-rolls a synchronous Confluent `IConsumer.Consume()`
   poll loop on a background `Task` dispatching each `ConsumeResult` through a `BoundedConcurrentDispatcher`;
   kafkajs has no synchronous `Consume()` and is push-based, so this maps to `consumer.run({ eachMessage,
@@ -1466,11 +1466,11 @@ Ported (with tests):
   kafkajs's higher-level push model doesn't expose in the same shape). Tests drive the captured
   `eachMessage` handler over a fake kafkajs consumer recording `commitOffsets`/`disconnect`; the send-side
   tests drive the message client over a fake kafkajs `Producer` asserting the produced record + status.
-- Standalone RabbitMQ consumer (`@benzene/rabbitmq`): the **consumer-worker slice only** of
+- Standalone RabbitMQ consumer (`@benzenejs/rabbitmq`): the **consumer-worker slice only** of
   `Benzene.RabbitMq`, on `amqplib` — `useRabbitMq(workerStartup, config, connectionFactory, action)` registers
   a `RabbitMqWorker` (`IBenzeneWorker`) that consumes a queue and runs each delivery through a
   `RabbitMqContext` pipeline, tagged transport `"rabbitmq"`. RabbitMQ is the first vendor-neutral, self-hosted
-  broker in Benzene; intended for `@benzene/self-host` workers (console, container, Kubernetes). **Ack policy
+  broker in Benzene; intended for `@benzenejs/self-host` workers (console, container, Kubernetes). **Ack policy
   — safe by default**: `RabbitMqConfig.ackMode` defaults to `RabbitMqAckMode.Explicit` — a delivery is `ack`ed
   on handler success and `nack`ed on a failure result **or** a thrown exception, with requeue bounded to one
   retry (a first-attempt failure requeues; an already-`redelivered` failure is nacked without requeue so a
@@ -1479,7 +1479,7 @@ Ported (with tests):
   consume model** — .NET's `RabbitMQ.Client` v7 async API (`IConnection`/`IChannel`,
   `AsyncEventingBasicConsumer`, `BasicAck`/`BasicNack`) maps to `amqplib` (`ChannelModel`/`Channel`,
   `channel.consume(queue, onMessage, { noAck })`, `channel.ack`/`channel.nack(msg, false, requeue)`);
-  deliveries are still fanned out through `@benzene/self-host`'s `BoundedConcurrentDispatcher` bounded by
+  deliveries are still fanned out through `@benzenejs/self-host`'s `BoundedConcurrentDispatcher` bounded by
   `concurrentRequests`, with the prefetch QoS (`channel.prefetch(count)`) bounding unacked deliveries, exactly
   as the C#. **Connection seam** — `IRabbitMqConnectionFactory.createConnectionAsync` returns amqplib's
   `ChannelModel` (amqplib's name for the connection object; it has no `ConnectionFactory` type), and the
@@ -1515,18 +1515,18 @@ Ported (with tests):
   with `false`). Tests drive the captured `channel.consume` callback over a fake amqplib channel/
   connection recording `ack`/`nack`/`cancel`/`close`; the send-side tests drive the message client over a
   fake amqplib `Channel` asserting the publish (exchange/routing-key/body/headers) + status.
-- Schema registry (`@benzene/schema-registry-core`): the vendor-neutral registry seam —
+- Schema registry (`@benzenejs/schema-registry-core`): the vendor-neutral registry seam —
   `ISchemaRegistryClient` + `InMemorySchemaRegistryClient` (monotonic ids, per-subject versioning,
   idempotent re-registration), the `SchemaCompatibilityMode` evolution levels with a pluggable
   `ISchemaCompatibilityChecker` (`TextualSchemaCompatibilityChecker` default), `ConfluentWireFormat` (the
   `0x00` magic byte + big-endian schema-id framing, over `Uint8Array`/`DataView`), and
   `SchemaRegistrySerializer` + `SchemaRegistrar` that frame any inner `IPayloadSerializer`'s output with
   the registered id (wired up at startup). Erasure: C#'s runtime `Type` keys become `Constructor` keys
-  (same as `@benzene/avro`) — the serialize path recovers the class from the payload's `constructor`, and
+  (same as `@benzenejs/avro`) — the serialize path recovers the class from the payload's `constructor`, and
   the deserialize path threads an optional `targetType` to the inner serializer; the `IBufferWriter`
   `Encode` overload isn't ported (the port's `IPayloadSerializer` models `Uint8Array` directly), and the
   in-memory client's `lock` is dropped (single-threaded event loop makes check-and-insert atomic).
-- Payload version-casting (`@benzene/core-versioning`): transparent request-upcast / response-downcast so
+- Payload version-casting (`@benzenejs/core-versioning`): transparent request-upcast / response-downcast so
   one handler on the canonical schema serves older-version producers — the `ICaster`/`FuncCaster`/
   `CompositeCaster` core, the schema layer (`ISchemaCaster`/`SchemaCaster`/`SchemaCasters` + builders),
   `SchemaCastDefinitionsExpander` (BFS shortest-path chain composition, preferring a registered shortcut),
@@ -1541,21 +1541,21 @@ Ported (with tests):
   `CasterFactoryTest` is not ported either. Runtime `Type` keys → `Constructor` keys throughout; the
   request path needs the target type `getBody<TRequest>` can't convey under erasure, so an optional
   `targetType` was threaded through `IRequestMapper.getBody`/`RequestMapperThunk`/`MessageRouter` (the
-  same optional-`targetType` erasure pattern `@benzene/avro` uses; existing mappers ignore it). A
+  same optional-`targetType` erasure pattern `@benzenejs/avro` uses; existing mappers ignore it). A
   failure/no-payload result carries the `VoidResult` sentinel, so the response mapper treats that (and a
   raw-string payload) as "no downcast", matching the C# `payload == null` guard.
-- Cloud Service conformance probe (`@benzene/cloud-service-probe`): a self-contained (no Benzene package
+- Cloud Service conformance probe (`@benzenejs/cloud-service-probe`): a self-contained (no Benzene package
   deps) external, black-box HTTP probe of the Cloud Service Profile — `CloudServiceProbe.runAsync` hits a
   live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and reserved `mesh` topic and returns
   a tri-state (`Satisfied`/`NotSatisfied`/`Inconclusive`) assessment of R1–R8 built only from what it
   observed, never trusting the service's own claims. `HttpClient` + `BaseAddress` → an injectable `fetch`
-  (`@benzene/health-checks-http`'s adaptation) + `baseUrl`; `System.Text.Json.Nodes` shape checks →
+  (`@benzenejs/health-checks-http`'s adaptation) + `baseUrl`; `System.Text.Json.Nodes` shape checks →
   `JSON.parse` + type guards; `RandomNumberGenerator` → Web-Crypto `getRandomValues` for the synthetic
   W3C `traceparent`. The 7-case unit test runs against a real `node:http` loopback server (mirroring the
   C# `HttpListener` approach); the C# integration test isn't ported (it wires a full `Benzene.AspNet.Core`
   host, which is not ported — the Express adapter plays that role — while `Benzene.CloudService` **is** now
   ported, see below).
-- HTTP wire-envelope endpoint (`@benzene/http`'s `useBenzeneMessage`): port of `Benzene.Http.BenzeneMessage`
+- HTTP wire-envelope endpoint (`@benzenejs/http`'s `useBenzeneMessage`): port of `Benzene.Http.BenzeneMessage`
   — a terminal HTTP middleware that dispatches a POSTed `{topic, headers, body}` envelope into a nested
   `BenzeneMessage` pipeline and writes `{statusCode, headers, body}` (the HTTP equivalent of the direct
   Lambda invoke path), the `/benzene/invoke` surface the Cloud Service Profile's R4 requires. C#'s four
@@ -1569,7 +1569,7 @@ Ported (with tests):
   Lambda-direct path and this endpoint) can't be dispatched through the outer HTTP container under erasure, so
   they're deliberately dropped rather than shipped silently wrong — configure the inner pipeline inline.
   `ITerminalMiddleware` marker → none (the port's short-circuit is "don't call `next` on a match").
-- Cloud Service bundle (`@benzene/cloud-service`): port of `Benzene.CloudService` — the batteries-included
+- Cloud Service bundle (`@benzenejs/cloud-service`): port of `Benzene.CloudService` — the batteries-included
   `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R8) in one
   call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `healthcheck`
   topic, the reserved `mesh` descriptor topic, and outbound mesh register/heartbeat/trace — over the same
@@ -1589,7 +1589,7 @@ Ported (with tests):
   exporter run via closure-captured locals; realization only governs container-driven disposal on shutdown.
   The C# test suite is ported 1:1; the two domain-routing tests wire the handler via `withHandlers(...)`
   (the eager path) rather than a process-global assembly scan.
-- Express host adapter (`@benzene/express`) — **no C# counterpart to port.** `Benzene.AspNet.Core` is
+- Express host adapter (`@benzenejs/express`) — **no C# counterpart to port.** `Benzene.AspNet.Core` is
   ASP.NET Core-specific; Express is the Node/JS host equivalent, so this is a new adapter built to the same
   *shape* (added under the "third-party integrations are adapted, not reimplemented" convention — Express
   plays the role ASP.NET Core plays in .NET). `benzene((pipeline) => useMessageHandlers(pipeline, ...))`
@@ -1600,51 +1600,51 @@ Ported (with tests):
   route table first and calls `next()` *without reading the request body* when no route matches, so
   downstream middleware sees an untouched request. The adapter set (context, getters, request/response
   adapters, enricher, result setter, `addExpress`) is a structural analog of
-  `@benzene/aws-lambda-api-gateway`'s. Typed against Node's `http` (`IncomingMessage`/`ServerResponse`)
+  `@benzenejs/aws-lambda-api-gateway`'s. Typed against Node's `http` (`IncomingMessage`/`ServerResponse`)
   with no runtime `express` dependency (Express is an optional peer); the raw body is read up front
   (ASP.NET's `UseBufferedRequestBody` equivalent), so mount it before any body parser. Tested end-to-end
   against a real Express 5 app. Known limitation (port-wide, not Express-specific): a bodyless request
   (GET) yields `{} as TRequest`, and `enrich` only fills properties the object already has, so path/query
   params can't populate a field the empty body lacks — TypeScript has no `Activator.CreateInstance<T>()`
   to default-construct the erased DTO.
-- Mesh contracts (`@benzene/mesh-contracts`): the shared data shapes and zero-I/O port interfaces of the
+- Mesh contracts (`@benzenejs/mesh-contracts`): the shared data shapes and zero-I/O port interfaces of the
   Benzene mesh — the artifacts an aggregator publishes (`MeshManifest`, `MeshTopicCatalog` + `MeshTopicEntry`,
   `MeshUsage`, `MeshTopology` + `TopologyEdge`, `MeshAnnotationLog`, per-service `MeshServiceSnapshot`), the
   `mesh.json` registry with its `MeshRegistryJson` (de)serializer and `MeshDiscoveryRunner`/
   `MeshDiscoveryFilter`, the `MeshHashing` contract-drift hash, and the adapter seams
   (`IMeshDiscoveryProvider`/`IMeshUsageSource`/`IMeshReportPublisher`). Depends only on
-  `@benzene/health-checks-core`, so it's the foundation the rest of the mesh (aggregator, wire, collector,
+  `@benzenejs/health-checks-core`, so it's the foundation the rest of the mesh (aggregator, wire, collector,
   discovery/usage adapters) builds on. Conventions applied throughout: `DateTimeOffset` → epoch-millisecond
   `number`, `System.Text.Json.Nodes.JsonObject` (inlined schemas) → arbitrary `Record<string, unknown>`,
   `CancellationToken` → optional `AbortSignal`, `HMACSHA256` (empty key) → `node:crypto`, and the static
   const-string classes → frozen objects. Two Mesh.Contracts-scoped test files ported (discovery runner +
   registry JSON round-trip + filter matching, and the hashing test — its cross-check against the unported
   `Benzene.CodeGen.Core` replaced by pinned known-answer HMAC digests).
-- Mesh dispatch (`@benzene/mesh-dispatch`): the opt-in, environment-gated `mesh:dispatch` handler that
+- Mesh dispatch (`@benzenejs/mesh-dispatch`): the opt-in, environment-gated `mesh:dispatch` handler that
   invokes ONE registered service's real handler with a caller-supplied payload (the direct-to-consumer test
   path) — `MeshDispatchMessageHandler` + `MeshDispatchGate` (refused in Production unless
   `MeshDispatchOptions.allowInProduction`), the `IMeshServiceDispatcher` transport seam with a shipped
   `HttpMeshServiceDispatcher` (POSTs the `{ topic, headers, body }` envelope to `<origin>/benzene-message`
   or an explicit `invokeUrl`), and `useMeshDispatch` wiring. Adaptations: `HttpClient` → injectable `fetch`
-  (`@benzene/health-checks-http`'s pattern); `CancellationToken` → optional `AbortSignal`; the environment
+  (`@benzenejs/health-checks-http`'s pattern); `CancellationToken` → optional `AbortSignal`; the environment
   reader checks `NODE_ENV` first (then the .NET `ASPNETCORE_ENVIRONMENT`/`DOTNET_ENVIRONMENT` for migrating
   teams), unset = Production (the safe default). Also ported the concrete `RawStringMessage` class into
-  `@benzene/core-messages` (the handler's response type). The gate + handler test classes ported (9 tests);
+  `@benzenejs/core-messages` (the handler's response type). The gate + handler test classes ported (9 tests);
   the AWS-Lambda-dispatcher test needs the unported `Benzene.Mesh.Aws.Lambda`, so HTTP-dispatcher
   port-verification tests stand in.
-- Mesh self-reporting (`@benzene/mesh-reporting`): push-based reporting for services an aggregator can't
+- Mesh self-reporting (`@benzenejs/mesh-reporting`): push-based reporting for services an aggregator can't
   poll — `HttpMeshReportPublisher` (POSTs a `MeshServiceReport` to an aggregator's ingestion endpoint) and
   `MeshSelfReportMiddleware`, which opportunistically publishes the service's own spec/health *after* real
   traffic completes, throttled by `MeshSelfReportOptions.minimumIntervalMs` (tracked in a singleton
   `MeshSelfReportState`) and fully best-effort (fire-and-forget, never delays the wrapped response, swallows
   publish/provider failures). Wired via `addMeshHttpReporting`/`addMeshSelfReport`/`useMeshSelfReport`.
-  Adaptations: `HttpClient` → injectable `fetch` (`@benzene/health-checks-http`'s pattern); `DateTimeOffset`/
+  Adaptations: `HttpClient` → injectable `fetch` (`@benzenejs/health-checks-http`'s pattern); `DateTimeOffset`/
   `TimeSpan` → epoch-millisecond / millisecond `number`; the C# `Interlocked`-guarded `long` last-published
   tick → a plain `number | undefined` (Node's single-threaded event loop has no torn read/write to guard).
   Both test classes ported (7 tests: publisher POST + non-2xx-throws, and the five middleware tests —
   calls-next, first-call-publishes, throttle-skips-second-call, publisher-throws-swallowed, and
   doesn't-block-on-a-slow-publisher — with the C# `TaskCompletionSource` signal → a deferred promise).
-- Mesh aggregator (`@benzene/mesh-aggregator`): the polling side of the mesh. `MeshAggregator.runOnceAsync`
+- Mesh aggregator (`@benzenejs/mesh-aggregator`): the polling side of the mesh. `MeshAggregator.runOnceAsync`
   fetches every registered service's spec + health (via an `IMeshServiceSource` — `HttpMeshServiceSource`
   ships), computes each service's `MeshServiceSnapshot` + contract-drift (shared `MeshSnapshotBuilder`), and
   publishes a full artifact set to an `IMeshArtifactStore` (`FileSystemMeshArtifactStore` ships):
@@ -1669,7 +1669,7 @@ Ported (with tests):
   drift/usage-attribution, AsyncAPI composition, artifact-store round-trip + traversal rejection,
   snapshot-report drift, annotations, and the two message handlers) — the usage-attribution topology tests
   feed the framework wire statuses (`BenzeneResultStatus.notFound` = `not-found`, matching .NET).
-- Mesh collector (`@benzene/mesh-collector`): the **push** side of the mesh (spec §4) — an ordinary Benzene
+- Mesh collector (`@benzenejs/mesh-collector`): the **push** side of the mesh (spec §4) — an ordinary Benzene
   service whose handlers ingest `mesh:register` / `mesh:heartbeat` / `mesh:traces` into an in-memory
   `MeshCollectorStore` (bounded trace ring, per-instance heartbeat state, wholesale provider-edge replacement
   on re-register) and answer the `mesh:query:*` read models (`fleet`/`service`/`topic`/`trace`/`correlation`,
@@ -1678,12 +1678,12 @@ Ported (with tests):
   from an `IMeshUsageSource`) for a backend-composed plane; `CollectorUsageSource` bridges the collector's
   own traffic to the aggregator's `usage.json`. `MeshCollectorHandlers.all` / `.queries` are handler-class
   arrays a host binds to `MeshCollectorTopics` (the port of C#'s `[Message]` attribute, which has no TS
-  analog). Adaptations: `DateTimeOffset` → epoch-ms `number` (matching `@benzene/mesh-wire`); `Task<T?>` →
+  analog). Adaptations: `DateTimeOffset` → epoch-ms `number` (matching `@benzenejs/mesh-wire`); `Task<T?>` →
   `Promise<T | undefined>` (`null` → `undefined`); C#'s `lock` dropped (single-threaded JS can't tear a
   batch/read); a default-interface-member overload collapses to one optional-param method; `StringComparer.
   Ordinal` → the shared `ordinalCompare` helper. The `mesh:issues` feed is fully ported: its wire types
   (`MeshIssue` / `MeshIssueBatch` / `MeshIssueClassification` / `MeshIssueFingerprint` + `MeshTopics.issues`
-  = `'mesh:issues'`) land in `@benzene/mesh-wire` — the fingerprint is `node:crypto` SHA-256, first 16 bytes
+  = `'mesh:issues'`) land in `@benzenejs/mesh-wire` — the fingerprint is `node:crypto` SHA-256, first 16 bytes
   lowercase-hex over `service|topic|version|classification|discriminator`, identical to the C# recipe so
   issue dedup is cross-language stable — and in the collector `MeshCollectorHandlers.all` carries all **9**
   handlers (register/heartbeat/traces/**issues** + the five `mesh:query:*` reads), with `store.addIssues` /
@@ -1698,15 +1698,15 @@ Ported (with tests):
   | AdjustToUniversal)` — bare-datetime ISO strings are UTC on both planes, where `Date.parse` alone would
   read them as host-local; and the `(id, version)` Map keys use a NUL (`\u0000`) separator (collision-free, cf.
   the Tempo adapter's JSON-encoded tuple key) rather than a space.
-- Mesh Explorer UI (`@benzene/mesh-ui`): the fleet UI — transport-agnostic HTTP middleware serving two
+- Mesh Explorer UI (`@benzenejs/mesh-ui`): the fleet UI — transport-agnostic HTTP middleware serving two
   self-contained product pages on any Benzene HTTP pipeline. `useMeshUi` serves the catalog/fleet viewer
   (`mesh-ui.html`) over a mesh's `manifest.json`/`services/*.json` artifacts, optionally enriched with live
-  `mesh:query:*` data when an `envelopeUrl` (e.g. `/benzene/invoke`, a co-hosted `@benzene/mesh-collector`)
+  `mesh:query:*` data when an `envelopeUrl` (e.g. `/benzene/invoke`, a co-hosted `@benzenejs/mesh-collector`)
   is passed; `useMeshSpecUi` serves the per-service spec viewer (`mesh-spec-ui.html`) that page links to.
   Both drive the transport-neutral `IBenzeneResponseAdapter` directly (GET/HEAD on the configured path →
-  `text/html`, short-circuit; else `next`), mirroring `@benzene/spec-ui`'s `SpecUiMiddleware`. The one
+  `text/html`, short-circuit; else `next`), mirroring `@benzenejs/spec-ui`'s `SpecUiMiddleware`. The one
   deployment note: the primary target is a plain static file host next to the artifacts — the middleware is a
-  secondary convenience. **Divergence:** unlike `@benzene/spec-ui` (which inlines a freshly-rewritten page),
+  secondary convenience. **Divergence:** unlike `@benzenejs/spec-ui` (which inlines a freshly-rewritten page),
   the two HTML files are the cross-language mesh **product** UI copied **verbatim** (byte-identical) and read
   lazily from disk via `readFileSync(new URL('./mesh-ui.html', import.meta.url))` — `mesh-ui.html` is ~281KB
   with embedded client JS containing backticks/`${…}`, so it can't be a TS template literal (see the
@@ -1714,7 +1714,7 @@ Ported (with tests):
   envelopeUrl?)` with `data-manifest-url`/`data-fleet-url` attribute injection (HTML-escaped); the two C#
   ctors → one with an optional `envelopeUrl`. 18-test suite added (page injection/escaping + middleware
   serve/pass-through, both pages).
-- Mesh Jaeger fleet source (`@benzene/mesh-fleet-jaeger`): an `IMeshTraceSource` (the collector's swappable
+- Mesh Jaeger fleet source (`@benzenejs/mesh-fleet-jaeger`): an `IMeshTraceSource` (the collector's swappable
   trace plane) answering the fleet's trace read-models from a **Jaeger query service** — a trace by id
   (`/api/traces/{id}`), a `benzene.correlation-id` tag search, and recent flows. Jaeger's search needs a
   `service` per query (no "all services" form), so correlation/recent-flows fan out across the configured
@@ -1722,27 +1722,27 @@ Ported (with tests):
   returns full traces (not summaries), recent flows carry a real span count and failure flag without a second
   fetch. Wired via `addJaegerFleetReadModel(services, options)`, composed into a `CompositeMeshFleetReadModel`
   with the registered `IMeshUsageSource`s. Adaptations: `HttpClient` → an injectable `fetch` (`JaegerFetch`,
-  mirroring `@benzene/mesh-tracing-tempo`; the C# `AddSingleton<HttpClient>` is dropped); `DateTimeOffset` →
+  mirroring `@benzenejs/mesh-tracing-tempo`; the C# `AddSingleton<HttpClient>` is dropped); `DateTimeOffset` →
   epoch-ms `number` (reconverted to Jaeger's microseconds for `start`/`end`); `TimeSpan` options →
   millisecond `number` fields; `JsonDocument` → `JSON.parse` + `unknown` type guards, with the Jaeger/mesh
   wire JSON keys (`traceID`/`spanID`/`benzene.*`) kept verbatim; assembly-scan DI → the explicit
   `addJaegerFleetReadModel` registration. (`MeshTraceEvent.exceptionType`, from `benzene.exception.type`, is
-  mapped — the field was added to `@benzene/mesh-wire` with the X-Ray port, so the mapping and its C# test
+  mapped — the field was added to `@benzenejs/mesh-wire` with the X-Ray port, so the mapping and its C# test
   assertion are now carried.) Seven C# scenarios ported.
-- Mesh Tempo fleet source (`@benzene/mesh-fleet-tempo`): the Grafana **Tempo** counterpart of the Jaeger
+- Mesh Tempo fleet source (`@benzenejs/mesh-fleet-tempo`): the Grafana **Tempo** counterpart of the Jaeger
   fleet source — an `IMeshTraceSource` answering the collector's trace/correlation/recent-flows read-models
   from Tempo's **trace query** API (TraceQL `/api/search` + `/api/traces/{id}`), walking OTLP
-  `batches[].scopeSpans[].spans[]` in `TempoTraceMapper`. **Distinct from `@benzene/mesh-tracing-tempo`**
+  `batches[].scopeSpans[].spans[]` in `TempoTraceMapper`. **Distinct from `@benzenejs/mesh-tracing-tempo`**
   (below), which is the aggregator's Prometheus *service-graph topology* source; this is the collector's
   trace-waterfall reader. Wired via `addTempoFleetReadModel(services, options)` into a
   `CompositeMeshFleetReadModel`. Adaptations mirror the Jaeger sibling (`HttpClient` → injectable `fetch`;
   `DateTimeOffset` → epoch-ms `number`, with `/api/search` `start`/`end` as epoch **seconds**; `TimeSpan`
   options → ms `number`; `JsonDocument` → `JSON.parse` + `unknown` guards, OTLP wire keys verbatim;
   assembly-scan DI → explicit registration; `MeshTraceEvent.exceptionType` mapped from
-  `benzene.exception.type`, the field added to `@benzene/mesh-wire` with the X-Ray port). Tempo-specific:
+  `benzene.exception.type`, the field added to `@benzenejs/mesh-wire` with the X-Ray port). Tempo-specific:
   span `startTimeUnixNano`/`endTimeUnixNano` (~1.5e18, beyond `Number.MAX_SAFE_INTEGER`)
   are parsed with `BigInt` (matching C#'s `long`) before the integer nanos→ms reduction. Eight C# scenarios ported.
-- Mesh AWS X-Ray fleet source (`@benzene/mesh-fleet-aws-xray`): the **AWS X-Ray** realisation of the
+- Mesh AWS X-Ray fleet source (`@benzenejs/mesh-fleet-aws-xray`): the **AWS X-Ray** realisation of the
   trace-backed fleet reader (completing the trio with the Jaeger/Tempo siblings) — an `IMeshTraceSource`
   answering the collector's trace/correlation/recent-flows from X-Ray (`BatchGetTraces` by id,
   `GetTraceSummaries` for correlation + recent-flows), with `XRaySegmentMapper` walking X-Ray's
@@ -1760,10 +1760,10 @@ Ported (with tests):
   `CancellationToken` → optional `AbortSignal` (threaded to `send` as `{ abortSignal }`); `Task.WhenAll` →
   `Promise.all`; `StringComparer.Ordinal` → an ordinal compare. **Unlike the Jaeger/Tempo ports it does not
   drop `exceptionType`**: this port adds the `exceptionType` field (spec §3 "the failure's WHY") to
-  `@benzene/mesh-wire`'s `MeshTraceEvent` — it was missing from the snapshot, an additive optional field so
+  `@benzenejs/mesh-wire`'s `MeshTraceEvent` — it was missing from the snapshot, an additive optional field so
   `MeshJson.serialize` omits it when absent — and the mapper reads `benzene.exception.type` into it. All 17
   C# scenarios ported.
-- Mesh Tempo tracing (`@benzene/mesh-tracing-tempo`): the observed-traffic topology source (the complement
+- Mesh Tempo tracing (`@benzenejs/mesh-tracing-tempo`): the observed-traffic topology source (the complement
   to the aggregator's structural one). `TempoServiceGraphTopologyBuilder` queries Grafana Tempo's
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
   (`PrometheusQueryClient`) — request rate, failure rate, and p50/p95/p99 latency PromQL queries — and joins
@@ -1779,19 +1779,19 @@ Ported (with tests):
 - Mesh Azure adapters — the three Azure cloud integrations, each adapting its .NET Azure SDK to the
   official `@azure/*` JS-ecosystem package (the "third-party integrations are adapted, not reimplemented"
   convention), all authenticating with `@azure/identity`'s `DefaultAzureCredential`:
-  - Azure Blob artifact store (`@benzene/mesh-azure-blob`): `BlobMeshArtifactStore` — an `IMeshArtifactStore`
+  - Azure Blob artifact store (`@benzenejs/mesh-azure-blob`): `BlobMeshArtifactStore` — an `IMeshArtifactStore`
     over an Azure Blob container, so an Azure-hosted mesh persists its aggregator artifacts + discovered
     registry centrally; wired via `addMeshAggregatorWithBlob`. `Azure.Storage.Blobs` → `@azure/storage-blob`
     (`MemoryStream` upload → `uploadData(Buffer)`, `DownloadContentAsync` → `downloadToBuffer()`,
     `RequestFailedException`/404 → a `RestError` with `statusCode 404`). No C# unit test (SDK-only).
-  - Azure discovery (`@benzene/mesh-discovery-azure`): `AzureAppServiceDiscoveryProvider` discovers Benzene
+  - Azure discovery (`@benzenejs/mesh-discovery-azure`): `AzureAppServiceDiscoveryProvider` discovers Benzene
     services from `Microsoft.Web/sites` resources — pure tag/region filtering + SSRF-safe host/path
     sanitisation over the `IAzureResourceLister` seam, whose real implementation (`AzureArmResourceLister`)
     adapts `Azure.ResourceManager` → `@azure/arm-resources`; wired via `addMeshAzureDiscovery`. Divergence:
     JS's `ResourceManagementClient` is subscription-scoped at construction (no `GetDefaultSubscriptionAsync`),
     so a subscription id is required (passed or from `AZURE_SUBSCRIPTION_ID`), and the resource group is
     parsed from the ARM id. Provider test class ported (6 tests).
-  - Application Insights usage (`@benzene/mesh-usage-application-insights`): `ApplicationInsightsUsageSource`
+  - Application Insights usage (`@benzenejs/mesh-usage-application-insights`): `ApplicationInsightsUsageSource`
     reads the `benzene.messages.processed` counter back as an `IMeshUsageSource` — pure mapping over the
     `IApplicationInsightsUsageQuery` seam, whose default (`LogsQueryUsageQuery`) issues KQL over the Log
     Analytics `customMetrics` table, adapting `Azure.Monitor.Query` → `@azure/monitor-query`
@@ -1804,39 +1804,39 @@ Ported (with tests):
   replaces the .NET `IAmazonX` interface methods, and — because the C# tests mocked those SDK interfaces
   directly — the SDK-coupled classes take the client directly (the test passes a stubbed `send`) rather than
   adding a seam:
-  - S3 artifact store (`@benzene/mesh-aws-s3`): `S3MeshArtifactStore` — an `IMeshArtifactStore` over an S3
+  - S3 artifact store (`@benzenejs/mesh-aws-s3`): `S3MeshArtifactStore` — an `IMeshArtifactStore` over an S3
     bucket, so a Lambda-hosted mesh persists its artifacts centrally; wired via `addMeshAggregatorWithS3`.
     `AWSSDK.S3` → `@aws-sdk/client-s3` (`GetObject` response stream → `Body.transformToString`,
     `AmazonS3Exception`/404 → a `NoSuchKey`/`$metadata.httpStatusCode === 404` check). No C# unit test (SDK-only).
-  - GCS artifact store (`@benzene/mesh-google-cloud-storage`): `GcsMeshArtifactStore` — an `IMeshArtifactStore`
+  - GCS artifact store (`@benzenejs/mesh-google-cloud-storage`): `GcsMeshArtifactStore` — an `IMeshArtifactStore`
     over a Google Cloud Storage bucket, the Google Cloud analogue completing the S3/Azure-Blob artifact-store
     trio, so a Cloud-Functions-hosted mesh persists its artifacts centrally; wired via
     `addMeshAggregatorWithGcs` (an overloaded free function: an explicit `Storage` client, or ADC-built,
     mirroring the C#'s two overloads). `Google.Cloud.Storage.V1` → `@google-cloud/storage` (the same package
-    `@benzene/clients-google-cloud-pubsub` uses for its GCP SDK); `UploadObjectAsync(bucket, key, "application/json", stream)`
+    `@benzenejs/clients-google-cloud-pubsub` uses for its GCP SDK); `UploadObjectAsync(bucket, key, "application/json", stream)`
     → `bucket(b).file(k).save(Buffer, { contentType })`; `DownloadObjectAsync` → `file.download()` (`[Buffer]`);
     `GoogleApiException` with `NotFound` → the GCS `ApiError` with `code === 404`. Store unit test added (6 tests:
     key/prefix computation + 404→undefined + non-404 propagation) — the C# suite exercises the store only
     indirectly through the aggregator.
-  - AWS Lambda discovery (`@benzene/mesh-discovery-aws`): `AwsLambdaDiscoveryProvider` discovers services from
+  - AWS Lambda discovery (`@benzenejs/mesh-discovery-aws`): `AwsLambdaDiscoveryProvider` discovers services from
     tagged Lambda functions (paginated `ListFunctions` + bounded-concurrency `ListTags`) as `AwsLambdaInvoke`
     entries; `AWSSDK.Lambda` → `@aws-sdk/client-lambda`, the `SemaphoreSlim`+ordered-`WhenAll` tag reads → an
     order-preserving bounded-concurrency map. Provider test class ported (4 tests).
-  - CloudWatch usage (`@benzene/mesh-usage-cloudwatch`): `CloudWatchUsageSource` reads the
+  - CloudWatch usage (`@benzenejs/mesh-usage-cloudwatch`): `CloudWatchUsageSource` reads the
     `benzene.messages.processed` counter back (`ListMetrics` to enumerate live dimension combinations, one
     `GetMetricData` `Sum` query each, 500-query chunked) as an `IMeshUsageSource`; `AWSSDK.CloudWatch` →
     `@aws-sdk/client-cloudwatch`. The AWS sibling of the Application Insights adapter. Source test class
     ported (3 tests).
-  - Kubernetes discovery (`@benzene/mesh-discovery-kubernetes`): `KubernetesServiceDiscoveryProvider`
+  - Kubernetes discovery (`@benzenejs/mesh-discovery-kubernetes`): `KubernetesServiceDiscoveryProvider`
     discovers services from Kubernetes Services — pure label-selector construction + in-cluster-DNS URL
     building (`{name}.{namespace}.svc.cluster.local`) + SSRF-safe scheme/path sanitisation over the
     `IKubernetesServiceLister` seam, whose real implementation (`KubernetesApiServiceLister`) adapts the
     Kubernetes SDK to `@kubernetes/client-node`'s `CoreV1Api` (v1's single-param list methods); wired via
     `addMeshKubernetesDiscovery` (`KubeConfig.loadFromCluster`). Provider test class ported (8 tests).
-  (`Mesh.Fleet.Aws.XRay` is now ported as `@benzene/mesh-fleet-aws-xray` — see the mesh AWS X-Ray fleet
+  (`Mesh.Fleet.Aws.XRay` is now ported as `@benzenejs/mesh-fleet-aws-xray` — see the mesh AWS X-Ray fleet
   source above.)
 - AWS Lambda outbound client + its mesh integration:
-  - Low-level Lambda client (`@benzene/clients-aws-lambda`): `AwsLambdaClient` (an `IAwsLambdaClient`) invokes
+  - Low-level Lambda client (`@benzenejs/clients-aws-lambda`): `AwsLambdaClient` (an `IAwsLambdaClient`) invokes
     a function synchronously (`RequestResponse`) or fire-and-forget (`Event`) via `@aws-sdk/client-lambda`,
     serializing the request / deserializing the response payload as JSON and surfacing a `FunctionError` as
     an `AwsLambdaFunctionErrorException`; `LocalAwsLambdaClientFactory` builds a profile-authenticated client
@@ -1847,16 +1847,16 @@ Ported (with tests):
     fire-and-forget branch has no runtime equivalent under TS generic erasure — plus the outbound
     middleware-pipeline converter and the `AwsLambdaHealthCheck` (which needs the not-yet-ported
     `HealthCheckMode`/`HealthCheckError`/persistent-failure health-check infra).
-  - AWS Lambda mesh integration (`@benzene/mesh-aws-lambda`, now unblocked): `LambdaMeshServiceSource`
+  - AWS Lambda mesh integration (`@benzenejs/mesh-aws-lambda`, now unblocked): `LambdaMeshServiceSource`
     interrogates a Lambda-hosted service's spec/health via a synchronous invoke (for services with no HTTP
     surface), and `AwsLambdaMeshServiceDispatcher` dispatches `mesh:dispatch` messages to one — both over
-    `@benzene/clients-aws-lambda`'s `IAwsLambdaClient` (taken lazily so a pure-HTTP mesh never builds a Lambda
+    `@benzenejs/clients-aws-lambda`'s `IAwsLambdaClient` (taken lazily so a pure-HTTP mesh never builds a Lambda
     client), wired via `addMeshLambdaSource`/`addMeshLambdaDispatcher`. Adaptations: C#'s `Activity.Current`
     W3C trace propagation → the active OpenTelemetry span context (`@opentelemetry/api`), emitted as a
     `traceparent` header; `Task.WaitAsync(cancellationToken)` → an `AbortSignal` raced against the invoke (the
     underlying client has no cancellation parameter). Service-source test class ported (7 tests, including the
     W3C-propagation test via the shared OpenTelemetry harness).
-- Configuration / secrets (`@benzene/configuration-core`): the `ISecretStore` "fetch a named value"
+- Configuration / secrets (`@benzenejs/configuration-core`): the `ISecretStore` "fetch a named value"
   seam with the full set of runtime-only stores — `InMemorySecretStore`, `EnvironmentVariableSecretStore`
   (logical-name → `DB_PASSWORD` mapping), `FileSecretStore` (the Docker/Kubernetes secret-mount
   convention), `CompositeSecretStore` (first-non-undefined layering) and `CachingSecretStore` (TTL cache
@@ -1867,7 +1867,7 @@ Ported (with tests):
   `number`s with an injectable clock, `System.IO.File` → `node:fs/promises` (missing file → the caught
   `ENOENT`), `Environment.GetEnvironmentVariable` → `process.env`, `FormatException` → `Error`, and `Uri`
   → the WHATWG `URL`.
-- Sagas (`@benzene/saga`): the in-code distributed-transaction orchestrator — `SagaBuilder` /
+- Sagas (`@benzenejs/saga`): the in-code distributed-transaction orchestrator — `SagaBuilder` /
   `StageBuilder` / `StepBuilder` (ordered stages of concurrently-run steps), the `Saga` engine
   (thread each stage's results forward, and on a stage failure compensate every completed effect
   newest-first, leaving the system at its starting state), `SagaResult`/`SagaOutcome`/`SagaStepState`,
@@ -1880,7 +1880,7 @@ Ported (with tests):
   optional string override; TypeScript erases generics and `get<T>()` has no instance to fall back to, so
   the type-as-default-key can't be ported. A step publishes only when it declares a key
   (`StepBuilder.key`), and a later stage reads it by that same key (`ctx.get<T>(key)`).
-- Response events (`@benzene/response-events`): republishing a handler's response as a follow-up event
+- Response events (`@benzenejs/response-events`): republishing a handler's response as a follow-up event
   — the mapping rules (`ExplicitResponseEventMapping` with `when`/projector, `CrudConventionResponseEventMapping`
   for `X:create` → `X:created`), `ResponseEventMappings` (fan-out; every matching mapping publishes),
   the `ResponseEventsMiddleware` handler-middleware (publish-on-success via `IResponseEventPublisher`,
@@ -1894,7 +1894,7 @@ Ported (with tests):
   `BenzeneMessageSenderResponseEventPublisher` (over the outbound-routing `IBenzeneMessageSender` — see
   below) is registered by `useResponseEvents`, and the end-to-end chain (middleware → default publisher →
   outbound route) is covered by a test.
-- Outbound routing (`@benzene/clients`): the topic-addressed `IBenzeneMessageSender` surface —
+- Outbound routing (`@benzenejs/clients`): the topic-addressed `IBenzeneMessageSender` surface —
   `addOutboundRouting(routing => routing.route(topic, pipeline => …))` builds one outbound
   `IMiddlewarePipeline<OutboundContext>` per topic ahead of time (`OutboundRoutingBuilder`,
   `OutboundRoutingTopics`), and `DefaultBenzeneMessageSender.sendAsync(topic, request, headers?)` runs the
@@ -1904,13 +1904,13 @@ Ported (with tests):
   check), so it returns the route's result cast to `TResponse` and only throws the mismatch exception for
   the coarser case it *can* detect — a route that produced no `IBenzeneResult` at all. `useParallel` fans a
   single topic out to several transports concurrently (all-must-succeed aggregate), over the new
-  `BoundedFanOut` primitive in `@benzene/core-middleware` (`Task.WhenAll` + `SemaphoreSlim` → `Promise.all`
+  `BoundedFanOut` primitive in `@benzenejs/core-middleware` (`Task.WhenAll` + `SemaphoreSlim` → `Promise.all`
   + an async semaphore, results in source order). The outbound `useW3CTraceContext`
   (`Benzene.Clients.TraceContext`) stamps the active span's `traceparent`/`tracestate` onto an outbound
   route's headers (built from `trace.getActiveSpan()`'s span context — the outbound counterpart of
-  `@benzene/diagnostics`' inbound `useW3CTraceContext`). Still deferred: `validateOutboundRouting` (in .NET,
+  `@benzenejs/diagnostics`' inbound `useW3CTraceContext`). Still deferred: `validateOutboundRouting` (in .NET,
   assembly reflection over `Benzene.CodeGen.Client` generated-client routing contracts; the generator itself
-  is now ported as `@benzene/codegen-client`, but the reflective startup-validation surface is not).
+  is now ported as `@benzenejs/codegen-client`, but the reflective startup-validation surface is not).
 
 Next, in dependency order, following the .NET repository:
 
@@ -1925,16 +1925,16 @@ Next, in dependency order, following the .NET repository:
    shipped store, matching the original.
 2. Mesh/schema tooling — the sender-definition building blocks (`IMessageSenderDefinition` /
    `MessageSenderDefinition`, the `IMessageDefinitionFinder` token) are ported, and so is schema
-   generation: `Benzene.Schema.OpenApi` ships as `@benzene/schema-openapi` (`Benzene.JsonSchema` is a
+   generation: `Benzene.Schema.OpenApi` ships as `@benzenejs/schema-openapi` (`Benzene.JsonSchema` is a
    documented non-port — see "Deliberately not ported" below). Much of the `Benzene.Mesh.*`
    catalog/topology/contract-drift surface is now ported too (see the structure table); the remaining
    mesh packages build on these.
 3. Host runners — the platform-neutral worker model (`Benzene.SelfHost`: worker builder + composite +
-   `BoundedConcurrentDispatcher`) is ported as `@benzene/self-host`; the remaining `Microsoft.Extensions
+   `BoundedConcurrentDispatcher`) is ported as `@benzenejs/self-host`; the remaining `Microsoft.Extensions
    .Hosting` generic-host adapter (`Benzene.HostedService`) has no JS counterpart, and an HTTP host
    entrypoint is held for a design decision on the Node HTTP host shape. The third cloud
    (`Benzene.GoogleCloud.Functions.{Core,Http,PubSub}`) is now ported as
-   `@benzene/google-cloud-functions-{core,http,pubsub}` (see the structure table).
+   `@benzenejs/google-cloud-functions-{core,http,pubsub}` (see the structure table).
 
 ### Deliberately not ported (no clean JS mapping)
 
@@ -1946,15 +1946,15 @@ subsystem, they are left out and recorded here:
   `MeterProviderBuilder.AddMeter("Benzene")`, i.e. .NET's opt-in registration of a named `ActivitySource`/
   `Meter` with an OTel provider. **JS OpenTelemetry has no per-source opt-in**: once a global
   `TracerProvider`/`MeterProvider` is registered, every `trace.getTracer(name)` / `metrics.getMeter(name)`
-  is live. The ported `@benzene/diagnostics` already emits its spans/metrics through a tracer/meter named
+  is live. The ported `@benzenejs/diagnostics` already emits its spans/metrics through a tracer/meter named
   `"Benzene"`, so they flow to whatever exporter a JS app configures **with no glue package at all** —
   wire OTel normally (e.g. a `NodeTracerProvider` + OTLP exporter) and Benzene's telemetry appears. (Filter
   or sample it by the instrumentation name `"Benzene"`.)
-- **`Benzene.JsonSchema`** — ported as **`@benzene/ajv`** for its *validation* half, with two divergences.
+- **`Benzene.JsonSchema`** — ported as **`@benzenejs/ajv`** for its *validation* half, with two divergences.
   (1) **Handler-level, not raw-body.** C#'s `JsonSchemaMiddleware` is a transport pipeline middleware that
   evaluates the raw request *body* pre-deserialization (with `MissingBody`/`MalformedBody` results); the port
   has no raw-body validation seam — validation is handler-level, on the deserialized `context.request`, via
-  `IValidationStatusMapper` — so `@benzene/ajv` mirrors the Zod/Joi/Yup adapters (a request class is
+  `IValidationStatusMapper` — so `@benzenejs/ajv` mirrors the Zod/Joi/Yup adapters (a request class is
   associated with a hand-authored JSON Schema via `registerJsonSchema`; `useAjvValidation(router)` wires the
   middleware + status mapper + a spec/mesh `ITypeJsonSchemaSource`). ajv is the raw-JSON-Schema member of the
   validation-adapter family — the faithful counterpart of the *distinct* `Benzene.JsonSchema` package, not a
@@ -1963,8 +1963,8 @@ subsystem, they are left out and recorded here:
   over the request CLR type; TypeScript erases types at runtime, so that half has no port — schemas are
   supplied explicitly (the counterpart of `SuppliedJsonSchemaCatalog`/`AddSuppliedJsonSchemas`), and a request
   type with no registered schema is not validated. Spec/mesh schema generation for services that validate with
-  Zod/Joi/Yup still flows through those adapters → `@benzene/schema-openapi` (see the "Type → JSON Schema"
-  convention above); `@benzene/ajv` publishes its registered schemas to the same source.
+  Zod/Joi/Yup still flows through those adapters → `@benzenejs/schema-openapi` (see the "Type → JSON Schema"
+  convention above); `@benzenejs/ajv` publishes its registered schemas to the same source.
 
 ## License
 

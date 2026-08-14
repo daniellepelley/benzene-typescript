@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { SQSEvent, SQSRecord } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
-import { BenzeneException } from '@benzene/core';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneException } from '@benzenejs/core';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   addSqs,
   SqsApplication,
@@ -21,10 +21,10 @@ import {
   SqsMessageContext,
   SqsOptions,
   useSqs,
-} from '@benzene/aws-lambda-sqs';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asSqs } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-sqs';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asSqs } from '@benzenejs/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# SQS pipeline tests (test/Benzene.Core.Test/Aws/Sqs/SqsMessagePipelineTest.cs

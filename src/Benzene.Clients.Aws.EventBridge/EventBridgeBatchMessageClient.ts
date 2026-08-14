@@ -1,13 +1,13 @@
 import { EventBridgeClient, PutEventsCommand, PutEventsRequestEntry } from '@aws-sdk/client-eventbridge';
-import { ISerializer } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import {
   BatchSend,
   BatchSendResult,
   FailedBatchEntry,
   IBenzeneBatchMessageClient,
   OutboundContext,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 import { OutboundEventBridgeContextConverter } from './OutboundEventBridgeContextConverter';
 import { awsErrorDetails } from './awsErrorDetails';
 

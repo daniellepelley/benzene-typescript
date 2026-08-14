@@ -9,15 +9,15 @@
  * `addEventBridgeHealthCheck`); the Step Functions client (`StepFunctionsClient` /
  * `StepFunctionsClientFactory` / `StepFunctionsHealthCheck`); and the low-level AWS Lambda invoke client
  * (`AwsLambdaClient` / `LocalAwsLambdaClientFactory`). Depend on this package for the whole AWS
- * outbound-client surface, or on the individual `@benzene/clients-aws-*` packages for a narrower dependency.
+ * outbound-client surface, or on the individual `@benzenejs/clients-aws-*` packages for a narrower dependency.
  *
  * PORTING NOTE: identically-named internal helpers that appear in more than one of the underlying
  * packages (e.g. each package's own `awsErrorDetails`) are ambiguous across a wildcard re-export and are
  * therefore not surfaced from this umbrella; import them from the specific package if you need them. The
  * public entry points (`use*` / `add*` and their types) are unique per transport and come through.
  */
-export * from '@benzene/clients-aws-sqs';
-export * from '@benzene/clients-aws-sns';
-export * from '@benzene/clients-aws-eventbridge';
-export * from '@benzene/clients-aws-lambda';
-export * from '@benzene/clients-aws-step-functions';
+export * from '@benzenejs/clients-aws-sqs';
+export * from '@benzenejs/clients-aws-sns';
+export * from '@benzenejs/clients-aws-eventbridge';
+export * from '@benzenejs/clients-aws-lambda';
+export * from '@benzenejs/clients-aws-step-functions';

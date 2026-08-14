@@ -11,12 +11,12 @@ production does rather than any one piece in isolation.
 
 The test helpers live in three packages, all dev-only:
 
-- **`@benzene/testing`** — the platform-neutral request builders `messageBuilder(topic, body)` and
+- **`@benzenejs/testing`** — the platform-neutral request builders `messageBuilder(topic, body)` and
   `httpBuilder(method, path, body)`, plus `asBenzeneMessage` / `asRawHttpRequest`. These describe a
   request once, independent of transport.
-- **`@benzene/aws-lambda-testing`** — turns a builder into a native AWS event (`asApiGatewayRequest`,
+- **`@benzenejs/aws-lambda-testing`** — turns a builder into a native AWS event (`asApiGatewayRequest`,
   `asSqs`, `asSns`, `asEventBridge`, `asAwsKafkaEvent`, `asDynamoDb`, `asKinesis`, `asS3`, …).
-- **`@benzene/azure-function-testing`** — the Azure counterpart (`asAzureHttpRequest`,
+- **`@benzenejs/azure-function-testing`** — the Azure counterpart (`asAzureHttpRequest`,
   `asAzureServiceBusMessage`, `asEventHubBenzeneMessage`, `asAzureKafkaEvent`).
 
 You then drive the generated event through a real app booted from its own `BenzeneStartUp` with the
@@ -25,12 +25,12 @@ You then drive the generated event through a real app booted from its own `Benze
 
 ```ts
 // src/OrdersStartUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneStartUp, BenzeneConfiguration } from '@benzene/testing';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneStartUp, BenzeneConfiguration } from '@benzenejs/testing';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { CreateOrderHandler } from './handlers.js';
 
 export class OrdersStartUp implements BenzeneStartUp {
@@ -80,7 +80,7 @@ and the `as*` builder change; everything else is identical. The worked exemplars
 ## Installation
 
 ```bash
-npm install --save-dev vitest @benzene/testing @benzene/aws-lambda-testing @benzene/azure-function-testing
+npm install --save-dev vitest @benzenejs/testing @benzenejs/aws-lambda-testing @benzenejs/azure-function-testing
 ```
 
 Add only the transport testing package you actually use. Tests run under [vitest](https://vitest.dev/)
@@ -91,7 +91,7 @@ itself stays thin (see [Message Handlers](message-handlers.md)):
 
 ```ts
 // src/GreetingService.ts
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface IGreetingService {
   greetAsync(name: string): Promise<string>;
@@ -104,11 +104,11 @@ export const IGreetingService: ServiceToken<IGreetingService> =
 
 ```ts
 // src/HelloWorldHandler.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 import { IGreetingService } from './GreetingService.js';
 
 export class HelloWorldRequest {
@@ -141,7 +141,7 @@ call `handleAsync`, and assert on the returned `IBenzeneResultOf<T>`. A result c
 ```ts
 // test/HelloWorldHandler.test.ts
 import { describe, expect, it } from 'vitest';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { HelloWorldHandler, HelloWorldRequest } from '../src/HelloWorldHandler.js';
 import { IGreetingService } from '../src/GreetingService.js';
 
@@ -187,11 +187,11 @@ composition root wiring `HelloWorldHandler` on API Gateway:
 
 ```ts
 // src/HelloStartUp.ts — the same composition root you deploy.
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 import { HelloWorldHandler } from './HelloWorldHandler.js';
 
 export class HelloStartUp implements BenzeneStartUp {
@@ -213,8 +213,8 @@ transport-native response:
 // test/HelloPipeline.test.ts
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyResult } from 'aws-lambda';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+import { benzeneTestHost, httpBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { HelloStartUp } from '../src/HelloStartUp.js';
 import { IGreetingService } from '../src/GreetingService.js';
 
@@ -250,13 +250,13 @@ Every AWS transport is driven the same way — only the builder and the response
 handler with no `@httpEndpoint`, fed by `asSqs`, reports partial-batch failures:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asSqs } from '@benzene/aws-lambda-testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
+import { asSqs } from '@benzenejs/aws-lambda-testing';
 
 class ProcessOrderStartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
@@ -295,13 +295,13 @@ trigger (Service Bus / Event Hub / Kafka) resolves to `void`. Only the `.buildAw
 
 ```ts
 import { HttpResponseInit } from '@azure/functions';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useAzureHttp } from '@benzene/azure-function-http';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asAzureHttpRequest } from '@benzene/azure-function-testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useAzureHttp } from '@benzenejs/azure-function-http';
+import { benzeneTestHost, httpBuilder } from '@benzenejs/testing';
+import { asAzureHttpRequest } from '@benzenejs/azure-function-testing';
 
 class HelloAzureStartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer): void {
@@ -342,16 +342,16 @@ drive through a `BenzeneMessageApplication`. This is the port's analog of the .N
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { messageBuilder, asBenzeneMessage } from '@benzene/testing';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { messageBuilder, asBenzeneMessage } from '@benzenejs/testing';
 
 describe('hello via the message pipeline', () => {
   it('routes the topic and round-trips the payload', async () => {
@@ -383,19 +383,19 @@ trailing options object.
 
 | Builder | Package | Produces | Routes on |
 | --- | --- | --- | --- |
-| `asBenzeneMessage` / `asRawHttpRequest` | `@benzene/testing` | `BenzeneMessageRequest` / raw HTTP string | topic / route |
-| `asApiGatewayRequest` / `asApiGatewayV2Request` | `@benzene/aws-lambda-testing` | `APIGatewayProxyEvent` (v1/v2) | HTTP method + path |
-| `asApiGatewayCustomAuthorizerEvent` | `@benzene/aws-lambda-testing` | `APIGatewayRequestAuthorizerEvent` | method + path (no body) |
-| `asSqs` / `asSns` | `@benzene/aws-lambda-testing` | `SQSEvent` / `SNSEvent` | `topic` message attribute |
-| `asEventBridge` | `@benzene/aws-lambda-testing` | `EventBridgeEvent` | `detail-type` |
-| `asAwsKafkaEvent` | `@benzene/aws-lambda-testing` | `MSKEvent` | record topic |
-| `asDynamoDb` | `@benzene/aws-lambda-testing` | `DynamoDBStreamEvent` | `{table}:{eventName}` |
-| `asKinesis` | `@benzene/aws-lambda-testing` | `KinesisStreamEvent` | preset topic (`usePresetTopic`) |
-| `asS3` | `@benzene/aws-lambda-testing` | `S3Event` | S3 event name (bucket/key body) |
-| `asAzureHttpRequest` | `@benzene/azure-function-testing` | `@azure/functions` `HttpRequest` | HTTP method + path |
-| `asAzureServiceBusMessage` | `@benzene/azure-function-testing` | Service Bus message | `topic` application property |
-| `asEventHubBenzeneMessage` | `@benzene/azure-function-testing` | Event Hub envelope | envelope topic |
-| `asAzureKafkaEvent` | `@benzene/azure-function-testing` | Kafka event | record topic |
+| `asBenzeneMessage` / `asRawHttpRequest` | `@benzenejs/testing` | `BenzeneMessageRequest` / raw HTTP string | topic / route |
+| `asApiGatewayRequest` / `asApiGatewayV2Request` | `@benzenejs/aws-lambda-testing` | `APIGatewayProxyEvent` (v1/v2) | HTTP method + path |
+| `asApiGatewayCustomAuthorizerEvent` | `@benzenejs/aws-lambda-testing` | `APIGatewayRequestAuthorizerEvent` | method + path (no body) |
+| `asSqs` / `asSns` | `@benzenejs/aws-lambda-testing` | `SQSEvent` / `SNSEvent` | `topic` message attribute |
+| `asEventBridge` | `@benzenejs/aws-lambda-testing` | `EventBridgeEvent` | `detail-type` |
+| `asAwsKafkaEvent` | `@benzenejs/aws-lambda-testing` | `MSKEvent` | record topic |
+| `asDynamoDb` | `@benzenejs/aws-lambda-testing` | `DynamoDBStreamEvent` | `{table}:{eventName}` |
+| `asKinesis` | `@benzenejs/aws-lambda-testing` | `KinesisStreamEvent` | preset topic (`usePresetTopic`) |
+| `asS3` | `@benzenejs/aws-lambda-testing` | `S3Event` | S3 event name (bucket/key body) |
+| `asAzureHttpRequest` | `@benzenejs/azure-function-testing` | `@azure/functions` `HttpRequest` | HTTP method + path |
+| `asAzureServiceBusMessage` | `@benzenejs/azure-function-testing` | Service Bus message | `topic` application property |
+| `asEventHubBenzeneMessage` | `@benzenejs/azure-function-testing` | Event Hub envelope | envelope topic |
+| `asAzureKafkaEvent` | `@benzenejs/azure-function-testing` | Kafka event | record topic |
 
 ## Notes and limitations
 

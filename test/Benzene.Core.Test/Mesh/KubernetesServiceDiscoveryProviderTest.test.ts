@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { MeshDiscoveryFilter, MeshServiceSource } from '@benzene/mesh-contracts';
+import { MeshDiscoveryFilter, MeshServiceSource } from '@benzenejs/mesh-contracts';
 import {
   IKubernetesServiceLister,
   KubernetesServiceDiscoveryProvider,
   KubernetesServiceInfo,
-} from '@benzene/mesh-discovery-kubernetes';
+} from '@benzenejs/mesh-discovery-kubernetes';
 
 /**
  * Port of test/Benzene.Mesh.Test/Discovery/KubernetesServiceDiscoveryProviderTest.cs. The Moq

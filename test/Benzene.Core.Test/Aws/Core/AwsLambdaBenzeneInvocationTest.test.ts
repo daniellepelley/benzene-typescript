@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { IBenzeneInvocation } from '@benzene/abstractions-middleware';
-import { BenzeneApplicationBuilder, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneInvocation } from '@benzenejs/abstractions-middleware';
+import { BenzeneApplicationBuilder, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   AwsEventStreamContext,
   AwsLambdaApplicationBuilder,
   ILambdaContext,
   useAwsLambda,
   useBenzeneInvocation,
-} from '@benzene/aws-lambda-core';
+} from '@benzenejs/aws-lambda-core';
 
 /**
  * Port of the AWS Lambda BenzeneInvocation + AwsLambdaApplicationBuilder scenarios: the AWS

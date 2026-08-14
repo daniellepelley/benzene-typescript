@@ -1,5 +1,5 @@
-import { Constructor, ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IRequestResponseMessageDefinition } from '@benzene/abstractions-messages';
+import { Constructor, ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IRequestResponseMessageDefinition } from '@benzenejs/abstractions-messages';
 
 /**
  * Describes a message handler: its topic, request/response types and handler class.

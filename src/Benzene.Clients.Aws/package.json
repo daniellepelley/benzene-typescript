@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/clients-aws",
+  "name": "@benzenejs/clients-aws",
   "version": "0.1.0",
   "description": "Umbrella package re-exporting the AWS outbound client packages (ports Benzene.Clients.Aws)",
   "license": "MIT",
@@ -7,10 +7,10 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/clients-aws-eventbridge": "0.1.0",
-    "@benzene/clients-aws-lambda": "0.1.0",
-    "@benzene/clients-aws-sns": "0.1.0",
-    "@benzene/clients-aws-sqs": "0.1.0",
-    "@benzene/clients-aws-step-functions": "0.1.0"
+    "@benzenejs/clients-aws-eventbridge": "0.1.0",
+    "@benzenejs/clients-aws-lambda": "0.1.0",
+    "@benzenejs/clients-aws-sns": "0.1.0",
+    "@benzenejs/clients-aws-sqs": "0.1.0",
+    "@benzenejs/clients-aws-step-functions": "0.1.0"
   }
 }

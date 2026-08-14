@@ -1,7 +1,7 @@
 # Zod Validation with Custom Rules
 
 Write the validation real handlers actually need — cross-field checks, reusable string formats, and
-per-handler status overrides — with [Zod](https://zod.dev/) and `@benzene/zod`, and know exactly where
+per-handler status overrides — with [Zod](https://zod.dev/) and `@benzenejs/zod`, and know exactly where
 an async "is this already taken?" check has to live in the TypeScript port.
 
 ## Problem Statement
@@ -19,7 +19,7 @@ for:
   `409 conflict`, not the generic `422 validation-error` every other failure gets.
 
 > **Port note (read this first).** The .NET original of this cookbook uses FluentValidation, whose
-> `MustAsync` and per-rule `.WithStatus(...)` have no schema-library-neutral equivalent. `@benzene/zod`
+> `MustAsync` and per-rule `.WithStatus(...)` have no schema-library-neutral equivalent. `@benzenejs/zod`
 > adapts Zod instead, and Zod's per-rule status override and async-in-the-pipeline both differ from
 > FluentValidation. Where they differ, this cookbook uses the TypeScript shape and says so — it is not a
 > line-by-line transliteration of the .NET recipe.
@@ -34,10 +34,10 @@ for:
 ## Installation
 
 ```bash
-npm install @benzene/zod zod
+npm install @benzenejs/zod zod
 ```
 
-`@benzene/zod` takes `zod` as a real runtime dependency — that is the whole point of an adapter package.
+`@benzenejs/zod` takes `zod` as a real runtime dependency — that is the whole point of an adapter package.
 
 ## Step-by-Step Implementation
 
@@ -48,7 +48,7 @@ from the container — see [Message Handlers](../message-handlers.md)):
 
 ```ts
 // ProductRepository.ts
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface IProductRepository {
   nameExistsAsync(name: string): Promise<boolean>;
@@ -145,7 +145,7 @@ Here is the gotcha. You might reach for an async refinement:
 z.string().refine(async (name) => !(await repo.nameExistsAsync(name)));
 ```
 
-`ValidationMiddleware` in `@benzene/zod` calls `schema.safeParse(context.request)` — the **synchronous**
+`ValidationMiddleware` in `@benzenejs/zod` calls `schema.safeParse(context.request)` — the **synchronous**
 parse. Zod throws `Encountered Promise during synchronous parse. Use .parseAsync() instead` the moment a
 schema contains an async refinement. The port has no async-validation seam, so **an async rule cannot go in
 the validation schema at all.**
@@ -158,12 +158,12 @@ I/O-bound checks out of validation.** Do the uniqueness check in the handler, wh
 ```ts
 // CreateProductHandler.ts
 import { z } from 'zod';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { registerZodSchema } from '@benzene/zod';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { registerZodSchema } from '@benzenejs/zod';
 import { IProductRepository } from './ProductRepository.js';
 
 export class CreateProductRequest {
@@ -240,8 +240,8 @@ If instead you want *all* of a handler's schema failures to map to one non-defau
 what `@validationStatus` is for:
 
 ```ts
-import { validationStatus } from '@benzene/abstractions-validation';
-import { BenzeneResultStatus } from '@benzene/results';
+import { validationStatus } from '@benzenejs/abstractions-validation';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 @validationStatus(BenzeneResultStatus.badRequest) // every schema failure on this handler → bad-request
 @message('product:create', { requestType: CreateProductRequest, responseType: CreateProductResponse })
@@ -261,24 +261,24 @@ useMessageHandlersWithRouter(app, (router) => useZodValidation(router), CreatePr
 ## Testing
 
 Drive the whole thing — schema short-circuit, handler conflict — through the transport-neutral message
-pipeline with `@benzene/testing`, so routing, body binding, validation, and the handler all run. Register a
+pipeline with `@benzenejs/testing`, so routing, body binding, validation, and the handler all run. Register a
 fake `IProductRepository` to control the "already exists" branch:
 
 ```ts
 // CreateProductHandler.test.ts
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlersWithRouter,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { useZodValidation } from '@benzene/zod';
-import { messageBuilder, asBenzeneMessage } from '@benzene/testing';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { useZodValidation } from '@benzenejs/zod';
+import { messageBuilder, asBenzeneMessage } from '@benzenejs/testing';
 import { randomUUID } from 'node:crypto';
 import { CreateProductHandler } from './CreateProductHandler.js';
 import { IProductRepository } from './ProductRepository.js';

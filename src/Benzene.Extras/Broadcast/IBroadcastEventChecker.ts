@@ -1,6 +1,6 @@
 /** Port of Benzene.Extras.Broadcast.IBroadcastEventChecker. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IMessageDefinition, IMessageDefinitionFinder } from '@benzene/abstractions-messages';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IMessageDefinition, IMessageDefinitionFinder } from '@benzenejs/abstractions-messages';
 
 /**
  * Decides whether a given (topic, payload) pair corresponds to a registered broadcastable event, and

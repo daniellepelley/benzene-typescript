@@ -12,29 +12,29 @@
  *
  * PORT DIVERGENCE from the .NET example: .NET's `AddPayloadVersioning` auto-synthesises the field-drop
  * DOWNcasters from the declared UPcasters (its reflection + `System.Linq.Expressions` auto-mapper).
- * `@benzene/core-versioning` deliberately does NOT port that auto-mapper (no runtime property reflection
+ * `@benzenejs/core-versioning` deliberately does NOT port that auto-mapper (no runtime property reflection
  * in TS — see the package's `index.ts`), so casters are explicit `(from) => to` functions. We therefore
  * declare the adjacent DOWNcasters (V3→V2, V2→V1) too; the expander still CHAINS them (V3→V2→V1), which is
  * the mechanism the example is about.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageGetter, IMessageVersionGetter } from '@benzene/abstractions-message-handlers';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageGetter, IMessageVersionGetter } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   BenzeneMessageGetter,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { VersionAwareMessageGetter } from './versionAwareMessageGetter';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   registerPayloadSchemaVersions,
   registerSchemaCastDefinitions,
   usePayloadVersionCasting,
-} from '@benzene/core-versioning';
+} from '@benzenejs/core-versioning';
 import {
   InventoryAdjustmentV1,
   InventoryAdjustmentV2,

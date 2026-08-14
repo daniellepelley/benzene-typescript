@@ -1,28 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
-import { BenzeneException } from '@benzene/core';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneException } from '@benzenejs/core';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
   usePresetTopic,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   addKinesis,
   KinesisApplication,
   KinesisMessageContext,
   useKinesis,
-} from '@benzene/aws-lambda-kinesis';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asKinesis } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-kinesis';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asKinesis } from '@benzenejs/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# Kinesis tests, adapted to this port's PER-RECORD FAN-OUT model (the C#

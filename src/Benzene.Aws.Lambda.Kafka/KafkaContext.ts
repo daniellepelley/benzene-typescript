@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaContext. */
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { MSKEvent, MSKRecord } from 'aws-lambda';
 
 /**

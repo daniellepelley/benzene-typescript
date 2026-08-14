@@ -1,6 +1,6 @@
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { IBenzeneWorkerStartup } from '@benzene/self-host';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { BenzeneServiceBusConfig } from './BenzeneServiceBusConfig';
 import { BenzeneServiceBusWorker } from './BenzeneServiceBusWorker';
 import { IServiceBusClientFactory } from './IServiceBusClientFactory';
@@ -15,9 +15,9 @@ import { addServiceBusDependencyHealthCheck } from './ServiceBusHealthCheckExten
  * worker startup as its first argument).
  *
  * Adds a standalone Service Bus consumer to a Benzene worker. Unlike
- * `@benzene/azure-function-service-bus`, which processes messages delivered via an Azure Functions
+ * `@benzenejs/azure-function-service-bus`, which processes messages delivered via an Azure Functions
  * Service Bus trigger, this package consumes an entity directly using {@link BenzeneServiceBusWorker} —
- * intended for long-running workers (e.g. `@benzene/self-host`) rather than Azure Functions.
+ * intended for long-running workers (e.g. `@benzenejs/self-host`) rather than Azure Functions.
  *
  * @param app The worker startup to add the Service Bus consumer to.
  * @param config The entity to consume and the processing behaviour to use.
@@ -25,7 +25,7 @@ import { addServiceBusDependencyHealthCheck } from './ServiceBusHealthCheckExten
  * @param action Configures the inner Service Bus message pipeline.
  * @param healthCheck When `true` (the default) a non-destructive Service Bus reachability check (a peek
  * of the consumed entity, using the `Listen` claim the consumer holds) is auto-registered on the deep
- * `healthcheck` layer via `@benzene/health-checks-azure-service-bus` — never a Kubernetes probe (a
+ * `healthcheck` layer via `@benzenejs/health-checks-azure-service-bus` — never a Kubernetes probe (a
  * broker being unreachable is shared-fate; see `IDependencyHealthCheck`). Pass `false` to opt out.
  * @returns The worker startup, for chaining.
  */

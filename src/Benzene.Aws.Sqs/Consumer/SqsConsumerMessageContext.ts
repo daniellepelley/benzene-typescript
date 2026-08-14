@@ -1,6 +1,6 @@
 /** Port of Benzene.Aws.Sqs.Consumer.SqsConsumerMessageContext. */
 import type { Message } from '@aws-sdk/client-sqs';
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * The middleware pipeline context for a single SQS message received by the polling consumer. `Amazon.SQS.

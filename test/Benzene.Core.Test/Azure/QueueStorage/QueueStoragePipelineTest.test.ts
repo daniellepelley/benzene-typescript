@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { ICurrentTransport, IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
   usePresetTopic,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   addQueueStorage,
   handleQueueMessage,
@@ -23,7 +23,7 @@ import {
   QueueStorageOptions,
   useBenzeneMessage,
   useQueueStorage,
-} from '@benzene/azure-function-queue-storage';
+} from '@benzenejs/azure-function-queue-storage';
 
 /**
  * End-to-end port of the C# Azure Queue Storage pipeline tests (QueueStoragePipelineTest.cs +

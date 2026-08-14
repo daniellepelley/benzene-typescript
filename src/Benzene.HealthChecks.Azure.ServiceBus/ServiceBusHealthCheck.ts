@@ -6,7 +6,7 @@ import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 
 /**
  * Verifies an Azure Service Bus entity (a queue, or a topic subscription) is reachable with a

@@ -4,7 +4,7 @@ import { exportJWK, generateKeyPair, JWK, KeyLike, SignJWT } from 'jose';
 
 /**
  * A real loopback JWKS endpoint (RFC 7517) backed by locally-generated RSA keys, for exercising
- * `@benzene/auth-oauth2`'s `jwksUri` path end-to-end without depending on a real identity provider.
+ * `@benzenejs/auth-oauth2`'s `jwksUri` path end-to-end without depending on a real identity provider.
  * Serves whatever set of keys is currently registered via {@link addKey}. Port of the C# test's
  * `FakeJwksServer` (HttpListener + RSA) onto `node:http` + jose.
  */

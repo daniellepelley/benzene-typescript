@@ -1,5 +1,5 @@
 /** Port of Benzene.SchemaRegistry.Core.SchemaRegistrySerializer. */
-import { Constructor, IPayloadSerializer, ISerializer } from '@benzene/abstractions';
+import { Constructor, IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
 import { ConfluentWireFormat } from './ConfluentWireFormat';
 
 /**
@@ -11,12 +11,12 @@ import { ConfluentWireFormat } from './ConfluentWireFormat';
  *
  * Schema ids are resolved once, at startup, into the id map this is constructed with (see
  * {@link SchemaRegistrar}), so serialization stays synchronous. Serializing a type with no registered id
- * throws, surfacing a missing startup registration immediately. Like `@benzene/avro`, the string members
+ * throws, surfacing a missing startup registration immediately. Like `@benzenejs/avro`, the string members
  * Base64-armor the framed bytes so the serializer also flows through string-body pipelines unchanged.
  *
  * Erasure: C#'s explicit `Type` parameter is recovered from the payload's `constructor` on the serialize
  * path (`(payload).constructor`); the deserialize path adds an optional `targetType` (the erased `T`)
- * that is forwarded to the inner serializer - mirroring `@benzene/avro`'s deserialize members.
+ * that is forwarded to the inner serializer - mirroring `@benzenejs/avro`'s deserialize members.
  */
 export class SchemaRegistrySerializer implements ISerializer, IPayloadSerializer {
   constructor(
@@ -60,7 +60,7 @@ export class SchemaRegistrySerializer implements ISerializer, IPayloadSerializer
     }
     const { body } = ConfluentWireFormat.decode(payload);
     // The inner serializer may need the erased target class (e.g. Avro); the ported IPayloadSerializer
-    // signature has no such parameter, so forward it through a widened call, matching @benzene/avro.
+    // signature has no such parameter, so forward it through a widened call, matching @benzenejs/avro.
     const innerDeserialize = this.inner.deserializeFromBytes.bind(this.inner) as (
       p: Uint8Array,
       t?: Constructor<T>,

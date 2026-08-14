@@ -1,11 +1,11 @@
-import { IBenzeneResult, IBenzeneResultOf, IServiceResolver, VoidResult } from '@benzene/abstractions';
+import { IBenzeneResult, IBenzeneResultOf, IServiceResolver, VoidResult } from '@benzenejs/abstractions';
 import {
   IBenzeneClientContext,
   IGetTopic,
   IMessageSender,
   IMessageSenderNoResponse,
-} from '@benzene/abstractions-messages';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { BenzeneClientContext } from './BenzeneClientContext';
 import { BenzeneClientRequest } from './BenzeneClientRequest';
 

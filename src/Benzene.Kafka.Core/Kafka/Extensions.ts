@@ -1,8 +1,8 @@
 /** Port of Benzene.Kafka.Core.Kafka.Extensions (C# fluent extension methods -> free functions taking the builder first). */
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { Producer } from 'kafkajs';
 import { KafkaClientMiddleware } from './KafkaClientMiddleware';
 import { KafkaContextConverter } from './KafkaContextConverter';
@@ -13,7 +13,7 @@ import { KafkaSendMessageContext } from './KafkaSendMessageContext';
  *
  * PORT DIVERGENCE: the C# parameterless `.UseKafkaClient()` overload resolves the middleware (and thus
  * the `IProducer`) from the container; the TypeScript port takes the `kafkajs` `Producer` explicitly
- * (there is no synthetic DI token for the raw producer), mirroring how `@benzene/clients-aws-sqs`'s
+ * (there is no synthetic DI token for the raw producer), mirroring how `@benzenejs/clients-aws-sqs`'s
  * `useSqsClient` takes the `SQSClient`.
  */
 export function useKafkaClient(

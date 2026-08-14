@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   InMemorySagaStateStore,
   SagaBuilder,
@@ -8,7 +8,7 @@ import {
   SagaRetryPolicy,
   SagaRunOptions,
   SagaStateEventKind,
-} from '@benzene/saga';
+} from '@benzenejs/saga';
 
 /**
  * Port of test/Benzene.Core.Test/Saga/SagaRetryAndStateStoreTest.cs: the optional whole-saga retry

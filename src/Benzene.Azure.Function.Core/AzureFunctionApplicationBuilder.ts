@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneApplicationBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneApplicationBuilder } from '@benzenejs/core-middleware';
 import { AzureEntryPointApplication, AzureFunctionApp } from './AzureFunctionApp';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
 import { IAzureFunctionAppBuilder } from './IAzureFunctionAppBuilder';

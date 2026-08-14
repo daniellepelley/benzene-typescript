@@ -1,6 +1,6 @@
 import { HttpRequest } from '@azure/functions';
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
-import { handleHttpRequest } from '@benzene/azure-function-http';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
+import { handleHttpRequest } from '@benzenejs/azure-function-http';
 
 /**
  * In-memory Azure Functions test host — the Azure counterpart of `AwsLambdaBenzeneTestHost`. Wraps a

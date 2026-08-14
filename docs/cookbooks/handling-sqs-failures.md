@@ -21,7 +21,7 @@ infrastructure, not something the TypeScript port generates or wires up.
 
 ## Prerequisites
 
-- [Node.js 22+](https://nodejs.org/) and a Benzene Lambda function using `@benzene/aws-lambda-sqs` — see
+- [Node.js 22+](https://nodejs.org/) and a Benzene Lambda function using `@benzenejs/aws-lambda-sqs` — see
   [AWS Lambda Setup](../getting-started-aws.md).
 - The SQS event source mapping configured with `ReportBatchItemFailures` (see
   [Troubleshooting](#troubleshooting) — without this, everything below is silently ignored by AWS).
@@ -31,15 +31,15 @@ infrastructure, not something the TypeScript port generates or wires up.
 ## Installation
 
 ```bash
-npm install @benzene/aws-lambda @benzene/resilience
+npm install @benzenejs/aws-lambda @benzenejs/resilience
 # for the Testing section:
-npm install --save-dev @benzene/aws-lambda-testing
+npm install --save-dev @benzenejs/aws-lambda-testing
 ```
 
 ## How Benzene reports partial batch failures
 
 This is the mechanism the rest of the cookbook builds on, so it's worth understanding exactly what
-`@benzene/aws-lambda-sqs` does before writing any handler code.
+`@benzenejs/aws-lambda-sqs` does before writing any handler code.
 
 `SqsLambdaHandler` routes an incoming `SQSEvent` to `SqsApplication`, which is the class that actually
 implements partial batch failure reporting. For every record in the batch it runs your middleware
@@ -99,7 +99,7 @@ silently ignore the partial response. `useSqs` takes an optional `configure` cal
 `SqsOptions`:
 
 ```ts
-import { useSqs, SqsBatchFailureMode, useMessageHandlers } from '@benzene/aws-lambda';
+import { useSqs, SqsBatchFailureMode, useMessageHandlers } from '@benzenejs/aws-lambda';
 
 useSqs(
   app,
@@ -126,7 +126,7 @@ plus `IMessageHandler<TRequest, TResponse>`. Whether the handler throws or retur
 are picked up by `SqsApplication` as shown above.
 
 ```ts
-import { IBenzeneResultOf, IMessageHandler, message, BenzeneResult } from '@benzene/aws-lambda';
+import { IBenzeneResultOf, IMessageHandler, message, BenzeneResult } from '@benzenejs/aws-lambda';
 import { IPaymentGateway, PaymentGatewayUnavailableError } from './PaymentGateway.js';
 
 export class OrderPaymentMessage {
@@ -176,7 +176,7 @@ reports the failure directly without ever reading `isSuccessful`). Either way th
 
 ### 2. Add in-process retry with `useRetry`
 
-`@benzene/resilience` provides `RetryMiddleware<TContext>`, wired into any pipeline via the free function
+`@benzenejs/resilience` provides `RetryMiddleware<TContext>`, wired into any pipeline via the free function
 `useRetry<TContext>(app, options?)`. It's a single middleware with exponential backoff, nothing more; its
 options mirror the C# constructor (with `TimeSpan` mapped to a millisecond `number`):
 
@@ -198,8 +198,8 @@ example above to be retried in-process (rather than only relying on SQS's own re
 `shouldRetryContext` that inspects `SqsMessageContext.isSuccessful`:
 
 ```ts
-import { useRetry } from '@benzene/resilience';
-import { useMessageHandlers, useSqs, SqsMessageContext } from '@benzene/aws-lambda';
+import { useRetry } from '@benzenejs/resilience';
+import { useMessageHandlers, useSqs, SqsMessageContext } from '@benzenejs/aws-lambda';
 
 useSqs(app, (sqs) => {
   useRetry<SqsMessageContext>(sqs, {
@@ -225,8 +225,8 @@ With this wiring:
   context-based failures) — `SqsApplication` then sees `context.isSuccessful === false` and reports the
   batch item failure exactly as if there were no retry middleware at all.
 
-`@benzene/resilience` ships only this retry middleware — there is no circuit breaker, timeout, or
-bulkhead. For those, reach for the sibling `@benzene/cockatiel` package, which adapts the
+`@benzenejs/resilience` ships only this retry middleware — there is no circuit breaker, timeout, or
+bulkhead. For those, reach for the sibling `@benzenejs/cockatiel` package, which adapts the
 [cockatiel](https://github.com/connor4312/cockatiel) resilience library (retry, circuit breaker,
 timeout, bulkhead, fallback) as pipeline middleware via `useResiliencePipeline` — see
 [Resilience](../resilience.md#beyond-retry).
@@ -238,10 +238,10 @@ The whole function is one entry point over the shared startup (identical to the
 
 ```ts
 // src/startUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers, AwsLambdaHost, useAwsLambda, useSqs, SqsMessageContext } from '@benzene/aws-lambda';
-import { useRetry } from '@benzene/resilience';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers, AwsLambdaHost, useAwsLambda, useSqs, SqsMessageContext } from '@benzenejs/aws-lambda';
+import { useRetry } from '@benzenejs/resilience';
 import { CapturePaymentHandler } from './CapturePaymentHandler.js';
 import { StripePaymentGateway, IPaymentGateway } from './PaymentGateway.js';
 
@@ -320,11 +320,11 @@ it an `SQSEvent`, and assert on the returned `batchItemFailures`.
 ```ts
 import { describe, expect, it } from 'vitest';
 import { SQSEvent } from 'aws-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers, useAwsLambda, useSqs } from '@benzene/aws-lambda';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asSqs } from '@benzene/aws-lambda-testing';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers, useAwsLambda, useSqs } from '@benzenejs/aws-lambda';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
+import { asSqs } from '@benzenejs/aws-lambda-testing';
 import { CapturePaymentHandler } from '../src/CapturePaymentHandler.js';
 import { IPaymentGateway, PaymentGatewayUnavailableError } from '../src/PaymentGateway.js';
 

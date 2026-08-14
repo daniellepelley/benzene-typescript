@@ -4,14 +4,14 @@
  *
  * FIDELITY NOTE: the .NET reference uses `Microsoft.Extensions.Configuration.IConfiguration` (a rich,
  * hierarchical provider stack). Node has no such platform configuration abstraction, so — matching how
- * `@benzene/dependencies` ships a first-party container in place of MEL — this port ships a small
+ * `@benzenejs/dependencies` ships a first-party container in place of MEL — this port ships a small
  * key/value lookup: a startup's own `getConfiguration()` result, with any `withConfiguration(...)`
  * overrides layered on top (last-wins).
  *
- * LOCATION NOTE: this lived in `@benzene/testing` while the only consumer of `BenzeneStartUp` was the
+ * LOCATION NOTE: this lived in `@benzenejs/testing` while the only consumer of `BenzeneStartUp` was the
  * test host. Now that a production host (`AwsLambdaHost<TStartUp>`) boots the same `BenzeneStartUp`, it
  * moved here — the neutral hosting-abstractions package both consume — so no production package depends
- * on the testing package. `@benzene/testing` re-exports it for backward compatibility.
+ * on the testing package. `@benzenejs/testing` re-exports it for backward compatibility.
  */
 export interface BenzeneConfiguration {
   /** Returns the configured value for `key`, or `undefined` when it is not set. */

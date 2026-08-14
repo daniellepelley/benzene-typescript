@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.EventGrid.EventGridMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { EventGridContext } from './EventGridContext';
 
 /**

@@ -10,7 +10,7 @@ into an injected service.
 
 ## `IMessageHandler<TRequest, TResponse>` / `IMessageHandlerNoResponse<TRequest>`
 
-Defined in `@benzene/abstractions-message-handlers`:
+Defined in `@benzenejs/abstractions-message-handlers`:
 
 ```ts
 export interface IMessageHandler<TRequest, TResponse> {
@@ -39,10 +39,10 @@ status factories — this page doesn't repeat that detail.
 ### Request / response example
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
 
 @httpEndpoint('POST', '/orders')
 @message('order:create', { requestType: CreateOrderMessage, responseType: OrderDto })
@@ -64,8 +64,8 @@ types, so there is no reflective constructor injection — a class with construc
 ### Fire-and-forget (no response) example
 
 ```ts
-import { IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
+import { IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
 
 @message('order:archive', { requestType: ArchiveOrderMessage })
 export class ArchiveOrderHandler implements IMessageHandlerNoResponse<ArchiveOrderMessage> {
@@ -80,7 +80,7 @@ export class ArchiveOrderHandler implements IMessageHandlerNoResponse<ArchiveOrd
 
 ## `@message('topic', options)`
 
-Defined in `@benzene/core-message-handlers`:
+Defined in `@benzenejs/core-message-handlers`:
 
 ```ts
 export function message(
@@ -108,7 +108,7 @@ Applied once per handler class. It records the handler's metadata **and self-reg
 
 ## `@httpEndpoint('METHOD', '/path')`
 
-Defined in `@benzene/http`:
+Defined in `@benzenejs/http`:
 
 ```ts
 export function httpEndpoint(method: string, url: string): ClassDecorator;
@@ -159,12 +159,12 @@ discovery instead of importing each handler class by hand.
 
 ## `useMessageHandlers(app, ...handlers)`
 
-Adds the routing middleware to a pipeline (`@benzene/core-message-handlers`). It's a **free function that
+Adds the routing middleware to a pipeline (`@benzenejs/core-message-handlers`). It's a **free function that
 takes the pipeline builder as its first argument** (the port's convention for fluent extensions defined
 downstream of the builder) and returns it, so it still chains at its own call site:
 
 ```ts
-import { useMessageHandlers, useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
+import { useMessageHandlers, useMessageHandlersWithRouter } from '@benzenejs/core-message-handlers';
 
 // Serve specific handler classes (discovery limited to those you pass) — as varargs...
 useMessageHandlers(app, CreateOrderHandler, GetOrderHandler);
@@ -204,7 +204,7 @@ reaching your handler code.
 carries a typed request it's returned directly; otherwise the raw body string is read via
 `IMessageBodyGetter<TContext>` and deserialized. Every transport registers media-format negotiation
 (`addMediaFormatNegotiation`), which picks the serializer per request from the `content-type` header
-(JSON by default; [XML](common-middleware.md) is available via `@benzene/xml`). `IRequestEnricher<TContext>`
+(JSON by default; [XML](common-middleware.md) is available via `@benzenejs/xml`). `IRequestEnricher<TContext>`
 implementations can merge extra context-derived fields onto the deserialized request.
 
 ## Response handling

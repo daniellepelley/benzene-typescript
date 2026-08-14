@@ -1,5 +1,5 @@
 /** Port of Benzene.Extras.Results.Base64JsonMessage. */
-import { IBase64JsonMessage } from '@benzene/abstractions';
+import { IBase64JsonMessage } from '@benzenejs/abstractions';
 
 /** A concrete {@link IBase64JsonMessage} carrying a Base64-encoded JSON string. */
 export class Base64JsonMessage implements IBase64JsonMessage {

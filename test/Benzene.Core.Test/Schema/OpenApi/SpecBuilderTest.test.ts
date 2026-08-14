@@ -3,24 +3,24 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { IServiceResolver, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { IServiceResolver, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import {
   IApplicationInfo,
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
   ITransportsInfo,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageDefinition, IMessageDefinitionFinder, IMessageSendersFinder } from '@benzene/abstractions-messages';
-import { IHttpEndpointDefinition, IHttpEndpointFinder } from '@benzene/http';
-import { registerZodSchema, ZodJsonSchemaSource } from '@benzene/zod';
-import { AsyncApiSpecOptions, SpecBuilder, SpecMessageHandler, SpecRequest } from '@benzene/schema-openapi';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageDefinition, IMessageDefinitionFinder, IMessageSendersFinder } from '@benzenejs/abstractions-messages';
+import { IHttpEndpointDefinition, IHttpEndpointFinder } from '@benzenejs/http';
+import { registerZodSchema, ZodJsonSchemaSource } from '@benzenejs/zod';
+import { AsyncApiSpecOptions, SpecBuilder, SpecMessageHandler, SpecRequest } from '@benzenejs/schema-openapi';
 import {
   FileSystemMeshArtifactStore,
   IMeshServiceSource,
   MeshAggregator,
-} from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry, MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry, MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 
 /**
  * Tests the ported `Benzene.Schema.OpenApi` `benzene` document: `SpecBuilder` turns the container's

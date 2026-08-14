@@ -1,14 +1,14 @@
 /** Port of Benzene.CloudService.MeshAnnouncer. */
-import { IServiceResolver } from '@benzene/abstractions';
-import { Constants, HealthCheckProcessor } from '@benzene/health-checks';
-import { HealthCheckResponse, IHealthCheck } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { Constants, HealthCheckProcessor } from '@benzenejs/health-checks';
+import { HealthCheckResponse, IHealthCheck } from '@benzenejs/health-checks-core';
 import {
   MeshHeartbeat,
   MeshJson,
   MeshServiceDescriptor,
   MeshServiceInfo,
   MeshTopics,
-} from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-wire';
 import { CloudServiceDescriptorSource } from './CloudServiceDescriptorSource';
 
 /** A `fetch`-like function — the port of C# `HttpClient.PostAsync` (`HttpClient` → injectable `fetch`). */

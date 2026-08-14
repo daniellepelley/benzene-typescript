@@ -11,14 +11,14 @@
     "start": "tsx src/main.ts"
   },
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/express": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0",
-    "@benzene/http": "0.1.0",
-    "@benzene/mesh-wire": "0.1.0",
-    "@benzene/results": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/express": "0.1.0",
+    "@benzenejs/health-checks-core": "0.1.0",
+    "@benzenejs/http": "0.1.0",
+    "@benzenejs/mesh-wire": "0.1.0",
+    "@benzenejs/results": "0.1.0",
     "express": "^5.2.1"
   },
   "devDependencies": {

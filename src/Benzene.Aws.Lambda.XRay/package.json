@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/aws-lambda-xray",
+  "name": "@benzenejs/aws-lambda-xray",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Aws.Lambda.XRay (per-middleware AWS X-Ray subsegment tracing)",
   "license": "MIT",
@@ -8,8 +8,8 @@
   "types": "./index.ts",
   "dependencies": {
     "aws-xray-sdk-core": "^3",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0"
   }
 }

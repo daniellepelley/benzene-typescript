@@ -1,4 +1,4 @@
-import { IServiceResolver, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IServiceResolver, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IMiddleware } from './IMiddleware';
 
 /**

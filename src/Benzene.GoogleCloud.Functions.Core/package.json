@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/google-cloud-functions-core",
+  "name": "@benzenejs/google-cloud-functions-core",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.GoogleCloud.Functions.Core",
   "license": "MIT",
@@ -7,8 +7,8 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/dependencies": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/dependencies": "0.1.0"
   }
 }

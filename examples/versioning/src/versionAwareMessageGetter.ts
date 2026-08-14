@@ -11,9 +11,9 @@
  * `IMessageVersionGetter` so BOTH versioning axes read the one canonical `benzene-version` header. It wraps
  * the transport's real getter and changes nothing else.
  */
-import { ITopic } from '@benzene/abstractions-messages';
-import { IMessageGetter, IMessageVersionGetter } from '@benzene/abstractions-message-handlers';
-import { BenzeneMessageContext, Topic } from '@benzene/core-messages';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { IMessageGetter, IMessageVersionGetter } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneMessageContext, Topic } from '@benzenejs/core-messages';
 
 export class VersionAwareMessageGetter implements IMessageGetter<BenzeneMessageContext> {
   constructor(

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.Kafka.KafkaMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { KafkaContext } from './KafkaContext';
 
 /**

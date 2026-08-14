@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Dispatch.HttpMeshServiceDispatcher. */
-import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzene/mesh-contracts';
+import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
 import { MeshDispatchEnvelope, MeshDispatchResult } from './MeshDispatchEnvelope';
 import { IMeshServiceDispatcher } from './IMeshServiceDispatcher';
 
@@ -16,7 +16,7 @@ export type DispatchFetch = (url: string, init: RequestInit) => Promise<Response
  * present, otherwise derived from the entry's `specUrl` origin as `<origin>/benzene-message`.
  *
  * `HttpClient` -> an injectable `fetch` (default global `fetch`), the same adaptation as
- * `@benzene/health-checks-http`.
+ * `@benzenejs/health-checks-http`.
  */
 export class HttpMeshServiceDispatcher implements IMeshServiceDispatcher {
   constructor(private readonly fetchFn: DispatchFetch = fetch) {}

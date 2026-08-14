@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Contracts.IMeshDiscoveryProvider. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { MeshDiscoveryFilter } from './MeshDiscoveryFilter';
 import { MeshServiceRegistryEntry } from './MeshServiceRegistryEntry';
 

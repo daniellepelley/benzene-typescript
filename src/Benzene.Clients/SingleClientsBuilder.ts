@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, IServiceResolver } from '@benzenejs/abstractions';
 import { IBenzeneMessageClient } from './IBenzeneMessageClient';
 
 /**

@@ -1,9 +1,9 @@
 /** Port of Benzene.RabbitMq.RabbitMqSendMessage.RabbitMqContextConverter&lt;T&gt;. */
-import { ISerializer, VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { ISerializer, VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { RabbitMqConstants } from '../RabbitMqConstants';
 import { RabbitMqSendMessageContext } from './RabbitMqSendMessageContext';
 

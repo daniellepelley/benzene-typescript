@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { ICurrentTransport, IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   addEventGrid,
   EventGridBatchApplication,
@@ -22,7 +22,7 @@ import {
   EventGridTriggerEvent,
   handleEventGridEvent,
   useEventGrid,
-} from '@benzene/azure-function-event-grid';
+} from '@benzenejs/azure-function-event-grid';
 
 /**
  * End-to-end port of the C# Azure Event Grid pipeline tests (EventGridPipelineTest.cs +

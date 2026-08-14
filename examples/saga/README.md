@@ -1,6 +1,6 @@
 # `@benzene-example/saga`
 
-A user-signup **distributed transaction with rollback** over [`@benzene/saga`](../../src/Benzene.Saga):
+A user-signup **distributed transaction with rollback** over [`@benzenejs/saga`](../../src/Benzene.Saga):
 the flow spans several services and either **completes in full or rolls back in full**, leaving no
 orphaned records — so it can be safely retried. Ported from the .NET `Benzene.Example.Saga`.
 
@@ -37,7 +37,7 @@ failing run, the reverse-order compensation and the empty store at the end.
 ## Verify it
 
 `test/Benzene.Core.Test/Examples/SagaExampleTest.test.ts` drives `buildSignupSaga` directly (no
-host/transport — the example is a plain program over `@benzene/saga`) across all four cases: full success,
+host/transport — the example is a plain program over `@benzenejs/saga`) across all four cases: full success,
 a final-stage failure, a middle-stage failure (which must still roll back the *parallel* first stage), and
 a first-stage parallel-step failure (which must roll back the sibling that already succeeded). Every
 rollback leaves the store empty.

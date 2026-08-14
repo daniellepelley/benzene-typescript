@@ -1,5 +1,5 @@
 /** Port of Benzene.Diagnostics.TimerMiddleware. */
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 
 /**
  * The timer callback shape. Port of C# `Action<TContext, long> onTimer`; the C# `long`

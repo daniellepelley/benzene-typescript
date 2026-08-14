@@ -1,4 +1,4 @@
-import { IRegisterDependency } from '@benzene/abstractions';
+import { IRegisterDependency } from '@benzenejs/abstractions';
 import { IMessageSenderBuilder } from './IMessageSenderBuilder';
 import { MessageSenderBuilder } from './MessageSenderBuilder';
 

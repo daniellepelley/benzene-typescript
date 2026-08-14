@@ -1,4 +1,4 @@
-import { Constructor, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { Constructor, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Maps a handler/request/result triple to the validation status string that should be reported.

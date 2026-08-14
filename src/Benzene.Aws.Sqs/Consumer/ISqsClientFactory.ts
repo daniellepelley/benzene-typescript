@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Sqs.Consumer.ISqsClientFactory. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { ISqsConsumerClient } from './ISqsConsumerClient';
 
 /** Creates the SQS client {@link SqsConsumer} uses to poll a queue. `IAmazonSQS` → {@link ISqsConsumerClient}. */

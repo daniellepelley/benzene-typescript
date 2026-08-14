@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Discovery.Aws.Extensions. */
 import { LambdaClient } from '@aws-sdk/client-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMeshDiscoveryProvider, MeshDiscoveryRunner } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMeshDiscoveryProvider, MeshDiscoveryRunner } from '@benzenejs/mesh-contracts';
 import { AwsLambdaDiscoveryProvider } from './AwsLambdaDiscoveryProvider';
 
 /**

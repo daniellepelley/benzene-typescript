@@ -1,4 +1,4 @@
-# Build context MUST be the repo root (npm workspaces resolve @benzene/* packages from src/* via
+# Build context MUST be the repo root (npm workspaces resolve @benzenejs/* packages from src/* via
 # symlinks the root install creates - this example's package.json depends on them by workspace version,
 # not a published npm version):
 #   docker build -f examples/k8s-orders/Dockerfile -t k8s-orders:local .

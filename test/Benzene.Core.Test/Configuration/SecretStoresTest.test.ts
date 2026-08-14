@@ -9,7 +9,7 @@ import {
   FileSecretStore,
   InMemorySecretStore,
   ISecretStore,
-} from '@benzene/configuration-core';
+} from '@benzenejs/configuration-core';
 
 /**
  * Port of test/Benzene.Core.Test/Configuration/SecretStoresTest.cs. The store implementations

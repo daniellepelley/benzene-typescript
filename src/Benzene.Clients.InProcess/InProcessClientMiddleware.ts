@@ -1,6 +1,6 @@
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareApplicationWithResult, NextFunc } from '@benzene/abstractions-middleware';
-import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzene/core-messages';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareApplicationWithResult, NextFunc } from '@benzenejs/abstractions-middleware';
+import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzenejs/core-messages';
 import { InProcessSendMessageContext } from './InProcessSendMessageContext';
 
 /**

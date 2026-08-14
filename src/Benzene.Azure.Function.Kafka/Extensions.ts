@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.Kafka.Extensions. */
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
 import { KafkaRecord } from './KafkaRecord';
 
 /**

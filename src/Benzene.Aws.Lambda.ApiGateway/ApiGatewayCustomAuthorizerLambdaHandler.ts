@@ -1,10 +1,10 @@
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   AwsEventStreamContext,
   AwsLambdaMiddlewareRouter,
   isApiGatewayCustomAuthorizerEvent,
-} from '@benzene/aws-lambda-core';
+} from '@benzenejs/aws-lambda-core';
 import { APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 import { ApiGatewayCustomAuthorizerApplication } from './ApiGatewayCustomAuthorizerApplication';
 import { ApiGatewayCustomAuthorizerContext } from './ApiGatewayCustomAuthorizerContext';

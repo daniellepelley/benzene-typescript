@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { InlineContextConverter, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { InlineContextConverter, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   DefaultBenzeneServiceContainer,
   DefaultServiceResolverFactory,
   ServiceCollection,
-} from '@benzene/dependencies';
+} from '@benzenejs/dependencies';
 
 /**
  * Port of the pipeline-composition scenarios in
@@ -30,7 +30,7 @@ function createHarness() {
   return { services, container, builder };
 }
 
-async function run(services: ServiceCollection, action: (resolver: import('@benzene/abstractions').IServiceResolver) => Promise<void>) {
+async function run(services: ServiceCollection, action: (resolver: import('@benzenejs/abstractions').IServiceResolver) => Promise<void>) {
   const factory = new DefaultServiceResolverFactory(services);
   const resolver = factory.createScope();
   try {

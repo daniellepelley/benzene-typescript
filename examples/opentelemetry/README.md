@@ -1,6 +1,6 @@
 # `@benzene-example/opentelemetry`
 
-A BenzeneMessage service instrumented with [`@benzene/diagnostics`](../../src/Benzene.Diagnostics): every
+A BenzeneMessage service instrumented with [`@benzenejs/diagnostics`](../../src/Benzene.Diagnostics): every
 pipeline middleware becomes a **span** on Benzene's `"Benzene"` tracer, and the handlers add their own
 business child spans — all exported through whatever OpenTelemetry SDK you register. Ported from the .NET
 `Benzene.Examples.OpenTelemetry`.

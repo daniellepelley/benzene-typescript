@@ -3,7 +3,7 @@
  * `System.Threading.Channels.Channel<T>` (created via `Channel.CreateBounded<T>(new
  * BoundedChannelOptions(1) { SingleReader = true, SingleWriter = false, FullMode = Wait })`) that
  * {@link BoundedConcurrentDispatcher} relies on. .NET ships Channels in the BCL; Node has no
- * equivalent, so the used behaviour is re-created here (same pattern as `@benzene/rate-limiting`
+ * equivalent, so the used behaviour is re-created here (same pattern as `@benzenejs/rate-limiting`
  * re-creating the `System.Threading.RateLimiting` subset).
  *
  * `write` resolves once the single slot is free (giving the producer backpressure); `complete` closes

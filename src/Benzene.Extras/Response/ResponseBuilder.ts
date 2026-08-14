@@ -4,8 +4,8 @@ import {
   IRegisterDependency,
   IServiceResolver,
   ServiceFactory,
-} from '@benzene/abstractions';
-import { IResponseHandler } from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions';
+import { IResponseHandler } from '@benzenejs/abstractions-message-handlers';
 import { IResponseBuilder } from './IResponseBuilder';
 
 /**

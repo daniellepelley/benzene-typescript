@@ -1,4 +1,4 @@
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The single interface business logic depends on to send an outbound message: a topic and a request,

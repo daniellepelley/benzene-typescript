@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { MeshServiceStatus } from '@benzene/mesh-contracts';
-import { MeshServiceSource } from '@benzene/mesh-contracts';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
-import { asApiGatewayRequest, asSqs } from '@benzene/aws-lambda-testing';
+import { MeshServiceStatus } from '@benzenejs/mesh-contracts';
+import { MeshServiceSource } from '@benzenejs/mesh-contracts';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest, asSqs } from '@benzenejs/aws-lambda-testing';
 import { buildServiceLambdas, receipts, runMeshAggregation } from '@benzene-example/aws-lambda-mesh';
 
 /**
@@ -149,7 +149,7 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
       () => undefined,
     )) as { statusCode: number; body: string };
 
-    // The `@benzene/health-checks` middleware served it — the canonical { isHealthy, healthChecks } wire
+    // The `@benzenejs/health-checks` middleware served it — the canonical { isHealthy, healthChecks } wire
     // shape the mesh + cross-language Mesh UI read, NOT the old hand-rolled { isHealthy, checks:[…] } blob.
     const health = JSON.parse(response.body) as {
       isHealthy: boolean;

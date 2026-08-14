@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.EventGrid.Extensions. */
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
 import { EventGridTriggerEvent } from './EventGridTriggerEvent';
 
 /**

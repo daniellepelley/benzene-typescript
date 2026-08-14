@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AsyncApiCompositor, ServiceDocument } from '@benzene/mesh-aggregator';
+import { AsyncApiCompositor, ServiceDocument } from '@benzenejs/mesh-aggregator';
 
 /**
  * Port of test/Benzene.Mesh.Test/AsyncApiCompositorTest.cs. C#'s `JsonNode` navigation of the merged output

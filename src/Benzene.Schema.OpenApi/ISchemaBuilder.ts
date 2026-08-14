@@ -1,4 +1,4 @@
-import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Accumulates a spec document's shared schema catalogue (`components.schemas`) and hands back a `$ref` for

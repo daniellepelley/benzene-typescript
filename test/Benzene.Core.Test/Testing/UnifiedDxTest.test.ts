@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer, IServiceResolver, serviceToken } from '@benzene/abstractions';
-import { IMessageHandler, IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { IBenzeneApplicationBuilder, IMiddleware } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer, IServiceResolver, serviceToken } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder, IMiddleware } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { useAwsLambda, useBenzeneMessage } from '@benzene/aws-lambda-core';
-import { addApiGateway, ApiGatewayApplication, ApiGatewayContext } from '@benzene/aws-lambda-api-gateway';
+} from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { useAwsLambda, useBenzeneMessage } from '@benzenejs/aws-lambda-core';
+import { addApiGateway, ApiGatewayApplication, ApiGatewayContext } from '@benzenejs/aws-lambda-api-gateway';
 import {
   benzeneTestHost,
   fakeResolver,
@@ -21,10 +21,10 @@ import {
   testPipeline,
   type BenzeneStartUp,
   type TransportDescriptor,
-} from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
-import { healthCheck } from '@benzene/health-checks';
-import { HealthCheckResult, IHealthCheck } from '@benzene/health-checks-core';
+} from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
+import { healthCheck } from '@benzenejs/health-checks';
+import { HealthCheckResult, IHealthCheck } from '@benzenejs/health-checks-core';
 
 /**
  * The target developer ergonomics of the test-host unification, proven end-to-end. A service is a

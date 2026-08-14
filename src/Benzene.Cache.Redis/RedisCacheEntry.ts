@@ -1,6 +1,6 @@
 /** Port of Benzene.Cache.Redis.RedisCacheEntry. */
-import { ILogger } from '@benzene/abstractions';
-import { CacheEntry } from '@benzene/cache-core';
+import { ILogger } from '@benzenejs/abstractions';
+import { CacheEntry } from '@benzenejs/cache-core';
 import type { RedisCacheService } from './RedisCacheService';
 
 /**

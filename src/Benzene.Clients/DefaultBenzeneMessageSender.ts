@@ -1,6 +1,6 @@
-import { IBenzeneResultOf, ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { IBenzeneResultOf, ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { BenzeneMessageClientResponse } from './BenzeneMessageClientResponse';
 import { asBenzeneResult } from './Common/ClientResultExtensions';
 import { IBenzeneMessageSender } from './IBenzeneMessageSender';

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.Kafka.KafkaMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { KafkaContext } from './KafkaContext';
 
 /**

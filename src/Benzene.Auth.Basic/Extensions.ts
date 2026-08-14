@@ -1,8 +1,8 @@
-import { tryAddScoped } from '@benzene/abstractions';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { AuthenticationHolder } from '@benzene/auth-core';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { tryAddScoped } from '@benzenejs/abstractions';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { AuthenticationHolder } from '@benzenejs/auth-core';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { BasicAuthMiddleware } from './BasicAuthMiddleware';
 import { IBasicAuthCredentialValidator } from './IBasicAuthCredentialValidator';
 

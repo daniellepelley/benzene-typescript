@@ -7,9 +7,9 @@ import {
   IServiceResolver,
   IStartUpCheck,
   VoidResult,
-} from '@benzene/abstractions';
-import { IMessageHandlerDefinition, IMessageHandlersFinder } from '@benzene/abstractions-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition, IMessageHandlersFinder } from '@benzenejs/abstractions-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   addBenzene,
   addBenzeneStartUpChecks,
@@ -17,7 +17,7 @@ import {
   DuplicateTopicStartUpCheck,
   EmptyHandlerRegistryStartUpCheck,
   runStartUpChecks,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 
 /**
  * Tests the ported `Benzene.Core.MessageHandlers.StartUpChecks`: boot-time wiring checks run once, off the

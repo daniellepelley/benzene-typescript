@@ -1,5 +1,5 @@
-import { IBenzeneResult, VoidResult } from '@benzene/abstractions';
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { IBenzeneResult, VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 import { IResponseEventPublisher } from './IResponseEventPublisher';
 
 /**

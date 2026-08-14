@@ -1,6 +1,6 @@
 /** Port of Benzene.HealthChecks.Http.HttpPingHealthCheckFactory. */
-import { IServiceResolver } from '@benzene/abstractions';
-import { IHealthCheck, IHealthCheckFactory } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IHealthCheck, IHealthCheckFactory } from '@benzenejs/health-checks-core';
 import { defaultPingFetch, HttpPingHealthCheck, PingFetch } from './HttpPingHealthCheck';
 
 /**

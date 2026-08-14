@@ -1,7 +1,7 @@
-import { IRequestEnricher } from '@benzene/abstractions-message-handlers';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { DictionaryUtils } from '@benzene/core';
-import { IRouteFinder } from '@benzene/http';
+import { IRequestEnricher } from '@benzenejs/abstractions-message-handlers';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { DictionaryUtils } from '@benzenejs/core';
+import { IRouteFinder } from '@benzenejs/http';
 import { AzureHttpContext, azureHttpRequestPath } from './AzureHttpContext';
 import { AzureHttpHeadersToBodyGetter } from './AzureHttpHeadersToBodyGetter';
 

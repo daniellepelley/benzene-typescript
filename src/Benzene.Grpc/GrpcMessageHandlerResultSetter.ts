@@ -1,5 +1,5 @@
-import { IMessageHandlerResult } from '@benzene/abstractions-message-handlers';
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { IMessageHandlerResult } from '@benzenejs/abstractions-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { GrpcContext } from './GrpcContext';
 
 /**

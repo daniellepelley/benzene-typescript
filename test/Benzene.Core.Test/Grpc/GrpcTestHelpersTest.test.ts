@@ -1,10 +1,10 @@
 import { Metadata } from '@grpc/grpc-js';
 import { describe, expect, it } from 'vitest';
-import { createServerUnaryCall } from '@benzene/grpc-test-helpers';
-import { GrpcContext, GrpcMessageHeadersGetter } from '@benzene/grpc';
+import { createServerUnaryCall } from '@benzenejs/grpc-test-helpers';
+import { GrpcContext, GrpcMessageHeadersGetter } from '@benzenejs/grpc';
 
 /**
- * Covers the `@benzene/grpc-test-helpers` fake-call factory (the port of C#'s `TestServerCallContext`): the
+ * Covers the `@benzenejs/grpc-test-helpers` fake-call factory (the port of C#'s `TestServerCallContext`): the
  * members Benzene reads are populated, the defaults are the idle-call defaults, and the fake drives a real
  * `GrpcContext` + a real bridge getter end-to-end with no live gRPC server.
  */

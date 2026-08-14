@@ -8,8 +8,8 @@
  * adapter is needed. Here we back them with an in-memory store so the example runs on its own and you can
  * see the effect of rollback. Port of the .NET `SignupApi`.
  */
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
 import { Store } from './store';
 
 export interface TenantCreated {

@@ -1,21 +1,21 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { AuthenticationHolder, ClaimsPrincipal } from '@benzene/auth-core';
-import { FuncWrapperMiddleware } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { AuthenticationHolder, ClaimsPrincipal } from '@benzenejs/auth-core';
+import { FuncWrapperMiddleware } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { ApiGatewayContext, useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { ApiGatewayContext, useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 
 /**
  * Shared harness for the auth tests. The C# auth suite (BasicAuthTest / AuthorizationTest) hosts a

@@ -1,4 +1,4 @@
-import { IServiceResolver, LogContextDictionaryFunc } from '@benzene/abstractions';
+import { IServiceResolver, LogContextDictionaryFunc } from '@benzenejs/abstractions';
 import { IContextDictionaryBuilder } from './IContextDictionaryBuilder';
 
 /**

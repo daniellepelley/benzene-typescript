@@ -6,15 +6,15 @@
  * never lost).
  */
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   BenzeneMessageMeshStatusReader,
   IMeshTraceExporter,
@@ -22,7 +22,7 @@ import {
   MeshServiceInfo,
   MeshTraceEvent,
   useMeshTrace,
-} from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-wire';
 import { findSubsetMismatch, load } from './ConformanceFixtures';
 import { GreetConformanceHandler } from './Handlers/GreetConformanceHandler';
 import { StatusConformanceHandler } from './Handlers/StatusConformanceHandler';

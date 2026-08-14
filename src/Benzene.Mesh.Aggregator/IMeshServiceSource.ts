@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Aggregator.IMeshServiceSource. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 
 /**
  * Fetches a registered service's spec and health documents however fits that service's

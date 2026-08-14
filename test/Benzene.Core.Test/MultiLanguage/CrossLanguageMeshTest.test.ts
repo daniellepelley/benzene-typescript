@@ -8,9 +8,9 @@ import {
   FileSystemMeshArtifactStore,
   HttpMeshServiceSource,
   MeshAggregator,
-} from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry, MeshServiceRegistryEntry, MeshServiceStatus, TopologyEdgeSource } from '@benzene/mesh-contracts';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry, MeshServiceRegistryEntry, MeshServiceStatus, TopologyEdgeSource } from '@benzenejs/mesh-contracts';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Cross-language mesh interoperability - the "TypeScript + .NET services in one mesh" demonstration (NOT a

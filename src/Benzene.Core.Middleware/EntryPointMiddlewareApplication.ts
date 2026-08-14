@@ -1,10 +1,10 @@
-import { IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
 import {
   IEntryPointMiddlewareApplication,
   IEntryPointMiddlewareApplicationWithResult,
   IMiddlewareApplication,
   IMiddlewareApplicationWithResult,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 
 /**
  * Binds a middleware application to a resolver factory, forming a top-level entry point.

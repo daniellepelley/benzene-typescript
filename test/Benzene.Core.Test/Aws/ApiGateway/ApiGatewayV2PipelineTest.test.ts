@@ -6,23 +6,23 @@
  */
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEventV2 } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { httpEndpoint } from '@benzene/http';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { ICurrentTransport, IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { httpEndpoint } from '@benzenejs/http';
 import {
   addApiGatewayV2,
   ApiGatewayV2Application,
   ApiGatewayV2Context,
   useApiGatewayV2,
-} from '@benzene/aws-lambda-api-gateway';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asApiGatewayV2Request } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-api-gateway';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asApiGatewayV2Request } from '@benzenejs/aws-lambda-testing';
 
 class Order {
   orderId?: string;

@@ -1,7 +1,7 @@
-import { IBenzeneResult, IServiceResolver, VoidResult } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewarePipeline, NextFunc } from '@benzene/abstractions-middleware';
-import { BoundedFanOut } from '@benzene/core-middleware';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, IServiceResolver, VoidResult } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewarePipeline, NextFunc } from '@benzenejs/abstractions-middleware';
+import { BoundedFanOut } from '@benzenejs/core-middleware';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { OutboundContext } from './OutboundContext';
 
 /** One transport's send: its display name and the (single-transport) pipeline that runs it. */

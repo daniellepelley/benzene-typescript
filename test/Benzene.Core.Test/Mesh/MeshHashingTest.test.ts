@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MeshHashing } from '@benzene/mesh-contracts';
+import { MeshHashing } from '@benzenejs/mesh-contracts';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshHashingTest.cs. The C# cross-check against

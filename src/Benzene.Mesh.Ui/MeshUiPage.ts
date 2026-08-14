@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 /**
  * Provides the self-contained Benzene Mesh Explorer HTML page — a catalog viewer for a service mesh's
- * `manifest.json`/`services/{name}.json` artifacts (as published by `@benzene/mesh-aggregator`). The page has no
+ * `manifest.json`/`services/{name}.json` artifacts (as published by `@benzenejs/mesh-aggregator`). The page has no
  * external dependencies, so it can be served by any static file host, or by any Benzene transport.
  *
  * The page loads a manifest from, in order of precedence: a `?url=` query-string parameter, the
@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
  * Divergence from the C# original (documented in the README "Porting conventions"): C# embeds the ~281KB
  * `mesh-ui.html` as an **assembly resource** read via reflection. This is the cross-language mesh product UI and
  * must stay byte-identical to the reference — its embedded client JS contains backticks and `${…}`, so it cannot
- * be a TS template literal (unlike `@benzene/spec-ui`, which inlines a freshly-rewritten page). Instead the file
+ * be a TS template literal (unlike `@benzenejs/spec-ui`, which inlines a freshly-rewritten page). Instead the file
  * is copied verbatim next to this module and read lazily/memoized from disk via `import.meta.url` — the port of
  * C#'s `Lazy<string>` + embedded-resource read.
  */

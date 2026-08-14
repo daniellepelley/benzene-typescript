@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Storage } from '@google-cloud/storage';
-import { GcsMeshArtifactStore } from '@benzene/mesh-google-cloud-storage';
+import { GcsMeshArtifactStore } from '@benzenejs/mesh-google-cloud-storage';
 
 /**
  * The GCS-backed mesh artifact store: object-key computation (prefix + relative path, backslash→slash,

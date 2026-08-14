@@ -1,11 +1,11 @@
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import {
   addDependencyHealthCheck,
   HealthCheckMode,
   IHealthCheckBuilder,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { OutboundSqsContextConverter } from './OutboundSqsContextConverter';
 import { SqsClientMiddleware } from './SqsClientMiddleware';
 import { SqsHealthCheck } from './SqsHealthCheck';

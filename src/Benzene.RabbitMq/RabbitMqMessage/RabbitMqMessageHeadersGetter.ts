@@ -1,5 +1,5 @@
 /** Port of Benzene.RabbitMq.RabbitMqMessage.RabbitMqMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { RabbitMqContext } from './RabbitMqContext';
 
 /**

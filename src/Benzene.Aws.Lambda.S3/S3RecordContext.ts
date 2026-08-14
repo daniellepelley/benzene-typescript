@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.S3.S3RecordContext. */
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { S3Event, S3EventRecord } from 'aws-lambda';
 
 /**

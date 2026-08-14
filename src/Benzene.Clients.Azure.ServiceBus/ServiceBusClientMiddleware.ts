@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.Azure.ServiceBus.ServiceBusClientMiddleware. */
 import { ServiceBusSender } from '@azure/service-bus';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { ServiceBusSendMessageContext } from './ServiceBusSendMessageContext';
 
 /**

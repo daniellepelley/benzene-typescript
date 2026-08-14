@@ -2,10 +2,10 @@
 
 Benzene can expose your message handlers as the implementation of a gRPC service, and call other gRPC
 services back through the same transport-agnostic client surface you use everywhere else. On the server
-side, `@benzene/grpc` bridges a [`@grpc/grpc-js`](https://github.com/grpc/grpc-node) `Server` into a
+side, `@benzenejs/grpc` bridges a [`@grpc/grpc-js`](https://github.com/grpc/grpc-node) `Server` into a
 Benzene middleware pipeline, routing calls of all four RPC shapes — unary, server-streaming,
 client-streaming, and bidirectional — to the handler whose topic matches. On the client side,
-`@benzene/grpc-client` sends unary calls out through that same pipeline model. Both sides share a
+`@benzenejs/grpc-client` sends unary calls out through that same pipeline model. Both sides share a
 Benzene-result ↔ gRPC-status mapping, so a handler's `BenzeneResult` status becomes a gRPC `StatusCode`
 (and a `benzene-status` trailer) on the way out, and is recovered on the way back in.
 
@@ -43,14 +43,14 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 ## 2. Install the packages
 
 ```bash
-npm install @benzene/grpc @benzene/core-message-handlers @benzene/results @grpc/grpc-js
+npm install @benzenejs/grpc @benzenejs/core-message-handlers @benzenejs/results @grpc/grpc-js
 # add the client only if this service also calls other gRPC services:
-npm install @benzene/grpc-client @benzene/clients
+npm install @benzenejs/grpc-client @benzenejs/clients
 ```
 
-`@benzene/grpc` is the server bridge; `@grpc/grpc-js` is the gRPC runtime it wires into (a peer you
-supply). `@benzene/core-message-handlers` provides the `@message` decorator and `useMessageHandlers`,
-and `@benzene/results` provides `BenzeneResult`. Add `@benzene/grpc-client` and `@benzene/clients` only
+`@benzenejs/grpc` is the server bridge; `@grpc/grpc-js` is the gRPC runtime it wires into (a peer you
+supply). `@benzenejs/core-message-handlers` provides the `@message` decorator and `useMessageHandlers`,
+and `@benzenejs/results` provides `BenzeneResult`. Add `@benzenejs/grpc-client` and `@benzenejs/clients` only
 if this service is also a gRPC *caller* (see [step 7](#7-calling-other-grpc-services)).
 
 ## The core idea in 30 seconds
@@ -96,11 +96,11 @@ Lambda. Two decorators do the wiring:
 
 ```ts
 // src/handlers.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { grpcMethod } from '@benzene/grpc';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { grpcMethod } from '@benzenejs/grpc';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -142,8 +142,8 @@ methods produce grpc-js handlers you drop straight into `server.addService(...)`
 ```ts
 // src/index.ts
 import { Server, ServerCredentials } from '@grpc/grpc-js';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { useGrpc } from '@benzene/grpc';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useGrpc } from '@benzenejs/grpc';
 import { PlaceOrderHandler } from './handlers.js';
 import { OrdersService } from './generated/orders.js'; // your loaded ServiceDefinition
 
@@ -235,14 +235,14 @@ map to `OK`) — that's what the client's reverse mapper prefers (see the next s
 
 ## 7. Calling other gRPC services
 
-`@benzene/grpc-client`'s `GrpcBenzeneMessageClient` is an `IBenzeneMessageClient` that sends unary calls
+`@benzenejs/grpc-client`'s `GrpcBenzeneMessageClient` is an `IBenzeneMessageClient` that sends unary calls
 out through a Benzene pipeline over a `@grpc/grpc-js` `Client` you own. Register a topic → method route
 for each outbound call, then send by topic:
 
 ```ts
 import { Client, ChannelCredentials } from '@grpc/grpc-js';
-import { sendMessageAsync } from '@benzene/clients';
-import { GrpcBenzeneMessageClient, GrpcClientRouteRegistry } from '@benzene/grpc-client';
+import { sendMessageAsync } from '@benzenejs/clients';
+import { GrpcBenzeneMessageClient, GrpcClientRouteRegistry } from '@benzenejs/grpc-client';
 
 const registry = new GrpcClientRouteRegistry();
 registry.add('order:place', '/orders.Orders/PlaceOrder');
@@ -274,8 +274,8 @@ if (result.isSuccessful) {
 To resolve the client from a container instead of constructing it by hand, use `addGrpcClient`:
 
 ```ts
-import { addGrpcClient } from '@benzene/grpc-client';
-import { IBenzeneMessageClient } from '@benzene/clients';
+import { addGrpcClient } from '@benzenejs/grpc-client';
+import { IBenzeneMessageClient } from '@benzenejs/clients';
 
 addGrpcClient(container, grpcClient, (registry) => {
   registry.add('order:place', '/orders.Orders/PlaceOrder');

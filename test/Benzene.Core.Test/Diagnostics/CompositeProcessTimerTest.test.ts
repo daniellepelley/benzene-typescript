@@ -4,7 +4,7 @@ import {
   CompositeProcessTimerFactory,
   IProcessTimer,
   IProcessTimerFactory,
-} from '@benzene/diagnostics';
+} from '@benzenejs/diagnostics';
 
 /** Port of Benzene.Test.Diagnostics.CompositeProcessTimerTest. */
 

@@ -1,13 +1,13 @@
 import { PublishBatchCommand, PublishBatchRequestEntry, SNSClient } from '@aws-sdk/client-sns';
-import { ISerializer } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import {
   BatchSend,
   BatchSendResult,
   FailedBatchEntry,
   IBenzeneBatchMessageClient,
   OutboundContext,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 import { OutboundSnsContextConverter } from './OutboundSnsContextConverter';
 import { awsErrorDetails } from './awsErrorDetails';
 

@@ -1,4 +1,4 @@
-import { ClaimsPrincipal } from '@benzene/auth-core';
+import { ClaimsPrincipal } from '@benzenejs/auth-core';
 
 /**
  * Validates the username/password pair carried by an RFC 7617 `Authorization: Basic` header.

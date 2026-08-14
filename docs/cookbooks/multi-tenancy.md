@@ -20,20 +20,20 @@ request that should be tenant-scoped but isn't; and (4) use it to isolate data a
 
 - [Node.js 22+](https://nodejs.org/) and a Benzene pipeline (any transport).
 - For the recommended claim strategy, an authenticated caller — see
-  [Authentication Patterns](auth-patterns.md) (`@benzene/auth-oauth2` / `@benzene/auth-core`).
+  [Authentication Patterns](auth-patterns.md) (`@benzenejs/auth-oauth2` / `@benzenejs/auth-core`).
 
 ## Installation
 
 ```bash
-npm install @benzene/core-middleware @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers \
-  @benzene/abstractions-messages @benzene/abstractions-middleware
+npm install @benzenejs/core-middleware @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers \
+  @benzenejs/abstractions-messages @benzenejs/abstractions-middleware
 # for Strategy A (tenant from a validated JWT claim):
-npm install @benzene/auth-core
+npm install @benzenejs/auth-core
 ```
 
 Everything below is a page of code **you own** over a seam Benzene already has — there is no
-`@benzene/multi-tenancy` package, because every team's isolation policy differs.
+`@benzenejs/multi-tenancy` package, because every team's isolation policy differs.
 
 ## Step 1 — the scoped tenant holder
 
@@ -59,9 +59,9 @@ then adding a `FuncWrapperMiddleware`):
 
 ```ts
 // tenant.ts (continued)
-import { IServiceResolver, tryAddScoped } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { FuncWrapperMiddleware } from '@benzene/core-middleware';
+import { IServiceResolver, tryAddScoped } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { FuncWrapperMiddleware } from '@benzenejs/core-middleware';
 
 /** How to derive the tenant for a message — return undefined to leave the message untenanted. */
 export type ResolveTenant<TContext> = (
@@ -98,8 +98,8 @@ the validated token — **tamper-proof**, because the caller can't forge a claim
 the strategy to prefer.
 
 ```ts
-import { AuthenticationHolder } from '@benzene/auth-core';
-import { useOAuth2Bearer } from '@benzene/auth-oauth2';
+import { AuthenticationHolder } from '@benzenejs/auth-core';
+import { useOAuth2Bearer } from '@benzenejs/auth-oauth2';
 import { useTenant } from './tenant.js';
 
 useApiGateway(app, (api) => {
@@ -118,7 +118,7 @@ isolation when the caller is trusted (an internal service, or a gateway that alr
 see [Security notes](#security-notes).
 
 ```ts
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 
 useTenant<MyContext>(api, (context, resolver) => {
   const headers = (
@@ -156,15 +156,15 @@ proper status on every transport rather than throwing:
 
 ```ts
 // tenant.ts (continued)
-import { IServiceResolver, tryAddScoped } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
+import { IServiceResolver, tryAddScoped } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
 import {
   IMessageGetter,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
-import { FuncWrapperMiddleware } from '@benzene/core-middleware';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { FuncWrapperMiddleware } from '@benzenejs/core-middleware';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 export function requireTenant<TContext>(
   app: IMiddlewarePipelineBuilder<TContext>,
@@ -207,8 +207,8 @@ function setBadRequest<TContext>(
 }
 ```
 
-> `FuncWrapperMiddleware` lives in `@benzene/core-middleware`; `MessageHandlerDefinition` and
-> `MessageHandlerResult` in `@benzene/core-message-handlers`. `MessageHandlerResult(topic, definition,
+> `FuncWrapperMiddleware` lives in `@benzenejs/core-middleware`; `MessageHandlerDefinition` and
+> `MessageHandlerResult` in `@benzenejs/core-message-handlers`. `MessageHandlerResult(topic, definition,
 > result)` and `MessageHandlerDefinition.empty()` are the port of C#'s three-arg `MessageHandlerResult`
 > and `MessageHandlerDefinition.Empty()`.
 
@@ -231,10 +231,10 @@ the type in `static inject`).
 **Handler / data access** — filter every query by the tenant:
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrderRepository } from './OrderRepository.js';
 import { TenantHolder } from './tenant.js';
 

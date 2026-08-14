@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.DynamoDbApplication. */
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { ISetCurrentTransport, TransportNames } from '@benzene/abstractions-message-handlers';
-import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { ISetCurrentTransport, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { DynamoDBBatchResponse, DynamoDBStreamEvent } from 'aws-lambda';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 

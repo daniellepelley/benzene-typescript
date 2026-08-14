@@ -5,7 +5,7 @@ import {
   ILoggerFactory,
   IServiceResolverFactory,
   IStartUpCheck,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import { BenzeneStartUpCheckException, StartUpCheckFailure } from './BenzeneStartUpCheckException';
 
 /**

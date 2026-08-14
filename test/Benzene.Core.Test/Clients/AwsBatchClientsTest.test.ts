@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { SqsBatchMessageClient } from '@benzene/clients-aws-sqs';
-import { SnsBatchMessageClient } from '@benzene/clients-aws-sns';
-import { EventBridgeBatchMessageClient } from '@benzene/clients-aws-eventbridge';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { SqsBatchMessageClient } from '@benzenejs/clients-aws-sqs';
+import { SnsBatchMessageClient } from '@benzenejs/clients-aws-sns';
+import { EventBridgeBatchMessageClient } from '@benzenejs/clients-aws-eventbridge';
 
 /**
  * The native-batch outbound clients: a collection of client requests is chunked to the provider's per-batch

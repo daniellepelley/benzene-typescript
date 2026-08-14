@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IDisposable, ILogger, ILoggerFactory, LoggerBase, LogLevel } from '@benzene/abstractions';
-import { IBenzeneInvocation } from '@benzene/abstractions-middleware';
-import { addDiagnostics, useBenzeneEnrichment } from '@benzene/diagnostics';
-import { addBenzeneMiddleware, BenzeneInvocation, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IDisposable, ILogger, ILoggerFactory, LoggerBase, LogLevel } from '@benzenejs/abstractions';
+import { IBenzeneInvocation } from '@benzenejs/abstractions-middleware';
+import { addDiagnostics, useBenzeneEnrichment } from '@benzenejs/diagnostics';
+import { addBenzeneMiddleware, BenzeneInvocation, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { OtelHarness } from './otelHarness';
 
 /**

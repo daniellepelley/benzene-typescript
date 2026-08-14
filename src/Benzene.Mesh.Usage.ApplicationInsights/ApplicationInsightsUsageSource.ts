@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Usage.ApplicationInsights.ApplicationInsightsUsageSource. */
-import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzene/mesh-contracts';
+import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzenejs/mesh-contracts';
 import { ApplicationInsightsUsageOptions } from './ApplicationInsightsUsageOptions';
 import { IApplicationInsightsUsageQuery } from './IApplicationInsightsUsageQuery';
 

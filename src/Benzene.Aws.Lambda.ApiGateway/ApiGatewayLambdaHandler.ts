@@ -1,6 +1,6 @@
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isApiGatewayEvent } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isApiGatewayEvent } from '@benzenejs/aws-lambda-core';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { ApiGatewayApplication } from './ApiGatewayApplication';
 import { ApiGatewayContext } from './ApiGatewayContext';

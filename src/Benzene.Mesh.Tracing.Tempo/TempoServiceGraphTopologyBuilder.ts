@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Tracing.Tempo.TempoServiceGraphTopologyBuilder. */
-import { MeshTopology, TopologyEdge, TopologyEdgeSource } from '@benzene/mesh-contracts';
+import { MeshTopology, TopologyEdge, TopologyEdgeSource } from '@benzenejs/mesh-contracts';
 import { PrometheusQueryClient } from './PrometheusQueryClient';
 import { PrometheusSample } from './PrometheusSample';
 import { TempoTopologyOptions } from './TempoTopologyOptions';

@@ -1,6 +1,6 @@
 /** Port of Benzene.Aws.Lambda.XRay.XRayMiddlewareWrapper. */
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareWrapper } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareWrapper } from '@benzenejs/abstractions-middleware';
 import { XRayMiddlewareDecorator } from './XRayMiddlewareDecorator';
 
 /**

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
 import {
   IGetTopic,
   IMessageSender,
   IMessageSenderNoResponse,
-} from '@benzene/abstractions-messages';
-import { out } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions-messages';
+import { out } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * Port of the MessageSender scenarios exercised in Benzene.Core.Test (e.g.

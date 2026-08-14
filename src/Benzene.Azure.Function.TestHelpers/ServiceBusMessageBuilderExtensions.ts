@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.ServiceBus.TestHelpers.MessageBuilderExtensions. */
 import type { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsAzureServiceBusMessageOptions {

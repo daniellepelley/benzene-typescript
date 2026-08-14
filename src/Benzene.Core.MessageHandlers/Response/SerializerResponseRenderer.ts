@@ -1,12 +1,12 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
   IMediaFormatNegotiator,
   IMessageHandlerResult,
   IResponsePayloadMapper,
   IResponseRenderer,
-} from '@benzene/abstractions-message-handlers';
-import { isRawContentMessage } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { isRawContentMessage } from '@benzenejs/abstractions-messages';
 
 /**
  * Renders the handler's result in whichever `IMediaFormat<TContext>` the negotiator selects for the

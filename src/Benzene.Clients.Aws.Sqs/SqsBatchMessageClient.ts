@@ -1,13 +1,13 @@
 import { SendMessageBatchCommand, SendMessageBatchRequestEntry, SQSClient } from '@aws-sdk/client-sqs';
-import { ISerializer } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import {
   BatchSend,
   BatchSendResult,
   FailedBatchEntry,
   IBenzeneBatchMessageClient,
   OutboundContext,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 import { OutboundSqsContextConverter } from './OutboundSqsContextConverter';
 import { awsErrorDetails } from './awsErrorDetails';
 

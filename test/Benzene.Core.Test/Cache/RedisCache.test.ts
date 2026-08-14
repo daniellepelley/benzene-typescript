@@ -5,13 +5,13 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { RedisOptions } from 'ioredis';
-import { ILogger, NullLogger } from '@benzene/abstractions';
-import { ICacheEntry, ICacheInvalidateActions, ICacheWriteActions } from '@benzene/cache-core';
+import { ILogger, NullLogger } from '@benzenejs/abstractions';
+import { ICacheEntry, ICacheInvalidateActions, ICacheWriteActions } from '@benzenejs/cache-core';
 import {
   IRedisConnectionFactory,
   RedisCacheService,
   RedisClient,
-} from '@benzene/cache-redis';
+} from '@benzenejs/cache-redis';
 
 interface Widget {
   id: string;

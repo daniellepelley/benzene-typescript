@@ -1,5 +1,5 @@
 /** Port of Benzene.Kafka.Core.Kafka.KafkaClientMiddleware. */
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { Producer } from 'kafkajs';
 import { KafkaSendMessageContext } from './KafkaSendMessageContext';
 

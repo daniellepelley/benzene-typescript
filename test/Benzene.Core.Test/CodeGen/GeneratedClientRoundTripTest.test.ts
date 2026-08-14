@@ -1,7 +1,7 @@
 /**
  * The multi-language loop, closed end-to-end (mesh.md §2 → typed client):
  *   1. `examples/mesh-service` builds its normative ServiceDescriptor from its running handler registry
- *      (the same JSON a C# or Go service serves). `@benzene/codegen-client` generates a TypeScript client
+ *      (the same JSON a C# or Go service serves). `@benzenejs/codegen-client` generates a TypeScript client
  *      from it. This test regenerates that client and asserts it matches the committed
  *      `generated/OrdersServiceClient.ts` byte-for-byte — so the checked-in client (which `tsc --noEmit`
  *      compiles) is exactly what the generator produces, and the two can't drift.
@@ -15,11 +15,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { BenzeneResult } from '@benzenejs/results';
 import { buildDescriptor, registry } from '@benzene-example/mesh-service';
-import { generateBenzeneClientSource } from '@benzene/codegen-client';
+import { generateBenzeneClientSource } from '@benzenejs/codegen-client';
 import { CreateOrderResponse, OrdersServiceClient } from './generated/OrdersServiceClient';
 
 /** Captures the last send and returns a caller-supplied typed result - the port of a mocked sender. */

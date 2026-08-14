@@ -1,7 +1,7 @@
 /** Port of Benzene.Xml.DependencyInjectionExtensions. */
-import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
-import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
+import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzenejs/abstractions-middleware';
 import { XmlMediaFormat } from './XmlMediaFormat';
 import { XmlSerializer } from './XmlSerializer';
 

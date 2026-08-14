@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
-import { BenzeneException } from '@benzene/core';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneException } from '@benzenejs/core';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   addSns,
   SnsApplication,
@@ -19,10 +19,10 @@ import {
   SnsOptions,
   SnsRecordContext,
   useSns,
-} from '@benzene/aws-lambda-sns';
-import { useAwsLambda } from '@benzene/aws-lambda-core';
-import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asSns } from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-sns';
+import { useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asSns } from '@benzenejs/aws-lambda-testing';
 
 /**
  * End-to-end port of the C# SNS pipeline tests (test/Benzene.Core.Test/Aws/Sns/SnsMessagePipelineTest.cs

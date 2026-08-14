@@ -1,6 +1,6 @@
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { ISetCurrentTransport, TransportNames } from '@benzene/abstractions-message-handlers';
-import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { ISetCurrentTransport, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { SQSBatchItemFailure, SQSBatchResponse, SQSEvent } from 'aws-lambda';
 import { SqsBatchFailureMode } from './SqsBatchFailureMode';
 import { SqsBatchProcessingException } from './SqsBatchProcessingException';

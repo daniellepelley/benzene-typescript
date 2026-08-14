@@ -1,5 +1,5 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMiddlewareWrapper } from '@benzene/abstractions-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMiddlewareWrapper } from '@benzenejs/abstractions-middleware';
 import { ActivityMiddlewareWrapper } from './ActivityMiddlewareWrapper';
 import { DebugMiddlewareWrapper } from './DebugMiddlewareWrapper';
 import { ActivityProcessTimerFactory } from './Timers/ActivityProcessTimer';

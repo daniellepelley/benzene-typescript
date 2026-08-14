@@ -2,7 +2,7 @@
   "name": "@benzene-example/saga",
   "version": "0.1.0",
   "private": true,
-  "description": "A user-signup distributed transaction over @benzene/saga that completes in full or rolls back in full, leaving no orphaned records",
+  "description": "A user-signup distributed transaction over @benzenejs/saga that completes in full or rolls back in full, leaving no orphaned records",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
@@ -11,8 +11,8 @@
     "start": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/results": "0.1.0",
-    "@benzene/saga": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/results": "0.1.0",
+    "@benzenejs/saga": "0.1.0"
   }
 }

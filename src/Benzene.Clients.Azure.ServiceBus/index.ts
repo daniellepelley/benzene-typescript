@@ -4,10 +4,10 @@
  * `useServiceBus(outboundRoutePipeline, sender, topicPropertyKey?)` converts an `OutboundContext` route
  * to send via a caller-supplied `@azure/service-bus` `ServiceBusSender`: the routed message is JSON-
  * serialized as the body, and the topic + headers are written as `applicationProperties` (the same
- * properties the Service Bus ingress — `@benzene/azure-service-bus` / `@benzene/azure-function-service-bus`
+ * properties the Service Bus ingress — `@benzenejs/azure-service-bus` / `@benzenejs/azure-function-service-bus`
  * — reads to route and rehydrate headers). The egress counterpart of those consumer packages.
  *
- * PORT SCOPE (matching the `@benzene/clients-aws-*` siblings): the `OutboundContext` send path only; the
+ * PORT SCOPE (matching the `@benzenejs/clients-aws-*` siblings): the `OutboundContext` send path only; the
  * generic `IBenzeneClientContext<T,Void>` converter and the standalone `ServiceBusBenzeneMessageClient` are
  * deferred; the native `ServiceBusBatchMessageClient` IS now ported.
  */

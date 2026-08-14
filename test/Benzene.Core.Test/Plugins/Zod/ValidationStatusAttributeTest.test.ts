@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getValidationStatus, validationStatus } from '@benzene/abstractions-validation';
+import { getValidationStatus, validationStatus } from '@benzenejs/abstractions-validation';
 
 /**
  * Unit tests for the `@validationStatus` decorator / `getValidationStatus` reader — the port of

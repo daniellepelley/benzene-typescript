@@ -1,4 +1,4 @@
-import { serviceToken } from '@benzene/abstractions';
+import { serviceToken } from '@benzenejs/abstractions';
 
 /**
  * A tiny in-memory record of what each handler actually received, so the component test can assert which

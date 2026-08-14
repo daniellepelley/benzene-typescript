@@ -2,7 +2,7 @@
 import {
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { KinesisMessageContext } from './KinesisMessageContext';
 
 /**

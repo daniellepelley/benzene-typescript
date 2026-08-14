@@ -1,4 +1,4 @@
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
 import { NullServiceResolver } from './NullServiceResolver';
 
 /**

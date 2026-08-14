@@ -1,6 +1,6 @@
 /** Port of Benzene.RabbitMq.RabbitMqHealthCheckExtensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { IRabbitMqConnectionFactory } from './IRabbitMqConnectionFactory';
 import { RabbitMqConfig } from './RabbitMqConfig';
 import { RabbitMqConnectionProvider } from './RabbitMqConnectionProvider';

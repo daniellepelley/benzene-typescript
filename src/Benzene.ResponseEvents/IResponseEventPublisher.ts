@@ -1,4 +1,4 @@
-import { IBenzeneResult, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResult, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The outbound port {@link ResponseEventsMiddleware} publishes matched events through. The default

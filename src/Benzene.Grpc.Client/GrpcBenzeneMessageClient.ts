@@ -4,18 +4,18 @@ import {
   IServiceResolver,
   NullLogger,
   VoidResult,
-} from '@benzene/abstractions';
-import { BenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { IBenzeneMessageClient } from '@benzene/clients';
-import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzene/grpc';
+} from '@benzenejs/abstractions';
+import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { IBenzeneMessageClient } from '@benzenejs/clients';
+import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzenejs/grpc';
 import {
   MiddlewarePipelineBuilder,
   NullBenzeneServiceContainer,
   NullServiceResolver,
-} from '@benzene/core-middleware';
-import { BenzeneException } from '@benzene/core';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-middleware';
+import { BenzeneException } from '@benzenejs/core';
+import { BenzeneResult } from '@benzenejs/results';
 import { Client, status } from '@grpc/grpc-js';
 import { DefaultGrpcStatusReverseMapper } from './DefaultGrpcStatusReverseMapper';
 import { GrpcContextConverter } from './GrpcContextConverter';
@@ -45,7 +45,7 @@ import { useGrpcClient } from './Extensions';
  *
  * DEFERRED (inbound-deadline / cancellation-token propagation): .NET resolves `IGrpcServerCallAccessor`
  * and `ICancellationTokenAccessor` to forward an inbound gRPC call's deadline + cancellation onto the
- * downstream call. The port's `@benzene/grpc` `IGrpcServerCallAccessor` exposes only `call`/`cancelled`
+ * downstream call. The port's `@benzenejs/grpc` `IGrpcServerCallAccessor` exposes only `call`/`cancelled`
  * (no `Deadline`), there is no `ICancellationTokenAccessor`, and grpc-js `CallOptions` has no cancellation
  * field — so this DI-driven propagation is deferred. A deadline can still be set explicitly via
  * {@link GrpcContextConverter}.

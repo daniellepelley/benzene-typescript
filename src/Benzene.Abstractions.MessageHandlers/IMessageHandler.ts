@@ -1,4 +1,4 @@
-import { IBenzeneResult } from '@benzene/abstractions';
+import { IBenzeneResult } from '@benzenejs/abstractions';
 import { IMessageHandlerBase } from './IMessageHandlerBase';
 import { IRequestMapperThunk } from './IRequestMapperThunk';
 

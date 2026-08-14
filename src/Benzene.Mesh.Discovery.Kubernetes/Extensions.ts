@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Discovery.Kubernetes.Extensions. */
 import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMeshDiscoveryProvider, MeshDiscoveryRunner } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMeshDiscoveryProvider, MeshDiscoveryRunner } from '@benzenejs/mesh-contracts';
 import { IKubernetesServiceLister } from './IKubernetesServiceLister';
 import { KubernetesApiServiceLister } from './KubernetesApiServiceLister';
 import { KubernetesServiceDiscoveryProvider } from './KubernetesServiceDiscoveryProvider';

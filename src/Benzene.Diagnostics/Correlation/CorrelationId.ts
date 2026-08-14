@@ -1,6 +1,6 @@
 /** Port of Benzene.Diagnostics.Correlation.CorrelationId. */
 import { randomUUID } from 'node:crypto';
-import { ICorrelationId } from '@benzene/abstractions';
+import { ICorrelationId } from '@benzenejs/abstractions';
 
 /**
  * Tracks the correlation id for the current invocation, self-generating one on construction

@@ -1,12 +1,12 @@
 import { ServiceBusMessageBatch, ServiceBusSender } from '@azure/service-bus';
-import { ISerializer } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import {
   BatchSendResult,
   FailedBatchEntry,
   IBenzeneBatchMessageClient,
   OutboundContext,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 import { OutboundServiceBusContextConverter } from './OutboundServiceBusContextConverter';
 
 /** The error code + message for a thrown error, for a {@link FailedBatchEntry}. */

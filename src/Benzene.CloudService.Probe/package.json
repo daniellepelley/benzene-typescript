@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/cloud-service-probe",
+  "name": "@benzenejs/cloud-service-probe",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.CloudService.Probe",
   "license": "MIT",

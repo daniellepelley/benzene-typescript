@@ -3,8 +3,8 @@ import {
   IBenzeneServiceContainer,
   ICorrelationId,
   ILogContextBuilder,
-} from '@benzene/abstractions';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { CorrelationId } from './CorrelationId';
 
 /**

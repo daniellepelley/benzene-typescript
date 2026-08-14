@@ -13,10 +13,10 @@
  * the demo's spans visibly wide in a UI and would make the component test slow and non-deterministic.
  */
 import { SpanStatusCode } from '@opentelemetry/api';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { withSpan } from './exampleDiagnostics';
 import { IWarehouseService } from './warehouseService';
 

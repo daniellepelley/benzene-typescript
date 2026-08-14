@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import Joi from 'joi';
-import { getJoiSchema, registerJoiSchema, JoiSchemaRegistry } from '@benzene/joi';
+import { getJoiSchema, registerJoiSchema, JoiSchemaRegistry } from '@benzenejs/joi';
 
 /**
  * Unit tests for `JoiSchemaRegistry` — the adapter's replacement for FluentValidation's

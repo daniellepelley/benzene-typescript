@@ -1,16 +1,16 @@
 /** Port of Benzene.Http.BenzeneMessage.Extensions (the UseBenzeneMessage HTTP-endpoint extensions). */
-import { tryAddScoped } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzeneMessage } from '@benzene/core-message-handlers';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { tryAddScoped } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzeneMessage } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { DefaultHttpStatusCodeMapper } from '../DefaultHttpStatusCodeMapper';
 import { IHttpContext } from '../IHttpContext';
 import { IHttpRequestAdapter } from '../IHttpRequestAdapter';
 import { IHttpStatusCodeMapper } from '../IHttpStatusCodeMapper';
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
 import { BenzeneMessageHttpMiddleware } from './BenzeneMessageHttpMiddleware';
 import { BenzeneMessageHttpOptions } from './BenzeneMessageHttpOptions';
 import {

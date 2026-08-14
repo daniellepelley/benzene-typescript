@@ -1,4 +1,4 @@
-import { ClaimsPrincipal } from '@benzene/auth-core';
+import { ClaimsPrincipal } from '@benzenejs/auth-core';
 
 const scopeClaimType = 'scope';
 const scpClaimType = 'scp';

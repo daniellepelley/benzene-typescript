@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { HttpMeshTraceExporter, IMeshTraceExporter, MeshTraceEvent } from '@benzene/mesh-wire';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { HttpMeshTraceExporter, IMeshTraceExporter, MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 /**
  * Port of Benzene.Test.CloudService.MeshDisposalTest. The mesh singletons (the trace exporter and the

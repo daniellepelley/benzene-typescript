@@ -1,6 +1,6 @@
 # Rate Limiting
 
-`@benzene/rate-limiting` adds best-effort request rate limiting to any Benzene pipeline. Its job is
+`@benzenejs/rate-limiting` adds best-effort request rate limiting to any Benzene pipeline. Its job is
 **protection**: endpoints a service can't avoid exposing publicly — health checks, a message endpoint
 open to the internet — should not be a free denial-of-service vector, or, on serverless plans that
 scale on demand, a way for a stranger to run up your bill.
@@ -42,7 +42,7 @@ against one shared budget — the limiter does not bucket by IP, tenant, or any 
 Requires Node 22+.
 
 ```bash
-npm install @benzene/rate-limiting
+npm install @benzenejs/rate-limiting
 ```
 
 ## Basic usage
@@ -52,10 +52,10 @@ function taking the pipeline builder first (the port's convention for C# extensi
 [Common Middleware](common-middleware.md)), so you call it inside your transport's builder callback:
 
 ```ts
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { useHealthCheck } from '@benzene/health-checks';
-import { useFixedWindowRateLimiting } from '@benzene/rate-limiting';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useHealthCheck } from '@benzenejs/health-checks';
+import { useFixedWindowRateLimiting } from '@benzenejs/rate-limiting';
 
 useApiGateway(app, (api) => {
   useFixedWindowRateLimiting(api, 60, 60_000); // 60 requests / minute
@@ -95,7 +95,7 @@ export function useFixedWindowRateLimiting<TContext>(
 ```
 
 ```ts
-import { useFixedWindowRateLimiting } from '@benzene/rate-limiting';
+import { useFixedWindowRateLimiting } from '@benzenejs/rate-limiting';
 
 useFixedWindowRateLimiting(app, 100, 60_000); // 100 messages per minute
 ```
@@ -119,7 +119,7 @@ export function useTokenBucketRateLimiting<TContext>(
 ```
 
 ```ts
-import { useTokenBucketRateLimiting } from '@benzene/rate-limiting';
+import { useTokenBucketRateLimiting } from '@benzenejs/rate-limiting';
 
 // Burst up to 100, sustained 10 messages/second:
 useTokenBucketRateLimiting(app, 100, 10, 1_000);
@@ -143,7 +143,7 @@ export function usePayloadSizeRateLimiting<TContext>(
 ```
 
 ```ts
-import { usePayloadSizeRateLimiting } from '@benzene/rate-limiting';
+import { usePayloadSizeRateLimiting } from '@benzenejs/rate-limiting';
 
 usePayloadSizeRateLimiting(
   app,
@@ -178,7 +178,7 @@ directly, and `RateLimiter` is an abstract class you can subclass (its one metho
 `attemptAcquire(permitCount?): RateLimitLease`):
 
 ```ts
-import { ConcurrencyLimiter, useRateLimiting } from '@benzene/rate-limiting';
+import { ConcurrencyLimiter, useRateLimiting } from '@benzenejs/rate-limiting';
 
 // Cap in-flight messages instead of rate — at most 10 processed concurrently:
 useRateLimiting(app, new ConcurrencyLimiter({ permitLimit: 10, queueLimit: 0 }));

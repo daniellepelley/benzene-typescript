@@ -1,5 +1,5 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.PubSubContext. */
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { MessagePublishedData, PubsubMessage } from './MessagePublishedData';
 
 /**

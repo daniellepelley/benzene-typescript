@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/cache-redis",
+  "name": "@benzenejs/cache-redis",
   "version": "0.1.0",
   "description": "Benzene Redis cache implementation adapting ioredis (mirrors Benzene.Cache.Redis)",
   "license": "MIT",
@@ -7,8 +7,8 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/cache-core": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/cache-core": "0.1.0",
     "ioredis": "^5.11.1"
   }
 }

@@ -1,9 +1,9 @@
 /** Port of Benzene.Mesh.Azure.Blob.Extensions. */
 import { DefaultAzureCredential } from '@azure/identity';
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addMeshAggregator } from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addMeshAggregator } from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry } from '@benzenejs/mesh-contracts';
 import { BlobMeshArtifactStore } from './BlobMeshArtifactStore';
 
 /**

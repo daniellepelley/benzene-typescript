@@ -1,6 +1,6 @@
 import { ReceivedEventData } from '@azure/event-hubs';
-import { BenzeneStartUp } from '@benzene/abstractions-middleware';
-import { AzureFunctionHost } from '@benzene/azure-function-core';
+import { BenzeneStartUp } from '@benzenejs/abstractions-middleware';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
 import { handleEventHub } from './Extensions';
 
 /**
@@ -17,9 +17,9 @@ export type AzureEventHubFunction = (
  * Adds the `.eventHubFunction` getter to {@link AzureFunctionHost} — the Event Hub counterpart of
  * `.httpFunction`. Returns the handler to register with
  * `app.eventHub(name, { …, handler: host.eventHubFunction })`. Same `declare module` + prototype pattern
- * and rationale as the HTTP getter (see `@benzene/azure-function-http`'s `AzureFunctionHostExtensions`).
+ * and rationale as the HTTP getter (see `@benzenejs/azure-function-http`'s `AzureFunctionHostExtensions`).
  */
-declare module '@benzene/azure-function-core' {
+declare module '@benzenejs/azure-function-core' {
   interface AzureFunctionHost<TStartUp extends BenzeneStartUp> {
     /** The Event Hub-trigger handler to register with `app.eventHub(name, { handler })`. */
     readonly eventHubFunction: AzureEventHubFunction;

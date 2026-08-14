@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LocalAwsLambdaClientFactory } from '@benzene/clients-aws-lambda';
+import { LocalAwsLambdaClientFactory } from '@benzenejs/clients-aws-lambda';
 
 /**
  * Port of test/Benzene.Core.Test/Aws/Client/Lambda/LocalAwsLambdaClientFactoryTest.cs. An unknown profile

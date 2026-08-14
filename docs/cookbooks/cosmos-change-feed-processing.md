@@ -19,8 +19,8 @@ The port offers two hosting modes, and here they differ in **who owns the checkp
 
 | Host | Package | Checkpoint control | Guide |
 | --- | --- | --- | --- |
-| Azure Functions trigger | `@benzene/azure-function-cosmos-db` | The trigger's lease (auto, on success) | [Azure Functions Setup](../azure-functions.md#other-triggers) |
-| Self-hosted worker | `@benzene/azure-cosmos-db` | Benzene, with a manual per-batch checkpoint hook | [Unified Hosting Model](../hosting.md#cosmos-db-change-feed--usecosmosdbchangefeed) |
+| Azure Functions trigger | `@benzenejs/azure-function-cosmos-db` | The trigger's lease (auto, on success) | [Azure Functions Setup](../azure-functions.md#other-triggers) |
+| Self-hosted worker | `@benzenejs/azure-cosmos-db` | Benzene, with a manual per-batch checkpoint hook | [Unified Hosting Model](../hosting.md#cosmos-db-change-feed--usecosmosdbchangefeed) |
 
 This cookbook works through both, citing the actual source in `src/Benzene.Azure.Function.CosmosDb/` and
 `src/Benzene.Azure.CosmosDb/`.
@@ -33,7 +33,7 @@ fundamentally different: it delivers **documents of a concrete type you choose**
 changed document has no envelope, no topic, no headers — it's just your data. So there's nothing for
 `useMessageHandlers()` to route on, and the pipeline is generic over the document type instead:
 `useCosmosDbChangeFeed<TDocument>(...)` builds a pipeline of `StreamContext<TDocument>` and you terminate
-it with `useStream(...)` (from `@benzene/core-middleware`).
+it with `useStream(...)` (from `@benzenejs/core-middleware`).
 
 And it's **fan-in** (one stream), not fan-out (per-document dispatch): the feed delivers changes in order
 within each partition-key range, and checkpoints a whole batch at a time — there's no per-document resume
@@ -60,14 +60,14 @@ export class OrderDocument {
 
 This is the mode with real manual checkpoint control, and the one
 [Unified Hosting Model](../hosting.md#cosmos-db-change-feed--usecosmosdbchangefeed) documents in full. Use
-`@benzene/azure-cosmos-db` for a long-running process you own (a container, an AKS pod, a plain Node
+`@benzenejs/azure-cosmos-db` for a long-running process you own (a container, an AKS pod, a plain Node
 worker).
 
 ### 1. Install and wire the consumer
 
 ```bash
-npm install @benzene/azure-cosmos-db @benzene/self-host @benzene/core-middleware \
-  @benzene/abstractions @azure/cosmos
+npm install @benzenejs/azure-cosmos-db @benzenejs/self-host @benzenejs/core-middleware \
+  @benzenejs/abstractions @azure/cosmos
 ```
 
 `useCosmosDbChangeFeed<TDocument>(workers, config, processorFactory, action)` is a free function taking
@@ -78,14 +78,14 @@ built-in `CosmosChangeFeedProcessorFactory` takes the monitored container and an
 
 ```ts
 import { CosmosClient } from '@azure/cosmos';
-import { useStream } from '@benzene/core-middleware';
+import { useStream } from '@benzenejs/core-middleware';
 import {
   BenzeneCosmosChangeFeedConfig,
   CosmosChangeFeedProcessorFactory,
   InMemoryCosmosChangeFeedCheckpointStore,
   useCosmosDbChangeFeed,
-} from '@benzene/azure-cosmos-db';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+} from '@benzenejs/azure-cosmos-db';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { OrderDocument } from './OrderDocument.js';
 
 const container = new CosmosClient(process.env.COSMOS_CONNECTION_STRING!)
@@ -192,7 +192,7 @@ import {
   CosmosChangeFeedItem,
   CosmosChangeType,
   useCosmosDbAllVersionsChangeFeed,
-} from '@benzene/azure-cosmos-db';
+} from '@benzenejs/azure-cosmos-db';
 
 useCosmosDbAllVersionsChangeFeed<OrderDocument>(
   workers,
@@ -232,15 +232,15 @@ expect(config.catchHandlerExceptions).toBe(false);
 
 ## Part B — the Azure Functions trigger
 
-For non-manual hosting, `@benzene/azure-function-cosmos-db` delivers the same `StreamContext<TDocument>`
+For non-manual hosting, `@benzenejs/azure-function-cosmos-db` delivers the same `StreamContext<TDocument>`
 pipeline shape behind an Azure Functions `CosmosDBTrigger`. The trigger deliberately carries **no** Azure
 SDK dependency — the runtime hands Benzene already-deserialized documents.
 
 ### 1. Install and wire
 
 ```bash
-npm install @benzene/azure-function-cosmos-db @benzene/azure-function-core \
-  @benzene/core-middleware @benzene/core-message-handlers @benzene/abstractions @azure/functions
+npm install @benzenejs/azure-function-cosmos-db @benzenejs/azure-function-core \
+  @benzenejs/core-middleware @benzenejs/core-message-handlers @benzenejs/abstractions @azure/functions
 ```
 
 `useCosmosDbChangeFeed<TDocument>(az, action)` configures the pipeline; `handleCosmosDbChanges<TDocument>(host.app,
@@ -249,12 +249,12 @@ documents)` dispatches the batch. Write a `StartUp` (the composition root from
 `useAzureFunctions(app, az => …)`. Create `src/startUp.ts`:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { useStream } from '@benzene/core-middleware';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useCosmosDbChangeFeed } from '@benzene/azure-function-cosmos-db';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { useStream } from '@benzenejs/core-middleware';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useCosmosDbChangeFeed } from '@benzenejs/azure-function-cosmos-db';
 import { OrderDocument } from './OrderDocument.js';
 
 export class ChangeFeedStartUp implements BenzeneStartUp {
@@ -283,8 +283,8 @@ has no first-class `@azure/functions` registration helper), so dispatch through 
 
 ```ts
 import { InvocationContext } from '@azure/functions';
-import { AzureFunctionHost } from '@benzene/azure-function-core';
-import { handleCosmosDbChanges } from '@benzene/azure-function-cosmos-db';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+import { handleCosmosDbChanges } from '@benzenejs/azure-function-cosmos-db';
 import { ChangeFeedStartUp } from './startUp.js';
 import { OrderDocument } from './OrderDocument.js';
 
@@ -338,12 +338,12 @@ exactly as `test/Benzene.Core.Test/Azure/CosmosDb/CosmosDbChangeFeedPipelineTest
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { useStream } from '@benzene/core-middleware';
-import { AzureFunctionHost, useAzureFunctions } from '@benzene/azure-function-core';
-import { handleCosmosDbChanges, useCosmosDbChangeFeed } from '@benzene/azure-function-cosmos-db';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { useStream } from '@benzenejs/core-middleware';
+import { AzureFunctionHost, useAzureFunctions } from '@benzenejs/azure-function-core';
+import { handleCosmosDbChanges, useCosmosDbChangeFeed } from '@benzenejs/azure-function-cosmos-db';
 import { OrderDocument } from '../src/OrderDocument.js';
 
 describe('orders change feed', () => {

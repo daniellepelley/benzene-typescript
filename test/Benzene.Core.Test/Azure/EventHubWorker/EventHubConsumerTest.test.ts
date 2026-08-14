@@ -5,19 +5,19 @@ import type {
   ReceivedEventData,
   SubscriptionEventHandlers,
 } from '@azure/event-hubs';
-import { IBenzeneInvocation } from '@benzene/abstractions-middleware';
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IBenzeneInvocation } from '@benzenejs/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addEventHubConsumer,
   BenzeneEventHubConfig,
@@ -30,7 +30,7 @@ import {
   IEventProcessorClientFactory,
   useBenzeneInvocation,
   withEventHubConfigDefaults,
-} from '@benzene/azure-event-hub';
+} from '@benzenejs/azure-event-hub';
 
 /**
  * Port of the C# Benzene.Azure.EventHub tests (EventHubConsumerMapperTest, EventHubConsumerApplicationTest,

@@ -1,5 +1,5 @@
 /**
- * Port-verification test for `@benzene/azure-event-hub-test-helpers` (ports
+ * Port-verification test for `@benzenejs/azure-event-hub-test-helpers` (ports
  * Benzene.Azure.EventHub.TestHelpers). Two complementary halves:
  *
  * 1. `asEventHubBenzeneMessage` — faithful native-shape checks, plus a faithful port of the C#
@@ -15,34 +15,34 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { EventHubConsumerClient } from '@azure/event-hubs';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { useWorker } from '@benzene/self-host';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { useWorker } from '@benzenejs/self-host';
 import {
   addEventHubConsumer,
   EventHubConsumerApplication,
   EventHubConsumerContext,
   IEventProcessorClientFactory,
   useEventHub,
-} from '@benzene/azure-event-hub';
+} from '@benzenejs/azure-event-hub';
 import {
   benzeneTestHost,
   FakeBenzeneMessageSender,
   messageBuilder,
   type BenzeneStartUp,
-} from '@benzene/testing';
-import { asEventHubBenzeneMessage } from '@benzene/azure-event-hub-test-helpers';
+} from '@benzenejs/testing';
+import { asEventHubBenzeneMessage } from '@benzenejs/azure-event-hub-test-helpers';
 
 const Topics = { placeOrder: 'order:place', orderCreated: 'order:created' } as const;
 

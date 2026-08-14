@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { ITransportInfo, TransportNames } from '@benzene/abstractions-message-handlers';
-import { addBenzeneMessageHandling, TransportInfo } from '@benzene/core-message-handlers';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { ITransportInfo, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { addBenzeneMessageHandling, TransportInfo } from '@benzenejs/core-message-handlers';
 import { InProcessDispatcherRegistry } from './InProcessDispatcherRegistry';
 import { InProcessMessagingAlreadyRegisteredException } from './InProcessMessagingAlreadyRegisteredException';
 import { InProcessMessagingBuilder } from './InProcessMessagingBuilder';

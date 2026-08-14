@@ -9,10 +9,10 @@ surfaces once the basics are in place.
 If you're brand new to Benzene, read [Getting Started](getting-started.md) first. The message handler
 you write there runs unchanged here; only the host differs, and that's what this guide covers.
 
-> **TypeScript port.** `@benzene/kafka-core` is the port of the consumer-worker slice of the .NET
+> **TypeScript port.** `@benzenejs/kafka-core` is the port of the consumer-worker slice of the .NET
 > `Benzene.Kafka.Core`, built on [kafkajs](https://kafka.js.org/). It is the **standalone worker** —
-> distinct from the AWS Lambda MSK trigger (`@benzene/aws-lambda-kafka`) and the Azure Functions Kafka
-> trigger (`@benzene/azure-function-kafka`), which process records delivered by a cloud trigger rather
+> distinct from the AWS Lambda MSK trigger (`@benzenejs/aws-lambda-kafka`) and the Azure Functions Kafka
+> trigger (`@benzenejs/azure-function-kafka`), which process records delivered by a cloud trigger rather
 > than consuming a broker directly. Where the port diverges from .NET (the config bag holds no broker
 > settings; the caller builds the kafkajs `Consumer`), the code comments and this guide call it out.
 
@@ -22,7 +22,7 @@ already gives you routing for free (see
 hands you a raw record and stops — dispatching on whatever identifies its type, and every cross-cutting
 concern (validation, retries, structured logging) is code you'd otherwise write yourself in the
 `eachMessage` callback. `useKafka` + the middleware pipeline is that missing layer, for Kafka
-specifically — the same reasoning applies to `@benzene/aws-sqs`, this port's self-hosted SQS poller.
+specifically — the same reasoning applies to `@benzenejs/aws-sqs`, this port's self-hosted SQS poller.
 
 ## Prerequisites
 
@@ -61,14 +61,14 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 ## 2. Install the packages
 
 ```bash
-npm install @benzene/kafka-core @benzene/self-host @benzene/core-message-handlers kafkajs
+npm install @benzenejs/kafka-core @benzenejs/self-host @benzenejs/core-message-handlers kafkajs
 ```
 
-- `@benzene/kafka-core` is the worker itself: `useKafka`, `BenzeneKafkaWorker`, the record mappers, the
+- `@benzenejs/kafka-core` is the worker itself: `useKafka`, `BenzeneKafkaWorker`, the record mappers, the
   outbound producer client, and the health check.
-- `@benzene/self-host` is the platform-neutral worker host — `InlineSelfHostedStartUp` builds a runnable
+- `@benzenejs/self-host` is the platform-neutral worker host — `InlineSelfHostedStartUp` builds a runnable
   worker from your wiring.
-- `@benzene/core-message-handlers` provides the `@message` decorator and `useMessageHandlers`.
+- `@benzenejs/core-message-handlers` provides the `@message` decorator and `useMessageHandlers`.
 - `kafkajs` is the underlying client; **you** construct the `Kafka` client and `Consumer`, so it's a
   direct dependency.
 
@@ -78,8 +78,8 @@ Create `src/handlers.ts`. This is your logic — the file you'd carry over verba
 transport:
 
 ```ts
-import { IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
+import { IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -111,9 +111,9 @@ bag, `BenzeneKafkaConfig` carries **no broker or group-id settings** — those l
 
 ```ts
 import { Kafka } from 'kafkajs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
-import { KafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
+import { KafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
 import { HelloWorldMessageHandler } from './handlers.js';
 
 // You build the kafkajs client + consumer: brokers live on the Kafka client, groupId on the consumer.
@@ -186,7 +186,7 @@ own admin-client seam: pass a `KafkaAdminClientFactory` (built from the same `Ka
 bootstrap-servers string it should report) as the fifth argument to `useKafka`:
 
 ```ts
-import { KafkaAdminClientFactory, KafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
+import { KafkaAdminClientFactory, KafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
 
 useKafka(
   app,
@@ -211,8 +211,8 @@ transport-agnostic client surface — wrap a kafkajs `Producer` in a `KafkaBenze
 
 ```ts
 import { Kafka } from 'kafkajs';
-import { sendMessageAsync } from '@benzene/clients';
-import { KafkaBenzeneMessageClient } from '@benzene/kafka-core';
+import { sendMessageAsync } from '@benzenejs/clients';
+import { KafkaBenzeneMessageClient } from '@benzenejs/kafka-core';
 
 const producer = new Kafka({ brokers: ['localhost:9092'] }).producer();
 await producer.connect();
@@ -231,25 +231,25 @@ Benzene client surface. The producer's lifetime is yours — the client never di
 
 ## 8. Testing
 
-`@benzene/kafka-core-test-helpers` boots your wiring in-memory and pushes native records through the
+`@benzenejs/kafka-core-test-helpers` boots your wiring in-memory and pushes native records through the
 real consumer pipeline — no broker, no credentials. Because the harness boots a `BenzeneStartUp`, put
 the same `useKafka` wiring in a startup class (selecting the worker with `useWorker`), then drive it
 with `benzeneTestHost(...).buildKafkaWorkerHost()`:
 
 ```bash
-npm install --save-dev vitest @benzene/testing @benzene/kafka-core-test-helpers
+npm install --save-dev vitest @benzenejs/testing @benzenejs/kafka-core-test-helpers
 ```
 
 ```ts
 // test/worker.test.ts
 import { describe, expect, it } from 'vitest';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useWorker } from '@benzene/self-host';
-import { IKafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
-import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzene/testing';
-import { asKafkaBenzeneMessage } from '@benzene/kafka-core-test-helpers';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useWorker } from '@benzenejs/self-host';
+import { IKafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
+import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzenejs/testing';
+import { asKafkaBenzeneMessage } from '@benzenejs/kafka-core-test-helpers';
 import { HelloWorldMessageHandler } from '../src/handlers.js';
 
 // The test host never opens a broker connection, so its consumer factory is never invoked.

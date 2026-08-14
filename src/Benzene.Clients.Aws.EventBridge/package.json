@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/clients-aws-eventbridge",
+  "name": "@benzenejs/clients-aws-eventbridge",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Clients.Aws.EventBridge (outbound EventBridge message client)",
   "license": "MIT",
@@ -8,11 +8,11 @@
   "types": "./index.ts",
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.700.0",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-messages": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/clients": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-messages": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/clients": "0.1.0",
+    "@benzenejs/health-checks-core": "0.1.0"
   }
 }

@@ -3,8 +3,8 @@
 // (`tsc --noEmit`) and run its component test (`vitest`) AGAINST THE LOCAL WORKSPACE PACKAGES.
 //
 // How local linking works: the sample project is generated into `create-benzene/.verify/<id>-svc`,
-// inside this repo. Its generated package.json references the real (unpublished) `@benzene/*` names, but
-// Node/tsc/vitest resolve them via the repo's own `node_modules/@benzene/*` symlinks (npm workspaces
+// inside this repo. Its generated package.json references the real (unpublished) `@benzenejs/*` names, but
+// Node/tsc/vitest resolve them via the repo's own `node_modules/@benzenejs/*` symlinks (npm workspaces
 // already link every `src/*` package there) by walking up from the generated dir. No `npm install` runs
 // in the generated project — that would try the registry and fail — so this proves the exact published
 // project shape typechecks and tests green with the packages linked locally.

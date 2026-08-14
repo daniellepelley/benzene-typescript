@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Fleet.Aws.XRay.XRaySegmentMapper. */
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 type JsonObject = Record<string, unknown>;
 

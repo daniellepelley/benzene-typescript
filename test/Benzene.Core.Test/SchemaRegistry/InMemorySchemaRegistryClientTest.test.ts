@@ -5,7 +5,7 @@ import {
   SchemaDefinition,
   SchemaFormat,
   SchemaIncompatibleException,
-} from '@benzene/schema-registry-core';
+} from '@benzenejs/schema-registry-core';
 
 /** Port of test/Benzene.Core.Test/SchemaRegistry/InMemorySchemaRegistryClientTest.cs. */
 

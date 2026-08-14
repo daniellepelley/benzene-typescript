@@ -52,9 +52,9 @@ export * from './Info/TransportInfo';
 export * from './Info/TransportsInfo';
 export * from './Info/CurrentTransportInfo';
 export * from './Info/TransportMiddlewarePipeline';
-// Re-exported from @benzene/abstractions-message-handlers so consumers of the core package (the transport
+// Re-exported from @benzenejs/abstractions-message-handlers so consumers of the core package (the transport
 // adapters) can reference the canonical transport-name constants from the same import as the pipeline.
-export { TransportNames } from '@benzene/abstractions-message-handlers';
+export { TransportNames } from '@benzenejs/abstractions-message-handlers';
 export * from './ResponseMessageMessageHandlerResultSetterBase';
 export * from './PresetTopicHolder';
 export * from './PresetTopicMessageTopicGetter';

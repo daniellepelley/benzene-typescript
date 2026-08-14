@@ -2,10 +2,10 @@ import {
   IBenzeneServiceContainer,
   tryAddScopedFactory,
   tryAddSingletonFactory,
-} from '@benzene/abstractions';
-import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
-import { IMessageDefinition, IMessageDefinitionFinder } from '@benzene/abstractions-messages';
-import { IBenzeneMessageSender } from '@benzene/clients';
+} from '@benzenejs/abstractions';
+import { IMessageRouterBuilder } from '@benzenejs/abstractions-message-handlers';
+import { IMessageDefinition, IMessageDefinitionFinder } from '@benzenejs/abstractions-messages';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 import { BenzeneMessageSenderResponseEventPublisher } from './BenzeneMessageSenderResponseEventPublisher';
 import { IResponseEventPublisher } from './IResponseEventPublisher';
 import { IResponseEventCatalog, ResponseEventCatalog } from './ResponseEventCatalog';

@@ -7,20 +7,20 @@ abstraction.
 
 > **Port note.** The .NET original adapts [Polly](https://www.pollydocs.org/) in
 > `Benzene.Resilience.Polly`. The TypeScript port adapts **cockatiel** — the closest JS analogue — as
-> `@benzene/cockatiel`, under the "third-party integrations are adapted, not reimplemented" convention.
+> `@benzenejs/cockatiel`, under the "third-party integrations are adapted, not reimplemented" convention.
 > Where Polly exposes a mutable `ResiliencePipelineBuilder`, cockatiel composes policies *functionally*
 > (`wrap(retry(...), circuitBreaker(...))`), so you build the `IPolicy` you want and pass it in — there
 > is no separate builder to configure.
 
 ## Problem statement
 
-`@benzene/resilience` ships exactly one resilience pattern in-box: retry with exponential backoff
+`@benzenejs/resilience` ships exactly one resilience pattern in-box: retry with exponential backoff
 (`useRetry` / `RetryMiddleware<TContext>`) — see [Resilience](../resilience.md). It deliberately does
 **not** ship a circuit breaker, timeout, or bulkhead, and has zero runtime dependencies, so it stays the
 lightweight option for callers who only want retry.
 
 Everything else — circuit breaker, timeout, bulkhead, fallback, and compositions — comes from the sibling
-**`@benzene/cockatiel`** package. It takes a `cockatiel` dependency in exchange for the whole toolkit, and
+**`@benzenejs/cockatiel`** package. It takes a `cockatiel` dependency in exchange for the whole toolkit, and
 it *exposes* cockatiel rather than wrapping it: you build a policy with exactly the strategies you want and
 hand it to `useResiliencePipeline(...)`.
 
@@ -36,12 +36,12 @@ hand it to `useResiliencePipeline(...)`.
 ## Installation
 
 ```bash
-npm install @benzene/cockatiel cockatiel
+npm install @benzenejs/cockatiel cockatiel
 ```
 
-`@benzene/cockatiel` declares `cockatiel` as its one runtime dependency (npm pulls it in transitively, but
+`@benzenejs/cockatiel` declares `cockatiel` as its one runtime dependency (npm pulls it in transitively, but
 install it explicitly so you can import `retry`/`circuitBreaker`/etc. yourself). For retry-only with no
-dependency, use `@benzene/resilience` instead — see [Just retry](#just-retry-no-cockatiel-dependency).
+dependency, use `@benzenejs/resilience` instead — see [Just retry](#just-retry-no-cockatiel-dependency).
 
 ## Step 1 — build a policy with the strategies you need
 
@@ -80,12 +80,12 @@ function taking the pipeline builder first (the port's shape for what C# writes 
 method) and returns the builder for chaining:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
-import { useResiliencePipeline } from '@benzene/cockatiel';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs, SqsMessageContext } from '@benzenejs/aws-lambda-sqs';
+import { useResiliencePipeline } from '@benzenejs/cockatiel';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
 export class StartUp implements BenzeneStartUp {
@@ -121,9 +121,9 @@ the middleware throws an internal `BenzeneFailureResultException` that cockatiel
 outcome — **but only if you configure the policy to handle it** with `handleType`:
 
 ```ts
-import { useResiliencePipeline, BenzeneFailureResultException } from '@benzene/cockatiel';
+import { useResiliencePipeline, BenzeneFailureResultException } from '@benzenejs/cockatiel';
 import { retry, handleType, ExponentialBackoff } from 'cockatiel';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
+import { useSqs, SqsMessageContext } from '@benzenejs/aws-lambda-sqs';
 
 useSqs(app, (sqs) => {
   useResiliencePipeline<SqsMessageContext>(
@@ -148,12 +148,12 @@ middleware. A **real** error is never wrapped and propagates normally (including
 ## Step 4 — outbound clients: the same middleware
 
 Because `useResiliencePipeline(...)` is fully generic, it works on an outbound route exactly the way
-`@benzene/resilience`'s inbound `useRetry` does — this is the higher-value case, since Benzene's whole
+`@benzenejs/resilience`'s inbound `useRetry` does — this is the higher-value case, since Benzene's whole
 thesis is wrapping port calls. Add it to an [outbound route's](../clients.md) pipeline:
 
 ```ts
-import { addOutboundRouting, OutboundContext } from '@benzene/clients';
-import { useResiliencePipeline } from '@benzene/cockatiel';
+import { addOutboundRouting, OutboundContext } from '@benzenejs/clients';
+import { useResiliencePipeline } from '@benzenejs/cockatiel';
 
 addOutboundRouting(services, (routing) =>
   routing.route('order:create', (pipeline) => {
@@ -180,7 +180,7 @@ Here retry re-runs `next()` until it stops throwing:
 ```ts
 import { describe, expect, it } from 'vitest';
 import { retry, handleAll } from 'cockatiel';
-import { CockatielResilienceMiddleware } from '@benzene/cockatiel';
+import { CockatielResilienceMiddleware } from '@benzenejs/cockatiel';
 
 describe('cockatiel resilience middleware', () => {
   it('retries a throwing pipeline until it succeeds', async () => {
@@ -200,7 +200,7 @@ describe('cockatiel resilience middleware', () => {
   });
 
   it('surfaces a failure RESULT as a handled outcome when isFailure is supplied', async () => {
-    const { BenzeneFailureResultException } = await import('@benzene/cockatiel');
+    const { BenzeneFailureResultException } = await import('@benzenejs/cockatiel');
     const policy = retry(handleType(BenzeneFailureResultException), { maxAttempts: 3 });
 
     const context = { isSuccessful: false as boolean };
@@ -226,16 +226,16 @@ describe('cockatiel resilience middleware', () => {
 
 ## Just retry, no cockatiel dependency
 
-If you only want retry, don't take the `cockatiel` dependency — use `@benzene/resilience`, the
+If you only want retry, don't take the `cockatiel` dependency — use `@benzenejs/resilience`, the
 zero-dependency hand-rolled retry middleware:
 
 ```bash
-npm install @benzene/resilience
+npm install @benzenejs/resilience
 ```
 
 ```ts
-import { useRetry } from '@benzene/resilience';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useRetry } from '@benzenejs/resilience';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 
 useRetry(app, { numberOfRetries: 3, initialDelayMs: 200, backoffFactor: 2.0 });
 useMessageHandlers(app, ProcessOrderHandler);

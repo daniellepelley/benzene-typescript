@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.SimpleHealthCheck. */
-import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzene/health-checks-core';
+import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 /**
  * A trivial `IHealthCheck` that always reports success with no diagnostic data. Useful as a smoke

@@ -54,18 +54,18 @@ Ground every example in this project's real conventions (verify against `src/` a
 
 | .NET (in the source docs) | TypeScript (what you write) |
 | --- | --- |
-| `dotnet add package Benzene.X --prerelease` | `npm install @benzene/x` |
-| `Benzene.Core.MessageHandlers`, `Benzene.Aws.Lambda.*`, … | `@benzene/core-message-handlers`, `@benzene/aws-lambda-*`, … (npm scope, kebab-case) |
+| `dotnet add package Benzene.X --prerelease` | `npm install @benzenejs/x` |
+| `Benzene.Core.MessageHandlers`, `Benzene.Aws.Lambda.*`, … | `@benzenejs/core-message-handlers`, `@benzenejs/aws-lambda-*`, … (npm scope, kebab-case) |
 | `[Message("topic")]` attribute | `@message('topic', { requestType, responseType })` class decorator |
 | `[HttpEndpoint("GET", "/path")]` attribute | `@httpEndpoint('GET', '/path')` class decorator |
 | `IMessageHandler<TReq, TRes>` + `HandleAsync` returning `Task<IBenzeneResult<T>>` | `IMessageHandler<TReq, TRes>` + `handleAsync` returning `Promise<IBenzeneResultOf<T>>` |
 | `BenzeneResult.Ok(x)` / `.Created(x)` | `BenzeneResult.ok(x)` / `.created(x)` |
 | `services.UsingBenzene(x => x.AddMessageHandlers(...))` | `addBenzene(services)` + `useMessageHandlers(pipeline, Handler)` (free functions, builder-first) |
 | Fluent `app.UseHttp(h => h.UseMessageHandlers())` extension methods | free functions taking the builder first: `useApiGateway(app, (api) => useMessageHandlers(api, Handler))` |
-| ASP.NET Core host (`Benzene.AspNet.Core`, `app.UseBenzene`) | Express host (`@benzene/express`, `app.use(benzene((p) => useMessageHandlers(p, Handler)))`) |
+| ASP.NET Core host (`Benzene.AspNet.Core`, `app.UseBenzene`) | Express host (`@benzenejs/express`, `app.use(benzene((p) => useMessageHandlers(p, Handler)))`) |
 | `FunctionHandlerAsync` / assign the method | `toLambdaHandler(entryPoint)` (binds `this`; assigning the method detaches it) |
-| `Benzene.FluentValidation` / `Benzene.DataAnnotations` | `@benzene/zod` / `@benzene/joi` / `@benzene/yup` (adapters against popular JS validators) |
-| xUnit / `Benzene.Testing` test helpers | vitest / `@benzene/testing` (+ `@benzene/aws-lambda-testing`, `@benzene/azure-function-testing`) |
+| `Benzene.FluentValidation` / `Benzene.DataAnnotations` | `@benzenejs/zod` / `@benzenejs/joi` / `@benzenejs/yup` (adapters against popular JS validators) |
+| xUnit / `Benzene.Testing` test helpers | vitest / `@benzenejs/testing` (+ `@benzenejs/aws-lambda-testing`, `@benzenejs/azure-function-testing`) |
 | `Task`/`Task<T>`, `CancellationToken`, `IDisposable.Dispose()` | `Promise<void>`/`Promise<T>`, optional `AbortSignal`, `dispose()` (try/finally) |
 
 Full mapping rules live in the README "Porting conventions" section — read it before writing, and follow
@@ -104,7 +104,7 @@ runnable code; testing; troubleshooting; trade-offs/variations; further reading.
 ## Quality checklist (before finishing)
 - [ ] Mirrors the corresponding .NET doc's structure (or explains a deliberate divergence)
 - [ ] Every code example uses a **real** exported API, verified in `src/` (not transliterated C#)
-- [ ] Import paths use the correct `@benzene/*` package names; examples are ESM, strict-TS clean
+- [ ] Import paths use the correct `@benzenejs/*` package names; examples are ESM, strict-TS clean
 - [ ] `npm install …` lists the right package(s)
 - [ ] TS idioms: `Promise`, `handleAsync`, camelCase methods, `@message`/`@httpEndpoint`, free-function builders
 - [ ] Prerequisites (Node 22+) stated; troubleshooting where useful
@@ -122,7 +122,7 @@ runnable code; testing; troubleshooting; trade-offs/variations; further reading.
 [What it is, when to use it, key benefits — 2–3 paragraphs]
 
 ## Prerequisites / Installation
-[Node 22+, the `npm install @benzene/…` package(s)]
+[Node 22+, the `npm install @benzenejs/…` package(s)]
 
 ## Basic Usage
 [Simplest complete, runnable example]

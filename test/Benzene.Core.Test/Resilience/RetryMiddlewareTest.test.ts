@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OperationCanceledException, RetryMiddleware } from '@benzene/resilience';
+import { OperationCanceledException, RetryMiddleware } from '@benzenejs/resilience';
 
 /** Port of Benzene.Test.Resilience.RetryMiddlewareTest. */
 const noDelay = () => Promise.resolve();

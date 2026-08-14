@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/xml",
+  "name": "@benzenejs/xml",
   "version": "0.1.0",
   "description": "Benzene XML serialization integration, adapting fast-xml-parser (mirrors Benzene.Xml)",
   "license": "MIT",
@@ -7,12 +7,12 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-messages": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core-messages": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-messages": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core-messages": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
     "fast-xml-parser": "^5.10.1"
   }
 }

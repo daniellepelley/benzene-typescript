@@ -1,5 +1,5 @@
 /**
- * Assembles the runnable order service: a real Benzene HTTP service (the `@benzene/express` adapter routes
+ * Assembles the runnable order service: a real Benzene HTTP service (the `@benzenejs/express` adapter routes
  * the message handlers) that also serves the two mesh-contract endpoints a mesh aggregator interrogates -
  * `/benzene/spec` (its self-derived descriptor) and `/benzene/health`. Because those are language-neutral
  * wire contracts, a .NET (or TypeScript) mesh aggregator can discover and catalog this TypeScript service
@@ -7,9 +7,9 @@
  */
 import { type AddressInfo } from 'node:net';
 import express, { type Express } from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
-import { MeshJson } from '@benzene/mesh-wire';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
+import { MeshJson } from '@benzenejs/mesh-wire';
 import { buildBenzeneSpec } from './benzeneSpec';
 import { buildDescriptor } from './benzeneDescriptor';
 import { buildHealth } from './health';

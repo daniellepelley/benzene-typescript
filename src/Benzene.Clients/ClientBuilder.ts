@@ -1,4 +1,4 @@
-import { IDependencyWrapper, IServiceResolver } from '@benzene/abstractions';
+import { IDependencyWrapper, IServiceResolver } from '@benzenejs/abstractions';
 import { IBenzeneMessageClient } from './IBenzeneMessageClient';
 import { DependencyWrapperFactory } from './DependencyWrapperFactory';
 

@@ -1,5 +1,5 @@
-import { IMiddlewareApplicationWithResult } from '@benzene/abstractions-middleware';
-import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzene/core-messages';
+import { IMiddlewareApplicationWithResult } from '@benzenejs/abstractions-middleware';
+import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzenejs/core-messages';
 import { InProcessPipelineNotFoundException } from './InProcessPipelineNotFoundException';
 
 type Dispatcher = IMiddlewareApplicationWithResult<IBenzeneMessageRequest, IBenzeneMessageResponse>;

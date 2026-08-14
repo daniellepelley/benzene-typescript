@@ -1,4 +1,4 @@
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageContext';
 
 /**

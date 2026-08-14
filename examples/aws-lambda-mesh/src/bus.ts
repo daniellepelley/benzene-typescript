@@ -1,16 +1,16 @@
 /**
  * An in-memory stand-in for SQS / SNS / EventBridge, so the six services can genuinely SEND to each other
- * through the real outbound clients (`@benzene/clients-aws-{sqs,sns,eventbridge}`) with no cloud account.
+ * through the real outbound clients (`@benzenejs/clients-aws-{sqs,sns,eventbridge}`) with no cloud account.
  *
  * Each fake AWS SDK client, on send, reads the Benzene topic + body back off the command the outbound
  * converter produced, and delivers it to every service registered as a consumer of that topic on that
  * transport — invoking the consumer's in-process Lambda `handler` with a real inbound event (built with the
- * `@benzene/aws-lambda-testing` builders). Delivery is awaited, so a cascade (orders → payments → shipping)
+ * `@benzenejs/aws-lambda-testing` builders). Delivery is awaited, so a cascade (orders → payments → shipping)
  * runs to completion in one call — the deterministic in-memory analog of the async fan-out AWS would do.
  */
 import { Context, Handler } from 'aws-lambda';
-import { messageBuilder } from '@benzene/testing';
-import { asEventBridge, asSns, asSqs } from '@benzene/aws-lambda-testing';
+import { messageBuilder } from '@benzenejs/testing';
+import { asEventBridge, asSns, asSqs } from '@benzenejs/aws-lambda-testing';
 import type { OutboundWiring, Transport } from './meshService';
 
 const fakeContext = {} as Context;

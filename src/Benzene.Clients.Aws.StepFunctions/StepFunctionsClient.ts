@@ -1,8 +1,8 @@
 /** Port of Benzene.Clients.Aws.StepFunctions.StepFunctionsClient. */
 import { ExecutionAlreadyExists, SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
-import { ILogger, ISerializer, IBenzeneResultOf } from '@benzene/abstractions';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { ILogger, ISerializer, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IStepFunctionsClient } from './IStepFunctionsClient';
 
 /** The characters Step Functions rejects in an execution name (whitespace/control handled separately). */

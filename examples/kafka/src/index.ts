@@ -1,5 +1,5 @@
 /**
- * `@benzene-example/kafka` — a standalone Kafka consumer worker (over `@benzene/kafka-core` on `kafkajs`)
+ * `@benzene-example/kafka` — a standalone Kafka consumer worker (over `@benzenejs/kafka-core` on `kafkajs`)
  * hosting an order domain, plus the producer client that feeds it. Ported from the .NET
  * `Benzene.Examples.Kafka` (consumer worker + producer). See `README.md`.
  */

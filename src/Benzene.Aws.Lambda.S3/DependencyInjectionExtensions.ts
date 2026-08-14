@@ -1,7 +1,7 @@
 /**
  * Port of Benzene.Aws.Lambda.S3.DependencyInjectionExtensions (C# extension methods -> free functions).
  */
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IMessageHandlerResultSetter,
@@ -10,14 +10,14 @@ import {
   IRequestMapper,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   addMediaFormatNegotiation,
   JsonSerializer,
   MultiSerializerOptionsRequestMapper,
   TransportInfo,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { S3MessageBodyGetter } from './S3MessageBodyGetter';
 import { S3MessageHeadersGetter } from './S3MessageHeadersGetter';
 import { S3MessageMessageHandlerResultSetter } from './S3MessageMessageHandlerResultSetter';

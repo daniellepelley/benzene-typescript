@@ -1,6 +1,6 @@
 /** Port of Benzene.Core.Messages.MessageSenderDefinition. */
-import { ServiceIdentifier, VoidResult } from '@benzene/abstractions';
-import { IMessageSenderDefinition, ITopic } from '@benzene/abstractions-messages';
+import { ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
+import { IMessageSenderDefinition, ITopic } from '@benzenejs/abstractions-messages';
 import { Constants } from '../Constants';
 import { Topic } from '../Topic';
 

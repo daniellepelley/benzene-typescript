@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { HttpRequest, IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { HttpRequest, IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import {
   DefaultManifestUrl,
   DefaultPath,
@@ -10,7 +10,7 @@ import {
   MeshUiMiddleware,
   MeshUiPage,
   normalizePath,
-} from '@benzene/mesh-ui';
+} from '@benzenejs/mesh-ui';
 
 /**
  * Tests the ported Benzene.Mesh.Ui: the two pages (`MeshUiPage`/`MeshSpecUiPage` — the verbatim product HTML read

@@ -1,7 +1,7 @@
 import { Context } from 'aws-lambda';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 import { AwsEventPredicate } from './AwsEventPredicates';
 import { IAwsLambdaEntryPoint } from './IAwsLambdaEntryPoint';

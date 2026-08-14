@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   MessageHandlerResult,
   MessageHandlerResultOf,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 
 /**
  * Port of the MessageHandlerResult scenarios — covers both the untyped `MessageHandlerResult`

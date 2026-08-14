@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusConsumerMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
 
 /**
@@ -9,7 +9,7 @@ import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
  * `@azure/service-bus` delivers `body` as `any` (already decoded per content type), so this handles
  * the shapes it can arrive as — an existing `string` verbatim, binary (`Uint8Array`/`Buffer`) UTF-8
  * decoded (the closest analogue to `BinaryData.ToString()`), anything else `String(...)`-coerced —
- * mapping `undefined`/`null` to `undefined` (C# `?.`). Same as `@benzene/azure-function-service-bus`.
+ * mapping `undefined`/`null` to `undefined` (C# `?.`). Same as `@benzenejs/azure-function-service-bus`.
  */
 export class ServiceBusConsumerMessageBodyGetter implements IMessageBodyGetter<ServiceBusConsumerContext> {
   getBody(context: ServiceBusConsumerContext): string | undefined {

@@ -41,7 +41,7 @@ the full story.
 
 ## useTimer
 
-**Package:** `@benzene/diagnostics`
+**Package:** `@benzenejs/diagnostics`
 
 Opens a named span around the rest of the pipeline. Every middleware already gets its own span
 automatically via `addDiagnostics()` (see [Middleware — automatic activity
@@ -61,7 +61,7 @@ export function useTimer<TContext>(
 ```
 
 ```ts
-import { useTimer } from '@benzene/diagnostics';
+import { useTimer } from '@benzenejs/diagnostics';
 
 // name a stage explicitly (resolves IProcessTimerFactory):
 useTimer(app, 'benzene-message-application');
@@ -74,7 +74,7 @@ useTimer(app, (context, elapsedMs) => myMetrics.record(elapsedMs));
 
 ## useBenzeneEnrichment
 
-**Package:** `@benzene/diagnostics`
+**Package:** `@benzenejs/diagnostics`
 
 One portable, explicit-opt-in call that attaches `invocationId`, `traceId`, `spanId`, `topic`,
 `transport`, and `handler` to the logging scope (via `ILogger.beginScope`) for the duration of the
@@ -91,7 +91,7 @@ export function useBenzeneEnrichment<TContext>(
 ```
 
 ```ts
-import { useBenzeneEnrichment } from '@benzene/diagnostics';
+import { useBenzeneEnrichment } from '@benzenejs/diagnostics';
 
 useBenzeneEnrichment(app);
 ```
@@ -103,7 +103,7 @@ dropped rather than erroring.
 
 ## useBenzeneMetrics
 
-**Package:** `@benzene/diagnostics`
+**Package:** `@benzenejs/diagnostics`
 
 Records `benzene.messages.processed` (a counter) and `benzene.message.duration` (a histogram, in
 milliseconds) for the wrapped pipeline stage, tagged by `topic`, `transport`, and `result`
@@ -118,7 +118,7 @@ export function useBenzeneMetrics<TContext>(
 ```
 
 ```ts
-import { useBenzeneMetrics } from '@benzene/diagnostics';
+import { useBenzeneMetrics } from '@benzenejs/diagnostics';
 
 useBenzeneMetrics(app);
 ```
@@ -131,7 +131,7 @@ no-op, so it's cheap to leave in.
 
 ## useW3CTraceContext
 
-**Package:** `@benzene/diagnostics`
+**Package:** `@benzenejs/diagnostics`
 
 Reads the `traceparent` header (matched case-insensitively) and starts the pipeline's root span with
 the parsed remote context as its parent, so distributed traces continue across services instead of
@@ -145,7 +145,7 @@ export function useW3CTraceContext<TContext>(
 ```
 
 ```ts
-import { useW3CTraceContext } from '@benzene/diagnostics';
+import { useW3CTraceContext } from '@benzenejs/diagnostics';
 
 useW3CTraceContext(app);
 ```
@@ -164,17 +164,17 @@ nests under the remote trace.
 
 ## useBenzeneInvocation
 
-**Package:** `@benzene/core-middleware` (core overload); each hosting package ships a zero-argument
+**Package:** `@benzenejs/core-middleware` (core overload); each hosting package ships a zero-argument
 overload.
 
 Builds and exposes an `IBenzeneInvocation` for the duration of the request so it can be injected
 wherever needed, and so [`useBenzeneEnrichment()`](#usebenzeneenrichment) can populate `invocationId`.
 You don't normally call the core overload directly — hosting platforms expose their own overload that
-supplies the factory (e.g. `@benzene/aws-lambda-core`'s `useBenzeneInvocation`, which reads the Lambda
+supplies the factory (e.g. `@benzenejs/aws-lambda-core`'s `useBenzeneInvocation`, which reads the Lambda
 `awsRequestId`).
 
 ```ts
-// core (@benzene/core-middleware) — supply the factory yourself:
+// core (@benzenejs/core-middleware) — supply the factory yourself:
 export function useBenzeneInvocation<TContext>(
   app: IMiddlewarePipelineBuilder<TContext>,
   factory: (serviceResolver: IServiceResolver, context: TContext) => IBenzeneInvocation,
@@ -183,7 +183,7 @@ export function useBenzeneInvocation<TContext>(
 
 ```ts
 // on AWS Lambda, just call the platform's zero-arg overload:
-import { useBenzeneInvocation } from '@benzene/aws-lambda-core';
+import { useBenzeneInvocation } from '@benzenejs/aws-lambda-core';
 
 useBenzeneInvocation(app);
 ```
@@ -196,7 +196,7 @@ middleware wraps.
 
 ## useHealthCheck
 
-**Package:** `@benzene/health-checks`
+**Package:** `@benzenejs/health-checks`
 
 Lets health checks be triggered by sending a message on a given topic. By default the built-in health
 check topic always matches too (alongside whatever topic you register), so a single service's own
@@ -221,7 +221,7 @@ export function useHealthCheck<TContext>(
 ```
 
 ```ts
-import { useHealthCheck } from '@benzene/health-checks';
+import { useHealthCheck } from '@benzenejs/health-checks';
 
 // configure a builder (checks resolved from the container, or supplied as a factory):
 useHealthCheck(app, 'healthcheck', (checks) => checks
@@ -232,7 +232,7 @@ useHealthCheck(app, 'healthcheck', (checks) => checks
 useHealthCheck(app, 'healthcheck', [new MyDatabaseHealthCheck(), new MyQueueHealthCheck()]);
 ```
 
-A health check implements `IHealthCheck` (`@benzene/health-checks-core`):
+A health check implements `IHealthCheck` (`@benzenejs/health-checks-core`):
 
 ```ts
 export interface IHealthCheck {
@@ -250,7 +250,7 @@ pod from service without restarting it, and keep liveness to "is this process it
 
 ## useMessageHandlers
 
-**Package:** `@benzene/core-message-handlers`
+**Package:** `@benzenejs/core-message-handlers`
 
 The middleware that routes the raw message to a message handler, by pulling out the topic and
 deserializing the payload. Pass the handler classes you want served (discovery limited to those), or
@@ -264,7 +264,7 @@ export function useMessageHandlers<TContext>(
 ```
 
 ```ts
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 
 useMessageHandlers(app, CreateOrderHandler, GetOrderHandler);   // specific handlers
 useMessageHandlers(app);                                         // everything registered
@@ -275,8 +275,8 @@ invocation** — use the router variant. C#'s router overloads are indistinguish
 at runtime, so per the porting convention they split by name into `useMessageHandlersWithRouter`:
 
 ```ts
-import { useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
-import { useZodValidation } from '@benzene/zod';
+import { useMessageHandlersWithRouter } from '@benzenejs/core-message-handlers';
+import { useZodValidation } from '@benzenejs/zod';
 
 useMessageHandlersWithRouter(app, (router) => useZodValidation(router), CreateOrderHandler);
 ```
@@ -288,7 +288,7 @@ See [Message Handlers](message-handlers.md) for how the router dispatches, and
 
 ## usePresetTopic
 
-**Package:** `@benzene/core-message-handlers`
+**Package:** `@benzenejs/core-message-handlers`
 
 Routes **every** message on this one pipeline to a fixed topic, regardless of what (if anything) the
 transport message itself carries. For a queue or subscription whose producer isn't a Benzene client
@@ -305,8 +305,8 @@ export function usePresetTopic<TContext>(
 ```
 
 ```ts
-import { usePresetTopic, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useSqs } from '@benzene/aws-lambda-sqs';
+import { usePresetTopic, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
 
 // A queue whose producer never sets a topic attribute at all:
 useSqs(app, (sqs) => {
@@ -330,8 +330,8 @@ carry a stray `topic` attribute — so there's no separate "fallback vs. overrid
 
 ## Validation
 
-**Packages:** `@benzene/zod`, `@benzene/joi`, `@benzene/yup` (adapters), over
-`@benzene/abstractions-validation`
+**Packages:** `@benzenejs/zod`, `@benzenejs/joi`, `@benzenejs/yup` (adapters), over
+`@benzenejs/abstractions-validation`
 
 Validation nests inside the [`useMessageHandlersWithRouter`](#usemessagehandlers) router callback. It
 looks up the schema registered for the request type; if one is found and validation fails, it
@@ -344,8 +344,8 @@ adapters over the popular JavaScript validators (Zod, Joi, Yup), each mirroring 
 shape (a `use<Lib>Validation` router helper plus a schema registry keyed by request class):
 
 ```ts
-import { useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
-import { useZodValidation } from '@benzene/zod';
+import { useMessageHandlersWithRouter } from '@benzenejs/core-message-handlers';
+import { useZodValidation } from '@benzenejs/zod';
 
 useMessageHandlersWithRouter(app, (router) => useZodValidation(router), CreateOrderHandler);
 ```
@@ -358,7 +358,7 @@ schema-based request validation is covered by these adapters instead.)
 
 ## useLogResult / useLogContext
 
-**Package:** `@benzene/core-middleware` (pipeline-builder **members**)
+**Package:** `@benzenejs/core-middleware` (pipeline-builder **members**)
 
 These two live in the builder's own package, so — unlike the free functions above — they're methods on
 the pipeline builder. Both attach properties to the logging scope (via `ILogger.beginScope`) for the
@@ -384,12 +384,12 @@ app.useLogContext((x) =>
 
 ### Log-context builder extensions
 
-`withCorrelationId` (`@benzene/diagnostics`, exported under the `CorrelationExtensions` namespace)
+`withCorrelationId` (`@benzenejs/diagnostics`, exported under the `CorrelationExtensions` namespace)
 adds the current `ICorrelationId` value under the `correlationId` key, registering the `CorrelationId`
 service for the pipeline if it isn't already:
 
 ```ts
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 app.useLogResult((x) => CorrelationExtensions.withCorrelationId(x));
 ```
@@ -402,7 +402,7 @@ Ids](correlation-ids.md) for the full correlation-id story.
 
 ## useExceptionHandler
 
-**Package:** `@benzene/core-middleware` (pipeline-builder **member**)
+**Package:** `@benzenejs/core-middleware` (pipeline-builder **member**)
 
 Adds centralized exception handling around the rest of the pipeline: any error thrown by downstream
 middleware or the handler is caught and passed to your callback, letting you log it, transform it into
@@ -423,7 +423,7 @@ mechanics.
 
 ## useRetry
 
-**Package:** `@benzene/resilience`
+**Package:** `@benzenejs/resilience`
 
 Wraps the rest of the pipeline in a retry loop with exponential backoff. Retries on any error by
 default, and does not retry a *successful* result unless you supply `shouldRetryContext`. This is a
@@ -447,7 +447,7 @@ export function useRetry<TContext>(
 ```
 
 ```ts
-import { useRetry } from '@benzene/resilience';
+import { useRetry } from '@benzenejs/resilience';
 
 useRetry(app, { numberOfRetries: 5, initialDelayMs: 100 });
 ```
@@ -456,7 +456,7 @@ useRetry(app, { numberOfRetries: 5, initialDelayMs: 100 });
 
 ## useOAuth2Bearer
 
-**Package:** `@benzene/auth-oauth2` (over `jose`)
+**Package:** `@benzenejs/auth-oauth2` (over `jose`)
 
 OAuth2 bearer token (JWT) validation for services that have no security-terminating gateway in front
 of them. Reads `Authorization: Bearer <token>`, validates it against a JWKS endpoint (via OIDC
@@ -471,7 +471,7 @@ export function useOAuth2Bearer<TContext extends IHttpContext>(
 ```
 
 ```ts
-import { useOAuth2Bearer, OAuth2BearerOptions } from '@benzene/auth-oauth2';
+import { useOAuth2Bearer, OAuth2BearerOptions } from '@benzenejs/auth-oauth2';
 
 const options = new OAuth2BearerOptions();
 options.authority = 'https://your-tenant.auth0.com/.well-known/openid-configuration';
@@ -490,14 +490,14 @@ particular has no permissive default: a validator that trusted whatever `alg` a 
 open to algorithm-confusion attacks (RFC 8725 §3.1). A failed validation always returns a generic
 `unauthorized` detail — the real reason (bad signature, expired, wrong issuer/audience) is only logged
 server-side. On success, the validated claims are available to [`requireScope`](#requirescope) and to
-your own handlers via `AuthenticationHolder` (`@benzene/auth-core`). See the [Cookbooks](cookbooks/README.md)
+your own handlers via `AuthenticationHolder` (`@benzenejs/auth-core`). See the [Cookbooks](cookbooks/README.md)
 for a full worked auth example.
 
 ---
 
 ## useBasicAuth
 
-**Package:** `@benzene/auth-basic`
+**Package:** `@benzenejs/auth-basic`
 
 RFC 7617 HTTP Basic authentication — the simplest option when you just need a username/password gate
 (a single service account, an internal admin surface) rather than full OAuth2. Validates the decoded
@@ -513,8 +513,8 @@ export function useBasicAuth<TContext extends IHttpContext>(
 ```
 
 ```ts
-import { useBasicAuth, IBasicAuthCredentialValidator } from '@benzene/auth-basic';
-import { Claim, ClaimsIdentity, ClaimsPrincipal, ClaimTypes } from '@benzene/auth-core';
+import { useBasicAuth, IBasicAuthCredentialValidator } from '@benzenejs/auth-basic';
+import { Claim, ClaimsIdentity, ClaimsPrincipal, ClaimTypes } from '@benzenejs/auth-core';
 
 class ServiceAccountValidator implements IBasicAuthCredentialValidator {
   async validateAsync(username: string, password: string): Promise<ClaimsPrincipal | undefined> {
@@ -539,7 +539,7 @@ on the *first* `:` only — a password containing `:` is preserved intact, not t
 
 ## requireScope
 
-**Package:** `@benzene/auth-oauth2`
+**Package:** `@benzenejs/auth-oauth2`
 
 Basic scope-based authorization: requires the caller authenticated by
 [`useOAuth2Bearer`](#useoauth2bearer), earlier in the pipeline, to hold at least one of the given
@@ -554,7 +554,7 @@ export function requireScope<TContext extends IHttpContext>(
 ```
 
 ```ts
-import { useOAuth2Bearer, requireScope } from '@benzene/auth-oauth2';
+import { useOAuth2Bearer, requireScope } from '@benzenejs/auth-oauth2';
 
 useOAuth2Bearer(app, options);
 requireScope(app, 'orders:write');   // any one of the given scopes is sufficient
@@ -565,14 +565,14 @@ caller at all (no auth middleware ran, or it ran and failed) short-circuits with
 caller present but missing every requested scope short-circuits with `forbidden` instead. These are
 deliberately distinct statuses (`unauthorized` = not authenticated, `forbidden` = authenticated but
 not permitted); collapsing them would leave API consumers unable to tell the two apart from a 403
-alone. Role- and policy-based authorization primitives live in `@benzene/auth-core`
+alone. Role- and policy-based authorization primitives live in `@benzenejs/auth-core`
 (`AuthorizationExtensions`) — see the [Cookbooks](cookbooks/README.md).
 
 ---
 
 ## useXml
 
-**Package:** `@benzene/xml` (over `fast-xml-parser`)
+**Package:** `@benzenejs/xml` (over `fast-xml-parser`)
 
 Registers an XML `IMediaFormat<TContext>` (`XmlMediaFormat<TContext>`) alongside the default JSON one,
 so the pipeline can serialize/deserialize XML payloads in addition to JSON — which format applies to a
@@ -586,7 +586,7 @@ export function useXml<TContext>(
 ```
 
 ```ts
-import { useXml } from '@benzene/xml';
+import { useXml } from '@benzenejs/xml';
 
 useXml(app);
 ```
@@ -595,7 +595,7 @@ useXml(app);
 
 ## useMessagePack
 
-**Package:** `@benzene/messagepack` (over `@msgpack/msgpack`)
+**Package:** `@benzenejs/messagepack` (over `@msgpack/msgpack`)
 
 Registers a MessagePack `IMediaFormat<TContext>` (`MessagePackMediaFormat<TContext>`) alongside the
 default JSON one (and XML, if `useXml()` is also called) — same per-message negotiation as `useXml()`,
@@ -611,7 +611,7 @@ export function useMessagePack<TContext>(
 ```
 
 ```ts
-import { useMessagePack } from '@benzene/messagepack';
+import { useMessagePack } from '@benzenejs/messagepack';
 
 useMessagePack(app);
 ```
@@ -620,7 +620,7 @@ useMessagePack(app);
 
 ## Start-up checks
 
-**Package:** `@benzene/core-message-handlers`
+**Package:** `@benzenejs/core-message-handlers`
 
 Boot-time wiring checks run once during host initialization — before any message is handled — so a
 wiring bug fails INIT rather than surfacing as a failure on the message path later. Every host runs them
@@ -635,13 +635,13 @@ also a red unit test. Checks are registered as a collection (the `IStartUpCheck`
   wrong module passed to `addMessageHandlers(...)`); **logs a warning** (a probe- or collector-only
   deployable legitimately has zero handlers).
 
-Other packages contribute their own: `@benzene/clients-in-process` adds **`in-process-routes`**, which
+Other packages contribute their own: `@benzenejs/clients-in-process` adds **`in-process-routes`**, which
 fails start-up when a `useInProcess(name)` route names a pipeline nothing registered.
 
 One switch governs all of them:
 
 ```ts
-import { addBenzeneStartUpChecks, BenzeneStartUpCheckMode } from '@benzene/core-message-handlers';
+import { addBenzeneStartUpChecks, BenzeneStartUpCheckMode } from '@benzenejs/core-message-handlers';
 
 // Log check failures instead of failing start-up…
 addBenzeneStartUpChecks(container, BenzeneStartUpCheckMode.Advisory);
@@ -662,20 +662,20 @@ A few transport-agnostic .NET middleware have no TypeScript port today:
 - **`UseCors`** (`Benzene.Http`) — CORS handling for HTTP transports is not yet ported.
 - **`UseJsonSchema`** (`Benzene.JsonSchema`) — superseded by the [validation](#validation) adapters.
 
-The spec endpoint **is** ported: **`useSpec`** (`@benzene/schema-openapi`) serves the service's spec
+The spec endpoint **is** ported: **`useSpec`** (`@benzenejs/schema-openapi`) serves the service's spec
 document (topics + payload JSON Schemas) on the reserved `spec` topic in three formats — the default
 `benzene` event-service document, real `openapi` (OpenAPI 3.0), and real `asyncapi` (AsyncAPI 3.0),
-selected by the spec request's `type` — and **`useSpecUi`** (`@benzene/spec-ui`) renders it in-browser,
+selected by the spec request's `type` — and **`useSpecUi`** (`@benzenejs/spec-ui`) renders it in-browser,
 Swagger-UI style. Every format is emitted as JSON (the C# YAML output is not ported; see that package's
 `index.ts` divergence note). The mesh-descriptor surface —
-`useMeshDescriptor(app, descriptor)` (`@benzene/mesh-wire`), consumed by `@benzene/codegen-client` and
+`useMeshDescriptor(app, descriptor)` (`@benzenejs/mesh-wire`), consumed by `@benzenejs/codegen-client` and
 the mesh aggregator — is a related but distinct language-neutral descriptor; see the README's
 [Multi-language interoperability](../README.md#multi-language-interoperability) section.
 
 The vendor-specific tracing packages `Benzene.Datadog` and `Benzene.Zipkin` have no port —
-`@benzene/diagnostics` is built on `@opentelemetry/api`, so `useTimer(name)`, `useBenzeneMetrics`, and
+`@benzenejs/diagnostics` is built on `@opentelemetry/api`, so `useTimer(name)`, `useBenzeneMetrics`, and
 the automatic per-middleware spans export to any OpenTelemetry-compatible backend once you register an
-OpenTelemetry SDK in your process. (AWS X-Ray *is* available directly, via `@benzene/aws-lambda-xray`,
+OpenTelemetry SDK in your process. (AWS X-Ray *is* available directly, via `@benzenejs/aws-lambda-xray`,
 as an alternative to the OpenTelemetry path.)
 
 ## See also

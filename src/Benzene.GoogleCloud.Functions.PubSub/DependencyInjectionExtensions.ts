@@ -1,5 +1,5 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IMessageHandlerResultSetter,
@@ -8,17 +8,17 @@ import {
   IRequestMapper,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IBenzeneApplicationBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IBenzeneApplicationBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import {
   addHeaderMessageVersionGetter,
   addMediaFormatNegotiation,
   JsonSerializer,
   MultiSerializerOptionsRequestMapper,
   TransportInfo,
-} from '@benzene/core-message-handlers';
-import { EntryPointMiddlewareApplication } from '@benzene/core-middleware';
+} from '@benzenejs/core-message-handlers';
+import { EntryPointMiddlewareApplication } from '@benzenejs/core-middleware';
 import { MessagePublishedData } from './MessagePublishedData';
 import { GooglePubSubFunctionApplicationBuilder } from './GooglePubSubFunctionApplicationBuilder';
 import { PubSubContext } from './PubSubContext';

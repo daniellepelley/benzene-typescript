@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ICurrentTransport } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+import { ICurrentTransport } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   addBlobStorage,
   BlobStorageApplication,
@@ -12,7 +12,7 @@ import {
   handleBlob,
   useBlob,
   useBlobStorage,
-} from '@benzene/azure-function-blob-storage';
+} from '@benzenejs/azure-function-blob-storage';
 
 /**
  * End-to-end port of the C# Azure Blob Storage pipeline tests (BlobStoragePipelineTest.cs): wire the

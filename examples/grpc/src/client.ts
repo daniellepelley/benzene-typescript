@@ -3,15 +3,15 @@
  * Benzene message by TOPIC (`say_hello`) and the client maps it to the gRPC method, performs the unary
  * call, and maps the gRPC status back to a Benzene result — the caller never sees grpc-js.
  *
- * SCOPE: `@benzene/grpc-client` ports the UNARY send side only (streaming client calls are a deferred,
+ * SCOPE: `@benzenejs/grpc-client` ports the UNARY send side only (streaming client calls are a deferred,
  * separable concern — see the package's `index.ts`). The example's streaming RPCs are therefore driven in
  * the component test with grpc-js's own low-level streaming client methods; the *unary* path is the one
  * that goes through Benzene end-to-end here.
  */
 import { Client, credentials } from '@grpc/grpc-js';
-import { IBenzeneMessageClient } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { addGrpcClient } from '@benzene/grpc-client';
+import { IBenzeneMessageClient } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { addGrpcClient } from '@benzenejs/grpc-client';
 import { GreeterMethods } from './greeter';
 
 /**

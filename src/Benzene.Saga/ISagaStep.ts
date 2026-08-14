@@ -1,4 +1,4 @@
-import { IBenzeneResult } from '@benzene/abstractions';
+import { IBenzeneResult } from '@benzenejs/abstractions';
 import { SagaContext } from './SagaContext';
 import { SagaStepState } from './SagaStepState';
 

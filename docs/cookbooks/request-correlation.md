@@ -23,15 +23,15 @@ OTel Collector, propagating across an Express API and an SQS-backed worker. The 
 calls:
 
 ```ts
-import { useW3CTraceContext } from '@benzene/diagnostics';
+import { useW3CTraceContext } from '@benzenejs/diagnostics';
 // FIRST middleware in the receiving pipeline — parents the root span on the inbound traceparent.
 useW3CTraceContext(pipeline);
 ```
 
 ```ts
-import { addOutboundRouting } from '@benzene/clients';
-import { useW3CTraceContext } from '@benzene/clients'; // outbound counterpart
-import { useSqs } from '@benzene/clients-aws-sqs';
+import { addOutboundRouting } from '@benzenejs/clients';
+import { useW3CTraceContext } from '@benzenejs/clients'; // outbound counterpart
+import { useSqs } from '@benzenejs/clients-aws-sqs';
 // On an outbound route — stamps the active span's traceparent/tracestate onto the message headers.
 addOutboundRouting(container, (routing) =>
   routing.route('order:process', (route) => {
@@ -51,7 +51,7 @@ lines (alongside `invocationId`/`topic`/`transport`/`handler`) — see
 
 Some upstream system already sends a proprietary correlation header (`x-partner-request-id`, a legacy
 gateway's `correlationId`, …) and expects it echoed or forwarded unchanged. Benzene's `ICorrelationId`
-(`@benzene/abstractions`) exists for exactly this: a per-invocation marker you populate from your own
+(`@benzenejs/abstractions`) exists for exactly this: a per-invocation marker you populate from your own
 middleware, attach to the log scope, and forward on outbound clients.
 
 `ICorrelationId` self-generates a UUID (via `crypto.randomUUID()`) on construction, so even with nothing
@@ -66,12 +66,12 @@ returns the first present key in the order you give — falling back to `''` (wh
 the self-generated id survives a missing header):
 
 ```ts
-import { IBenzeneServiceContainer, ICorrelationId } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { IBenzeneServiceContainer, ICorrelationId } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 export class StartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
@@ -106,7 +106,7 @@ the rest of the pipeline. Chain it onto `useLogResult` (which also emits a `"Ben
 line) or `useLogContext`:
 
 ```ts
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 app.useLogResult((x) => CorrelationExtensions.withCorrelationId(x));
 ```
@@ -118,11 +118,11 @@ instead of hand-composing `.with*` extensions.
 ### Step 3 — forward it to downstream calls
 
 An outbound message client can stamp the current invocation's correlation id onto every request it
-sends. `withCorrelationId` (from `@benzene/clients`) wraps the client in a decorator that copies
+sends. `withCorrelationId` (from `@benzenejs/clients`) wraps the client in a decorator that copies
 `ICorrelationId.get()` into the outgoing headers before delegating:
 
 ```ts
-import { withCorrelationId } from '@benzene/clients';
+import { withCorrelationId } from '@benzenejs/clients';
 
 // on your outbound client builder
 withCorrelationId(clientBuilder);
@@ -146,10 +146,10 @@ Drive the partner-correlation middleware directly and assert the id lands where 
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { IDisposable, ILogger, ILoggerFactory, LoggerBase, LogLevel } from '@benzene/abstractions';
-import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { IDisposable, ILogger, ILoggerFactory, LoggerBase, LogLevel } from '@benzenejs/abstractions';
+import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 class CapturingLogger extends LoggerBase {
   constructor(private readonly sink: Record<string, unknown>[]) {

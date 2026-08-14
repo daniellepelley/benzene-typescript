@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { ArgumentException } from '@benzene/core';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { ArgumentException } from '@benzenejs/core';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   DefaultStatuses,
   InlineRequestMapperThunk,
@@ -11,8 +11,8 @@ import {
   RegistryMessageHandlersFinder,
   message,
   MessageHandlersRegistry,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /** Port of Benzene.Test.Core.Core.MessageHandling.MessageHandlerFactoryTest scenarios. */
 class Order {

@@ -1,6 +1,6 @@
 /**
- * Test helpers for the standalone SQS polling consumer (`@benzene/aws-sqs`): `asSqsMessage(...)` turns a
- * platform-neutral `@benzene/testing` `messageBuilder(...)` into the native `@aws-sdk/client-sqs`
+ * Test helpers for the standalone SQS polling consumer (`@benzenejs/aws-sqs`): `asSqsMessage(...)` turns a
+ * platform-neutral `@benzenejs/testing` `messageBuilder(...)` into the native `@aws-sdk/client-sqs`
  * `Message` the consumer routes on, so a pipeline test builds its input once instead of hand-rolling the
  * message-attribute shape.
  *

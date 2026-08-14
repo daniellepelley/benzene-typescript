@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.BlobStorage.Extensions. */
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
 import { BlobStorageContext } from './BlobStorageContext';
 import { BlobTriggerEvent } from './BlobTriggerEvent';
 

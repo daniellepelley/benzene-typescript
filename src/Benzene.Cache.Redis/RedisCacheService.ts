@@ -1,12 +1,12 @@
 /** Port of Benzene.Cache.Redis.RedisCacheService. */
 import type { RedisOptions } from 'ioredis';
-import { ILogger } from '@benzene/abstractions';
+import { ILogger } from '@benzenejs/abstractions';
 import {
   ICacheEntry,
   ICacheInvalidateActions,
   ICacheService,
   ICacheWriteActions,
-} from '@benzene/cache-core';
+} from '@benzenejs/cache-core';
 import { IRedisConnectionFactory, RedisClient } from './IRedisConnectionFactory';
 import { RedisCacheEntry } from './RedisCacheEntry';
 import { RedisMultiKeyActions } from './RedisMultiKeyActions';

@@ -1,5 +1,5 @@
 /** Port of Benzene.Cache.Core.ICacheService. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * A cache backend that can report whether it is reachable.

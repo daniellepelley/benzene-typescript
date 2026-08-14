@@ -1,4 +1,4 @@
-import { serviceToken } from '@benzene/abstractions';
+import { serviceToken } from '@benzenejs/abstractions';
 
 /**
  * A tiny example dependency, registered in `StartUp` and injected into `HelloWorldMessageHandler`. It

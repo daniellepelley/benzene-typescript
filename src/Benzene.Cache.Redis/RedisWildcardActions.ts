@@ -1,6 +1,6 @@
 /** Port of Benzene.Cache.Redis.RedisWildcardActions. */
-import { ILogger } from '@benzene/abstractions';
-import { CacheInvalidateActions } from '@benzene/cache-core';
+import { ILogger } from '@benzenejs/abstractions';
+import { CacheInvalidateActions } from '@benzenejs/cache-core';
 import type { RedisCacheService } from './RedisCacheService';
 
 /**

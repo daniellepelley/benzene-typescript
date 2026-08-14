@@ -1,15 +1,15 @@
 /**
  * Port of Benzene.Aws.Lambda.Kafka.DependencyInjectionExtensions (C# extension methods -> free functions).
  */
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMessageHandlerResultSetter,
   IMessageTopicGetter,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { JsonSerializer, TransportInfo } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { JsonSerializer, TransportInfo } from '@benzenejs/core-message-handlers';
 import { KafkaMessageBodyGetter } from './KafkaMessageBodyGetter';
 import { KafkaMessageHeadersGetter } from './KafkaMessageHeadersGetter';
 import { KafkaMessageMessageHandlerResultSetter } from './KafkaMessageMessageHandlerResultSetter';

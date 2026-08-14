@@ -6,8 +6,8 @@
  * the V1→V2→V3 chain (and back) around a single V3 handler.
  */
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageRequest } from '@benzene/core-messages';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   buildVersioningApp,
   InventoryAdjustmentV1,

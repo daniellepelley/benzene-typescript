@@ -1,5 +1,5 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Port of Benzene.Core.MessageHandlers.MessageResult (and the IDefaultStatuses

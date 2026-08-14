@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Contracts.MeshServiceReport. */
-import { HealthCheckResponse } from '@benzene/health-checks-core';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 
 /**
  * A service's self-reported spec/health, pushed rather than pulled - for services with no synchronous

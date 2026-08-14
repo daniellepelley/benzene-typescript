@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.Kafka.KafkaContext. */
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { KafkaRecord } from './KafkaRecord';
 
 /**

@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.Kafka.TestHelpers.MessageBuilderExtensions. */
-import { KafkaRecord } from '@benzene/azure-function-kafka';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { KafkaRecord } from '@benzenejs/azure-function-kafka';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsAzureKafkaEventOptions {

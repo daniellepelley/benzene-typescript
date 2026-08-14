@@ -1,9 +1,9 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { MiddlewareApplication, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IRouteFinder } from '@benzene/http';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { MiddlewareApplication, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IRouteFinder } from '@benzenejs/http';
 import { ExpressContext } from './ExpressContext';
 import { addExpress } from './DependencyInjectionExtensions';
 import { BenzeneExpressMiddleware, ExpressRequestLike } from './types';

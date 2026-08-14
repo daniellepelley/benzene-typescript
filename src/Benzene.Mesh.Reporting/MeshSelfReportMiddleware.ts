@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Reporting.MeshSelfReportMiddleware. */
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { HealthCheckResponse } from '@benzene/health-checks-core';
-import { IMeshReportPublisher, MeshServiceReport } from '@benzene/mesh-contracts';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
+import { IMeshReportPublisher, MeshServiceReport } from '@benzenejs/mesh-contracts';
 import { MeshSelfReportOptions } from './MeshSelfReportOptions';
 import { MeshSelfReportState } from './MeshSelfReportState';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IRequestEnricher, IRequestMapper } from '@benzene/abstractions-message-handlers';
-import { EnrichingRequestMapper } from '@benzene/core-message-handlers';
+import { IRequestEnricher, IRequestMapper } from '@benzenejs/abstractions-message-handlers';
+import { EnrichingRequestMapper } from '@benzenejs/core-message-handlers';
 
 /** Port of Benzene.Test.Core.Core.MessageHandling.EnrichingRequestMapperTest scenarios. */
 class TestContext {}

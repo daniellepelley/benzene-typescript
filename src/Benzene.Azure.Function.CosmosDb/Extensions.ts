@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.CosmosDb.Extensions. */
-import { IAzureFunctionApp } from '@benzene/azure-function-core';
+import { IAzureFunctionApp } from '@benzenejs/azure-function-core';
 
 /**
  * Dispatches a batch of changed documents — as delivered by the Azure Functions `CosmosDBTrigger`

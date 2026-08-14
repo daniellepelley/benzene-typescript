@@ -1,4 +1,4 @@
-import { IDisposable, ILogger, ILoggerFactory, LogLevel, LoggerBase } from '@benzene/abstractions';
+import { IDisposable, ILogger, ILoggerFactory, LogLevel, LoggerBase } from '@benzenejs/abstractions';
 
 /** Port of the C# test helper Benzene.Test.Logging.Helpers.FakeLoggerFactory. */
 export interface LogEntry {

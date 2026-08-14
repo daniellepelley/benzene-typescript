@@ -1,21 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SpanStatusCode } from '@opentelemetry/api';
-import { IBenzeneResult } from '@benzene/abstractions';
-import { IHasMessageResult, IMessageGetter } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { IHasMessageResult, IMessageGetter } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import {
   ActivityProcessTimerFactory,
   addActivityPerMiddleware,
   addDiagnostics,
   IProcessTimerFactory,
   useTimer,
-} from '@benzene/diagnostics';
-import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { CurrentTransportInfo } from '@benzene/core-message-handlers';
-import { ICurrentTransport } from '@benzene/abstractions-message-handlers';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/diagnostics';
+import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { CurrentTransportInfo } from '@benzenejs/core-message-handlers';
+import { ICurrentTransport } from '@benzenejs/abstractions-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { OtelHarness } from './otelHarness';
 
 /**

@@ -17,9 +17,9 @@
  * `configure` takes the Azure app builder directly). The two `this`-typed overloads pin whichever builder
  * type `benzeneTestHost(StartUp)` inferred, so a developer never writes the generic by hand.
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { IAzureFunctionAppBuilder, AzureFunctionStartUpRunner } from '@benzene/azure-function-core';
-import { BenzeneStartUpOf, BenzeneTestHostBuilder } from '@benzene/testing';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { IAzureFunctionAppBuilder, AzureFunctionStartUpRunner } from '@benzenejs/azure-function-core';
+import { BenzeneStartUpOf, BenzeneTestHostBuilder } from '@benzenejs/testing';
 import { AzureFunctionBenzeneTestHost } from './AzureFunctionBenzeneTestHost';
 
 /**
@@ -27,14 +27,14 @@ import { AzureFunctionBenzeneTestHost } from './AzureFunctionBenzeneTestHost';
  * receives the `IAzureFunctionAppBuilder` directly (wire triggers on it with `useAzureHttp`,
  * `useServiceBus`, …). Pins `TAppBuilder` so a developer never writes the generic by hand.
  *
- * @deprecated Implement the non-generic `BenzeneStartUp` from `@benzene/testing`: `configure` then
+ * @deprecated Implement the non-generic `BenzeneStartUp` from `@benzenejs/testing`: `configure` then
  * receives an `IBenzeneApplicationBuilder` and you select Azure with `useAzureFunctions(app, az => …)`,
  * exactly as the AWS startups select AWS with `useAwsLambda(app, …)`. Both shapes are accepted by
  * `buildAzureFunctionApp`; this alias remains for existing Azure test startups.
  */
 export type AzureFunctionStartUp = BenzeneStartUpOf<IAzureFunctionAppBuilder>;
 
-declare module '@benzene/testing' {
+declare module '@benzenejs/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {
     /**
      * Builds an in-memory {@link AzureFunctionBenzeneTestHost} from the startup + any `withServices`/

@@ -8,10 +8,10 @@
  * Mechanism B (transparent casting): `inventory:adjust` has ONE handler, on V3 — older producers are cast
  * to V3 before it runs (see `startUp.ts`), so it only ever sees its own schema.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   CreateOrderV1,
   CreateOrderV2,

@@ -1,6 +1,6 @@
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import { IIdempotencyKeyStrategy } from './IIdempotencyKeyStrategy';
 import { IIdempotencyStore } from './IIdempotencyStore';
 import { IdempotencyConflictException } from './IdempotencyConflictException';

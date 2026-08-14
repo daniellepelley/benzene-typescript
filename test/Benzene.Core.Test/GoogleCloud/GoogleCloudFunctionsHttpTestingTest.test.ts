@@ -10,27 +10,27 @@
  * `asGoogleCloudHttpRequest` builder name, lines 1/2/6 read identically to the AWS/Azure harness tests.
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { benzeneTestHost, FakeBenzeneMessageSender, httpBuilder } from '@benzene/testing';
+} from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { benzeneTestHost, FakeBenzeneMessageSender, httpBuilder } from '@benzenejs/testing';
 import {
   GoogleCloudFunctionApplicationBuilder,
   GoogleCloudFunctionStartUp,
   useHttp,
-} from '@benzene/google-cloud-functions-http';
+} from '@benzenejs/google-cloud-functions-http';
 import {
   asGoogleCloudHttpRequest,
   buildGoogleCloudFunctionHost,
-} from '@benzene/google-cloud-functions-http-testing';
+} from '@benzenejs/google-cloud-functions-http-testing';
 
 const MessageTopics = {
   createOrder: 'order:create',

@@ -97,7 +97,7 @@ asynchronously across the real Lambdas; CloudWatch Logs for each function shows 
   omitted — the topology and the discover→aggregate story are intact without them.
 - **The mesh has no HTTP API; the UI is a static page, not a Lambda.** The mesh handler returns a plain
   summary (discover → aggregate to S3), not an API-Gateway proxy response, so it's driven purely by the
-  schedule (and on-demand `aws lambda invoke`). Instead of the .NET mesh's Lambda-served `@benzene/mesh-ui`
+  schedule (and on-demand `aws lambda invoke`). Instead of the .NET mesh's Lambda-served `@benzenejs/mesh-ui`
   (not ported), the catalog is browsed through `web/index.html` served as an S3 static site — a
   language-neutral page that reads the same `manifest.json`/`topics.json`/`topology.json`. (A static page
   serves every port equally, so a natural future home is the cross-language benzene spec repo.)

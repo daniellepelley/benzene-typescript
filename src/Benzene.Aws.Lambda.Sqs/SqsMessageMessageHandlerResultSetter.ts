@@ -1,4 +1,4 @@
-import { IMessageHandlerResult, IMessageHandlerResultSetter } from '@benzene/abstractions-message-handlers';
+import { IMessageHandlerResult, IMessageHandlerResultSetter } from '@benzenejs/abstractions-message-handlers';
 import { SqsMessageContext } from './SqsMessageContext';
 
 /**

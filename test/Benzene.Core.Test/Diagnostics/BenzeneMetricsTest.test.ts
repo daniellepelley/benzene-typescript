@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IBenzeneResult } from '@benzene/abstractions';
-import { IHasMessageResult } from '@benzene/abstractions-message-handlers';
-import { useBenzeneMetrics } from '@benzene/diagnostics';
-import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { IHasMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { useBenzeneMetrics } from '@benzenejs/diagnostics';
+import { addBenzeneMiddleware, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { OtelHarness } from './otelHarness';
 
 /**

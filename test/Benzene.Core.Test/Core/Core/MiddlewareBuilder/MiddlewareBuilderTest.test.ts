@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { Constants } from '@benzene/core';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { Constants } from '@benzenejs/core';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   DefaultBenzeneServiceContainer,
   DefaultServiceResolverFactory,
   ServiceCollection,
-} from '@benzene/dependencies';
+} from '@benzenejs/dependencies';
 
 /**
  * Port of Benzene.Test.Core.Core.MiddlewareBuilder.MiddlewareBuilderTest.

@@ -1,7 +1,7 @@
 /** Port of Benzene.Core.Versioning.Response.CastMessageHandlerResult. */
-import { IBenzeneResult } from '@benzene/abstractions';
-import { IMessageHandlerDefinition, IMessageHandlerResult } from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition, IMessageHandlerResult } from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 
 /**
  * A shim {@link IMessageHandlerResult} handed to the inner response payload mapper: same topic, status,

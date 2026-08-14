@@ -1,5 +1,5 @@
-import { Constructor, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import { ISchemaBuilder } from './ISchemaBuilder';
 
 /**

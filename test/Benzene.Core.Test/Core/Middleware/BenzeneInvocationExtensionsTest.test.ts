@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IBenzeneInvocation } from '@benzene/abstractions-middleware';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IBenzeneInvocation } from '@benzenejs/abstractions-middleware';
 import {
   addBenzeneInvocation,
   BenzeneInvocation,
   MiddlewarePipelineBuilder,
   useBenzeneInvocation,
-} from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * Port of the UseBenzeneInvocation / AddBenzeneInvocation scenarios: the middleware populates the

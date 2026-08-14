@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
-import { asAzureHttpRequest, type AzureFunctionStartUp } from '@benzene/azure-function-testing';
+} from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
+import { benzeneTestHost, httpBuilder } from '@benzenejs/testing';
+import { asAzureHttpRequest, type AzureFunctionStartUp } from '@benzenejs/azure-function-testing';
 import {
   addAzureHttp,
   AzureHttpApplication,
   AzureHttpContext,
   useAzureHttp,
-} from '@benzene/azure-function-http';
+} from '@benzenejs/azure-function-http';
 
 /**
  * End-to-end port of the C# AspNet HTTP pipeline tests, retargeted onto the @azure/functions v4 HTTP

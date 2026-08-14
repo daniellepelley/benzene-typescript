@@ -1,4 +1,4 @@
-import { ServiceIdentifier, serviceIdentifierName } from '@benzene/abstractions';
+import { ServiceIdentifier, serviceIdentifierName } from '@benzenejs/abstractions';
 
 /**
  * Thrown by {@link IBenzeneMessageSender.sendAsync} when the outbound route for a topic did not produce

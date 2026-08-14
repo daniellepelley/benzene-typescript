@@ -1,4 +1,4 @@
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 
 /**
  * TypeScript-only file with no direct C# counterpart.

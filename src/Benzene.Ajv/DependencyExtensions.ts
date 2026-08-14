@@ -1,10 +1,10 @@
-import { tryAddSingleton } from '@benzene/abstractions';
-import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
+import { tryAddSingleton } from '@benzenejs/abstractions';
+import { IMessageRouterBuilder } from '@benzenejs/abstractions-message-handlers';
 import {
   DefaultValidationStatusMapper,
   ITypeJsonSchemaSource,
   IValidationStatusMapper,
-} from '@benzene/abstractions-validation';
+} from '@benzenejs/abstractions-validation';
 import { ValidationMiddlewareBuilder } from './ValidationMiddlewareBuilder';
 import { AjvJsonSchemaSource } from './AjvJsonSchemaSource';
 

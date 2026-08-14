@@ -1,8 +1,8 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.GooglePubSubFunctionApplicationBuilder. */
-import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzene/abstractions';
-import { IEntryPointMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { BenzeneApplicationBuilder } from '@benzene/core-middleware';
-import { GoogleCloudFunctionsPlatform } from '@benzene/google-cloud-functions-core';
+import { IBenzeneServiceContainer, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IEntryPointMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { BenzeneApplicationBuilder } from '@benzenejs/core-middleware';
+import { GoogleCloudFunctionsPlatform } from '@benzenejs/google-cloud-functions-core';
 import { MessagePublishedData } from './MessagePublishedData';
 
 /**
@@ -11,7 +11,7 @@ import { MessagePublishedData } from './MessagePublishedData';
  *
  * Mirrors `GoogleCloudFunctionApplicationBuilder`'s deferred-build shape, but is self-contained rather
  * than reusing an existing HTTP-shaped adapter: unlike the HTTP trigger (which piggybacks on
- * `@benzene/express`), a Pub/Sub CloudEvent trigger has no existing Benzene builder abstraction to
+ * `@benzenejs/express`), a Pub/Sub CloudEvent trigger has no existing Benzene builder abstraction to
  * reuse, so `usePubSub` recognizes this builder directly. {@link add} stores the entry point application
  * factory and {@link build} invokes it once {@link GooglePubSubFunctionHost} has the final resolver
  * factory.

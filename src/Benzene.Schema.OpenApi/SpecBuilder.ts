@@ -1,13 +1,13 @@
 /** Port of Benzene.Schema.OpenApi.SpecBuilder (the format dispatch). */
-import { IServiceResolver } from '@benzene/abstractions';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import {
   IApplicationInfo,
   IMessageHandlersFinder,
   ITransportsInfo,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageDefinitionFinder, IMessageSendersFinder } from '@benzene/abstractions-messages';
-import { IHttpEndpointFinder } from '@benzene/http';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageDefinitionFinder, IMessageSendersFinder } from '@benzenejs/abstractions-messages';
+import { IHttpEndpointFinder } from '@benzenejs/http';
 import { AsyncApiDocumentBuilder } from './AsyncApi/AsyncApiDocumentBuilder';
 import { AsyncApiSpecOptions } from './AsyncApi/AsyncApiSpecOptions';
 import { EventServiceDocumentBuilder } from './EventService/EventServiceDocumentBuilder';

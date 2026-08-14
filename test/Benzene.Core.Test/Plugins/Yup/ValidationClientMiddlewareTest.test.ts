@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import * as yup from 'yup';
-import { BenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { registerYupSchema, ValidationClientMiddleware } from '@benzene/yup';
+import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { registerYupSchema, ValidationClientMiddleware } from '@benzenejs/yup';
 
 /**
  * Unit tests for the client-side `ValidationClientMiddleware` — port of

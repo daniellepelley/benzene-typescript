@@ -1,7 +1,7 @@
 /** Port of Benzene.HealthChecks.Azure.ServiceBus.ServiceBusHealthCheckFactory. */
 import { ServiceBusClient } from '@azure/service-bus';
-import { IServiceResolver } from '@benzene/abstractions';
-import { IHealthCheck, IHealthCheckFactory } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IHealthCheck, IHealthCheckFactory } from '@benzenejs/health-checks-core';
 import { ServiceBusHealthCheck } from './ServiceBusHealthCheck';
 
 /**
@@ -9,7 +9,7 @@ import { ServiceBusHealthCheck } from './ServiceBusHealthCheck';
  *
  * PORT DIVERGENCE: the C# factory resolves `ServiceBusClient` from the container in `Create`; the
  * TypeScript port has no DI token for the raw `@azure/service-bus` client (matching the
- * `@benzene/clients-azure-*` and `@benzene/health-checks-dynamodb` convention), so the
+ * `@benzenejs/clients-azure-*` and `@benzenejs/health-checks-dynamodb` convention), so the
  * `ServiceBusClient` is supplied to the factory directly and `create`'s resolver is unused.
  */
 export class ServiceBusHealthCheckFactory implements IHealthCheckFactory {

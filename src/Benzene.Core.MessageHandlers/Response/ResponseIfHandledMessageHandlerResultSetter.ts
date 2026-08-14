@@ -2,7 +2,7 @@ import {
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
   IResponseHandlerContainer,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { Constants } from '../Constants';
 
 /**

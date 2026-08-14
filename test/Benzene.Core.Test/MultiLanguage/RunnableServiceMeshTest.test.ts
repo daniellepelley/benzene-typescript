@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RunningService, startOrderService } from '@benzene-example/mesh-service';
-import { FileSystemMeshArtifactStore, HttpMeshServiceSource, MeshAggregator } from '@benzene/mesh-aggregator';
-import { MeshServiceRegistry, MeshServiceRegistryEntry, MeshServiceStatus } from '@benzene/mesh-contracts';
+import { FileSystemMeshArtifactStore, HttpMeshServiceSource, MeshAggregator } from '@benzenejs/mesh-aggregator';
+import { MeshServiceRegistry, MeshServiceRegistryEntry, MeshServiceStatus } from '@benzenejs/mesh-contracts';
 
 /**
- * Drives the real `@benzene/mesh-aggregator` against the runnable `@benzene-example/mesh-service` - a live
+ * Drives the real `@benzenejs/mesh-aggregator` against the runnable `@benzene-example/mesh-service` - a live
  * TypeScript Benzene HTTP service (Express + real handlers + a registry-derived spec), started on a real
  * port and polled over the real global `fetch`. It proves the example service is genuinely
  * mesh-discoverable: the aggregator catalogs its topics and HTTP mappings from what the running service

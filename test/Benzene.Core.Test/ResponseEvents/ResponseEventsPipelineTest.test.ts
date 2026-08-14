@@ -5,17 +5,17 @@ import {
   IServiceResolver,
   ServiceIdentifier,
   tryAddScopedFactory,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IMessageHandlerContext,
   IMessageRouterBuilder,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageDefinition, IMessageDefinitionFinder } from '@benzene/abstractions-messages';
-import { addOutboundRouting, IBenzeneMessageSender } from '@benzene/clients';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageDefinition, IMessageDefinitionFinder } from '@benzenejs/abstractions-messages';
+import { addOutboundRouting, IBenzeneMessageSender } from '@benzenejs/clients';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   BenzeneMessageSenderResponseEventPublisher,
   IResponseEventCatalog,
@@ -25,7 +25,7 @@ import {
   ResponseEventsBuilder,
   ResponseEventsMiddleware,
   useResponseEvents,
-} from '@benzene/response-events';
+} from '@benzenejs/response-events';
 
 /**
  * Port of test/Benzene.Core.Test/ResponseEvents/ResponseEventsPipelineTest.cs. The C# test drives the

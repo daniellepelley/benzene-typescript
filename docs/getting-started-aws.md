@@ -57,18 +57,18 @@ shape you want for a modern Lambda bundle.
 ## 2. Install the packages
 
 ```bash
-npm install @benzene/aws-lambda @benzene/http
+npm install @benzenejs/aws-lambda @benzenejs/http
 npm install --save-dev typescript esbuild @types/aws-lambda
 ```
 
-`@benzene/aws-lambda` is the umbrella for building a Lambda service: one install brings in the
+`@benzenejs/aws-lambda` is the umbrella for building a Lambda service: one install brings in the
 middleware pipeline and message-handler infrastructure, the `AwsLambdaHost` production host (and the
 `useAwsLambda` selector), the results/handler building blocks, **and** every event-source transport —
 `useApiGateway`, `useSqs`, `useSns`, `useEventBridge`, `useKafka`, and the rest — so you don't add a
-package per event source (see [Supported event sources](#supported-event-sources)). `@benzene/http` adds
+package per event source (see [Supported event sources](#supported-event-sources)). `@benzenejs/http` adds
 the `httpEndpoint` helper for HTTP-shaped handlers. The canonical `BenzeneStartUp` contract lives in
-`@benzene/abstractions-middleware` (installed transitively). Prefer a narrower dependency set? Install
-the individual `@benzene/aws-lambda-*` packages instead.
+`@benzenejs/abstractions-middleware` (installed transitively). Prefer a narrower dependency set? Install
+the individual `@benzenejs/aws-lambda-*` packages instead.
 
 ## 3. Write a message handler
 
@@ -76,8 +76,8 @@ Create `src/handlers.ts`. This is where your logic lives — the file you'd carr
 later moved to Express or Azure Functions:
 
 ```ts
-import { IBenzeneResultOf, IMessageHandler, message, BenzeneResult } from '@benzene/aws-lambda';
-import { httpEndpoint } from '@benzene/http';
+import { IBenzeneResultOf, IMessageHandler, message, BenzeneResult } from '@benzenejs/aws-lambda';
+import { httpEndpoint } from '@benzenejs/http';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -128,9 +128,9 @@ AWS with `useAwsLambda(app, aws => …)`:
 
 ```ts
 // src/startUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useAwsLambda, useApiGateway, useMessageHandlers } from '@benzene/aws-lambda';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useAwsLambda, useApiGateway, useMessageHandlers } from '@benzenejs/aws-lambda';
 import { PlaceOrderHandler } from './handlers.js';
 
 export class StartUp implements BenzeneStartUp {
@@ -149,7 +149,7 @@ Then `src/handler.ts` — the only file that knows it's running on Lambda, a sin
 
 ```ts
 // src/handler.ts
-import { AwsLambdaHost } from '@benzene/aws-lambda';
+import { AwsLambdaHost } from '@benzenejs/aws-lambda';
 import { StartUp } from './startUp.js';
 
 export const handler = new AwsLambdaHost(StartUp).lambdaHandler;
@@ -187,18 +187,18 @@ What each piece does:
 ## 5. Test locally
 
 Before deploying, exercise the exported `handler` in-memory with the same builder you'll ship, using
-`@benzene/aws-lambda-testing` to construct native events and `@benzene/testing`'s builders for payloads:
+`@benzenejs/aws-lambda-testing` to construct native events and `@benzenejs/testing`'s builders for payloads:
 
 ```bash
-npm install --save-dev vitest @benzene/testing @benzene/aws-lambda-testing
+npm install --save-dev vitest @benzenejs/testing @benzenejs/aws-lambda-testing
 ```
 
 ```ts
 // test/apiGateway.test.ts
 import { describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { httpBuilder } from '@benzene/testing';
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+import { httpBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { handler } from '../src/handler.js';
 
 const context = {} as Context;
@@ -302,13 +302,13 @@ whichever async transport delivers it. Now you have a **deployment choice**.
 
 ### Model A — one Lambda function per transport (the default)
 
-`useSqs` is already included in `@benzene/aws-lambda`. Give it its own `StartUp` and entry point:
+`useSqs` is already included in `@benzenejs/aws-lambda`. Give it its own `StartUp` and entry point:
 
 ```ts
 // src/sqsStartUp.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useAwsLambda, useSqs, useMessageHandlers } from '@benzene/aws-lambda';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useAwsLambda, useSqs, useMessageHandlers } from '@benzenejs/aws-lambda';
 import { NotifyWarehouseHandler } from './handlers.js';
 
 export class SqsStartUp implements BenzeneStartUp {
@@ -323,7 +323,7 @@ export class SqsStartUp implements BenzeneStartUp {
 
 ```ts
 // src/sqs.ts
-import { AwsLambdaHost } from '@benzene/aws-lambda';
+import { AwsLambdaHost } from '@benzenejs/aws-lambda';
 import { SqsStartUp } from './sqsStartUp.js';
 
 export const handler = new AwsLambdaHost(SqsStartUp).lambdaHandler;
@@ -346,7 +346,7 @@ event-shape predicate matches and delegates:
 
 ```ts
 // src/index.ts
-import { useMessageHandlers, compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler, useApiGateway, useSqs } from '@benzene/aws-lambda';
+import { useMessageHandlers, compositeAwsLambda, isApiGatewayEvent, isSqsEvent, toLambdaHandler, useApiGateway, useSqs } from '@benzenejs/aws-lambda';
 import { PlaceOrderHandler, NotifyWarehouseHandler } from './handlers.js';
 
 const entryPoint = compositeAwsLambda((c) => {
@@ -374,14 +374,14 @@ A given function can wire up several sources; the incoming event's shape selects
 
 | Event source | Function | Package |
 |---|---|---|
-| API Gateway (REST + HTTP API) | `useApiGateway` | `@benzene/aws-lambda-api-gateway` |
-| SQS | `useSqs` | `@benzene/aws-lambda-sqs` |
-| SNS | `useSns` | `@benzene/aws-lambda-sns` |
-| EventBridge | `useEventBridge` | `@benzene/aws-lambda-eventbridge` |
-| Kafka (MSK / self-managed) | `useKafka` | `@benzene/aws-lambda-kafka` |
-| DynamoDB Streams | `useDynamoDb` | `@benzene/aws-lambda-dynamodb` |
-| S3 | `useS3` | `@benzene/aws-lambda-s3` |
-| Kinesis | `useKinesis` | `@benzene/aws-lambda-kinesis` |
+| API Gateway (REST + HTTP API) | `useApiGateway` | `@benzenejs/aws-lambda-api-gateway` |
+| SQS | `useSqs` | `@benzenejs/aws-lambda-sqs` |
+| SNS | `useSns` | `@benzenejs/aws-lambda-sns` |
+| EventBridge | `useEventBridge` | `@benzenejs/aws-lambda-eventbridge` |
+| Kafka (MSK / self-managed) | `useKafka` | `@benzenejs/aws-lambda-kafka` |
+| DynamoDB Streams | `useDynamoDb` | `@benzenejs/aws-lambda-dynamodb` |
+| S3 | `useS3` | `@benzenejs/aws-lambda-s3` |
+| Kinesis | `useKinesis` | `@benzenejs/aws-lambda-kinesis` |
 
 The [`examples/aws-lambda-functions`](../examples/aws-lambda-functions) project hosts one order domain on
 API Gateway, SQS, SNS, EventBridge, and Kafka — one function module per transport, each its own unified
@@ -400,7 +400,7 @@ send, or a queue fed by another system), call `usePresetTopic` before `useMessag
 every message on that queue to a fixed topic instead:
 
 ```ts
-import { usePresetTopic, useMessageHandlers } from '@benzene/aws-lambda';
+import { usePresetTopic, useMessageHandlers } from '@benzenejs/aws-lambda';
 
 useSqs(app, (sqs) => {
   usePresetTopic(sqs, 'order:placed');
@@ -444,8 +444,8 @@ Reject bad payloads before they reach a handler by configuring a router around t
 `useMessageHandlersWithRouter` and a validation adapter such as `useZodValidation`:
 
 ```ts
-import { useMessageHandlersWithRouter } from '@benzene/aws-lambda';
-import { useZodValidation } from '@benzene/zod';
+import { useMessageHandlersWithRouter } from '@benzenejs/aws-lambda';
+import { useZodValidation } from '@benzenejs/zod';
 
 useSqs(app, (sqs) =>
   useMessageHandlersWithRouter(sqs, (router) => useZodValidation(router), NotifyWarehouseHandler),

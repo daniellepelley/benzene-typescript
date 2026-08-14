@@ -6,24 +6,24 @@
  *
  * The one divergence from the C# conformance test: where .NET recovers the §2.1 schemas by reflecting
  * over the handler request/response types, this port injects them via a `MapMeshSchemaProvider` (types
- * are erased at runtime - see `@benzene/mesh-wire`'s `MeshSchemaProvider`). The schemas supplied here
+ * are erased at runtime - see `@benzenejs/mesh-wire`'s `MeshSchemaProvider`). The schemas supplied here
  * are exactly the fixture's expected schemas, so the test still pins the §2.1 mapping's output.
  */
 import { describe, expect, it } from 'vitest';
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 import {
   IMessageHandlerDefinition,
   IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
-import { RegistryMessageHandlersFinder } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { RegistryMessageHandlersFinder } from '@benzenejs/core-message-handlers';
 import {
   MapMeshSchemaProvider,
   MeshDescriptorFactory,
   MeshJson,
   MeshPlacement,
   MeshServiceInfo,
-} from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-wire';
 import { findSubsetMismatch, load } from './ConformanceFixtures';
 import {
   GreetConformanceHandler,

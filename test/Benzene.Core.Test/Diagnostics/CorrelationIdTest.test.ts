@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CorrelationId } from '@benzene/diagnostics';
+import { CorrelationId } from '@benzenejs/diagnostics';
 
 /** Port of Benzene.Test.Diagnostics.CorrelationIdTest. */
 describe('CorrelationIdTest', () => {

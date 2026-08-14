@@ -1,11 +1,11 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { Metadata, status } from '@grpc/grpc-js';
 
 /**
  * Port of Benzene.Grpc.Client.IGrpcStatusReverseMapper.
  *
  * Defines a contract for mapping a gRPC call outcome back to a Benzene result status. When `trailers`
- * carries a `benzene-status` entry (set by a Benzene-hosted server, see `@benzene/grpc`'s
+ * carries a `benzene-status` entry (set by a Benzene-hosted server, see `@benzenejs/grpc`'s
  * `GrpcMessageHandlerResultSetter`/`GrpcMethodHandler`), that raw value wins verbatim — it preserves
  * distinctions (e.g. `created` vs `accepted`) that collapse to the same `status.OK` on the wire.
  *

@@ -1,8 +1,8 @@
-import { ISerializer } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { convertStatusCode } from '@benzene/clients';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { ISerializer } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { convertStatusCode } from '@benzenejs/clients';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageContext';
 
 /**
@@ -14,12 +14,12 @@ import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageCon
  * Port of Benzene.Client.Http.HttpContextConverter&lt;TRequest, TResponse&gt;.
  *
  * The .NET `response.StatusCode.Convert(response)` (`Benzene.Results.BenzeneResultExtensions.Convert`)
- * maps to `@benzene/clients`' `convertStatusCode(status, payload)` (success carries the payload; the
- * code->status table is the inverse of `@benzene/http`'s `DefaultHttpStatusCodeMapper`).
+ * maps to `@benzenejs/clients`' `convertStatusCode(status, payload)` (success carries the payload; the
+ * code->status table is the inverse of `@benzenejs/http`'s `DefaultHttpStatusCodeMapper`).
  *
  * Deviation: the two C# constructor overloads (`(verb, path)` and `(ISerializer)`) collapse into one
  * constructor whose serializer argument defaults to a `JsonSerializer`; the extensions only ever use
- * the `(verb, path)` form. `JsonSerializer` is reused from `@benzene/core-message-handlers` — it is
+ * the `(verb, path)` form. `JsonSerializer` is reused from `@benzenejs/core-message-handlers` — it is
  * behaviourally identical to `Benzene.Clients/JsonSerializer.cs` (camelCase, case-insensitive) once
  * the port's camelCase property names are accounted for.
  */

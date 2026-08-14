@@ -1,5 +1,5 @@
-import { ITopic } from '@benzene/abstractions-messages';
-import { Topic } from '@benzene/core-messages';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { Topic } from '@benzenejs/core-messages';
 
 /**
  * Well-known constants shared across the message handler pipeline (routing, headers,

@@ -1,10 +1,10 @@
 /** Port of Benzene.CloudService.CloudServiceBuilder (and ICloudServiceBuilder). */
 import { randomUUID } from 'node:crypto';
-import { Constructor } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { IHealthCheck } from '@benzene/health-checks-core';
-import { IMeshTraceExporter, MeshPlacement, MeshServiceInfo } from '@benzene/mesh-wire';
+import { Constructor } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { IHealthCheck } from '@benzenejs/health-checks-core';
+import { IMeshTraceExporter, MeshPlacement, MeshServiceInfo } from '@benzenejs/mesh-wire';
 import { CloudServicePaths } from './CloudServicePaths';
 import type { CloudServiceProfileReport } from './CloudServiceProfileReport';
 

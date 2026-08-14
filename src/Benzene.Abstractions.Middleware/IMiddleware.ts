@@ -1,4 +1,4 @@
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 
 /** Continues the pipeline. Port of C# `Func<Task> next`. */
 export type NextFunc = () => Promise<void>;

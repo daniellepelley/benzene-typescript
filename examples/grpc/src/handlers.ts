@@ -9,11 +9,11 @@
  * handler classes to `useMessageHandlers` explicitly, so importing this example never pollutes another
  * module's handler discovery.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { grpcMethod } from '@benzene/grpc';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { grpcMethod } from '@benzenejs/grpc';
+import { BenzeneResult } from '@benzenejs/results';
 
 /** The request payload for every RPC (`greet.HelloRequest`). */
 export class HelloRequest {

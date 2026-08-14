@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.ServiceBus.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
   IMessageHandlerResultSetter,
@@ -8,8 +8,8 @@ import {
   IRequestMapper,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import {
   addMediaFormatNegotiation,
   JsonSerializer,
@@ -17,7 +17,7 @@ import {
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
   TransportInfo,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { ServiceBusContext } from './ServiceBusContext';
 import { ServiceBusMessageBodyGetter } from './ServiceBusMessageBodyGetter';
 import { ServiceBusMessageHeadersGetter } from './ServiceBusMessageHeadersGetter';

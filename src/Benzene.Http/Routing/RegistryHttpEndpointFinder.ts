@@ -1,5 +1,5 @@
-import { BenzeneException } from '@benzene/core';
-import { IMessageHandlersFinder } from '@benzene/abstractions-message-handlers';
+import { BenzeneException } from '@benzenejs/core';
+import { IMessageHandlersFinder } from '@benzenejs/abstractions-message-handlers';
 import { getHttpEndpointMetadata } from '../HttpEndpointAttribute';
 import { HttpEndpointDefinition } from './HttpEndpointDefinition';
 import { IHttpEndpointDefinition } from './IHttpEndpointDefinition';

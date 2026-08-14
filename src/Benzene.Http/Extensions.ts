@@ -1,5 +1,5 @@
-import { IBenzeneServiceContainer, tryAddScopedFactory, tryAddSingletonFactory } from '@benzene/abstractions';
-import { IMessageHandlersFinder } from '@benzene/abstractions-message-handlers';
+import { IBenzeneServiceContainer, tryAddScopedFactory, tryAddSingletonFactory } from '@benzenejs/abstractions';
+import { IMessageHandlersFinder } from '@benzenejs/abstractions-message-handlers';
 import { DefaultHttpHeaderMappings } from './DefaultHttpHeaderMappings';
 import { DefaultHttpStatusCodeMapper } from './DefaultHttpStatusCodeMapper';
 import { IHttpHeaderMappings } from './IHttpHeaderMappings';

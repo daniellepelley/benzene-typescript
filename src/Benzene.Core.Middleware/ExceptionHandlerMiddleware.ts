@@ -1,5 +1,5 @@
-import { ILogger } from '@benzene/abstractions';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { ILogger } from '@benzenejs/abstractions';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 
 /**
  * Catches unhandled errors from the rest of the pipeline, logs them and invokes a

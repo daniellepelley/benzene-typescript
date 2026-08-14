@@ -1,4 +1,4 @@
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
 import { ExpressContext } from './ExpressContext';
 
 const ContentTypeHeader = 'content-type';

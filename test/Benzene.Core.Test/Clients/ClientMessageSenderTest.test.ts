@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneClientRequest, IGetTopic } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest, IGetTopic } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   ClientMessageSender,
   IBenzeneMessageClient,
   IClientMessageRouter,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 
 /**
  * Port of the ClientMessageSender routing scenario: the sender resolves the client from the

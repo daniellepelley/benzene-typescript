@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Collector.IMeshFleetReadModel. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { CorrelationView, FleetView, MeshTimeRange, ServiceView, TopicSummary, TraceView } from './Views';
 
 /**

@@ -1,7 +1,7 @@
-import { IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { IValidationStatusMapper } from '@benzene/abstractions-validation';
-import { BenzeneResult } from '@benzene/results';
+import { IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { IValidationStatusMapper } from '@benzenejs/abstractions-validation';
+import { BenzeneResult } from '@benzenejs/results';
 import { ValidationError, type Schema } from 'yup';
 
 /**

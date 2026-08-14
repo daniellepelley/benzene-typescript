@@ -23,7 +23,7 @@ implementation shares the handler's database/transaction. This cookbook wires an
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/).
-- `@benzene/response-events` and the [Response as Event](response-as-event.md) setup.
+- `@benzenejs/response-events` and the [Response as Event](response-as-event.md) setup.
 - A **scoped** database/unit-of-work whose transaction spans the whole message (see
   [Per-request transactions with a scoped Unit of Work](unit-of-work.md)).
 - An outbound route per event topic (`addOutboundRouting`), for the relay to publish through — see
@@ -32,10 +32,10 @@ implementation shares the handler's database/transaction. This cookbook wires an
 ## Installation
 
 ```bash
-npm install @benzene/response-events @benzene/clients @benzene/core-message-handlers \
-  @benzene/core-middleware @benzene/aws-lambda-core @benzene/aws-lambda-sqs \
-  @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers \
-  @benzene/abstractions-middleware
+npm install @benzenejs/response-events @benzenejs/clients @benzenejs/core-message-handlers \
+  @benzenejs/core-middleware @benzenejs/aws-lambda-core @benzenejs/aws-lambda-sqs \
+  @benzenejs/results @benzenejs/abstractions @benzenejs/abstractions-message-handlers \
+  @benzenejs/abstractions-middleware
 ```
 
 The database types below (`IOrdersDb`, `OutboxMessage`) are **illustrative interfaces** — swap in your real
@@ -49,7 +49,7 @@ commit:
 
 ```ts
 // db.ts (illustrative — model your real data layer this way)
-import { serviceToken, ServiceToken } from '@benzene/abstractions';
+import { serviceToken, ServiceToken } from '@benzenejs/abstractions';
 
 export interface OutboxMessage {
   id: string;
@@ -82,9 +82,9 @@ message is acknowledged; the relay does the real send later:
 
 ```ts
 // OutboxResponseEventPublisher.ts
-import { IBenzeneResult } from '@benzene/abstractions';
-import { IResponseEventPublisher } from '@benzene/response-events';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { IResponseEventPublisher } from '@benzenejs/response-events';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrdersDb } from './db.js';
 
 export class OutboxResponseEventPublisher implements IResponseEventPublisher {
@@ -115,7 +115,7 @@ Register it — a plain `addScoped` overrides the default `IBenzeneMessageSender
 (`useResponseEvents` registers that one with a try-add, so yours wins):
 
 ```ts
-import { IResponseEventPublisher } from '@benzene/response-events';
+import { IResponseEventPublisher } from '@benzenejs/response-events';
 import { OutboxResponseEventPublisher } from './OutboxResponseEventPublisher.js';
 
 services.addScoped(IResponseEventPublisher, OutboxResponseEventPublisher);
@@ -131,10 +131,10 @@ payload, staging the order on the scoped db **without committing** (standard uni
 
 ```ts
 // CreateOrderHandler.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrdersDb } from './db.js';
 
 export class CreateOrder {
@@ -170,7 +170,7 @@ by then both the order and the outbox row are staged on the scoped db:
 
 ```ts
 // UnitOfWorkMiddleware.ts
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { IOrdersDb } from './db.js';
 
 export class UnitOfWorkMiddleware<TContext> implements IMiddleware<TContext> {
@@ -186,7 +186,7 @@ export class UnitOfWorkMiddleware<TContext> implements IMiddleware<TContext> {
 ```
 
 > **Or reuse the shipped unit-of-work middleware.** The port ships `unitOfWorkMiddleware()` +
-> `IUnitOfWork` (`@benzene/core-middleware`) which does exactly this commit-on-success / rollback-on-throw
+> `IUnitOfWork` (`@benzenejs/core-middleware`) which does exactly this commit-on-success / rollback-on-throw
 > around a scoped `IUnitOfWork` — see [Per-request transactions](unit-of-work.md). Implement `IUnitOfWork`
 > over your `IOrdersDb` and use it instead of the hand-rolled middleware above if you want rollback handling
 > and the async-dispose safety net for free.
@@ -196,13 +196,13 @@ scoped resolver, so it binds the correct per-message `IOrdersDb`:
 
 ```ts
 // index.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda-sqs';
-import { addOutboundRouting } from '@benzene/clients';
-import { IResponseEventPublisher, useResponseEvents } from '@benzene/response-events';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlersWithRouter } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs, SqsMessageContext } from '@benzenejs/aws-lambda-sqs';
+import { addOutboundRouting } from '@benzenejs/clients';
+import { IResponseEventPublisher, useResponseEvents } from '@benzenejs/response-events';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { OutboxResponseEventPublisher } from './OutboxResponseEventPublisher.js';
 import { UnitOfWorkMiddleware } from './UnitOfWorkMiddleware.js';
@@ -244,8 +244,8 @@ message:
 
 ```ts
 // OutboxRelay.ts
-import { IServiceResolverFactory, VoidResult } from '@benzene/abstractions';
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { IServiceResolverFactory, VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 import { IOrdersDb } from './db.js';
 
 export class OutboxRelay {
@@ -282,9 +282,9 @@ ordinary fire-and-forget route, e.g. SNS:
 
 ```ts
 // outbound.ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addOutboundRouting } from '@benzene/clients';
-import { useSns } from '@benzene/clients-aws-sns';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addOutboundRouting } from '@benzenejs/clients';
+import { useSns } from '@benzenejs/clients-aws-sns';
 import { SNSClient } from '@aws-sdk/client-sns';
 
 export function registerOrderEventsRoute(services: IBenzeneServiceContainer): void {
@@ -305,7 +305,7 @@ export function registerOrderEventsRoute(services: IBenzeneServiceContainer): vo
   handler throw after staging the order, and assert `saveChangesAsync` never ran (neither the order nor the
   outbox row committed). See [Testing Benzene](../testing-benzene.md).
 - **Relay** — seed one unsent row, run `runOnceAsync()` with a `FakeBenzeneMessageSender`
-  (`@benzene/testing`), and assert it sent and stamped `publishedOnUtc`.
+  (`@benzenejs/testing`), and assert it sent and stamped `publishedOnUtc`.
 
 ```ts
 import { describe, expect, it } from 'vitest';

@@ -2,7 +2,7 @@
 
 /**
  * Benzene's own model of a Queue Storage message — dependency-free, mirroring how the .NET package
- * models it (and how `@benzene/aws-lambda-kinesis` models its Lambda event). The `@azure/functions`
+ * models it (and how `@benzenejs/aws-lambda-kinesis` models its Lambda event). The `@azure/functions`
  * v4 `storageQueue` trigger most commonly delivers the message as a `string` (its text), which maps
  * to `messageText` alone; a caller who binds the richer payload can also supply the metadata
  * properties.

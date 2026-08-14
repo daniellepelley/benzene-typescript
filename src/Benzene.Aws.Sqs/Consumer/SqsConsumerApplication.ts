@@ -1,10 +1,10 @@
 /** Port of Benzene.Aws.Sqs.Consumer.SqsConsumerApplication. */
 import type { Message, ReceiveMessageCommandOutput } from '@aws-sdk/client-sqs';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportNames } from '@benzene/abstractions-message-handlers';
-import { BoundedFanOut } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { BoundedFanOut } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
 import { SqsConsumerAckMode } from './SqsConsumerAckMode';
 import { SqsConsumerBatchResult } from './SqsConsumerBatchResult';
 import { SqsConsumerMessageContext } from './SqsConsumerMessageContext';

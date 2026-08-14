@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/saga",
+  "name": "@benzenejs/saga",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Saga",
   "license": "MIT",
@@ -7,7 +7,7 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/results": "0.1.0"
   }
 }

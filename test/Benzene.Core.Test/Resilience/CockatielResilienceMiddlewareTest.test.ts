@@ -9,7 +9,7 @@ import {
   handleType,
   retry,
 } from 'cockatiel';
-import { BenzeneFailureResultException, CockatielResilienceMiddleware } from '@benzene/cockatiel';
+import { BenzeneFailureResultException, CockatielResilienceMiddleware } from '@benzenejs/cockatiel';
 
 /**
  * Ports Benzene.Test.Resilience.PollyResilienceMiddlewareTest to cockatiel. The Polly

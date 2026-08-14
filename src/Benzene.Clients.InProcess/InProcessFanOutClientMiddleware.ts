@@ -5,11 +5,11 @@ import {
   IServiceResolverFactory,
   NullLoggerFactory,
   VoidResult,
-} from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareApplicationWithResult, NextFunc } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
-import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzene/core-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareApplicationWithResult, NextFunc } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
+import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzenejs/core-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { buildInProcessRequest } from './InProcessRequestBuilder';
 import { InProcessDispatcherRegistry } from './InProcessDispatcherRegistry';
 import { InProcessFanOutTarget } from './InProcessFanOutTarget';

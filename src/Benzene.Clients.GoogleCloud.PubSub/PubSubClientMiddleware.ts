@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.GoogleCloud.PubSub.PubSubClientMiddleware. */
 import { PubSub } from '@google-cloud/pubsub';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { PubSubSendMessageContext } from './PubSubSendMessageContext';
 
 /**

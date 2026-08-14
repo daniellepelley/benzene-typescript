@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMiddlewarePipeline, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { DuplicateOutboundRouteException } from './DuplicateOutboundRouteException';
 import { OutboundContext } from './OutboundContext';
 

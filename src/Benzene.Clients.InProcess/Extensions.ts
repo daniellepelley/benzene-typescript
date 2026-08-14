@@ -1,6 +1,6 @@
-import { ISerializer, IServiceResolverFactory, ILoggerFactory, IStartUpCheck } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { ISerializer, IServiceResolverFactory, ILoggerFactory, IStartUpCheck } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { InProcessClientMiddleware } from './InProcessClientMiddleware';
 import { InProcessContextConverter } from './InProcessContextConverter';
 import { InProcessDispatcherRegistry } from './InProcessDispatcherRegistry';

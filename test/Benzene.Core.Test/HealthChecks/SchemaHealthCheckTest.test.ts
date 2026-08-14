@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 import {
   IMessageHandlerDefinition,
   IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+} from '@benzenejs/abstractions-message-handlers';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import {
   HealthCheckResponse,
   HealthCheckResult,
   SchemaHealthCheckConstants,
-} from '@benzene/health-checks-core';
-import { ClientHashMatch, ClientHealthCheckProcessor } from '@benzene/clients-health-checks';
-import { MeshHashing } from '@benzene/mesh-contracts';
-import { EventServiceDocumentBuilder, SchemaBuilder } from '@benzene/schema-openapi';
-import { SchemaHealthCheck } from '@benzene/health-checks-schema';
+} from '@benzenejs/health-checks-core';
+import { ClientHashMatch, ClientHealthCheckProcessor } from '@benzenejs/clients-health-checks';
+import { MeshHashing } from '@benzenejs/mesh-contracts';
+import { EventServiceDocumentBuilder, SchemaBuilder } from '@benzenejs/schema-openapi';
+import { SchemaHealthCheck } from '@benzenejs/health-checks-schema';
 
 /**
  * Ports Benzene.Test.HealthChecks.SchemaHealthCheckTest: the provider publishes exactly the canonical

@@ -8,8 +8,8 @@
  * port exposes agrees with the fixture's `isSuccess` flag.
  */
 import { describe, expect, it } from 'vitest';
-import { BenzeneResultStatus } from '@benzene/results';
-import { BenzeneResultHttpMapper } from '@benzene/clients';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { BenzeneResultHttpMapper } from '@benzenejs/clients';
 import { load } from './ConformanceFixtures';
 
 interface VocabularyRow {

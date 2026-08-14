@@ -1,6 +1,6 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneMessageSender } from '@benzene/clients';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
+import { BenzeneResult } from '@benzenejs/results';
 
 /**
  * A structural fake for the outbound `IBenzeneMessageSender`: captures the topic/request/headers of the
@@ -10,7 +10,7 @@ import { BenzeneResult } from '@benzene/results';
  * `configureServices` (last-registration-wins).
  *
  * FIDELITY NOTE: in the .NET reference this fake is re-declared as a helper in each example test project
- * (each `examples` host's `Helpers/FakeBenzeneMessageSender.cs`). The port promotes it into `@benzene/testing` so
+ * (each `examples` host's `Helpers/FakeBenzeneMessageSender.cs`). The port promotes it into `@benzenejs/testing` so
  * adopters get the egress test double first-party — the one small addition over the reference, recorded in
  * the README "Porting conventions" ledger. Behaviour matches the C# original: it returns `Accepted`.
  */

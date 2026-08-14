@@ -1,6 +1,6 @@
 /** Port of Benzene.Extras.Request.InlineMediaFormat. */
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
 
 /** A read/write predicate: does this format apply to the given context? */
 export type MediaFormatPredicate<TContext> = (context: TContext, serviceResolver: IServiceResolver) => boolean;

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusSettlementDecision. */
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { ServiceBusSettlementHolder } from './ServiceBusSettlementHolder';
 
 /**

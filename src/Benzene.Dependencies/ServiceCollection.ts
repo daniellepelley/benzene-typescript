@@ -1,4 +1,4 @@
-import { ServiceIdentifier } from '@benzene/abstractions';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
 
 /** Service lifetime, mirroring Microsoft.Extensions.DependencyInjection lifetimes. */
 export type ServiceLifetime = 'singleton' | 'scoped' | 'transient';
@@ -6,7 +6,7 @@ export type ServiceLifetime = 'singleton' | 'scoped' | 'transient';
 export interface ServiceDescriptor {
   readonly lifetime: ServiceLifetime;
   /** Creates the instance. For instance registrations this returns the pre-built instance. */
-  readonly factory: (resolver: import('@benzene/abstractions').IServiceResolver) => unknown;
+  readonly factory: (resolver: import('@benzenejs/abstractions').IServiceResolver) => unknown;
   /** True when the descriptor wraps a caller-provided instance the container must not dispose. */
   readonly isExternalInstance: boolean;
 }

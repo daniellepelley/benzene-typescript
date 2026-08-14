@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/google-cloud-functions-pubsub",
+  "name": "@benzenejs/google-cloud-functions-pubsub",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.GoogleCloud.Functions.PubSub",
   "license": "MIT",
@@ -8,14 +8,14 @@
   "types": "./index.ts",
   "dependencies": {
     "@google-cloud/functions-framework": "^3",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-messages": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core": "0.1.0",
-    "@benzene/core-messages": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/core-middleware": "0.1.0",
-    "@benzene/google-cloud-functions-core": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-messages": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core": "0.1.0",
+    "@benzenejs/core-messages": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/core-middleware": "0.1.0",
+    "@benzenejs/google-cloud-functions-core": "0.1.0"
   }
 }

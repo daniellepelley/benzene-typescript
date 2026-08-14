@@ -1,7 +1,7 @@
-import { Constructor } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { Constructor } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import { getJoiSchema } from './JoiSchemaRegistry';
 
 /**

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.EventGrid.EventGridContext. */
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { EventGridTriggerEvent } from './EventGridTriggerEvent';
 
 /**

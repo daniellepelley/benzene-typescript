@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzene,
   addBenzeneMessage,
@@ -11,9 +11,9 @@ import {
   message,
   MessageHandlersRegistry,
   useMessageHandlersWithRouter,
-} from '@benzene/core-message-handlers';
-import { registerJsonSchema, useAjvValidation } from '@benzene/ajv';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { registerJsonSchema, useAjvValidation } from '@benzenejs/ajv';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * End-to-end port of Benzene.Test.Plugins.JsonSchema's pipeline test (mirrors the Zod adapter's

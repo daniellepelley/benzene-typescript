@@ -1,6 +1,6 @@
 /** Port of Benzene.Xml.XmlMediaFormat. */
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { AcceptHeaderMediaFormatBase } from '@benzene/core-message-handlers';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { AcceptHeaderMediaFormatBase } from '@benzenejs/core-message-handlers';
 import { Constants } from './Constants';
 import { XmlSerializer } from './XmlSerializer';
 

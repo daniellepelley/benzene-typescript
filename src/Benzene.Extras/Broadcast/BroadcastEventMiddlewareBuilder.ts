@@ -1,11 +1,11 @@
 /** Port of Benzene.Extras.Broadcast.BroadcastEventMiddlewareBuilder. */
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IHandlerMiddlewareBuilder,
   IMessageHandler,
   IMessageHandlerContext,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware } from '@benzenejs/abstractions-middleware';
 import { BroadcastEventMiddleware } from './BroadcastEventMiddleware';
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/health-checks-azure-service-bus",
+  "name": "@benzenejs/health-checks-azure-service-bus",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.HealthChecks.Azure.ServiceBus (Service Bus entity reachability health check)",
   "license": "MIT",
@@ -8,7 +8,7 @@
   "types": "./index.ts",
   "dependencies": {
     "@azure/service-bus": "^7",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/health-checks-core": "0.1.0"
   }
 }

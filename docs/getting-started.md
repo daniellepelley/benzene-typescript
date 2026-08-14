@@ -57,21 +57,21 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 
 ## 2. Install the packages
 
-> **Pre-release.** The `@benzene/*` packages aren't published to npm yet, so the `npm install` below
+> **Pre-release.** The `@benzenejs/*` packages aren't published to npm yet, so the `npm install` below
 > won't resolve them from the public registry today. Until they're published, clone
 > [benzene-typescript](https://github.com/daniellepelley/benzene-typescript) and build your service
-> inside its npm workspace (every `@benzene/*` package resolves locally there), or add them as
+> inside its npm workspace (every `@benzenejs/*` package resolves locally there), or add them as
 > `file:` dependencies pointing at your checkout. The command below is the package set you'll depend
 > on once they ship — the rest of this guide is unchanged either way.
 
 ```bash
-npm install @benzene/express @benzene/core-message-handlers @benzene/http @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers express
+npm install @benzenejs/express @benzenejs/core-message-handlers @benzenejs/http @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers express
 npm install --save-dev typescript tsx @types/express
 ```
 
-`@benzene/express` is the Express host adapter; it brings in the middleware pipeline and message-handler
-infrastructure. The `@benzene/*` abstraction packages supply the types your handler references, and
+`@benzenejs/express` is the Express host adapter; it brings in the middleware pipeline and message-handler
+infrastructure. The `@benzenejs/*` abstraction packages supply the types your handler references, and
 [`tsx`](https://github.com/privatenumber/tsx) lets you run TypeScript directly without a build step.
 
 > No `tsconfig.json` is needed for this quickstart: Benzene uses the standard (TC39 stage-3) decorators,
@@ -85,11 +85,11 @@ Create `src/HelloWorldHandler.ts`. This is where your logic lives — and the on
 verbatim if you later moved to Lambda or Azure Functions:
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
 // constructor (for topic/schema keying), which an interface can't provide.
@@ -136,8 +136,8 @@ Create `src/index.ts`:
 
 ```ts
 import express from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
 import { HelloWorldHandler } from './HelloWorldHandler.js';
 
 const app = express();
@@ -199,7 +199,7 @@ portability Benzene's hexagonal design buys you.
 ## Why not just Express?
 
 Worth asking honestly: `app.post('/hello', (req, res) => { ... })` does the same job as this guide's
-five steps in a handful of lines, no `@benzene/express` import. For an HTTP-only service that never
+five steps in a handful of lines, no `@benzenejs/express` import. For an HTTP-only service that never
 talks to anything else, that's a fair trade — Express already gives HTTP its own routing and
 middleware, and you don't need Benzene to get it.
 
@@ -207,7 +207,7 @@ The payoff shows up the moment this same handler needs a **second** entry point 
 team publishes to, a Kafka topic, a batch job that used to call this endpoint but really just wants
 to drop a message. A bare Express route has no answer for that; you'd write a second, separate
 handler and keep both in sync by hand. With Benzene the handler above doesn't change at all: the
-self-hosted `@benzene/aws-sqs` or `@benzene/kafka-core` worker points at the *same*
+self-hosted `@benzenejs/aws-sqs` or `@benzenejs/kafka-core` worker points at the *same*
 `HelloWorldHandler`, because it was never written against Express's `req`/`res` in the first place —
 see [Getting Started: Kubernetes](getting-started-kubernetes.md) for that running as one process, one
 Deployment, three transports. If HTTP genuinely is and always will be the only way in, reach for

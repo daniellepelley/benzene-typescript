@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, VoidResult } from '@benzene/abstractions';
-import { ICurrentTransport, IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, VoidResult } from '@benzenejs/abstractions';
+import { ICurrentTransport, IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
   usePresetTopic,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   addAzureTimer,
   handleTimer,
@@ -21,7 +21,7 @@ import {
   TimerTriggerInfo,
   useTick,
   useTimerTrigger,
-} from '@benzene/azure-function-timer';
+} from '@benzenejs/azure-function-timer';
 
 /**
  * End-to-end port of the C# Azure timer pipeline tests (TimerPipelineTest.cs): wire the full stack via

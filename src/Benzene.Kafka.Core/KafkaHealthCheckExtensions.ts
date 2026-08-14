@@ -1,6 +1,6 @@
 /** Port of Benzene.Kafka.Core.KafkaHealthCheckExtensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { BenzeneKafkaConfig } from './BenzeneKafkaConfig';
 import { IKafkaAdminClientFactory } from './IKafkaAdminClientFactory';
 import { KafkaHealthCheck } from './KafkaHealthCheck';

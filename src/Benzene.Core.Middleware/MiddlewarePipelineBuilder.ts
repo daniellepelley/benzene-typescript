@@ -1,7 +1,7 @@
 import {
   IBenzeneServiceContainer,
   IRegisterDependency,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import {
   Capability,
   IMiddleware,
@@ -9,7 +9,7 @@ import {
   IMiddlewarePipelineBuilder,
   MiddlewareFactoryFunc,
   isCapability,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 import { addBenzeneMiddleware } from './DependencyExtensions';
 import { MiddlewarePipeline } from './MiddlewarePipeline';
 import { MiddlewarePipelineBuilderBase } from './MiddlewarePipelineBuilderBase';

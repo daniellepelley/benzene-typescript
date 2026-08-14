@@ -324,7 +324,7 @@ resource "aws_apigatewayv2_integration" "service" {
   api_id                 = aws_apigatewayv2_api.service[each.key].id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.service[each.key].invoke_arn
-  payload_format_version = "1.0" # matches what @benzene/aws-lambda-api-gateway parses (APIGatewayProxyEvent v1)
+  payload_format_version = "1.0" # matches what @benzenejs/aws-lambda-api-gateway parses (APIGatewayProxyEvent v1)
 }
 
 resource "aws_apigatewayv2_route" "service" {

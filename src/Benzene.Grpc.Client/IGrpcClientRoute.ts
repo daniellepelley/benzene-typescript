@@ -1,5 +1,5 @@
 import { Client } from '@grpc/grpc-js';
-import { IGrpcMessageAdapter } from '@benzene/grpc';
+import { IGrpcMessageAdapter } from '@benzenejs/grpc';
 import { GrpcSendMessageContext } from './GrpcSendMessageContext';
 
 /**

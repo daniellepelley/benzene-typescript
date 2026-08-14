@@ -1,9 +1,9 @@
 /** Port of Benzene.Testing.MessageBuilder. */
-import { IMessageBuilder } from '@benzene/abstractions';
+import { IMessageBuilder } from '@benzenejs/abstractions';
 
 /**
  * A fluent builder for a Benzene message (topic + typed body + headers) to drive through a test, and
- * the input the transport `as*` builders (`@benzene/aws-lambda-testing`, …) turn into a native cloud
+ * the input the transport `as*` builders (`@benzenejs/aws-lambda-testing`, …) turn into a native cloud
  * event. Port of `Benzene.Testing.MessageBuilder<T>`; the C# static `MessageBuilder.Create` factory
  * becomes the free function {@link messageBuilder} (the TypeScript-idiomatic entry point).
  */

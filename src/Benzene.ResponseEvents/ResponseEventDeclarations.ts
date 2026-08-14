@@ -1,4 +1,4 @@
-import { IMessageDefinition } from '@benzene/abstractions-messages';
+import { IMessageDefinition } from '@benzenejs/abstractions-messages';
 
 /**
  * A set of declaration-only published-event definitions - events this service sends (typically directly

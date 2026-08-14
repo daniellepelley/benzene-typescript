@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/clients-azure-event-grid",
+  "name": "@benzenejs/clients-azure-event-grid",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Clients.Azure.EventGrid (outbound Event Grid message client)",
   "license": "MIT",
@@ -8,11 +8,11 @@
   "types": "./index.ts",
   "dependencies": {
     "@azure/eventgrid": "^5",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-messages": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/clients": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-messages": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/clients": "0.1.0",
+    "@benzenejs/results": "0.1.0"
   }
 }

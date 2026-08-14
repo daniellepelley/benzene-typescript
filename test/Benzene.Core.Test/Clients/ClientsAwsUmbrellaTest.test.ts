@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import * as clientsAws from '@benzene/clients-aws';
+import * as clientsAws from '@benzenejs/clients-aws';
 
 /**
- * Verifies the `@benzene/clients-aws` umbrella (port of the references-only C# `Benzene.Clients.Aws`
+ * Verifies the `@benzenejs/clients-aws` umbrella (port of the references-only C# `Benzene.Clients.Aws`
  * meta-package) surfaces the public outbound-client entry points of each underlying AWS client package,
  * so a consumer can depend on the one umbrella instead of the five individual packages.
  */
-describe('@benzene/clients-aws umbrella', () => {
+describe('@benzenejs/clients-aws umbrella', () => {
   it('re-exports the outbound route extensions for the broker transports', () => {
     for (const name of ['useSqs', 'useSns', 'useEventBridge'] as const) {
       expect(typeof (clientsAws as Record<string, unknown>)[name]).toBe('function');

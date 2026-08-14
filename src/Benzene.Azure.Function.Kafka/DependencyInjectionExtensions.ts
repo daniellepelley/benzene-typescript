@@ -1,15 +1,15 @@
 /** Port of Benzene.Azure.Function.Kafka.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { IBenzeneServiceContainer, tryAddScoped } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped } from '@benzenejs/abstractions';
 import {
   IMessageHandlerResultSetter,
   IMessageTopicGetter,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
-import { JsonSerializer, TransportInfo } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
+import { JsonSerializer, TransportInfo } from '@benzenejs/core-message-handlers';
 import { KafkaApplication } from './KafkaApplication';
 import { KafkaContext } from './KafkaContext';
 import { KafkaMessageBodyGetter } from './KafkaMessageBodyGetter';

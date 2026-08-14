@@ -24,7 +24,7 @@ export interface GrpcCallStatus {
  *
  * DEFERRED (`CancellationToken` dropped; deadline kept as an optional `Date`): .NET's context also
  * carries a `CancellationToken`. `@grpc/grpc-js`'s `CallOptions` has no cancellation-token field (and the
- * port has no ambient cancellation-token DI seam — see `@benzene/grpc`'s `IGrpcServerCallAccessor` note),
+ * port has no ambient cancellation-token DI seam — see `@benzenejs/grpc`'s `IGrpcServerCallAccessor` note),
  * so it is dropped. The deadline maps to grpc-js `CallOptions.deadline` (a `Date`), and is carried here so
  * a caller embedding a send in a broader pipeline can still set one; {@link GrpcBenzeneMessageClient}
  * itself sends none by default (the inbound-deadline propagation is deferred — see that class).

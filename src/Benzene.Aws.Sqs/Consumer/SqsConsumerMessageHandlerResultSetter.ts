@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Sqs.Consumer.SqsConsumerMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { SqsConsumerMessageContext } from './SqsConsumerMessageContext';
 
 /**

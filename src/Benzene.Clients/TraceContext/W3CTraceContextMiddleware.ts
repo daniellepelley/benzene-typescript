@@ -1,5 +1,5 @@
 import { trace } from '@opentelemetry/api';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { OutboundContext } from '../OutboundContext';
 
 /**
@@ -10,7 +10,7 @@ import { OutboundContext } from '../OutboundContext';
  * .NET's `Activity.Current` maps to `trace.getActiveSpan()`; `activity.Id` (the W3C traceparent string)
  * is built from the span context's `traceId`/`spanId`/`traceFlags`, and `activity.TraceStateString` from
  * the span context's `traceState.serialize()`. (This is the *outbound* counterpart of
- * `@benzene/diagnostics`' inbound `useW3CTraceContext`, which reads a traceparent to parent the root
+ * `@benzenejs/diagnostics`' inbound `useW3CTraceContext`, which reads a traceparent to parent the root
  * span.)
  */
 export class W3CTraceContextMiddleware implements IMiddleware<OutboundContext> {

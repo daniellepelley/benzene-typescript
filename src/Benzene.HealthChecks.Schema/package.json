@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/health-checks-schema",
+  "name": "@benzenejs/health-checks-schema",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.HealthChecks.Schema (provider-side contract/schema drift health check)",
   "license": "MIT",
@@ -7,10 +7,10 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-validation": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
-    "@benzene/schema-openapi": "0.1.0"
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-validation": "0.1.0",
+    "@benzenejs/health-checks-core": "0.1.0",
+    "@benzenejs/mesh-contracts": "0.1.0",
+    "@benzenejs/schema-openapi": "0.1.0"
   }
 }

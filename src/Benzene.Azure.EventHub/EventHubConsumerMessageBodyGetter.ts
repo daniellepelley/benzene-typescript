@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.EventHub.EventHubConsumerMessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { EventHubConsumerContext } from './EventHubConsumerContext';
 
 /**

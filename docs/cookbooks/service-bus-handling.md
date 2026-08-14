@@ -23,8 +23,8 @@ point:
 
 | Host | Package | Who settles the message | Guide |
 | --- | --- | --- | --- |
-| Azure Functions trigger | `@benzene/azure-function-service-bus` | The Functions host (auto-complete) | [Azure Functions Setup](../azure-functions.md#service-bus) |
-| Self-hosted worker | `@benzene/azure-service-bus` | Benzene, from the handler's outcome | [Unified Hosting Model](../hosting.md#ready-made-self-hosted-consumers) |
+| Azure Functions trigger | `@benzenejs/azure-function-service-bus` | The Functions host (auto-complete) | [Azure Functions Setup](../azure-functions.md#service-bus) |
+| Self-hosted worker | `@benzenejs/azure-service-bus` | Benzene, from the handler's outcome | [Unified Hosting Model](../hosting.md#ready-made-self-hosted-consumers) |
 
 This cookbook works through both, citing the actual source in `src/Benzene.Azure.Function.ServiceBus/`
 and `src/Benzene.Azure.ServiceBus/`.
@@ -46,10 +46,10 @@ The whole point of routing Service Bus by topic is that the handler is the *same
 any other transport — it knows nothing about Service Bus. Create `src/handlers.ts`:
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrderStore } from './OrderStore.js';
 
 // Payloads are classes, not interfaces: the runtime recovers the erased request type from its
@@ -81,7 +81,7 @@ export class CreateOrderHandler implements IMessageHandler<CreateOrderRequest, C
 name (`src/OrderStore.ts`):
 
 ```ts
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 export interface IOrderStore {
   saveAsync(orderId: string): Promise<void>;
@@ -101,9 +101,9 @@ Install the trigger package alongside the Azure Functions core packages from
 [Azure Functions Setup](../azure-functions.md#2-install-the-packages):
 
 ```bash
-npm install @benzene/azure-function-service-bus @benzene/azure-function-core \
-  @benzene/core-message-handlers @benzene/results @benzene/abstractions \
-  @benzene/abstractions-message-handlers @azure/functions @azure/service-bus
+npm install @benzenejs/azure-function-service-bus @benzenejs/azure-function-core \
+  @benzenejs/core-message-handlers @benzenejs/results @benzenejs/abstractions \
+  @benzenejs/abstractions-message-handlers @azure/functions @azure/service-bus
 ```
 
 Inside `configure`, `useServiceBus(az, action, configure?)` configures the pipeline; the host's
@@ -112,11 +112,11 @@ every host boots from — see [Azure Functions Setup, step 4](../azure-functions
 selecting Azure with `useAzureFunctions(app, az => …)`. Create `src/startUp.ts`:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useServiceBus } from '@benzene/azure-function-service-bus';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useServiceBus } from '@benzenejs/azure-function-service-bus';
 import { CreateOrderHandler } from './handlers.js';
 
 export class ServiceBusStartUp implements BenzeneStartUp {
@@ -130,12 +130,12 @@ export class ServiceBusStartUp implements BenzeneStartUp {
 }
 ```
 
-Then boot it and expose the trigger handler. Importing `@benzene/azure-function-service-bus` lights up the
+Then boot it and expose the trigger handler. Importing `@benzenejs/azure-function-service-bus` lights up the
 host's `.serviceBusFunction` getter — the Service Bus counterpart of `.httpFunction`. Create `src/functions.ts`:
 
 ```ts
-import { AzureFunctionHost } from '@benzene/azure-function-core';
-import '@benzene/azure-function-service-bus';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+import '@benzenejs/azure-function-service-bus';
 import { ServiceBusStartUp } from './startUp.js';
 
 /** Service Bus trigger: each message routes by its `topic` application property. */
@@ -170,7 +170,7 @@ the callback `ServiceBusReceivedMessage[]`.
 A Service Bus queue, or a topic/subscription pair, is a routing *destination* configured on the trigger
 — it isn't a per-message field the way a Kafka record's topic is. Reading
 `ServiceBusMessageTopicGetter`, Benzene takes the routing topic from a custom `"topic"` **application
-property** on the message (the same convention `@benzene/aws-lambda-sqs` uses for SQS message
+property** on the message (the same convention `@benzenejs/aws-lambda-sqs` uses for SQS message
 attributes):
 
 ```ts
@@ -210,7 +210,7 @@ A numeric retry count or a boolean flag is silently excluded (not stringified). 
 ### 4. Failure handling on the trigger
 
 This is the part worth being precise about, because it differs from the .NET original. The TypeScript
-`@benzene/azure-function-service-bus` package does **not** expose per-message
+`@benzenejs/azure-function-service-bus` package does **not** expose per-message
 `complete`/`abandon` control — there is no `AckMode` and no `ServiceBusMessageActions` binding. On the
 Functions trigger, **the Functions host settles the message**: it auto-completes each message once your
 callback returns without throwing, governed entirely by the trigger's own `host.json` configuration
@@ -252,13 +252,13 @@ Each message in the batch runs concurrently, in its own DI scope, on the `"servi
 
 You don't need a real broker. Boot the same `ServiceBusStartUp` you deploy through `benzeneTestHost(...)` —
 overriding `IOrderStore` with a fake via `.withServices(...)` — turn a `messageBuilder` into a native
-`ServiceBusReceivedMessage` with `asAzureServiceBusMessage` from `@benzene/azure-function-testing`, and
+`ServiceBusReceivedMessage` with `asAzureServiceBusMessage` from `@benzenejs/azure-function-testing`, and
 send the batch through the host:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asAzureServiceBusMessage } from '@benzene/azure-function-testing';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
+import { asAzureServiceBusMessage } from '@benzenejs/azure-function-testing';
 import { ServiceBusStartUp } from '../src/startUp.js';
 import { IOrderStore } from '../src/OrderStore.js';
 
@@ -292,14 +292,14 @@ wiring boots with `new AzureFunctionHost(ServiceBusStartUp).serviceBusFunction`,
 ## Part B — the self-hosted worker
 
 When you'd rather consume Service Bus from a long-running process you own (a container, an AKS pod, a
-plain Node worker) with no Functions runtime at all, use `@benzene/azure-service-bus`. Here **Benzene owns
+plain Node worker) with no Functions runtime at all, use `@benzenejs/azure-service-bus`. Here **Benzene owns
 the process, the concurrency, and — crucially — the settlement**.
 
 ### 1. Install and wire the consumer
 
 ```bash
-npm install @benzene/azure-service-bus @benzene/self-host @benzene/core-message-handlers \
-  @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers @azure/service-bus
+npm install @benzenejs/azure-service-bus @benzenejs/self-host @benzenejs/core-message-handlers \
+  @benzenejs/results @benzenejs/abstractions @benzenejs/abstractions-message-handlers @azure/service-bus
 ```
 
 `useServiceBus(workers, config, clientFactory, action)` is a free function taking the worker startup
@@ -309,14 +309,14 @@ authentication (connection string, managed identity, or the local emulator) is e
 
 ```ts
 import { ServiceBusClient } from '@azure/service-bus';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 import {
   BenzeneServiceBusConfig,
   ServiceBusClientFactory,
   ServiceBusConsumerAckMode,
   useServiceBus,
-} from '@benzene/azure-service-bus';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+} from '@benzenejs/azure-service-bus';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { CreateOrderHandler } from './handlers.js';
 import { OrderStore } from './OrderStore.js';
 import { IOrderStore } from './OrderStore.js';
@@ -398,7 +398,7 @@ If the `"topic"` application property is missing or isn't a string, the topic ge
 `<missing>` id and `MessageRouter` returns a validation-error result instead of dispatching. Confirm your
 sender actually sets `applicationProperties: { topic: '…' }` (a missing property is easy to miss when the
 send call itself doesn't fail). If the producer isn't a Benzene client and can't set the property, give the
-pipeline a fixed topic with `usePresetTopic` (from `@benzene/core-message-handlers`) — see
+pipeline a fixed topic with `usePresetTopic` (from `@benzenejs/core-message-handlers`) — see
 [Common Middleware](../common-middleware.md).
 
 ### Handler runs but the message keeps redelivering (or never does)

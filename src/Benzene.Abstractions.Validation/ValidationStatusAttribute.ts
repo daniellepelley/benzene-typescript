@@ -1,4 +1,4 @@
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 
 /**
  * Port of Benzene.Abstractions.Validation.ValidationStatusAttribute.

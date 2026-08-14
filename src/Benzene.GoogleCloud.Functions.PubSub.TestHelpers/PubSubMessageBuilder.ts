@@ -2,7 +2,7 @@
 import {
   MessagePublishedData,
   PubSubMessageTopicGetter,
-} from '@benzene/google-cloud-functions-pubsub';
+} from '@benzenejs/google-cloud-functions-pubsub';
 
 /**
  * Builds a {@link MessagePublishedData} for tests that dispatch straight into a Pub/Sub host via

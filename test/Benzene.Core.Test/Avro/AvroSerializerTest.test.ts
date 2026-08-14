@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as avro from 'avsc';
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   AvroMediaFormat,
   AvroOptions,
@@ -10,7 +10,7 @@ import {
   Constants,
   getAvroSchema,
   registerAvroSchema,
-} from '@benzene/avro';
+} from '@benzenejs/avro';
 
 /**
  * Port of the Benzene.Avro serialization scenarios, adapted to the avsc library and the

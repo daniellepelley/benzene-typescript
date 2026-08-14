@@ -1,14 +1,14 @@
 import { errors, JWTPayload, JWTVerifyGetKey, JWTVerifyOptions, jwtVerify } from 'jose';
-import { ILogger, IServiceResolver } from '@benzene/abstractions';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { ILogger, IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import {
   AuthenticationHolder,
   AuthResults,
   Claim,
   ClaimsIdentity,
   ClaimsPrincipal,
-} from '@benzene/auth-core';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+} from '@benzenejs/auth-core';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 
 const schemePrefix = 'Bearer ';
 

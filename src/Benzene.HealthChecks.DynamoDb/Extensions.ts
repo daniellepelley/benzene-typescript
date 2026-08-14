@@ -1,6 +1,6 @@
 /** Port of Benzene.HealthChecks.DynamoDb.Extensions. */
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { DynamoDbHealthCheckFactory } from './DynamoDbHealthCheckFactory';
 
 /**
@@ -8,7 +8,7 @@ import { DynamoDbHealthCheckFactory } from './DynamoDbHealthCheckFactory';
  *
  * PORT DIVERGENCE: the C# `AddDynamoDbHealthCheck(tableName)` resolves `IAmazonDynamoDB` from DI; the
  * TypeScript port takes the `@aws-sdk/client-dynamodb` `DynamoDBClient` explicitly (there is no synthetic
- * DI token for the raw AWS SDK client), matching the `@benzene/clients-aws-*` siblings.
+ * DI token for the raw AWS SDK client), matching the `@benzenejs/clients-aws-*` siblings.
  */
 export function addDynamoDbHealthCheck(
   builder: IHealthCheckBuilder,

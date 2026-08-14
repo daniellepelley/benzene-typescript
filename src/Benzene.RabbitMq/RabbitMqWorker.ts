@@ -1,8 +1,8 @@
 /** Port of Benzene.RabbitMq.RabbitMqWorker. */
 import { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
-import { ILogger, ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
-import { BoundedConcurrentDispatcher } from '@benzene/self-host';
+import { ILogger, ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
+import { BoundedConcurrentDispatcher } from '@benzenejs/self-host';
 import { RabbitMqAckMode } from './RabbitMqAckMode';
 import { RabbitMqConfig, withRabbitMqConfigDefaults } from './RabbitMqConfig';
 import { IRabbitMqConnectionFactory } from './IRabbitMqConnectionFactory';
@@ -10,7 +10,7 @@ import { RabbitMqApplication } from './RabbitMqMessage/RabbitMqApplication';
 
 /**
  * A long-running worker that consumes a RabbitMQ queue via `amqplib` and dispatches each delivery through
- * a Benzene middleware pipeline — for `@benzene/self-host`, not a cloud trigger. The RabbitMQ counterpart
+ * a Benzene middleware pipeline — for `@benzenejs/self-host`, not a cloud trigger. The RabbitMQ counterpart
  * of {@link BenzeneKafkaWorker} and {@link BenzeneServiceBusWorker}.
  *
  * Deliveries are pushed by amqplib's `channel.consume` callback (not hand-polled like Kafka) and fanned

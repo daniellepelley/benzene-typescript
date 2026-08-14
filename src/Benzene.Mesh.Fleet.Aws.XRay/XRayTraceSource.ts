@@ -12,8 +12,8 @@ import {
   MeshTimeRangeResolver,
   TraceSummary,
   TraceView,
-} from '@benzene/mesh-collector';
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-collector';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 import { XRaySegmentMapper } from './XRaySegmentMapper';
 import { XRayTraceSourceOptions } from './XRayTraceSourceOptions';
 

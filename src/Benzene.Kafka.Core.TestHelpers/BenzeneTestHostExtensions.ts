@@ -10,17 +10,17 @@
  * prototype assignment — the same shape the sibling Service Bus / Event Hub helpers use, keeping the
  * `benzeneTestHost(StartUp).withServices(...).buildKafkaWorkerHost()` chain intact. The `TKey`/`TValue`
  * type parameters are dropped (the port's `KafkaApplication` erases them — see its docs). The neutral
- * `@benzene/testing` core stays free of any transport import; importing this package (for its
+ * `@benzenejs/testing` core stays free of any transport import; importing this package (for its
  * `asKafkaBenzeneMessage` builder) is what lights the method up. A `this` constraint pins it to a startup
  * whose `configure` receives the unified `IBenzeneApplicationBuilder`.
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { KafkaApplication } from '@benzene/kafka-core';
-import { WorkerApplicationBuilder } from '@benzene/self-host';
-import { BenzeneTestHostBuilder } from '@benzene/testing';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { KafkaApplication } from '@benzenejs/kafka-core';
+import { WorkerApplicationBuilder } from '@benzenejs/self-host';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
 import { KafkaBenzeneTestHost } from './KafkaBenzeneTestHost';
 
-declare module '@benzene/testing' {
+declare module '@benzenejs/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {
     /**
      * Builds a {@link KafkaBenzeneTestHost} from the startup + any `withServices`/`withConfiguration`

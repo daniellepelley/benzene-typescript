@@ -1,5 +1,5 @@
 /** Port of Benzene.MessagePack.MessagePackSerializer. */
-import { IPayloadSerializer, ISerializer } from '@benzene/abstractions';
+import { IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
 import { decode, encode } from '@msgpack/msgpack';
 
 /**

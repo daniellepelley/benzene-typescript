@@ -3,16 +3,16 @@ import {
   IBenzeneResultOf,
   IDependencyWrapper,
   IServiceResolver,
-} from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult } from '@benzene/results';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult } from '@benzenejs/results';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   BenzeneClientRequest,
   ClientBuilder,
   DependencyWrapperFactory,
   IBenzeneMessageClient,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 
 /**
  * Ports the spirit of Benzene.Clients' ClientBuilder/DependencyWrapperFactory usage: a base

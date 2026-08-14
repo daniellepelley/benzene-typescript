@@ -1,5 +1,5 @@
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { FetchLike, HttpClientMiddleware } from './HttpClientMiddleware';
 import { HttpContextConverter } from './HttpContextConverter';
 import { HttpSendMessageContext } from './HttpSendMessageContext';

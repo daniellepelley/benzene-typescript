@@ -1,6 +1,6 @@
 /** Port of Benzene.Core.MessageHandlers.HeaderMessageVersionGetter. */
-import { IMessageVersionGetter } from '@benzene/abstractions-message-handlers';
-import { IMessageHeadersGetter, MessageVersionHeaders } from '@benzene/abstractions-messages';
+import { IMessageVersionGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageHeadersGetter, MessageVersionHeaders } from '@benzenejs/abstractions-messages';
 
 /**
  * Default {@link IMessageVersionGetter}: reads the payload schema version from the context's header

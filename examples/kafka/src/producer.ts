@@ -4,8 +4,8 @@
  * record topic and the body is JSON-serialized. Send with `sendMessageAsync(client, 'order_create', msg)`.
  */
 import { Producer } from 'kafkajs';
-import { IBenzeneMessageClient } from '@benzene/clients';
-import { KafkaBenzeneMessageClient } from '@benzene/kafka-core';
+import { IBenzeneMessageClient } from '@benzenejs/clients';
+import { KafkaBenzeneMessageClient } from '@benzenejs/kafka-core';
 
 /** Wraps a kafkajs `Producer` as a Benzene message client for producing order events. */
 export function createOrderProducer(producer: Producer): IBenzeneMessageClient {

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.ServiceBus.ServiceBusMessageMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { ServiceBusContext } from './ServiceBusContext';
 
 /**

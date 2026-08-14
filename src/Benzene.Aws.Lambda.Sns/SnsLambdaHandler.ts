@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsLambdaHandler. */
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isSnsEvent } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isSnsEvent } from '@benzenejs/aws-lambda-core';
 import { SNSEvent } from 'aws-lambda';
 
 /**

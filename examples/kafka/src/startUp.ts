@@ -8,13 +8,13 @@
  * `benzeneTestHost(StartUp).buildKafkaWorkerHost()` and pushes native records through the front door, so no
  * broker is created under test.
  */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { IKafkaConsumerFactory, useKafka } from '@benzene/kafka-core';
-import { useWorker } from '@benzene/self-host';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { IKafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
+import { useWorker } from '@benzenejs/self-host';
 import { Kafka } from 'kafkajs';
-import type { BenzeneStartUp } from '@benzene/testing';
+import type { BenzeneStartUp } from '@benzenejs/testing';
 import { CreateOrderHandler, DeleteOrderHandler, Topics } from './handlers';
 import { IOrderStore, InMemoryOrderStore } from './orderStore';
 

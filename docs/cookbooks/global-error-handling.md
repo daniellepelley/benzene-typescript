@@ -20,19 +20,19 @@ the whole batch instead of failing just the one message. You want:
 
 - [Node.js 22+](https://nodejs.org/) and a Benzene service with at least one pipeline built via
   `IMiddlewarePipelineBuilder<TContext>` (any transport) — see [Middleware](../middleware.md).
-- `@benzene/core-middleware`, which is already a dependency of `@benzene/core-message-handlers` and
+- `@benzenejs/core-middleware`, which is already a dependency of `@benzenejs/core-message-handlers` and
   every transport package — no extra install is needed for the middleware itself.
 
 ## Installation
 
 No new package is required — `useExceptionHandler` is a member of `IMiddlewarePipelineBuilder<TContext>`
-(`@benzene/abstractions-middleware`), implemented once in `MiddlewarePipelineBuilderBase`
-(`@benzene/core-middleware`), which every Benzene transport package already depends on. For the HTTP
-example below you'll also use `@benzene/results` (`ErrorPayload`, `BenzeneResultStatus`), a dependency of
+(`@benzenejs/abstractions-middleware`), implemented once in `MiddlewarePipelineBuilderBase`
+(`@benzenejs/core-middleware`), which every Benzene transport package already depends on. For the HTTP
+example below you'll also use `@benzenejs/results` (`ErrorPayload`, `BenzeneResultStatus`), a dependency of
 any HTTP-based transport package.
 
 ```bash
-npm install @benzene/aws-lambda
+npm install @benzenejs/aws-lambda
 ```
 
 ## What `useExceptionHandler` actually does
@@ -128,9 +128,9 @@ whatever response shape you want.
 ### 1. HTTP transport (API Gateway) — map to a 500 response
 
 ```ts
-import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzene/aws-lambda';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { BenzeneResultStatus, ErrorPayload } from '@benzene/results';
+import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzenejs/aws-lambda';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { BenzeneResultStatus, ErrorPayload } from '@benzenejs/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 
 useApiGateway(app, (api) => {
@@ -153,23 +153,23 @@ useApiGateway(app, (api) => {
 `BenzeneResultStatus.unexpectedError` to for handlers that fail normally (see
 [Message Results — HTTP](../message-result.md#transport-mapping)), so a thrown error and a handler
 explicitly returning `BenzeneResult.unexpectedError()` end up looking identical to the client.
-`ErrorPayload` (`@benzene/results`) is the same RFC 7807-style payload `DefaultResponsePayloadMapper`
+`ErrorPayload` (`@benzenejs/results`) is the same RFC 7807-style payload `DefaultResponsePayloadMapper`
 uses for unsuccessful results — it extends `ProblemDetails` and serializes to `{ status, detail }`, where
 `detail` is the errors joined with `", "`. You're just building it by hand because the exception path
 doesn't run that mapper for you.
 
-`ensureResponseExists(context)` (a free function exported from `@benzene/aws-lambda-api-gateway`)
+`ensureResponseExists(context)` (a free function exported from `@benzenejs/aws-lambda-api-gateway`)
 lazily creates `context.apiGatewayProxyResponse` with safe defaults if no earlier middleware wrote one —
 necessary because `APIGatewayProxyResult` requires `statusCode` and `body`, so the context starts it as
 `undefined`. The same pattern applies to any other HTTP transport context (`ApiGatewayV2Context`,
-`@benzene/express`'s context, `@benzene/azure-function-http`'s `AzureHttpContext`) — set the status code
+`@benzenejs/express`'s context, `@benzenejs/azure-function-http`'s `AzureHttpContext`) — set the status code
 and write the body on that transport's response object.
 
 ### 2. SQS transport — report only the failed message
 
 ```ts
-import { useSqs, SqsMessageContext } from '@benzene/aws-lambda';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
+import { useSqs, SqsMessageContext } from '@benzenejs/aws-lambda';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
 useSqs(app, (sqs) => {
@@ -231,9 +231,9 @@ Both pipelines share one startup. Each `useExceptionHandler` is scoped to the pi
 on, so each transport gets a callback tailored to its own response shape:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
 import {
   AwsLambdaHost,
   useAwsLambda,
@@ -242,8 +242,8 @@ import {
   ensureResponseExists,
   useSqs,
   SqsMessageContext,
-} from '@benzene/aws-lambda';
-import { BenzeneResultStatus, ErrorPayload } from '@benzene/results';
+} from '@benzenejs/aws-lambda';
+import { BenzeneResultStatus, ErrorPayload } from '@benzenejs/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
@@ -303,12 +303,12 @@ effect and the log entry, following
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   DefaultBenzeneServiceContainer,
   DefaultServiceResolverFactory,
   ServiceCollection,
-} from '@benzene/dependencies';
+} from '@benzenejs/dependencies';
 
 describe('global error handling', () => {
   it('catches a thrown error and runs the callback', async () => {
@@ -395,7 +395,7 @@ here means "consistently applied to every pipeline you configure," not one singl
 
 ### Combine with `useRetry`
 
-`@benzene/resilience`'s `useRetry(...)` (see [Resilience](../resilience.md)) retries on any thrown error
+`@benzenejs/resilience`'s `useRetry(...)` (see [Resilience](../resilience.md)) retries on any thrown error
 by default. Register `useExceptionHandler` *first* and `useRetry` *after* it on the same builder, so
 retries happen downstream and `useExceptionHandler` only catches the error that survives every retry
 attempt.

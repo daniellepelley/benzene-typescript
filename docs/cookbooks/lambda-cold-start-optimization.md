@@ -98,8 +98,8 @@ concurrency, step 5).
 Every import in your entry module is evaluated on cold start, and every dependency adds to bundle size.
 
 - **Only pull in the [packages](../getting-started-aws.md#supported-event-sources) you use.** Benzene's
-  packages are small and focused — install one transport package per event source (`@benzene/aws-lambda-api-gateway`,
-  `@benzene/aws-lambda-sqs`, …), not the whole family.
+  packages are small and focused — install one transport package per event source (`@benzenejs/aws-lambda-api-gateway`,
+  `@benzenejs/aws-lambda-sqs`, …), not the whole family.
 - **Prefer AWS SDK v3's per-service clients** (`@aws-sdk/client-dynamodb`, not the monolithic v2 `aws-sdk`)
   so the bundler only includes the API you call.
 - **Bundle and tree-shake with esbuild**, and minify — this is the Node analog of .NET's trimming. A

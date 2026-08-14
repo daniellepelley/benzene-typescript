@@ -15,7 +15,7 @@ Your service reads a database password and an API key. You want them:
 - read with types, so a malformed port number or endpoint URL fails with a clear error instead of a
   confusing one three call-frames away.
 
-`@benzene/configuration-core` gives you all of this: a one-method `ISecretStore` seam, a set of
+`@benzenejs/configuration-core` gives you all of this: a one-method `ISecretStore` seam, a set of
 dependency-free providers (environment variables, mounted files, in-memory), composition, caching with
 explicit invalidation, typed fail-fast resolution, and startup validation. The core package takes on **no
 cloud-SDK dependency** — cloud stores (AWS Secrets Manager, Azure Key Vault) are a few-line custom
@@ -29,18 +29,18 @@ cloud-SDK dependency** — cloud stores (AWS Secrets Manager, Azure Key Vault) a
 ## Installation
 
 ```bash
-npm install @benzene/configuration-core
+npm install @benzenejs/configuration-core
 ```
 
-If you register the store into a Benzene container (Step 4), you already have `@benzene/abstractions` and
-your host package from Getting Started; `@benzene/configuration-core` depends only on `@benzene/abstractions`.
+If you register the store into a Benzene container (Step 4), you already have `@benzenejs/abstractions` and
+your host package from Getting Started; `@benzenejs/configuration-core` depends only on `@benzenejs/abstractions`.
 
 ## The abstraction
 
 Everything in the package layers on a single method:
 
 ```ts
-import { ISecretStore } from '@benzene/configuration-core';
+import { ISecretStore } from '@benzenejs/configuration-core';
 
 interface ISecretStore {
   getSecretAsync(name: string, signal?: AbortSignal): Promise<string | undefined>;
@@ -67,7 +67,7 @@ import {
   EnvironmentVariableSecretStore,
   FileSecretStore,
   InMemorySecretStore,
-} from '@benzene/configuration-core';
+} from '@benzenejs/configuration-core';
 
 // Twelve-factor: read from process.env. A logical name is upper-cased with ':', '.', '-' and spaces
 // mapped to '_', plus an optional prefix — so 'Db:Password' with prefix 'MyApp_' reads MYAPP_DB_PASSWORD.
@@ -100,7 +100,7 @@ import {
   CachingSecretStore,
   EnvironmentVariableSecretStore,
   FileSecretStore,
-} from '@benzene/configuration-core';
+} from '@benzenejs/configuration-core';
 
 const secrets = new CompositeSecretStore(
   new EnvironmentVariableSecretStore('MyApp_'), // 1. local/dev override, checked first
@@ -120,7 +120,7 @@ so it isn't hit on every read. A value is cached for a time-to-live (default **5
 result is cached too, so a genuinely-missing name isn't re-queried on every read within the TTL:
 
 ```ts
-import { CachingSecretStore } from '@benzene/configuration-core';
+import { CachingSecretStore } from '@benzenejs/configuration-core';
 
 const cached = new CachingSecretStore(remoteStore, 10 * 60 * 1000); // 10-minute TTL
 ```
@@ -143,7 +143,7 @@ throws when a value is absent **or blank**; `getAsync` returns a default; the ty
 throw a clear error when a present value is malformed:
 
 ```ts
-import { SecretResolver } from '@benzene/configuration-core';
+import { SecretResolver } from '@benzenejs/configuration-core';
 
 const resolver = new SecretResolver(secrets);
 
@@ -184,7 +184,7 @@ credential, and not a first-request failure. `SecretValidation.ensureRequiredAsy
 missing names and throws once:
 
 ```ts
-import { SecretValidation } from '@benzene/configuration-core';
+import { SecretValidation } from '@benzenejs/configuration-core';
 
 await SecretValidation.ensureRequiredAsync(secrets, 'Db:Password', 'Api:Key', 'Api:Endpoint');
 // throws MissingSecretException listing every missing/blank name at once
@@ -193,7 +193,7 @@ await SecretValidation.ensureRequiredAsync(secrets, 'Db:Password', 'Api:Key', 'A
 `MissingSecretException` carries the full list on `missingNames`, so a caller can log or format it:
 
 ```ts
-import { MissingSecretException } from '@benzene/configuration-core';
+import { MissingSecretException } from '@benzenejs/configuration-core';
 
 try {
   await SecretValidation.ensureRequiredAsync(secrets, 'Db:Password', 'Api:Key');
@@ -212,7 +212,7 @@ startup, register the store with your Benzene container in `configureServices`. 
 both the `ISecretStore` and a `SecretResolver` over it as singletons:
 
 ```ts
-import { addSecretStore } from '@benzene/configuration-core';
+import { addSecretStore } from '@benzenejs/configuration-core';
 
 // inside .configureServices((services) => { ... })
 addSecretStore(services, secrets);
@@ -222,7 +222,7 @@ Or compose and register in one call — `addSecretStores` builds an ordered `Com
 (earliest-wins) for you:
 
 ```ts
-import { addSecretStores } from '@benzene/configuration-core';
+import { addSecretStores } from '@benzenejs/configuration-core';
 
 addSecretStores(services, envStore, cachedRemoteStore); // composite + resolver, registered
 ```
@@ -231,11 +231,11 @@ A handler then injects the resolver with the `static inject` convention (the res
 the `SecretResolver` class itself, which acts as its own service identifier):
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { SecretResolver } from '@benzene/configuration-core';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { SecretResolver } from '@benzenejs/configuration-core';
 
 @message('report:generate', { requestType: ReportRequest, responseType: ReportResult })
 export class GenerateReportHandler implements IMessageHandler<ReportRequest, ReportResult> {
@@ -271,7 +271,7 @@ import {
   MissingSecretException,
   SecretResolver,
   SecretValidation,
-} from '@benzene/configuration-core';
+} from '@benzenejs/configuration-core';
 
 describe('secret configuration', () => {
   it('composite returns the value from the earliest store that has it', async () => {
@@ -375,7 +375,7 @@ not-found so a composite can fall through, and wrap it in `CachingSecretStore` s
 cloud on every read. Sketch against the AWS Secrets Manager SDK (`@aws-sdk/client-secrets-manager`):
 
 ```ts
-import { ISecretStore } from '@benzene/configuration-core';
+import { ISecretStore } from '@benzenejs/configuration-core';
 import {
   SecretsManagerClient,
   GetSecretValueCommand,

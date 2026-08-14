@@ -1,16 +1,16 @@
 /** Port of Benzene.Http.BenzeneMessage.BenzeneMessageHttpMiddleware. */
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
-import { IMiddleware, IMiddlewarePipeline, NextFunc } from '@benzene/abstractions-middleware';
-import { BenzeneMessageApplication, JsonSerializer } from '@benzene/core-message-handlers';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
+import { IMiddleware, IMiddlewarePipeline, NextFunc } from '@benzenejs/abstractions-middleware';
+import { BenzeneMessageApplication, JsonSerializer } from '@benzenejs/core-message-handlers';
 import {
   BenzeneMessageContext,
   BenzeneMessageRequest,
   BenzeneMessageResponse,
   IBenzeneMessageResponse,
-} from '@benzene/core-messages';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/core-messages';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { IHttpContext } from '../IHttpContext';
 import { IHttpRequestAdapter } from '../IHttpRequestAdapter';
 import { IHttpStatusCodeMapper } from '../IHttpStatusCodeMapper';

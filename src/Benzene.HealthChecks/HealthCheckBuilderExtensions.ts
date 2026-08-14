@@ -1,10 +1,10 @@
 /** Port of Benzene.HealthChecks.HealthCheckBuilderExtensions. */
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   HealthCheckResult,
   IHealthCheckBuilder,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { InlineHealthCheck } from './InlineHealthCheck';
 
 /**

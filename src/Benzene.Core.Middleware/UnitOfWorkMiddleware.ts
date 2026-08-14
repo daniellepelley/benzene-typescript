@@ -1,5 +1,5 @@
-import { IServiceResolver, IUnitOfWork } from '@benzene/abstractions';
-import { IMiddleware, MiddlewareFactoryFunc, NextFunc } from '@benzene/abstractions-middleware';
+import { IServiceResolver, IUnitOfWork } from '@benzenejs/abstractions';
+import { IMiddleware, MiddlewareFactoryFunc, NextFunc } from '@benzenejs/abstractions-middleware';
 
 /** Options for {@link UnitOfWorkMiddleware}. */
 export interface UnitOfWorkOptions<TContext> {

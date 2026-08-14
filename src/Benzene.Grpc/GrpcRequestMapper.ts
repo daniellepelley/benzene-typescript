@@ -1,4 +1,4 @@
-import { IRequestMapper } from '@benzene/abstractions-message-handlers';
+import { IRequestMapper } from '@benzenejs/abstractions-message-handlers';
 import { GrpcContext } from './GrpcContext';
 import { IGrpcMessageAdapter } from './Serialization/IGrpcMessageAdapter';
 import { convertStream, isAsyncIterable } from './Streaming/GrpcStreamAdapter';

@@ -1,7 +1,7 @@
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import { Metadata, status } from '@grpc/grpc-js';
 import { GrpcSendMessageContext } from './GrpcSendMessageContext';
 

@@ -1,12 +1,12 @@
 /** Port of Benzene.RabbitMq.TestHelpers.MessageBuilderExtensions. */
 import type { ConsumeMessage } from 'amqplib';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { RabbitMqConstants } from '@benzene/rabbitmq';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { RabbitMqConstants } from '@benzenejs/rabbitmq';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 /**
- * Turns a platform-neutral `@benzene/testing` `messageBuilder(...)` into a `ConsumeMessage`, so a
+ * Turns a platform-neutral `@benzenejs/testing` `messageBuilder(...)` into a `ConsumeMessage`, so a
  * component test can push the demo message through a {@link RabbitMqBenzeneTestHost} exactly as the
  * broker would deliver it: the topic rides as the `"topic"` header (and as the AMQP routing key), every
  * header as a further delivery header, and the serialized message as the `content` body — the exact shape
@@ -22,7 +22,7 @@ import { jsonMessageSerializer } from './defaults';
  *
  * IDIOM MAP: the two C# overloads (`AsRabbitMqBenzeneMessage()` / `AsRabbitMqBenzeneMessage(ISerializer)`)
  * collapse to one free function with an optional trailing `serializer`, defaulting to JSON — matching the
- * `MessageSerializer` shape reused across the `@benzene/*-test-helpers` builders.
+ * `MessageSerializer` shape reused across the `@benzenejs/*-test-helpers` builders.
  *
  * @param source The message builder.
  * @param serializer The serializer used to render the delivery body (defaults to JSON).

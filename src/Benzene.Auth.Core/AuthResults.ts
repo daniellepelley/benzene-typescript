@@ -1,10 +1,10 @@
-import { IBenzeneResult, IServiceResolver } from '@benzene/abstractions';
+import { IBenzeneResult, IServiceResolver } from '@benzenejs/abstractions';
 import {
   IMessageGetter,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 
 /**
  * Shared "middleware short-circuits with a status + detail message" helper for authentication/

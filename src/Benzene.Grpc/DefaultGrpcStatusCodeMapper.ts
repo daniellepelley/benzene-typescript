@@ -1,5 +1,5 @@
 import { status } from '@grpc/grpc-js';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { IGrpcStatusCodeMapper } from './IGrpcStatusCodeMapper';
 
 /**

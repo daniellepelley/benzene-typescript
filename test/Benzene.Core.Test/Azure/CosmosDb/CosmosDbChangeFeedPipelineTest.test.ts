@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { useStream } from '@benzene/core-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { handleCosmosDbChanges, useCosmosDbChangeFeed } from '@benzene/azure-function-cosmos-db';
+import { useStream } from '@benzenejs/core-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
+import { handleCosmosDbChanges, useCosmosDbChangeFeed } from '@benzenejs/azure-function-cosmos-db';
 
 /**
  * End-to-end port of the C# Cosmos DB Change Feed pipeline tests (CosmosDbChangeFeedPipelineTest.cs): the

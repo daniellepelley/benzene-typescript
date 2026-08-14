@@ -1,5 +1,5 @@
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IBenzeneInvocation, IBenzeneInvocationAccessor } from '@benzene/abstractions-middleware';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IBenzeneInvocation, IBenzeneInvocationAccessor } from '@benzenejs/abstractions-middleware';
 
 /**
  * Port of Benzene.Core.Middleware.BenzeneInvocation.

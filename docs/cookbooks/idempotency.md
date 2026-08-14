@@ -3,7 +3,7 @@
 Make a message handler run **at most once** per message, so a redelivery on an at-least-once
 transport doesn't repeat the side effect (charge a card twice, send two emails, insert a row twice).
 
-> **Boundary:** `@benzene/idempotency` ships an **in-memory, single-process** store
+> **Boundary:** `@benzenejs/idempotency` ships an **in-memory, single-process** store
 > (`InMemoryIdempotencyStore`). It is the only store in the box. Cross-instance de-duplication is
 > deliberately not solved for you: to dedupe across instances you implement the three-method
 > `IIdempotencyStore` interface against a shared backend (Redis, DynamoDB, a database) — the pattern is
@@ -31,9 +31,9 @@ the handler — while a genuine *first* delivery of a different message still ru
 ## Installation
 
 ```bash
-npm install @benzene/idempotency @benzene/core-message-handlers @benzene/results \
-  @benzene/abstractions @benzene/abstractions-message-handlers @benzene/abstractions-messages \
-  @benzene/abstractions-middleware
+npm install @benzenejs/idempotency @benzenejs/core-message-handlers @benzenejs/results \
+  @benzenejs/abstractions @benzenejs/abstractions-message-handlers @benzenejs/abstractions-messages \
+  @benzenejs/abstractions-middleware
 ```
 
 ## Step 1 — register a store
@@ -43,7 +43,7 @@ in-memory store via `addInMemoryIdempotencyStore`. The TTL is a **millisecond** 
 `TimeSpan` maps to a `number` throughout the port) and defaults to 24 hours:
 
 ```ts
-import { addInMemoryIdempotencyStore } from '@benzene/idempotency';
+import { addInMemoryIdempotencyStore } from '@benzenejs/idempotency';
 
 addInMemoryIdempotencyStore(services, 24 * 60 * 60 * 1000); // retain keys for 24h
 ```
@@ -62,12 +62,12 @@ extensions). Wire it into your `StartUp` — the composition root from the
 alongside `addBenzene`. Create `src/startUp.ts`:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { useAzureFunctions } from '@benzene/azure-function-core';
-import { useServiceBus, ServiceBusContext } from '@benzene/azure-function-service-bus';
-import { addInMemoryIdempotencyStore, useIdempotency } from '@benzene/idempotency';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { useAzureFunctions } from '@benzenejs/azure-function-core';
+import { useServiceBus, ServiceBusContext } from '@benzenejs/azure-function-service-bus';
+import { addInMemoryIdempotencyStore, useIdempotency } from '@benzenejs/idempotency';
 import { CapturePaymentHandler } from './CapturePaymentHandler.js';
 
 export class CapturePaymentStartUp implements BenzeneStartUp {
@@ -87,12 +87,12 @@ export class CapturePaymentStartUp implements BenzeneStartUp {
 }
 ```
 
-Then boot it and expose the Service Bus trigger handler (importing `@benzene/azure-function-service-bus`
+Then boot it and expose the Service Bus trigger handler (importing `@benzenejs/azure-function-service-bus`
 lights up the host's `.serviceBusFunction` getter):
 
 ```ts
-import { AzureFunctionHost } from '@benzene/azure-function-core';
-import '@benzene/azure-function-service-bus';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
+import '@benzenejs/azure-function-service-bus';
 import { CapturePaymentStartUp } from './startUp.js';
 
 export const capturePayment = new AzureFunctionHost(CapturePaymentStartUp).serviceBusFunction;
@@ -132,8 +132,8 @@ shared `IIdempotencyKeyStrategy` token — `useIdempotency` picks it up automati
 header/body-hash default only when none is registered:
 
 ```ts
-import { IIdempotencyKeyStrategy } from '@benzene/idempotency';
-import { ServiceBusContext } from '@benzene/azure-function-service-bus';
+import { IIdempotencyKeyStrategy } from '@benzenejs/idempotency';
+import { ServiceBusContext } from '@benzenejs/azure-function-service-bus';
 
 /** Keys de-duplication on the order id carried in the Service Bus application properties. */
 export class OrderIdKeyStrategy implements IIdempotencyKeyStrategy<ServiceBusContext> {
@@ -175,7 +175,7 @@ sibling later fails is unacceptable, choose `Throw` instead — the middleware t
 once the sibling has finished:
 
 ```ts
-import { useIdempotency, InProgressBehavior } from '@benzene/idempotency';
+import { useIdempotency, InProgressBehavior } from '@benzenejs/idempotency';
 
 useIdempotency<ServiceBusContext>(sb, (options) => {
   options.inProgressBehavior = InProgressBehavior.Throw;
@@ -187,7 +187,7 @@ useIdempotency<ServiceBusContext>(sb, (options) => {
 `IIdempotencyStore` is three methods. Back it with anything that offers an **atomic** set-if-absent —
 the whole guarantee rests on `tryClaimAsync` being atomic. There is no shipped Redis/DynamoDB store, so
 you implement the interface yourself. A Redis implementation using `SET key value NX PX` (via `ioredis`,
-the same client `@benzene/cache-redis` uses — see [Caching](../caching.md) for the connection setup you
+the same client `@benzenejs/cache-redis` uses — see [Caching](../caching.md) for the connection setup you
 can reuse):
 
 ```ts
@@ -197,7 +197,7 @@ import {
   ClaimResult,
   IdempotencyRecord,
   IdempotencyStatus,
-} from '@benzene/idempotency';
+} from '@benzenejs/idempotency';
 
 export class RedisIdempotencyStore implements IIdempotencyStore {
   constructor(
@@ -233,7 +233,7 @@ export class RedisIdempotencyStore implements IIdempotencyStore {
 Register it as the `IIdempotencyStore` instead of calling `addInMemoryIdempotencyStore`:
 
 ```ts
-import { IIdempotencyStore } from '@benzene/idempotency';
+import { IIdempotencyStore } from '@benzenejs/idempotency';
 
 services.addSingletonInstance(
   IIdempotencyStore,
@@ -256,14 +256,14 @@ cases. Driving the middleware directly with a fixed-key strategy:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   IIdempotencyKeyStrategy,
   IdempotencyMiddleware,
   IdempotencyOptions,
   InMemoryIdempotencyStore,
-} from '@benzene/idempotency';
+} from '@benzenejs/idempotency';
 
 class TestContext {
   messageResult: IMessageResult | undefined = undefined;
@@ -365,7 +365,7 @@ useIdempotency<ServiceBusContext>(sb, (options) => {
   `static inject`.
 - [Message Results](../message-result.md) — the `BenzeneResult` factory, statuses, and `isSuccessful`.
 - [Middleware](../middleware.md) — pipeline ordering and how a middleware wraps the handler.
-- [Caching](../caching.md) — the `@benzene/cache-redis` / `ioredis` connection setup you can reuse for a
+- [Caching](../caching.md) — the `@benzenejs/cache-redis` / `ioredis` connection setup you can reuse for a
   Redis-backed store.
 - [Resilience](../resilience.md) — in-process retry middleware that pairs with idempotency's
   claim-release on failure.

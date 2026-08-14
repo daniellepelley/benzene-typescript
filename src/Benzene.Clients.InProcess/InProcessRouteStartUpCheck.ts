@@ -1,4 +1,4 @@
-import { IServiceResolver, IStartUpCheck } from '@benzene/abstractions';
+import { IServiceResolver, IStartUpCheck } from '@benzenejs/abstractions';
 import { InProcessDispatcherRegistry } from './InProcessDispatcherRegistry';
 import { InProcessRouteReference } from './InProcessRouteReference';
 import { MissingInProcessPipelineException } from './MissingInProcessPipelineException';

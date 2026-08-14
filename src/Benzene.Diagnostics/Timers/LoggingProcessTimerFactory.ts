@@ -1,5 +1,5 @@
 /** Port of Benzene.Diagnostics.Timers.LoggingProcessTimerFactory. */
-import { ILogger } from '@benzene/abstractions';
+import { ILogger } from '@benzenejs/abstractions';
 import { IProcessTimer } from './IProcessTimer';
 import { IProcessTimerFactory } from './IProcessTimerFactory';
 import { LoggingProcessTimer } from './LoggingProcessTimer';

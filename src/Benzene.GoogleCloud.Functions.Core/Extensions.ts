@@ -2,7 +2,7 @@
  * Port of the Google Cloud Functions neutral-selection seam — the Google counterpart of AWS's
  * `useAwsLambda` and Azure's `useAzureFunctions` (C# extension methods → free functions).
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
 
 /**
  * The platform identifier BOTH Google Cloud Functions application builders report through

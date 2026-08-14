@@ -1,4 +1,4 @@
-import { BenzeneException } from '@benzene/core';
+import { BenzeneException } from '@benzenejs/core';
 import { IGrpcMessageAdapter } from './IGrpcMessageAdapter';
 
 /**

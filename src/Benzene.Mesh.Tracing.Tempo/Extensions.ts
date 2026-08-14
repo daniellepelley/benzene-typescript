@@ -1,10 +1,10 @@
 /** Port of Benzene.Mesh.Tracing.Tempo.Extensions. */
-import { IBenzeneServiceContainer, VoidResult } from '@benzene/abstractions';
-import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
-import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzene/http';
-import { IMeshArtifactStore } from '@benzene/mesh-aggregator';
-import { MeshTopology } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { MessageHandlerDefinition } from '@benzenejs/core-message-handlers';
+import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzenejs/http';
+import { IMeshArtifactStore } from '@benzenejs/mesh-aggregator';
+import { MeshTopology } from '@benzenejs/mesh-contracts';
 import { PrometheusQueryClient } from './PrometheusQueryClient';
 import { TempoServiceGraphTopologyBuilder } from './TempoServiceGraphTopologyBuilder';
 import { TempoTopologyMessageHandler } from './TempoTopologyMessageHandler';

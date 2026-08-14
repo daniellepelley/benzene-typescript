@@ -14,14 +14,14 @@
  * descriptor feed on this plane).
  *
  * Divergences from the C# original:
- * - `MeshUsageWindow` is NOT threaded to the usage sources: `@benzene/mesh-contracts`'s
+ * - `MeshUsageWindow` is NOT threaded to the usage sources: `@benzenejs/mesh-contracts`'s
  *   `IMeshUsageSource.fetchUsageAsync` has no window parameter in this snapshot, so this port cannot ask a
  *   source to query its backend over the picked window. `countsWindowed` is still decided honestly from the
  *   windows each source *returns* on its `MeshUsage` (`windowStartUtc`/`windowEndUtc`) - a source that
  *   happens to return a matching window still reads as windowed; a cumulative source reads as not-windowed.
  * - `DateTimeOffset` -> epoch-ms `number`; `IEnumerable<IMeshUsageSource>` -> `readonly IMeshUsageSource[]`.
  */
-import { IMeshUsageSource, MeshUsage, MeshUsageEntry } from '@benzene/mesh-contracts';
+import { IMeshUsageSource, MeshUsage, MeshUsageEntry } from '@benzenejs/mesh-contracts';
 import { IMeshFleetReadModel } from './IMeshFleetReadModel';
 import { IMeshTraceSource } from './IMeshTraceSource';
 import { MeshTimeRangeResolver, ResolvedWindow } from './MeshTimeRangeResolver';

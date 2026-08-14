@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Message, Producer, ProducerRecord, RecordMetadata } from 'kafkajs';
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext, ITopic } from '@benzene/abstractions-messages';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { IBenzeneResponseAdapter, IMessageHandlerResultSetter } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder, NullBenzeneServiceContainer } from '@benzene/core-middleware';
-import { Topic } from '@benzene/core-messages';
-import { sendMessageAsync } from '@benzene/clients';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext, ITopic } from '@benzenejs/abstractions-messages';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneResponseAdapter, IMessageHandlerResultSetter } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder, NullBenzeneServiceContainer } from '@benzenejs/core-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { sendMessageAsync } from '@benzenejs/clients';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   KafkaBenzeneMessageClient,
   KafkaClientMiddleware,
@@ -19,7 +19,7 @@ import {
   KafkaSendMessageHeadersGetter,
   KafkaSendMessageTopicGetter,
   useKafkaClient,
-} from '@benzene/kafka-core';
+} from '@benzenejs/kafka-core';
 
 /**
  * Port of the C# Benzene send-side Kafka tests (KafkaBenzeneMessageClientTest and the send-side portions

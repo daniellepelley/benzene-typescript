@@ -1,5 +1,5 @@
 import { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
-import { IHttpContext } from '@benzene/http';
+import { IHttpContext } from '@benzenejs/http';
 
 /**
  * Port of Benzene.Aws.Lambda.ApiGateway.ApiGatewayV2Context.

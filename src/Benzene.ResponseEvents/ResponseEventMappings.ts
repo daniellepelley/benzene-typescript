@@ -1,5 +1,5 @@
-import { IBenzeneResult } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { IResponseEventMapping } from './IResponseEventMapping';
 import { PublishFailureMode } from './PublishFailureMode';
 import { ResponseEventPublication } from './ResponseEventPublication';

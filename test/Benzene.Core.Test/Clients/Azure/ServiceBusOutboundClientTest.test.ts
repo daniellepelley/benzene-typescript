@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { ServiceBusMessage, ServiceBusSender } from '@azure/service-bus';
-import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzene/clients';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { addOutboundRouting, IBenzeneMessageSender, OutboundContext } from '@benzenejs/clients';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   OutboundServiceBusContextConverter,
   ServiceBusSendMessageContext,
   useServiceBus,
-} from '@benzene/clients-azure-service-bus';
+} from '@benzenejs/clients-azure-service-bus';
 
 /**
  * Port of the C# Benzene.Clients.Azure.ServiceBus tests (the OutboundContext send path — the generic
  * `ServiceBusContextConverter<T>`/`ServiceBusBenzeneMessageClient`/batch client are deferred, matching the
- * `@benzene/clients-aws-*` siblings). Drives the send end-to-end from `IBenzeneMessageSender.sendAsync`
+ * `@benzenejs/clients-aws-*` siblings). Drives the send end-to-end from `IBenzeneMessageSender.sendAsync`
  * over a capturing fake `ServiceBusSender`, plus a direct converter unit test.
  */
 

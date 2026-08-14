@@ -1,4 +1,4 @@
-import { IApplicationInfo } from '@benzene/abstractions-message-handlers';
+import { IApplicationInfo } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Default fallback IApplicationInfo registered by `AddBenzene` so an IApplicationInfo is

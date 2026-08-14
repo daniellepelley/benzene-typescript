@@ -1,7 +1,7 @@
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { addBenzeneMessage } from '@benzene/core-message-handlers';
-import { createMiddlewarePipeline } from '@benzene/core-middleware';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { addBenzeneMessage } from '@benzenejs/core-message-handlers';
+import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { AwsEventStreamContext } from '../AwsEventStream/AwsEventStreamContext';
 import { BenzeneMessageLambdaHandler } from './BenzeneMessageLambdaHandler';
 

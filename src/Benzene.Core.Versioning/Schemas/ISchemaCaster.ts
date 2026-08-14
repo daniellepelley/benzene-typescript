@@ -1,5 +1,5 @@
 /** Port of Benzene.Core.Versioning.Schemas.ISchemaCaster (+ the generic ISchemaCaster<TFrom,TTo>). */
-import { Constructor, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { Constructor, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { ICaster } from '../Casters/ICaster';
 import { SchemaCastDefinition } from './SchemaCastDefinition';
 

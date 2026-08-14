@@ -1,5 +1,5 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewareFactory, IMiddlewareWrapper } from '@benzene/abstractions-middleware';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewareFactory, IMiddlewareWrapper } from '@benzenejs/abstractions-middleware';
 
 /**
  * Applies all registered middleware wrappers to each middleware instance.

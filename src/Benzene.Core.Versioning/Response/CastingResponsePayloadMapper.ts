@@ -1,12 +1,12 @@
 /** Port of Benzene.Core.Versioning.Response.CastingResponsePayloadMapper. */
-import { Constructor, ISerializer, VoidResult } from '@benzene/abstractions';
+import { Constructor, ISerializer, VoidResult } from '@benzenejs/abstractions';
 import {
   IMessageHandlerResult,
   IMessageTopicGetter,
   IMessageVersionGetter,
   IResponsePayloadMapper,
-} from '@benzene/abstractions-message-handlers';
-import { isRawStringMessage } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { isRawStringMessage } from '@benzenejs/abstractions-messages';
 import { ISchemaCasters } from '../Schemas/ISchemaCasters';
 import { CastMessageHandlerResult } from './CastMessageHandlerResult';
 import { ResponseTypeOverrideDefinition } from './ResponseTypeOverrideDefinition';

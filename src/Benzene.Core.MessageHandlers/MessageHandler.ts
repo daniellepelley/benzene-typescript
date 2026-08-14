@@ -1,11 +1,11 @@
-import { IBenzeneResult, ILogger } from '@benzene/abstractions';
+import { IBenzeneResult, ILogger } from '@benzenejs/abstractions';
 import {
   IExecutableMessageHandler,
   IMessageHandler,
   IRequestMapperThunk,
-} from '@benzene/abstractions-message-handlers';
-import { ArgumentException } from '@benzene/core';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { ArgumentException } from '@benzenejs/core';
+import { BenzeneResult } from '@benzenejs/results';
 import { IDefaultStatuses } from './MessageResult';
 
 function errorMessage(error: unknown): string {

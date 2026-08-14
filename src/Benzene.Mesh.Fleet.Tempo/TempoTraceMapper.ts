@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Fleet.Tempo.TempoTraceMapper. */
-import { MeshTraceEvent } from '@benzene/mesh-wire';
+import { MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 type JsonObject = Record<string, unknown>;
 
@@ -23,7 +23,7 @@ type JsonObject = Record<string, unknown>;
  *   nanos -> ms reduction, matching C#'s `long`.
  *
  * (`MeshTraceEvent.exceptionType`, from `benzene.exception.type`, IS carried - the field was added to
- * `@benzene/mesh-wire` with the X-Ray port.)
+ * `@benzenejs/mesh-wire` with the X-Ray port.)
  */
 export const TempoTraceMapper = {
   /**

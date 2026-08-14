@@ -1,4 +1,4 @@
-import { IRequestEnricher, IRequestMapper } from '@benzene/abstractions-message-handlers';
+import { IRequestEnricher, IRequestMapper } from '@benzenejs/abstractions-message-handlers';
 import { DictionaryUtils } from '../Helper/DictionaryUtils';
 
 /**

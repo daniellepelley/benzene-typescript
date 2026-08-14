@@ -1,5 +1,5 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IMessageDefinition, IMessageDefinitionFinder, ITopic } from '@benzene/abstractions-messages';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IMessageDefinition, IMessageDefinitionFinder, ITopic } from '@benzenejs/abstractions-messages';
 import { IResponseEventMapping } from './IResponseEventMapping';
 import { ResponseEventDeclarations } from './ResponseEventDeclarations';
 import { ResponseEventDefinition } from './ResponseEventDefinition';

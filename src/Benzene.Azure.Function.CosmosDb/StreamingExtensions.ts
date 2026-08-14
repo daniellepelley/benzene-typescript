@@ -1,12 +1,12 @@
 /** Port of Benzene.Azure.Function.CosmosDb.StreamingExtensions. */
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import {
   EntryPointMiddlewareApplication,
   StreamContext,
   StreamMiddlewareApplication,
-} from '@benzene/core-middleware';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+} from '@benzenejs/core-middleware';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 
 /**
  * Adds Cosmos DB Change Feed handling: the whole triggered batch of changed documents is presented to
@@ -17,7 +17,7 @@ import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
  * envelopes.
  *
  * Reuses the already-ported streaming primitives (`StreamContext` / `StreamMiddlewareApplication` from
- * `@benzene/core-middleware`), exactly as the C# `Benzene.Core.Middleware/Streaming` engine — the Cosmos
+ * `@benzenejs/core-middleware`), exactly as the C# `Benzene.Core.Middleware/Streaming` engine — the Cosmos
  * counterpart to Event Hub's `UseEventHubStream` and AWS's Kinesis. The `CosmosDBTrigger` checkpoints
  * its lease automatically when the invocation returns successfully, so the context's checkpointer is the
  * no-op default; an exception thrown from the pipeline propagates to the runtime, leaving the lease

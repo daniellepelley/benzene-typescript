@@ -11,7 +11,7 @@
  * TypeScript erases generics, so a later stage reads an earlier result by an EXPLICIT string key — declared
  * with `.key(...)` and read with `ctx.get<T>(key)`. The keys below are the only added ceremony.
  */
-import { Saga, SagaBuilder } from '@benzene/saga';
+import { Saga, SagaBuilder } from '@benzenejs/saga';
 import {
   OktaCompanyCreated,
   RoleCreated,

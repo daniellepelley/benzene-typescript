@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { MeshUsageSource } from '@benzene/mesh-contracts';
+import { MeshUsageSource } from '@benzenejs/mesh-contracts';
 import {
   ApplicationInsightsUsageOptions,
   ApplicationInsightsUsageSource,
   IApplicationInsightsUsageQuery,
   UsageCount,
-} from '@benzene/mesh-usage-application-insights';
+} from '@benzenejs/mesh-usage-application-insights';
 
 /**
  * Port of test/Benzene.Mesh.Test/ApplicationInsightsUsageSourceTest.cs. Grouped (topic, transport, result)

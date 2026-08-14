@@ -1,20 +1,20 @@
 /**
  * Drives every function in `@benzene-example/aws-lambda-functions` end-to-end: build the transport's
- * native event with `@benzene/aws-lambda-testing`, invoke the exported `handler` exactly as AWS would,
+ * native event with `@benzenejs/aws-lambda-testing`, invoke the exported `handler` exactly as AWS would,
  * and assert the shared handler ran. This proves the example's "one domain, five transports" claim -
  * the API Gateway function returns a confirmation, and each async transport delivers to the same
  * warehouse consumer.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Context } from 'aws-lambda';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
 import {
   asApiGatewayRequest,
   asAwsKafkaEvent,
   asEventBridge,
   asSns,
   asSqs,
-} from '@benzene/aws-lambda-testing';
+} from '@benzenejs/aws-lambda-testing';
 import {
   apiGatewayFunction,
   eventBridgeFunction,

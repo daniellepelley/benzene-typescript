@@ -1,5 +1,5 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.PubSubMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { PubSubContext } from './PubSubContext';
 
 /**

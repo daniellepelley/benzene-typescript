@@ -1,6 +1,6 @@
-import { IPayloadSerializer, ISerializer } from '@benzene/abstractions';
-import { IRequestMapper, isRequestContext } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyBytesGetter, IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IPayloadSerializer, ISerializer } from '@benzenejs/abstractions';
+import { IRequestMapper, isRequestContext } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyBytesGetter, IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 
 /**
  * Default single-serializer `IRequestMapper<TContext>` implementation: deserializes the message body

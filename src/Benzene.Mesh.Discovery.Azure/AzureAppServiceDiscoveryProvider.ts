@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Discovery.Azure.AzureAppServiceDiscoveryProvider. */
-import { IMeshDiscoveryProvider, MeshDiscoveryFilter, MeshServiceRegistryEntry } from '@benzene/mesh-contracts';
+import { IMeshDiscoveryProvider, MeshDiscoveryFilter, MeshServiceRegistryEntry } from '@benzenejs/mesh-contracts';
 import { IAzureResourceLister } from './IAzureResourceLister';
 
 const DefaultSpecPath = '/benzene/spec?type=benzene';

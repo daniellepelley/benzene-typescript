@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/abstractions",
+  "name": "@benzenejs/abstractions",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Abstractions",
   "license": "MIT",

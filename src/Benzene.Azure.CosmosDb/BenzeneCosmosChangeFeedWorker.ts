@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.CosmosDb.BenzeneCosmosChangeFeedWorker. */
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BenzeneCosmosChangeFeedConfig } from './BenzeneCosmosChangeFeedConfig';
 import { ChangeFeedProcessor, ChangeFeedProcessorContext } from './ChangeFeedProcessor';
 import { CosmosChangeFeedApplication } from './CosmosChangeFeedApplication';
@@ -9,8 +9,8 @@ import { ICosmosChangeFeedProcessorFactory } from './ICosmosChangeFeedProcessorF
 
 /**
  * A long-running worker that consumes a Cosmos DB container's change feed directly and runs each
- * delivered batch through a Benzene streaming pipeline — for `@benzene/self-host`, not Azure Functions
- * (use `@benzene/azure-function-cosmos-db` for a `CosmosDBTrigger`).
+ * delivered batch through a Benzene streaming pipeline — for `@benzenejs/self-host`, not Azure Functions
+ * (use `@benzenejs/azure-function-cosmos-db` for a `CosmosDBTrigger`).
  *
  * What this worker adds over the Functions trigger is *manual checkpoint control*: each batch's
  * `StreamContext<TDocument>` carries a real checkpointer wrapping the batch-level checkpoint hook, with

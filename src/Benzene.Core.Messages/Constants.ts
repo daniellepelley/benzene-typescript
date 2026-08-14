@@ -1,4 +1,4 @@
-import { ITopic } from '@benzene/abstractions-messages';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { Topic } from './Topic';
 
 /** Port of Benzene.Core.Messages.Constants. */

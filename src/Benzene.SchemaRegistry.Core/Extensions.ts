@@ -1,5 +1,5 @@
 /** Port of Benzene.SchemaRegistry.Core.Extensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { ISchemaRegistryClient } from './ISchemaRegistryClient';
 
 /**

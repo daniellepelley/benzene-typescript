@@ -1,4 +1,4 @@
-import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzene/core-messages';
+import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzenejs/core-messages';
 
 /**
  * The middleware pipeline context for dispatching a single message to an in-process handler, in the

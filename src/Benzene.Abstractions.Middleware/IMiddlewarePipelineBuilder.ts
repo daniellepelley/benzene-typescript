@@ -3,7 +3,7 @@ import {
   IRegisterDependency,
   IServiceResolver,
   ServiceIdentifier,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import { Capability } from './Capability';
 import { IMiddleware, MiddlewareFunc } from './IMiddleware';
 import { IMiddlewarePipeline } from './IMiddlewarePipeline';

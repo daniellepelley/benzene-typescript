@@ -4,8 +4,8 @@
  * `useServiceBus(workerStartup, config, clientFactory, action)` adds a long-running
  * {@link BenzeneServiceBusWorker} that consumes a queue or topic subscription via `@azure/service-bus`
  * and runs each received message through a Benzene middleware pipeline (transport `"service-bus"`),
- * settling it per {@link ServiceBusConsumerAckMode}. Intended for `@benzene/self-host` workers rather
- * than Azure Functions (for a Service Bus trigger, use `@benzene/azure-function-service-bus`).
+ * settling it per {@link ServiceBusConsumerAckMode}. Intended for `@benzenejs/self-host` workers rather
+ * than Azure Functions (for a Service Bus trigger, use `@benzenejs/azure-function-service-bus`).
  *
  * PORTING NOTES: .NET's `ServiceBusProcessor` push model maps to a `ServiceBusReceiver.subscribe(...)`;
  * session consumption (`sessionsEnabled`) is a bounded `acceptNextSession` pump recreating the

@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.Disk.Extensions. */
-import { addHealthCheckInstance, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addHealthCheckInstance, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { DiskHealthCheck } from './DiskHealthCheck';
 
 /**

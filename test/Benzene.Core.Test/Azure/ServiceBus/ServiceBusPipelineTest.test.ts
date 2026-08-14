@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addBenzene,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   addServiceBus,
   handleServiceBusMessages,
@@ -20,7 +20,7 @@ import {
   ServiceBusMessageProcessingException,
   ServiceBusOptions,
   useServiceBus,
-} from '@benzene/azure-function-service-bus';
+} from '@benzenejs/azure-function-service-bus';
 
 /**
  * End-to-end port of the C# Azure Service Bus pipeline tests: wire the full stack via idiomatic DI and

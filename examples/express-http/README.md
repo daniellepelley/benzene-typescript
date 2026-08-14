@@ -1,7 +1,7 @@
 # `@benzene-example/express-http`
 
 A plain Benzene HTTP order service on a **standalone Express server** — the Node/Express analog of the
-.NET `Benzene.Example.Asp`, via [`@benzene/express`](../../src/Benzene.Express). Benzene owns the HTTP
+.NET `Benzene.Example.Asp`, via [`@benzenejs/express`](../../src/Benzene.Express). Benzene owns the HTTP
 verbs + URLs it has `@httpEndpoint` handlers for, and everything else falls through to the ordinary Express
 pipeline (the strangler-fig pattern).
 
@@ -29,6 +29,6 @@ curl localhost:3000/orders
 ## Verify it
 
 `test/Benzene.Core.Test/Examples/ExpressHttpExampleTest.test.ts` starts the real Express app on an ephemeral
-loopback port and drives it over HTTP with `fetch` (the same approach as the port's own `@benzene/express`
+loopback port and drives it over HTTP with `fetch` (the same approach as the port's own `@benzenejs/express`
 integration tests): it creates an order over `POST /orders`, reads it back over `GET /orders`, and confirms
 the strangler fall-through to the plain `/healthz` route.

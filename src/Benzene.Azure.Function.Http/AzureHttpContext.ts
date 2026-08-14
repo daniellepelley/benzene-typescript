@@ -1,5 +1,5 @@
 import { HttpRequest, HttpResponseInit } from '@azure/functions';
-import { IHttpContext } from '@benzene/http';
+import { IHttpContext } from '@benzenejs/http';
 
 /**
  * Port of Benzene.Azure.Function.AspNet.AspNetContext.

@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.Azure.QueueStorage.QueueStorageClientMiddleware. */
 import { QueueClient } from '@azure/storage-queue';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { QueueStorageSendMessageContext } from './QueueStorageSendMessageContext';
 
 /**

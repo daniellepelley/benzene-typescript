@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.Core.IHealthCheck. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IHealthCheckResult } from './IHealthCheckResult';
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as yup from 'yup';
-import { yupToJsonSchema } from '@benzene/yup';
+import { yupToJsonSchema } from '@benzenejs/yup';
 
 /**
  * Unit tests for `yupToJsonSchema` — the Yup → JSON Schema conversion (via `schema.describe()`) used to

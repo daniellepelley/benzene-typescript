@@ -1,5 +1,5 @@
-import { IServiceResolver, ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IMiddleware } from '@benzene/abstractions-middleware';
+import { IServiceResolver, ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IMiddleware } from '@benzenejs/abstractions-middleware';
 import { IBenzeneClientContext } from './IBenzeneClientContext';
 
 /**

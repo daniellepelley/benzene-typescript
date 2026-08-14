@@ -3,7 +3,7 @@
 Run a multi-step operation that spans several services, and if any step fails, undo every step that
 already succeeded — in reverse — so the system ends up back where it started.
 
-> **Boundary:** `@benzene/saga` is an in-process orchestrator with no durable crash-resume. It records
+> **Boundary:** `@benzenejs/saga` is an in-process orchestrator with no durable crash-resume. It records
 > what happened (via an `ISagaStateStore`) but cannot replay in-memory steps after the process dies.
 > For a workflow that must survive a mid-flight restart, resume automatically, or wait on a human for
 > hours, reach for a real durable orchestrator (AWS Step Functions, Azure Durable Functions, Temporal).
@@ -17,7 +17,7 @@ a user, then an RBAC role, across three systems. There's no database transaction
 the steps, and if any one fails, run each completed step's *compensation* in reverse to undo everything,
 leaving the system back at its starting state so the whole thing can be retried.
 
-`@benzene/saga` is an in-code saga orchestrator. There's no workflow engine to stand up, no decorators,
+`@benzenejs/saga` is an in-code saga orchestrator. There's no workflow engine to stand up, no decorators,
 no DSL, no database — you describe the steps with a fluent builder and call `runAsync()`.
 
 ## Is this hard to use?
@@ -37,12 +37,12 @@ not the library, and this guide calls out how to get it right.
 ## Installation
 
 ```bash
-npm install @benzene/saga @benzene/results @benzene/abstractions
+npm install @benzenejs/saga @benzenejs/results @benzenejs/abstractions
 ```
 
-`@benzene/saga` has no host and no dependency-injection requirement — a saga is plain objects and
+`@benzenejs/saga` has no host and no dependency-injection requirement — a saga is plain objects and
 functions. If your forward actions call another service through Benzene's outbound sender, also install
-`@benzene/clients` (see [Calling real services](#calling-real-services)).
+`@benzenejs/clients` (see [Calling real services](#calling-real-services)).
 
 ## The mental model
 
@@ -65,7 +65,7 @@ reports a rolled-back result.
 One stage, one step, with its compensation:
 
 ```ts
-import { SagaBuilder, SagaResult } from '@benzene/saga';
+import { SagaBuilder, SagaResult } from '@benzenejs/saga';
 import { createOrderAsync, cancelOrderAsync, Order } from './orders.js';
 
 const saga = new SagaBuilder()
@@ -99,7 +99,7 @@ The signup flow — create a tenant and an Okta company **in parallel**, then a 
 then a role (needs the user id):
 
 ```ts
-import { SagaBuilder } from '@benzene/saga';
+import { SagaBuilder } from '@benzenejs/saga';
 import { api, TenantCreated, OktaCompanyCreated, UserCreated, RoleCreated } from './signup-api.js';
 
 const companyName = 'Acme';
@@ -187,7 +187,7 @@ stage boundary, single-threaded — so there's no locking to worry about.
 | `compensationFailures` | The steps whose compensation itself failed — the orphaned effects to reconcile manually. |
 
 ```ts
-import { SagaOutcome } from '@benzene/saga';
+import { SagaOutcome } from '@benzenejs/saga';
 
 const result = await saga.runAsync();
 switch (result.outcome) {
@@ -239,7 +239,7 @@ looping yourself, pass a `SagaRetryPolicy` on the run options and the orchestrat
 saga with exponential backoff:
 
 ```ts
-import { SagaRetryPolicy, SagaRunOptions } from '@benzene/saga';
+import { SagaRetryPolicy, SagaRunOptions } from '@benzenejs/saga';
 
 const options = new SagaRunOptions();
 options.retryPolicy = new SagaRetryPolicy(3, 1000); // 3 attempts, 1000ms initial delay, doubling
@@ -262,7 +262,7 @@ how it finishes — so a `RolledBack` or (especially) a `PartiallyRolledBack` ou
 visible** to an operator even if the process later restarts:
 
 ```ts
-import { InMemorySagaStateStore, SagaRunOptions } from '@benzene/saga';
+import { InMemorySagaStateStore, SagaRunOptions } from '@benzenejs/saga';
 
 const store = new InMemorySagaStateStore(); // built-in; a durable adapter for production (below)
 
@@ -282,7 +282,7 @@ read back with `.events` or `.eventsFor(sagaId)`. **This is the only store the p
 store is a three-method implementation of `ISagaStateStore` — persist each call to a row/document:
 
 ```ts
-import { ISagaStateStore, SagaRunInfo, SagaResult, SagaOutcome } from '@benzene/saga';
+import { ISagaStateStore, SagaRunInfo, SagaResult, SagaOutcome } from '@benzenejs/saga';
 import { ITable } from './table.js';
 
 export class TableSagaStateStore implements ISagaStateStore {
@@ -324,7 +324,7 @@ storage client supports cancellation.
   atomic isolation for compensations, which is what lets it span services that share no transaction.
 - **No crash-durable long-running orchestration.** If you need a workflow that survives a process restart
   mid-flight, resumes automatically, or waits on a human for hours/days, that's a different problem than
-  what `@benzene/saga` solves — reach for a real durable orchestrator: AWS Step Functions, Azure Durable
+  what `@benzenejs/saga` solves — reach for a real durable orchestrator: AWS Step Functions, Azure Durable
   Functions, Temporal, or similar.
 
 ## Testing
@@ -334,8 +334,8 @@ return `BenzeneResult.ok(...)` or a failure, and assert on `SagaResult`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { BenzeneResult } from '@benzene/results';
-import { SagaBuilder, SagaOutcome } from '@benzene/saga';
+import { BenzeneResult } from '@benzenejs/results';
+import { SagaBuilder, SagaOutcome } from '@benzenejs/saga';
 
 describe('signup saga', () => {
   it('rolls back the created tenant when a later step fails', async () => {

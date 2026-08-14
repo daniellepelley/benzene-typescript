@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.ServiceBus.ServiceBusContext. */
 import { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Provides the middleware pipeline context for a single Service Bus message within an Azure Functions

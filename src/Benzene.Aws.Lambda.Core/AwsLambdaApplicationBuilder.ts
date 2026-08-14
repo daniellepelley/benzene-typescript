@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { BenzeneApplicationBuilder } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneApplicationBuilder, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneApplicationBuilder } from '@benzenejs/core-middleware';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 
 /**

@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.HealthCheckFinder. */
-import { IDependencyHealthCheck, IHealthCheck } from '@benzene/health-checks-core';
+import { IDependencyHealthCheck, IHealthCheck } from '@benzenejs/health-checks-core';
 import { IHealthCheckFinder } from './IHealthCheckFinder';
 
 /**

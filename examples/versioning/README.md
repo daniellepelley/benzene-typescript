@@ -46,7 +46,7 @@ downcast — which is how a plain **V1** request/response proves *both* hops ran
 
 - **Explicit downcasters.** .NET's `AddPayloadVersioning` auto-synthesises the field-drop downcasters from
   the declared upcasters (its reflection + `System.Linq.Expressions` auto-mapper).
-  [`@benzene/core-versioning`](../../src/Benzene.Core.Versioning) deliberately does **not** port that
+  [`@benzenejs/core-versioning`](../../src/Benzene.Core.Versioning) deliberately does **not** port that
   auto-mapper (no runtime property reflection in TS), so casters are explicit `(from) => to` functions.
   [`src/startUp.ts`](src/startUp.ts) therefore declares the adjacent downcasters (V3→V2, V2→V1) too — the
   expander still **chains** them (V3→V2→V1), which is the mechanism the example is about.

@@ -8,19 +8,19 @@
  *
  * Each service consumes its inbound topics over the transport shown, DECLARES the topics it produces (spec
  * `events` → the mesh's structural topology), and — for orders/payments/shipping — actually SENDS them at
- * runtime through the outbound `@benzene/clients-aws-{sqs,sns,eventbridge}` clients onto the in-memory
+ * runtime through the outbound `@benzenejs/clients-aws-{sqs,sns,eventbridge}` clients onto the in-memory
  * {@link MeshBus}, which delivers to the consuming services. So the same graph shows up both structurally
  * (from the specs) and as a live cascade (a single POST to orders fans all the way through).
  */
 import { Handler } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler, IMessageHandlerNoResponse } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
-import { IBenzeneMessageSender } from '@benzene/clients';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageHandlerNoResponse } from '@benzenejs/abstractions-message-handlers';
+import { message, MessageHandlersRegistry } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
+import { IBenzeneMessageSender } from '@benzenejs/clients';
 import { z } from 'zod';
-import { registerZodSchema } from '@benzene/zod';
+import { registerZodSchema } from '@benzenejs/zod';
 import { buildMeshServiceLambda, MeshServiceDefinition, Transport } from './meshService';
 import { MeshBus } from './bus';
 import {

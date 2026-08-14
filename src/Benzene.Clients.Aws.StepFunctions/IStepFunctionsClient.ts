@@ -1,5 +1,5 @@
 /** Port of Benzene.Clients.Aws.StepFunctions.IStepFunctionsClient. */
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * A client for starting AWS Step Functions state machine executions.

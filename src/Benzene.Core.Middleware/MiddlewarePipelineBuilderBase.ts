@@ -5,8 +5,8 @@ import {
   IServiceResolver,
   NullLogger,
   ServiceIdentifier,
-} from '@benzene/abstractions';
-import { LogContextBuilder } from '@benzene/core';
+} from '@benzenejs/abstractions';
+import { LogContextBuilder } from '@benzenejs/core';
 import {
   Capability,
   IContextConverter,
@@ -17,7 +17,7 @@ import {
   MiddlewareFactoryFunc,
   MiddlewareFunc,
   PipelineBuilderAction,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 import { ContextConverterMiddleware } from './ContextConverterMiddleware';
 import { ExceptionHandlerMiddleware } from './ExceptionHandlerMiddleware';
 import { FuncWrapperMiddleware } from './FuncWrapperMiddleware';

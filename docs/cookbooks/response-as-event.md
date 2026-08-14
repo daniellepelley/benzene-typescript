@@ -12,7 +12,7 @@ system wants — "the order *was* created, here it is." Publishing it by hand fr
 works, but couples the handler to messaging concerns and repeats the same boilerplate in every
 handler.
 
-`useResponseEvents` (in `@benzene/response-events`) does this declaratively: the handler stays a pure
+`useResponseEvents` (in `@benzenejs/response-events`) does this declaratively: the handler stays a pure
 request/response handler (reusable on HTTP, where the same payload *is* the response body), and the
 pipeline decides that on this transport, the response becomes an event.
 
@@ -20,15 +20,15 @@ pipeline decides that on this transport, the response becomes an event.
 
 - [Node.js 22+](https://nodejs.org/).
 - A queue-triggered Benzene pipeline (SQS, Service Bus, Kafka, ...). The examples here use
-  [`@benzene/aws-lambda-sqs`](handling-sqs-failures.md).
+  [`@benzenejs/aws-lambda-sqs`](handling-sqs-failures.md).
 - An outbound route for each event topic, registered with `addOutboundRouting` — see
   [Clients](../clients.md).
 
 ## Installation
 
 ```bash
-npm install @benzene/response-events @benzene/clients @benzene/core-message-handlers \
-  @benzene/results @benzene/abstractions @benzene/abstractions-message-handlers
+npm install @benzenejs/response-events @benzenejs/clients @benzenejs/core-message-handlers \
+  @benzenejs/results @benzenejs/abstractions @benzenejs/abstractions-message-handlers
 ```
 
 ## Step-by-Step Implementation
@@ -39,10 +39,10 @@ Nothing about the handler knows it will be republished — it just answers `orde
 `OrderCreated` payload, exactly as it would when hosted on HTTP.
 
 ```ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrderRepository } from './OrderRepository.js';
 
 export class CreateOrderRequest {
@@ -90,10 +90,10 @@ the route — like any other `sendAsync`. The default publisher sends the event 
 
 ```ts
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { addOutboundRouting, OutboundContext } from '@benzene/clients';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { addOutboundRouting, OutboundContext } from '@benzenejs/clients';
+import { BenzeneResult } from '@benzenejs/results';
 
 class PublishOrderCreatedToSns implements IMiddleware<OutboundContext> {
   readonly name = 'PublishOrderCreatedToSns';
@@ -128,12 +128,12 @@ router builder (from `useMessageHandlersWithRouter`) and adds the response-event
 handler dispatch:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useMessageHandlersWithRouter } from '@benzene/core-message-handlers';
-import { useResponseEvents } from '@benzene/response-events';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useMessageHandlersWithRouter } from '@benzenejs/core-message-handlers';
+import { useResponseEvents } from '@benzenejs/response-events';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { registerOutboundRoutes } from './outbound.js';
 
@@ -171,7 +171,7 @@ narrow it (the third argument to `map` — the port passes it positionally rathe
 argument):
 
 ```ts
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 useResponseEvents(router, (events) =>
   events.map('order:create', 'order:created', (result) => result.status === BenzeneResultStatus.created),
@@ -218,9 +218,9 @@ Anything the built-ins can't express is an `IResponseEventMapping` implementatio
 handler's full result and returns a `ResponseEventPublication` (event topic + payload) or `undefined`:
 
 ```ts
-import { IBenzeneResult } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
-import { IResponseEventMapping, ResponseEventPublication } from '@benzene/response-events';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { IResponseEventMapping, ResponseEventPublication } from '@benzenejs/response-events';
 
 class ArchiveHighValueOrders implements IResponseEventMapping {
   readonly description = 'order:create -> order:archived (when total > 10_000)';
@@ -252,7 +252,7 @@ is at-least-once delivery: the handler re-runs on redelivery, so the handler and
 must be idempotent.** If the event is best-effort, opt out with `onPublishFailure`:
 
 ```ts
-import { PublishFailureMode } from '@benzene/response-events';
+import { PublishFailureMode } from '@benzenejs/response-events';
 
 useResponseEvents(router, (events) =>
   events.map('order:create', 'order:created').onPublishFailure(PublishFailureMode.LogAndContinue),
@@ -268,7 +268,7 @@ Every mapping is plain data. Resolve `IResponseEventCatalog` to see exactly what
 republishes, across all pipelines:
 
 ```ts
-import { IResponseEventCatalog } from '@benzene/response-events';
+import { IResponseEventCatalog } from '@benzenejs/response-events';
 
 const catalog = resolver.getService(IResponseEventCatalog);
 for (const mapping of catalog.mappings) {
@@ -289,7 +289,7 @@ OrderCreated>`, deployed it on SQS, and my event vanished" mistake. An opt-in st
 surfaces it. Call it once after wiring, against the resolved container:
 
 ```ts
-import { findUnmappedResponseHandlers, logUnmappedResponseHandlers } from '@benzene/response-events';
+import { findUnmappedResponseHandlers, logUnmappedResponseHandlers } from '@benzenejs/response-events';
 
 const gaps = logUnmappedResponseHandlers(resolver); // logs a warning per gap, returns them
 // or, to decide yourself:
@@ -312,7 +312,7 @@ The middleware publishes through the `IResponseEventPublisher` port; the default
 registration to publish differently — a test fake, a custom fan-out, or an outbox relay:
 
 ```ts
-import { IResponseEventPublisher } from '@benzene/response-events';
+import { IResponseEventPublisher } from '@benzenejs/response-events';
 
 services.addScoped(IResponseEventPublisher, MyOutboxPublisher);
 ```
@@ -320,8 +320,8 @@ services.addScoped(IResponseEventPublisher, MyOutboxPublisher);
 A publisher just implements one method:
 
 ```ts
-import { IBenzeneResult } from '@benzene/abstractions';
-import { IResponseEventPublisher } from '@benzene/response-events';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { IResponseEventPublisher } from '@benzenejs/response-events';
 
 class MyOutboxPublisher implements IResponseEventPublisher {
   publishAsync(eventTopic: string, payload: unknown): Promise<IBenzeneResult> {
@@ -338,15 +338,15 @@ middleware actually uses) and assert what it published — no live transport nee
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResult, IBenzeneResultOf, IServiceResolver, ServiceIdentifier } from '@benzene/abstractions';
-import { IMessageHandlerContext } from '@benzene/abstractions-message-handlers';
-import { Topic } from '@benzene/core-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf, IServiceResolver, ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   IResponseEventPublisher,
   ResponseEventsBuilder,
   ResponseEventsMiddleware,
-} from '@benzene/response-events';
+} from '@benzenejs/response-events';
 
 class OrderPayload {
   id?: number;

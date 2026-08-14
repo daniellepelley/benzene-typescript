@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.QueueStorage.QueueStorageContext. */
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 import { QueueStorageMessage } from './QueueStorageMessage';
 
 /**

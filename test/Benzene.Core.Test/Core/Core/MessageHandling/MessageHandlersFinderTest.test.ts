@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
-import { VoidResult } from '@benzene/abstractions';
-import { BenzeneException } from '@benzene/core';
+import { VoidResult } from '@benzenejs/abstractions';
+import { BenzeneException } from '@benzenejs/core';
 import {
   CacheMessageHandlersFinder,
   CompositeMessageHandlersFinder,
@@ -12,7 +12,7 @@ import {
   RegistryMessageHandlersFinder,
   importMessageHandlers,
   message,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import { Defaults } from './Examples/Defaults';
 import { ExampleMessageHandler, ExampleNoResponseMessageHandler } from './Examples/ExampleMessageHandler';
 import { ExampleRequestPayload, ExampleResponsePayload } from './Examples/ExampleRequestPayload';

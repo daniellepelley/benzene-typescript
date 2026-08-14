@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { ServiceBusClient, ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
 import {
   addBenzene,
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
-} from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addServiceBusConsumer,
   BenzeneServiceBusConfig,
@@ -26,7 +26,7 @@ import {
   ServiceBusSettlement,
   ServiceBusSettlementHolder,
   withServiceBusConfigDefaults,
-} from '@benzene/azure-service-bus';
+} from '@benzenejs/azure-service-bus';
 
 /**
  * Port of the C# Benzene.Azure.ServiceBus tests (ServiceBusConsumerMapperTest,

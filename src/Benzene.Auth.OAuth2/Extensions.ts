@@ -1,9 +1,9 @@
 import { JWTVerifyOptions } from 'jose';
-import { ILoggerFactory, NullLogger, tryAddScoped } from '@benzene/abstractions';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { AuthenticationHolder, AuthResults } from '@benzene/auth-core';
-import { FuncWrapperMiddleware } from '@benzene/core-middleware';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { ILoggerFactory, NullLogger, tryAddScoped } from '@benzenejs/abstractions';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { AuthenticationHolder, AuthResults } from '@benzenejs/auth-core';
+import { FuncWrapperMiddleware } from '@benzenejs/core-middleware';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { OAuth2BearerMiddleware } from './OAuth2BearerMiddleware';
 import { OAuth2BearerOptions } from './OAuth2BearerOptions';
 import { OAuth2ConfigurationManagerFactory } from './OAuth2ConfigurationManagerFactory';
@@ -65,7 +65,7 @@ export function useOAuth2Bearer<TContext extends IHttpContext>(
  *
  * Port of Benzene.Auth.OAuth2.Extensions.RequireScope. No principal at all (no authentication middleware
  * ran, or the one that ran failed) yields `Unauthorized` - not `Forbidden`. A principal missing every
- * requested scope yields `Forbidden`. Lives here rather than in `@benzene/auth-core` because scopes are
+ * requested scope yields `Forbidden`. Lives here rather than in `@benzenejs/auth-core` because scopes are
  * specifically an OAuth2/JWT concept, not a mechanism-agnostic one.
  */
 export function requireScope<TContext extends IHttpContext>(

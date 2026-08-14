@@ -1,6 +1,6 @@
 /**
  * An `IMeshSchemaProvider` that derives a topic's request/response payload schemas from the JSON-Schema
- * sources the validation adapters register (`@benzene/zod`/`joi`/`yup` each register an
+ * sources the validation adapters register (`@benzenejs/zod`/`joi`/`yup` each register an
  * `ITypeJsonSchemaSource`). This is the runtime replacement for the C# `MeshSchemaGenerator` reflecting over
  * the CLR request/response type: TypeScript erases types, so the schema is *provided* by whatever validated
  * the type at runtime.
@@ -11,10 +11,10 @@
  * (unconstrained), the spec's documented no-schema case, so a partially-validated service still self-
  * describes its full topic list.
  */
-import { Constructor, IServiceResolver, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
-import { IMessageHandlerDefinitionLookUp } from '@benzene/abstractions-message-handlers';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { Constructor, IServiceResolver, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { IMessageHandlerDefinitionLookUp } from '@benzenejs/abstractions-message-handlers';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import { IMeshSchemaProvider, MeshTopicSchemas } from './MeshSchemaProvider';
 
 export class ValidationMeshSchemaProvider implements IMeshSchemaProvider {

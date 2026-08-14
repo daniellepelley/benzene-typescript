@@ -1,5 +1,5 @@
 /** Port of Benzene.Diagnostics.DebugMiddlewareDecorator. */
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 
 /**
  * The debug output sink. Port of the destination of C# `System.Diagnostics.Debug.WriteLine`.

@@ -1,5 +1,5 @@
 /** Port of Benzene.SchemaRegistry.Core.ISchemaRegistryClient. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { RegisteredSchema } from './RegisteredSchema';
 import { SchemaDefinition } from './SchemaDefinition';
 

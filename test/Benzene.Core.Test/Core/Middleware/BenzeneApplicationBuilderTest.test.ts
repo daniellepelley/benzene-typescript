@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { serviceToken } from '@benzene/abstractions';
-import { BenzeneApplicationBuilder, MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { serviceToken } from '@benzenejs/abstractions';
+import { BenzeneApplicationBuilder, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * Port of the BenzeneApplicationBuilder scenarios: it exposes the platform name, `register` lands in the

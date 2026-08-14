@@ -1,4 +1,4 @@
-import { HttpRequest, IHttpRequestAdapter } from '@benzene/http';
+import { HttpRequest, IHttpRequestAdapter } from '@benzenejs/http';
 import { AzureHttpContext, azureHttpRequestPath } from './AzureHttpContext';
 
 /**

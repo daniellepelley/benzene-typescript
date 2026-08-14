@@ -1,7 +1,7 @@
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { MediaType } from '@benzene/core-messages';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { MediaType } from '@benzenejs/core-messages';
 
 /**
  * Base `IMediaFormat<TContext>` for header-negotiated formats: reads are selected by a `content-type`

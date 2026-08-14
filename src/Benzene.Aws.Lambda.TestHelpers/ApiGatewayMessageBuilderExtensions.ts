@@ -4,8 +4,8 @@ import {
   APIGatewayProxyEventV2,
   APIGatewayRequestAuthorizerEvent,
 } from 'aws-lambda';
-import { IHttpBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IHttpBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsApiGatewayRequestOptions {

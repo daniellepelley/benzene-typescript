@@ -1,8 +1,8 @@
 /** Port of Benzene.Schema.OpenApi.SpecMessageHandler. */
-import { IBenzeneResultOf, IServiceResolver } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { RawStringMessage } from '@benzene/core-messages';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf, IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { RawStringMessage } from '@benzenejs/core-messages';
+import { BenzeneResult } from '@benzenejs/results';
 import { SpecBuilder } from './SpecBuilder';
 import { SpecCache } from './SpecCache';
 import { SpecRequest } from './SpecRequest';

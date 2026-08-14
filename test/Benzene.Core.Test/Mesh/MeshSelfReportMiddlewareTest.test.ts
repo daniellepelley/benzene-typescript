@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { HealthCheckResponse } from '@benzene/health-checks-core';
-import { IMeshReportPublisher, MeshServiceReport } from '@benzene/mesh-contracts';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
+import { IMeshReportPublisher, MeshServiceReport } from '@benzenejs/mesh-contracts';
 import {
   MeshSelfReportMiddleware,
   MeshSelfReportOptions,
   MeshSelfReportState,
-} from '@benzene/mesh-reporting';
+} from '@benzenejs/mesh-reporting';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshSelfReportMiddlewareTest.cs. The C# `TaskCompletionSource` "signal"

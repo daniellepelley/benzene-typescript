@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Wire.IMeshStatusReader (and BenzeneMessageMeshStatusReader). */
-import { BenzeneMessageContext } from '@benzene/core-messages';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
 
 /**
  * Reads the invocation's final Benzene status back from a transport context after the pipeline has

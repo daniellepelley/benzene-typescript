@@ -1,7 +1,7 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 import { AwsLambdaEntryPoint } from './AwsLambdaEntryPoint';
 import { IAwsEntryPointBuilder } from './IAwsEntryPointBuilder';

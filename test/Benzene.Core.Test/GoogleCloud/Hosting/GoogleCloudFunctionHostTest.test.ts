@@ -9,19 +9,19 @@
  * still accepts; this file locks in the new unified shape.)
  */
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneConfiguration,
   BenzeneStartUp,
   IBenzeneApplicationBuilder,
-} from '@benzene/abstractions-middleware';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { addBenzene, MessageHandlersRegistry, message, useMessageHandlers } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-middleware';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { addBenzene, MessageHandlersRegistry, message, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 import type { Request, Response } from '@google-cloud/functions-framework';
-import { useGoogleCloud } from '@benzene/google-cloud-functions-core';
-import { GoogleCloudFunctionHost, useHttp } from '@benzene/google-cloud-functions-http';
+import { useGoogleCloud } from '@benzenejs/google-cloud-functions-core';
+import { GoogleCloudFunctionHost, useHttp } from '@benzenejs/google-cloud-functions-http';
 
 class Order {
   customerId?: string;

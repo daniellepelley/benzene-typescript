@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Claim, ClaimsIdentity, ClaimsPrincipal, ClaimTypes } from '@benzene/auth-core';
-import { IBasicAuthCredentialValidator, useBasicAuth } from '@benzene/auth-basic';
+import { Claim, ClaimsIdentity, ClaimsPrincipal, ClaimTypes } from '@benzenejs/auth-core';
+import { IBasicAuthCredentialValidator, useBasicAuth } from '@benzenejs/auth-basic';
 import { createSecureEvent, findHeader, runSecure } from './authHost';
 
 /**

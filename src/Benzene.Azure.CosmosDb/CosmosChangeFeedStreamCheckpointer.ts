@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.CosmosDb.CosmosChangeFeedStreamCheckpointer. */
-import { IStreamCheckpointer } from '@benzene/core-middleware';
+import { IStreamCheckpointer } from '@benzenejs/core-middleware';
 
 /**
  * The change feed's {@link IStreamCheckpointer}: wraps the batch-level manual checkpoint hook. The

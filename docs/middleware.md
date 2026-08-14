@@ -9,7 +9,7 @@ EventBridge, Kafka), and Azure Functions all configure the same kind of pipeline
 
 ## Core abstractions
 
-These live in `@benzene/abstractions-middleware`.
+These live in `@benzenejs/abstractions-middleware`.
 
 ### `IMiddleware<TContext>`
 
@@ -85,12 +85,12 @@ live *downstream* of the builder (like `useMessageHandlers`) are free functions 
 you nest them rather than chaining a `.useMessageHandlers()` method:
 
 ```ts
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { addBenzene, useMessageHandlers } from '@benzene/core-message-handlers';
-import { AwsLambdaHost, useAwsLambda } from '@benzene/aws-lambda-core';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { addBenzene, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { AwsLambdaHost, useAwsLambda } from '@benzenejs/aws-lambda-core';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
 
 export class StartUp implements BenzeneStartUp {
   configureServices(services: IBenzeneServiceContainer, _config: BenzeneConfiguration): void {
@@ -212,7 +212,7 @@ the context and error — it does not rethrow.
 
 ## `MiddlewareRouter<TRequest, TContext>`
 
-An abstract base class (`@benzene/core-middleware`) for building routing middleware that dispatches based on
+An abstract base class (`@benzenejs/core-middleware`) for building routing middleware that dispatches based on
 something extracted from the request/context. You implement three hooks:
 
 ```ts
@@ -232,7 +232,7 @@ the parsed event shape in `canHandle` and claims only its own event source.
 
 ## Automatic activity wrapping (`IMiddlewareWrapper`)
 
-`IMiddlewareWrapper` (`@benzene/abstractions-middleware`) is the decorator contract every middleware instance
+`IMiddlewareWrapper` (`@benzenejs/abstractions-middleware`) is the decorator contract every middleware instance
 in every pipeline passes through as it's created:
 
 ```ts
@@ -242,7 +242,7 @@ export interface IMiddlewareWrapper {
 ```
 
 Any `IMiddlewareWrapper` registered in the container is picked up automatically — you never call `wrap`
-yourself. `addDiagnostics()` (`@benzene/diagnostics`) is the working example: it registers
+yourself. `addDiagnostics()` (`@benzenejs/diagnostics`) is the working example: it registers
 `ActivityMiddlewareWrapper`, which wraps every middleware in an `ActivityMiddlewareDecorator<TContext>` that
 starts an OpenTelemetry span named after the inner middleware's `name` and tags it with whatever it can
 resolve from the current context:
@@ -256,8 +256,8 @@ inline middleware, the message router, and everything else — with no per-middl
 at startup:
 
 ```ts
-import { addBenzene } from '@benzene/core-message-handlers';
-import { addDiagnostics } from '@benzene/diagnostics';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { addDiagnostics } from '@benzenejs/diagnostics';
 
 addBenzene(services);
 addDiagnostics(services);

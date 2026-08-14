@@ -1,17 +1,17 @@
 /** Port of Benzene.HealthChecks.Extensions. */
-import { IRegisterDependency } from '@benzene/abstractions';
+import { IRegisterDependency } from '@benzenejs/abstractions';
 import {
   IMessageGetter,
   IMessageHandlerResultSetter,
-} from '@benzene/abstractions-message-handlers';
-import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzene/abstractions-middleware';
-import { FuncWrapperMiddleware } from '@benzene/core-middleware';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
+import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzenejs/abstractions-middleware';
+import { FuncWrapperMiddleware } from '@benzenejs/core-middleware';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
 import {
   addHealthChecks,
   IHealthCheck,
   IHealthCheckBuilder,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { Constants } from './Constants';
 import { FailedHealthCheck } from './FailedHealthCheck';
 import { HealthCheckBuilder } from './HealthCheckBuilder';

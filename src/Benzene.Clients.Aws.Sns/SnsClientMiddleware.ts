@@ -1,5 +1,5 @@
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { SnsSendMessageContext } from './SnsSendMessageContext';
 
 /**

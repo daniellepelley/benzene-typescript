@@ -2,9 +2,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { HealthCheckResponse, HealthCheckResult } from '@benzene/health-checks-core';
-import { ArtifactStoreMeshReportPublisher, FileSystemMeshArtifactStore } from '@benzene/mesh-aggregator';
-import { MeshServiceReport, MeshServiceSnapshot } from '@benzene/mesh-contracts';
+import { HealthCheckResponse, HealthCheckResult } from '@benzenejs/health-checks-core';
+import { ArtifactStoreMeshReportPublisher, FileSystemMeshArtifactStore } from '@benzenejs/mesh-aggregator';
+import { MeshServiceReport, MeshServiceSnapshot } from '@benzenejs/mesh-contracts';
 
 /**
  * Port of test/Benzene.Mesh.Test/ArtifactStoreMeshReportPublisherTest.cs. The read-back

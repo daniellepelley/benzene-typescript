@@ -8,7 +8,7 @@
  * http('benzene', ordersFunction);
  * ```
  */
-import { GoogleCloudFunctionHost } from '@benzene/google-cloud-functions-http';
+import { GoogleCloudFunctionHost } from '@benzenejs/google-cloud-functions-http';
 import { GoogleCloudOrdersStartUp } from './startUp';
 
 /** The Functions Framework `HttpFunction` for the order service. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf, IBenzeneServiceContainer, IRegisterDependency } from '@benzene/abstractions';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneResultOf, IBenzeneServiceContainer, IRegisterDependency } from '@benzenejs/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   addDependencyHealthCheck,
   DependencyHealthCheck,
@@ -10,8 +10,8 @@ import {
   IDependencyHealthCheck,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
-import { getHealthCheckerBuilder, HealthCheckProcessor, IHealthCheckFinder } from '@benzene/health-checks';
+} from '@benzenejs/health-checks-core';
+import { getHealthCheckerBuilder, HealthCheckProcessor, IHealthCheckFinder } from '@benzenejs/health-checks';
 
 /**
  * Ports the dependency-category behaviour: an auto-wired external-dependency check is registered under

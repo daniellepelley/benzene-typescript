@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.HealthChecks.ContractHealthCheckExtensions. */
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { addHealthCheckInstance, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { addHealthCheckInstance, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { ClientHealthCheck } from './ClientHealthCheck';
 import { IHasHealthCheck } from './IHasHealthCheck';
 

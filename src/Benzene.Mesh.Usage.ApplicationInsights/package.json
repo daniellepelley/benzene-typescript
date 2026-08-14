@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/mesh-usage-application-insights",
+  "name": "@benzenejs/mesh-usage-application-insights",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Mesh.Usage.ApplicationInsights",
   "license": "MIT",
@@ -7,8 +7,8 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/mesh-contracts": "0.1.0",
     "@azure/monitor-query": "^1.3.3",
     "@azure/identity": "^4.13.1"
   }

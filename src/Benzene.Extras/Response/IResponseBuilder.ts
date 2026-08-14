@@ -1,6 +1,6 @@
 /** Port of Benzene.Extras.Response.IResponseBuilder. */
-import { InjectableConstructor, IServiceResolver, ServiceFactory } from '@benzene/abstractions';
-import { IResponseHandler } from '@benzene/abstractions-message-handlers';
+import { InjectableConstructor, IServiceResolver, ServiceFactory } from '@benzenejs/abstractions';
+import { IResponseHandler } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Fluent builder collecting the ordered set of `IResponseHandler<TContext>` factories that make up a

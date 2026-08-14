@@ -1,5 +1,5 @@
-import { IBenzeneServiceContainer, tryAddScopedFactory } from '@benzene/abstractions';
-import { IMediaFormat, IMediaFormatNegotiator } from '@benzene/abstractions-message-handlers';
+import { IBenzeneServiceContainer, tryAddScopedFactory } from '@benzenejs/abstractions';
+import { IMediaFormat, IMediaFormatNegotiator } from '@benzenejs/abstractions-message-handlers';
 import { JsonSerializer } from '../Serialization/JsonSerializer';
 import { JsonMediaFormat } from './JsonMediaFormat';
 import { MediaFormatNegotiator } from './MediaFormatNegotiator';

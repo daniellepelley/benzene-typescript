@@ -1,4 +1,4 @@
-import { ISerializer, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ISerializer, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IMessageHandlerResult } from '../IMessageHandlerResult';
 
 /**

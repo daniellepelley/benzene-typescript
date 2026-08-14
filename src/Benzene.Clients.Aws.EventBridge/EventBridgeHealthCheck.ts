@@ -6,7 +6,7 @@ import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { awsErrorDetails } from './awsErrorDetails';
 
 /** The name AWS uses for the account's default event bus. */

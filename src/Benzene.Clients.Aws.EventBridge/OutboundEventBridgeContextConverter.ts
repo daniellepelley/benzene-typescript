@@ -1,8 +1,8 @@
 import { PutEventsCommandInput, PutEventsRequestEntry } from '@aws-sdk/client-eventbridge';
-import { ISerializer, VoidResult } from '@benzene/abstractions';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
-import { convertStatusCode, OutboundContext } from '@benzene/clients';
+import { ISerializer, VoidResult } from '@benzenejs/abstractions';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { convertStatusCode, OutboundContext } from '@benzenejs/clients';
 import { EventBridgeSendMessageContext } from './EventBridgeSendMessageContext';
 
 /**
@@ -11,7 +11,7 @@ import { EventBridgeSendMessageContext } from './EventBridgeSendMessageContext';
  * Benzene.Clients.Aws.EventBridge.OutboundEventBridgeContextConverter.
  *
  * EventBridge routes on the event's `Source`/`DetailType`, so the Benzene routing topic maps to `DetailType`
- * (what the inbound `@benzene/aws-lambda-eventbridge` binding reads back as the topic) and the configured
+ * (what the inbound `@benzenejs/aws-lambda-eventbridge` binding reads back as the topic) and the configured
  * `source` maps to `Source`. EventBridge has no native per-message attributes, so per-call headers are
  * embedded in the `Detail` JSON under the reserved `_benzeneHeaders` key (the inbound binding lifts them out).
  */

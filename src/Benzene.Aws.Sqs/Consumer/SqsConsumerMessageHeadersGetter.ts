@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Sqs.Consumer.SqsConsumerMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { SqsConsumerMessageContext } from './SqsConsumerMessageContext';
 
 /** Extracts headers from an SQS message's string-typed message attributes. */

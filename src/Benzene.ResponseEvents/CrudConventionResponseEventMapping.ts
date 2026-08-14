@@ -1,6 +1,6 @@
-import { IBenzeneResult, ServiceIdentifier } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
-import { BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, ServiceIdentifier } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { isEmptyPayload } from './ExplicitResponseEventMapping';
 import { IResponseEventMapping } from './IResponseEventMapping';
 import { ResponseEventPublication } from './ResponseEventPublication';

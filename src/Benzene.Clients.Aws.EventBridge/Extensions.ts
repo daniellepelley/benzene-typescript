@@ -1,7 +1,7 @@
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
-import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addDependencyHealthCheck, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { EventBridgeClientMiddleware } from './EventBridgeClientMiddleware';
 import { EventBridgeHealthCheck, defaultEventBusName } from './EventBridgeHealthCheck';
 import { EventBridgeSendMessageContext } from './EventBridgeSendMessageContext';

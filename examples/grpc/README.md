@@ -36,13 +36,13 @@ one fewer layer.
 ## Wire codec
 
 `greet.proto` compiles to strongly-typed protobuf messages in .NET. grpc-js ships no framework message
-type, so — exactly like `@benzene/grpc`'s `JsonGrpcMessageAdapter` and `@benzene/grpc-client`'s
+type, so — exactly like `@benzenejs/grpc`'s `JsonGrpcMessageAdapter` and `@benzenejs/grpc-client`'s
 `jsonGrpcMarshaller` — the `{ name }` / `{ message }` payloads are marshalled as **JSON** on the wire (see
 [`src/greeter.ts`](src/greeter.ts)). The same `ServiceDefinition` is shared by the server and the client.
 
 ## The client
 
-`@benzene/grpc-client` ports the **unary** send side: [`src/client.ts`](src/client.ts) wires a Benzene
+`@benzenejs/grpc-client` ports the **unary** send side: [`src/client.ts`](src/client.ts) wires a Benzene
 `IBenzeneMessageClient` that sends the `say_hello` topic over gRPC and maps the gRPC status back to a
 Benzene result. Streaming client calls are a deferred, separable concern in the port, so the streaming
 RPCs are exercised in the test with grpc-js's own low-level streaming client methods.
@@ -51,5 +51,5 @@ RPCs are exercised in the test with grpc-js's own low-level streaming client met
 
 `test/Benzene.Core.Test/Examples/GrpcExampleTest.test.ts` boots the real server on an ephemeral loopback
 port and drives every RPC shape end-to-end over a real socket, plus a front-door unary call through
-`@benzene/grpc-test-helpers`' `createServerUnaryCall`. The unary reply's distinctive "…, this is Benzene"
+`@benzenejs/grpc-test-helpers`' `createServerUnaryCall`. The unary reply's distinctive "…, this is Benzene"
 suffix is the proof the Benzene handler answered the call.

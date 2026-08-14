@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/azure-cosmos-db",
+  "name": "@benzenejs/azure-cosmos-db",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Azure.CosmosDb — the standalone (non-Functions) Cosmos DB change-feed consumer worker",
   "license": "MIT",
@@ -8,12 +8,12 @@
   "types": "./index.ts",
   "dependencies": {
     "@azure/cosmos": "^4",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/core-middleware": "0.1.0",
-    "@benzene/self-host": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/core-middleware": "0.1.0",
+    "@benzenejs/self-host": "0.1.0"
   }
 }

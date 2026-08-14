@@ -43,5 +43,5 @@ an order confirmation); the SQS/SNS/EventBridge/Kafka functions are event consum
 ## Verify it
 
 `test/Benzene.Core.Test/Examples/AwsLambdaFunctionsExampleTest.test.ts` builds each transport's native
-event with `@benzene/aws-lambda-testing` and invokes the exported `handler` exactly as AWS would,
+event with `@benzenejs/aws-lambda-testing` and invokes the exported `handler` exactly as AWS would,
 asserting the shared handler ran — proof the "one domain, five transports" wiring routes end-to-end.

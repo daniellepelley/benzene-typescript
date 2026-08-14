@@ -12,7 +12,7 @@ export interface PubSubPublishMessage {
 
 /**
  * The middleware pipeline context for publishing a single message to a Google Cloud Pub/Sub topic — the
- * outbound counterpart of the inbound `PubSubContext` in `@benzene/google-cloud-functions-pubsub`.
+ * outbound counterpart of the inbound `PubSubContext` in `@benzenejs/google-cloud-functions-pubsub`.
  *
  * MESSAGE-TYPE ADAPTATION: .NET's low-level `Google.Cloud.PubSub.V1` `TopicName` (a structured resource
  * name) + `PubsubMessage` map to a resolved topic-name `string` (what `@google-cloud/pubsub`'s

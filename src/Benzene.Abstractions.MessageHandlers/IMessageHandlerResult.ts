@@ -1,5 +1,5 @@
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { ITopic } from '@benzene/abstractions-messages';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import { IMessageHandlerDefinition } from './IMessageHandlerDefinition';
 
 /**

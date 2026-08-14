@@ -1,6 +1,6 @@
 /**
  * Port of Benzene.Mesh.Fleet.Jaeger - a second non-AWS reference realisation of the trace-backed fleet
- * reader (alongside `@benzene/mesh-tracing-tempo`): it answers the mesh's `mesh:query:trace`,
+ * reader (alongside `@benzenejs/mesh-tracing-tempo`): it answers the mesh's `mesh:query:trace`,
  * `mesh:query:correlation`, and the fleet view's recent-flows from a **Jaeger query service**, reusing the
  * same `CompositeMeshFleetReadModel`, query handlers, and mesh UI as the X-Ray/Tempo adapters - a third
  * backend on the `IMeshTraceSource` seam with zero upstream change.
@@ -12,7 +12,7 @@
  *
  * `HttpClient` -> injectable `fetch`; `DateTimeOffset` -> epoch-ms `number`. `MeshTraceEvent.exceptionType`
  * (mapped from `benzene.exception.type` in the C# original) is not set - this snapshot of
- * `@benzene/mesh-wire`'s `MeshTraceEvent` has no such field.
+ * `@benzenejs/mesh-wire`'s `MeshTraceEvent` has no such field.
  */
 export * from './JaegerTraceSourceOptions';
 export * from './JaegerTraceMapper';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BoundedFanOut } from '@benzene/core-middleware';
+import { BoundedFanOut } from '@benzenejs/core-middleware';
 
 /** Unit test for the BoundedFanOut primitive (new in the port; the C# suite exercises it via batch apps). */
 describe('BoundedFanOut', () => {

@@ -1,12 +1,12 @@
 /** Port of Benzene.Mesh.GoogleCloud.Storage.GcsMeshArtifactStore. */
 import { Storage } from '@google-cloud/storage';
-import { IMeshArtifactStore } from '@benzene/mesh-aggregator';
+import { IMeshArtifactStore } from '@benzenejs/mesh-aggregator';
 
 /**
  * An `IMeshArtifactStore` backed by a Google Cloud Storage bucket. Publishes and reads the mesh
  * aggregator's generated artifacts (`manifest.json`, `services/*.json`, `topology.json`, `topics.json`) and
  * the discovery-generated `registry.json` as GCS objects keyed by their relative path - the Google Cloud
- * analogue of the S3-backed (`@benzene/mesh-aws-s3`) / Azure-Blob-backed (`@benzene/mesh-azure-blob`)
+ * analogue of the S3-backed (`@benzenejs/mesh-aws-s3`) / Azure-Blob-backed (`@benzenejs/mesh-azure-blob`)
  * stores, so a Cloud-Functions-hosted mesh persists its output centrally where the UI can read it
  * (surviving cold starts / scale-to-zero).
  *

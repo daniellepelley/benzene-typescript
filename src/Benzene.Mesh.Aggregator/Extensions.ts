@@ -1,8 +1,8 @@
 /** Port of Benzene.Mesh.Aggregator.Extensions. */
-import { Constructor, IBenzeneServiceContainer, IServiceResolver, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
-import { IMessageHandlerDefinition } from '@benzene/abstractions-message-handlers';
-import { MessageHandlerDefinition } from '@benzene/core-message-handlers';
-import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzene/http';
+import { Constructor, IBenzeneServiceContainer, IServiceResolver, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
+import { MessageHandlerDefinition } from '@benzenejs/core-message-handlers';
+import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzenejs/http';
 import {
   IMeshReportPublisher,
   IMeshUsageSource,
@@ -11,7 +11,7 @@ import {
   MeshManifest,
   MeshServiceRegistry,
   MeshServiceReport,
-} from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-contracts';
 import { ArtifactStoreMeshReportPublisher } from './ArtifactStoreMeshReportPublisher';
 import { FileSystemMeshArtifactStore } from './FileSystemMeshArtifactStore';
 import { HttpMeshServiceSource } from './HttpMeshServiceSource';
@@ -33,7 +33,7 @@ import { MeshReportMessageHandler } from './MeshReportMessageHandler';
  * app's assembly-scanning `.AddMessageHandlers()`), the port also registers the handler definitions,
  * endpoints and scoped factories here: JS has no assembly scan or constructor-parameter reflection, so a
  * handler with dependencies can't be discovered or activated without an explicit factory (the same
- * container-registration convention `@benzene/mesh-dispatch` uses). The default `HttpMeshServiceSource` and
+ * container-registration convention `@benzenejs/mesh-dispatch` uses). The default `HttpMeshServiceSource` and
  * `ArtifactStoreMeshReportPublisher` are registered too; other adapter packages add their own
  * `IMeshServiceSource`/`IMeshReportPublisher` alongside.
  */

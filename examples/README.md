@@ -26,6 +26,6 @@ component-test, and each of its three entry points is exercised by actually runn
 | [`k8s-orders`](k8s-orders) | One handler hosted over **HTTP, SQS, and Kafka in a single Kubernetes Deployment** |
 | [`kafka`](kafka) | A **Kafka** consumer worker + producer |
 | [`mesh-service`](mesh-service) | A Benzene **mesh** service end to end |
-| [`opentelemetry`](opentelemetry) | Pipeline tracing via `@benzene/diagnostics` spans |
+| [`opentelemetry`](opentelemetry) | Pipeline tracing via `@benzenejs/diagnostics` spans |
 | [`saga`](saga) | A distributed **saga** — signup with compensating rollback |
 | [`versioning`](versioning) | Payload **versioning** — handler dispatch + payload casting off the `benzene-version` header |

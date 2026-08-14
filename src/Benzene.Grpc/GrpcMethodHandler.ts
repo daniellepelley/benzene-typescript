@@ -7,8 +7,8 @@ import {
   ServerWritableStream,
   status,
 } from '@grpc/grpc-js';
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { GrpcBenzeneError } from './GrpcBenzeneError';
 import { GrpcContext, GrpcServerCall } from './GrpcContext';
 import { GrpcServerCallAccessor } from './GrpcServerCallAccessor';

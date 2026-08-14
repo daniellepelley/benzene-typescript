@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.ArtifactStoreMeshReportPublisher. */
-import { IMeshReportPublisher, MeshServiceReport } from '@benzene/mesh-contracts';
+import { IMeshReportPublisher, MeshServiceReport } from '@benzenejs/mesh-contracts';
 import { IMeshArtifactStore } from './IMeshArtifactStore';
 import { MeshSnapshotBuilder } from './MeshSnapshotBuilder';
 
@@ -10,7 +10,7 @@ import { MeshSnapshotBuilder } from './MeshSnapshotBuilder';
  * `IMeshArtifactStore` - the same `services/{name}.json` path `MeshAggregator` itself writes to.
  *
  * Fits a reporter colocated with the aggregator's own storage (e.g. sharing a mounted volume in a Docker
- * Compose deployment). A reporter that isn't colocated should use `@benzene/mesh-reporting`'s
+ * Compose deployment). A reporter that isn't colocated should use `@benzenejs/mesh-reporting`'s
  * `HttpMeshReportPublisher` instead. `JsonSerializerOptions` (camelCase, indented) -> `JSON.stringify(x, null, 2)`.
  */
 export class ArtifactStoreMeshReportPublisher implements IMeshReportPublisher {

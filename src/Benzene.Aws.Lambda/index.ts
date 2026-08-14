@@ -9,38 +9,38 @@
  *  - every AWS Lambda **event-source transport**: API Gateway (`useApiGateway`), SQS (`useSqs`),
  *    SNS (`useSns`), DynamoDB, Kinesis, S3, EventBridge, and Kafka;
  *  - the common **message-handler building blocks** a service's own code imports directly:
- *    `@benzene/core-message-handlers` (`addBenzene`, `useMessageHandlers`, `message`, …),
- *    `@benzene/results` (`BenzeneResult`), and the `@benzene/abstractions*` result / handler interfaces.
+ *    `@benzenejs/core-message-handlers` (`addBenzene`, `useMessageHandlers`, `message`, …),
+ *    `@benzenejs/results` (`BenzeneResult`), and the `@benzenejs/abstractions*` result / handler interfaces.
  *
- * So a service can `npm install @benzene/aws-lambda` and import everything it needs from here, or
- * depend on the individual `@benzene/aws-lambda-*` / `@benzene/core-*` packages for a narrower surface.
+ * So a service can `npm install @benzenejs/aws-lambda` and import everything it needs from here, or
+ * depend on the individual `@benzenejs/aws-lambda-*` / `@benzenejs/core-*` packages for a narrower surface.
  *
  * PORTING NOTE: the building-block re-exports (last group) are a TypeScript-idiom bend, not present in
  * the C# `Benzene.Aws.Lambda` meta-package — in .NET those types come through automatically as
  * transitive references, whereas an npm consumer only sees what an entry point re-exports, so the
- * umbrella surfaces them explicitly to give the same one-import experience. As with `@benzene/clients-aws`,
+ * umbrella surfaces them explicitly to give the same one-import experience. As with `@benzenejs/clients-aws`,
  * identically-named internal helpers that appear in more than one underlying package are ambiguous
  * across a wildcard re-export and are therefore not surfaced here; import them from the specific
  * package if you need them. The public entry points (`use*` / `toLambdaHandler` / `message` /
  * `BenzeneResult` and their types) are unique and come through.
  */
-export * from '@benzene/aws-lambda-core';
-export * from '@benzene/aws-lambda-api-gateway';
-export * from '@benzene/aws-lambda-sqs';
-export * from '@benzene/aws-lambda-sns';
-export * from '@benzene/aws-lambda-dynamodb';
-export * from '@benzene/aws-lambda-kinesis';
-export * from '@benzene/aws-lambda-s3';
-export * from '@benzene/aws-lambda-eventbridge';
-export * from '@benzene/aws-lambda-kafka';
-export * from '@benzene/core-message-handlers';
-export * from '@benzene/results';
-export * from '@benzene/abstractions';
-export * from '@benzene/abstractions-message-handlers';
+export * from '@benzenejs/aws-lambda-core';
+export * from '@benzenejs/aws-lambda-api-gateway';
+export * from '@benzenejs/aws-lambda-sqs';
+export * from '@benzenejs/aws-lambda-sns';
+export * from '@benzenejs/aws-lambda-dynamodb';
+export * from '@benzenejs/aws-lambda-kinesis';
+export * from '@benzenejs/aws-lambda-s3';
+export * from '@benzenejs/aws-lambda-eventbridge';
+export * from '@benzenejs/aws-lambda-kafka';
+export * from '@benzenejs/core-message-handlers';
+export * from '@benzenejs/results';
+export * from '@benzenejs/abstractions';
+export * from '@benzenejs/abstractions-message-handlers';
 
 // Disambiguation: two grouping-constant objects are exported by more than one package above, which is
 // ambiguous across the wildcard re-exports. Surface the framework-level one under the bare name; the
-// transport-specific `Constants` (from `@benzene/aws-lambda-api-gateway`) is not surfaced here — import
+// transport-specific `Constants` (from `@benzenejs/aws-lambda-api-gateway`) is not surfaced here — import
 // it from that package directly if you need it.
-export { Constants } from '@benzene/core-message-handlers';
-export { TransportNames } from '@benzene/abstractions-message-handlers';
+export { Constants } from '@benzenejs/core-message-handlers';
+export { TransportNames } from '@benzenejs/abstractions-message-handlers';

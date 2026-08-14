@@ -2,7 +2,7 @@ import {
   IBenzeneResponseAdapter,
   IMessageHandlerResult,
   IResponseHandler,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Response handler that copies the handler's result status onto the transport response's status code

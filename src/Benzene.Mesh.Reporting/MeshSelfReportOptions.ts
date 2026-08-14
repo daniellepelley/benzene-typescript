@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Reporting.MeshSelfReportOptions. */
-import { HealthCheckResponse } from '@benzene/health-checks-core';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 
 /** Default minimum interval between opportunistic publishes: 5 minutes, in milliseconds. */
 export const DefaultMinimumIntervalMs = 5 * 60 * 1000;

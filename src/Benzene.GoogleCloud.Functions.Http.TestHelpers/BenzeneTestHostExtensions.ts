@@ -13,13 +13,13 @@
  * `IBenzeneApplicationBuilder`, so there is no host-neutral `this` to augment onto — see the README ledger.)
  * It reconstructs the same `GoogleCloudFunctionApplicationBuilder` → `configure` → `build` sequence a real
  * deployment performs (mirroring `GoogleCloudFunctionHost`), returning a ready
- * {@link GoogleCloudFunctionBenzeneTestHost}. The neutral `@benzene/testing` core stays free of any cloud
+ * {@link GoogleCloudFunctionBenzeneTestHost}. The neutral `@benzenejs/testing` core stays free of any cloud
  * import; this package is where the GCF bridge lives.
  */
-import { BenzeneTestHostBuilder } from '@benzene/testing';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
 import {
   GoogleCloudFunctionApplicationBuilder,
-} from '@benzene/google-cloud-functions-http';
+} from '@benzenejs/google-cloud-functions-http';
 import { GoogleCloudFunctionBenzeneTestHost } from './GoogleCloudFunctionBenzeneTestHost';
 
 /**

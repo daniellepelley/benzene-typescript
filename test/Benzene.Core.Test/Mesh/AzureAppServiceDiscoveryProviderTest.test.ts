@@ -3,8 +3,8 @@ import {
   AzureAppServiceDiscoveryProvider,
   AzureResourceInfo,
   IAzureResourceLister,
-} from '@benzene/mesh-discovery-azure';
-import { MeshDiscoveryFilter, MeshServiceSource } from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-discovery-azure';
+import { MeshDiscoveryFilter, MeshServiceSource } from '@benzenejs/mesh-contracts';
 
 /**
  * Port of test/Benzene.Mesh.Test/Discovery/AzureAppServiceDiscoveryProviderTest.cs. The Moq

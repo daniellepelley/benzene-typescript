@@ -1,8 +1,8 @@
 /** Port of Benzene.RabbitMq.TestHelpers.RabbitMqBenzeneTestHost. */
 import type { ConsumeMessage } from 'amqplib';
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMessageResult } from '@benzene/abstractions-message-handlers';
-import { RabbitMqApplication } from '@benzene/rabbitmq';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { RabbitMqApplication } from '@benzenejs/rabbitmq';
 
 /**
  * A test host that drives the RabbitMQ message pipeline a `StartUp` configured, without a running

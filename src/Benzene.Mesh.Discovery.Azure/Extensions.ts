@@ -1,8 +1,8 @@
 /** Port of Benzene.Mesh.Discovery.Azure.Extensions. */
 import { ResourceManagementClient } from '@azure/arm-resources';
 import { DefaultAzureCredential } from '@azure/identity';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { IMeshDiscoveryProvider, MeshDiscoveryRunner } from '@benzene/mesh-contracts';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IMeshDiscoveryProvider, MeshDiscoveryRunner } from '@benzenejs/mesh-contracts';
 import { AzureAppServiceDiscoveryProvider } from './AzureAppServiceDiscoveryProvider';
 import { AzureArmResourceLister } from './AzureArmResourceLister';
 import { IAzureResourceLister } from './IAzureResourceLister';

@@ -5,7 +5,7 @@ import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 
 /**
  * Verifies a dependency is reachable at the L4 (TCP) level by opening a connection to a host and port -

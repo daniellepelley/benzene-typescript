@@ -1,7 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.Core.GoogleCloudStartUpRunner. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
-import { BenzeneConfiguration, emptyConfiguration } from '@benzene/abstractions-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { BenzeneConfiguration, emptyConfiguration } from '@benzenejs/abstractions-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * What {@link GoogleCloudStartUpRunner.bootstrap} hands back: the constructed startup and the service
@@ -34,8 +34,8 @@ export interface GoogleCloudBootstrapResult<TStartUp> {
  * Shared bootstrap steps every Google Cloud Functions trigger-type package needs before it can run a
  * startup's `configure` — constructing the startup and preparing the service container its
  * `configureServices`/`configure` lifecycle is run against. Factored out so each trigger-type package
- * (`@benzene/google-cloud-functions-http` and `@benzene/google-cloud-functions-pubsub`) doesn't
- * duplicate it, mirroring why `Benzene.Aws.Lambda.Core` / `@benzene/aws-lambda-core` exist as a shared
+ * (`@benzenejs/google-cloud-functions-http` and `@benzenejs/google-cloud-functions-pubsub`) doesn't
+ * duplicate it, mirroring why `Benzene.Aws.Lambda.Core` / `@benzenejs/aws-lambda-core` exist as a shared
  * foundation for their own event-source packages.
  *
  * Deliberately has NO Google-specific dependency at all (no `@google-cloud/functions-framework`) — it's

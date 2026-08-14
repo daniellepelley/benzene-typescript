@@ -1,11 +1,11 @@
 /** Port of Benzene.Aws.Sqs.TestHelpers.MessageBuilderExtensions. */
 import type { Message } from '@aws-sdk/client-sqs';
-import { IMessageBuilder } from '@benzene/abstractions';
+import { IMessageBuilder } from '@benzenejs/abstractions';
 
 /**
- * Turns a platform-neutral `@benzene/testing` `messageBuilder(...)` into a single
+ * Turns a platform-neutral `@benzenejs/testing` `messageBuilder(...)` into a single
  * `@aws-sdk/client-sqs` `Message`, so a component test can push the demo message through the standalone
- * SQS polling consumer (`@benzene/aws-sqs`) exactly as the queue would deliver it: the topic (plus every
+ * SQS polling consumer (`@benzenejs/aws-sqs`) exactly as the queue would deliver it: the topic (plus every
  * header) becomes a `String` message attribute and the serialized message becomes the body.
  *
  * MESSAGE-TYPE ADAPTATION: C# builds an `Amazon.SQS.Model.Message`; the aws-sdk v3 counterpart is the

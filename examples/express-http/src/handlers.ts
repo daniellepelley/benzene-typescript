@@ -1,14 +1,14 @@
 /**
  * A plain Benzene HTTP order domain — the Node/Express analog of the .NET `Benzene.Example.Asp`. Each
  * handler declares its HTTP route with `@httpEndpoint` alongside its `@message` topic and knows nothing
- * about Express; `@benzene/express` routes the request. `register: false` — the handlers record their
+ * about Express; `@benzenejs/express` routes the request. `register: false` — the handlers record their
  * metadata but join no registry; `orderService.ts` passes them to `useMessageHandlers` explicitly.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 import { IOrderStore } from './orderStore';
 
 export class CreateOrder {

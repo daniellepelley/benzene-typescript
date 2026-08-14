@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.Http.Extensions. */
-import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzene/health-checks-core';
+import { addHealthCheckFactory, IHealthCheckBuilder } from '@benzenejs/health-checks-core';
 import { PingFetch } from './HttpPingHealthCheck';
 import { HttpPingHealthCheckFactory } from './HttpPingHealthCheckFactory';
 

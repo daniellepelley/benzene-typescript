@@ -1,5 +1,5 @@
-import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { IBenzeneResultOf, ServiceToken, serviceToken } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 
 /**
  * Port of Benzene.Clients.IBenzeneMessageClient.

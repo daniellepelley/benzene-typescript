@@ -1,11 +1,11 @@
 /** Port of Benzene.Kafka.Core.Kafka.KafkaMessageContextConverter&lt;TContext&gt;. */
-import { IBenzeneResponseAdapter, IMessageHandlerResultSetter } from '@benzene/abstractions-message-handlers';
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { IContextConverter } from '@benzene/abstractions-middleware';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
-import { Topic } from '@benzene/core-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResponseAdapter, IMessageHandlerResultSetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { IContextConverter } from '@benzenejs/abstractions-middleware';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { Message } from 'kafkajs';
 import { KafkaSendMessageContext } from './KafkaSendMessageContext';
 

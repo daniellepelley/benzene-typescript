@@ -1,10 +1,10 @@
 /** Port of Benzene.Azure.ServiceBus.TestHelpers.ServiceBusWorkerBenzeneTestHost. */
 import type { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
 import {
   ServiceBusConsumerApplication,
   ServiceBusSettlementDecision,
-} from '@benzene/azure-service-bus';
+} from '@benzenejs/azure-service-bus';
 
 /**
  * A test host that drives the Service Bus consumer pipeline a `StartUp` configured, without a running

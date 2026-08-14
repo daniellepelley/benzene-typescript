@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { CompositeSecretStore } from './CompositeSecretStore';
 import { ISecretStore } from './ISecretStore';
 import { SecretResolver } from './SecretResolver';

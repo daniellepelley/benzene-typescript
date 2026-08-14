@@ -1,14 +1,14 @@
 /** Port of Benzene.SchemaRegistry.Core.ISchemaResolver (+ DelegateSchemaResolver). */
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 import { SchemaDefinition } from './SchemaDefinition';
 
 /**
  * Maps a message class to the {@link SchemaDefinition} (subject + schema text + format) to register for
  * it. Kept as a seam so the schema source stays pluggable and format-specific - e.g. an adapter over
- * `@benzene/avro`'s schema source supplies the Avro schema, without this package depending on Avro.
+ * `@benzenejs/avro`'s schema source supplies the Avro schema, without this package depending on Avro.
  *
  * C#'s runtime `Type` becomes a `Constructor` (the message class), per the port's type-erasure
- * convention (same as `@benzene/avro`).
+ * convention (same as `@benzenejs/avro`).
  */
 export interface ISchemaResolver {
   /** Returns the schema definition to register for `type`. */

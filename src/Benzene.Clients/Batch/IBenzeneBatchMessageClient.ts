@@ -1,4 +1,4 @@
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import { BatchSendResult } from './BatchSendResult';
 
 /**

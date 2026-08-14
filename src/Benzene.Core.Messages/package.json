@@ -1,10 +1,10 @@
 {
-  "name": "@benzene/core-messages",
+  "name": "@benzenejs/core-messages",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Core.Messages",
   "license": "MIT",
   "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
-  "dependencies": {"@benzene/abstractions": "0.1.0","@benzene/abstractions-messages": "0.1.0","@benzene/abstractions-middleware": "0.1.0","@benzene/core-middleware": "0.1.0"}
+  "dependencies": {"@benzenejs/abstractions": "0.1.0","@benzenejs/abstractions-messages": "0.1.0","@benzenejs/abstractions-middleware": "0.1.0","@benzenejs/core-middleware": "0.1.0"}
 }

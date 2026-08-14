@@ -3,13 +3,13 @@ import {
   IServiceResolver,
   IServiceResolverFactory,
   ServiceIdentifier,
-} from '@benzene/abstractions';
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
-import { ISetCurrentTransport } from '@benzene/abstractions-message-handlers';
-import { MiddlewarePipeline, FuncWrapperMiddleware } from '@benzene/core-middleware';
-import { BenzeneMessageContext } from '@benzene/core-messages';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/abstractions';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
+import { ISetCurrentTransport } from '@benzenejs/abstractions-message-handlers';
+import { MiddlewarePipeline, FuncWrapperMiddleware } from '@benzenejs/core-middleware';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   BenzeneMessageHttpMiddleware,
   BenzeneMessageHttpOptions,
@@ -17,7 +17,7 @@ import {
   HttpRequest,
   IHttpContext,
   IHttpRequestAdapter,
-} from '@benzene/http';
+} from '@benzenejs/http';
 
 /**
  * Port of Benzene.Test.Http.BenzeneMessageHttpMiddlewareTest. The C# test drives the middleware over

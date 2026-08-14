@@ -1,10 +1,10 @@
-import { tryAddSingleton } from '@benzene/abstractions';
-import { IMessageRouterBuilder } from '@benzene/abstractions-message-handlers';
+import { tryAddSingleton } from '@benzenejs/abstractions';
+import { IMessageRouterBuilder } from '@benzenejs/abstractions-message-handlers';
 import {
   DefaultValidationStatusMapper,
   ITypeJsonSchemaSource,
   IValidationStatusMapper,
-} from '@benzene/abstractions-validation';
+} from '@benzenejs/abstractions-validation';
 import { ValidationMiddlewareBuilder } from './ValidationMiddlewareBuilder';
 import { YupJsonSchemaSource } from './YupJsonSchemaSource';
 
@@ -40,7 +40,7 @@ export function useYupValidation(builder: IMessageRouterBuilder): IMessageRouter
  * C#'s `Benzene.FluentValidation` ships `ValidationClientMiddleware(Builder)` but no `Use...`
  * extension for it; the port has no router surface that consumes an
  * `IBenzeneClientContextMiddlewareBuilder` yet either (the client middleware slice is defined in
- * `@benzene/abstractions-messages` but not consumed by any pipeline builder in the port so far). So
+ * `@benzenejs/abstractions-messages` but not consumed by any pipeline builder in the port so far). So
  * rather than invent a registration that has nothing to attach to, `ValidationClientMiddlewareBuilder`
  * is exported for manual wiring; a `useYupValidationClient` free function will be added here once a
  * client router exposes an `add`, mirroring `useYupValidation`.

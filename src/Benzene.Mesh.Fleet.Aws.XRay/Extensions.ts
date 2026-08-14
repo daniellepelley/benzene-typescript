@@ -1,12 +1,12 @@
 /** Port of Benzene.Mesh.Fleet.Aws.XRay.Extensions. */
 import { XRayClient } from '@aws-sdk/client-xray';
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   CompositeMeshFleetReadModel,
   IMeshFleetReadModel,
   IMeshTraceSource,
-} from '@benzene/mesh-collector';
-import { IMeshUsageSource } from '@benzene/mesh-contracts';
+} from '@benzenejs/mesh-collector';
+import { IMeshUsageSource } from '@benzenejs/mesh-contracts';
 import { XRayTraceSource } from './XRayTraceSource';
 import { XRayTraceSourceOptions } from './XRayTraceSourceOptions';
 

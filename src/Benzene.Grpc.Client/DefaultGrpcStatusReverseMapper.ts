@@ -1,12 +1,12 @@
 import { Metadata, status } from '@grpc/grpc-js';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { IGrpcStatusReverseMapper } from './IGrpcStatusReverseMapper';
 
 /**
  * Port of Benzene.Grpc.Client.DefaultGrpcStatusReverseMapper.
  *
  * The default mapping from gRPC status codes back to Benzene result statuses — the exact inverse of
- * `@benzene/grpc`'s {@link DefaultGrpcStatusCodeMapper}. Several Benzene statuses (`created`, `accepted`,
+ * `@benzenejs/grpc`'s {@link DefaultGrpcStatusCodeMapper}. Several Benzene statuses (`created`, `accepted`,
  * `updated`, ...) collapse to `status.OK` on the way out, so on the way back `status.OK` only ever
  * recovers as `BenzeneResultStatus.ok` unless a `benzene-status` trailer says otherwise. Unknown status
  * codes default to `BenzeneResultStatus.unexpectedError` (C# `BenzeneResultStatus.UnexpectedError`).

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { IServiceResolver } from '@benzene/abstractions';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
   IMessageHandlerDefinition,
-} from '@benzene/abstractions-message-handlers';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   DefaultResponsePayloadMapper,
   JsonMediaFormat,
@@ -14,9 +14,9 @@ import {
   RendererResponseHandler,
   ResponseHandlerContainer,
   SerializerResponseRenderer,
-} from '@benzene/core-message-handlers';
-import { Topic } from '@benzene/core-messages';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
  * Response-writing chain test (ported spirit of

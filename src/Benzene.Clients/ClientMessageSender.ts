@@ -1,5 +1,5 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IGetTopic, IMessageSender } from '@benzene/abstractions-messages';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IGetTopic, IMessageSender } from '@benzenejs/abstractions-messages';
 import { IClientMessageRouter } from './IClientMessageRouter';
 import { BenzeneClientRequest } from './BenzeneClientRequest';
 

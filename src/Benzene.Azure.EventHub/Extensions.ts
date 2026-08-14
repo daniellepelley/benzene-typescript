@@ -1,6 +1,6 @@
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { IBenzeneWorkerStartup } from '@benzene/self-host';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { useBenzeneInvocation } from './BenzeneInvocationExtensions';
 import { BenzeneEventHubConfig } from './BenzeneEventHubConfig';
 import { BenzeneEventHubWorker } from './BenzeneEventHubWorker';
@@ -14,10 +14,10 @@ import { addEventHubConsumer } from './DependencyInjectionExtensions';
  * Port of Benzene.Azure.EventHub.Extensions (C# fluent extension method -> free function taking the
  * worker startup as its first argument).
  *
- * Adds a standalone Event Hub consumer to a Benzene worker. Unlike `@benzene/azure-function-event-hub`,
+ * Adds a standalone Event Hub consumer to a Benzene worker. Unlike `@benzenejs/azure-function-event-hub`,
  * which processes events delivered via an Azure Functions Event Hub trigger, this package consumes a hub
  * directly using {@link BenzeneEventHubWorker} — intended for long-running workers (e.g.
- * `@benzene/self-host`) rather than Azure Functions.
+ * `@benzenejs/self-host`) rather than Azure Functions.
  *
  * @param app The worker startup to add the Event Hub consumer to.
  * @param config The checkpointing and failure-handling behaviour to use.

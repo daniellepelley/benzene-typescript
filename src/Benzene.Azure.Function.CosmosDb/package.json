@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/azure-function-cosmos-db",
+  "name": "@benzenejs/azure-function-cosmos-db",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Azure.Function.CosmosDb",
   "license": "MIT",
@@ -8,9 +8,9 @@
   "types": "./index.ts",
   "dependencies": {
     "@azure/functions": "^4",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core-middleware": "0.1.0",
-    "@benzene/azure-function-core": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core-middleware": "0.1.0",
+    "@benzenejs/azure-function-core": "0.1.0"
   }
 }

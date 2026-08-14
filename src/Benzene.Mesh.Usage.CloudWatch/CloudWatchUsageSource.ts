@@ -8,7 +8,7 @@ import {
   MetricDataQuery,
   MetricDataResult,
 } from '@aws-sdk/client-cloudwatch';
-import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzene/mesh-contracts';
+import { IMeshUsageSource, MeshUsage, MeshUsageEntry, MeshUsageSource } from '@benzenejs/mesh-contracts';
 import { CloudWatchUsageOptions } from './CloudWatchUsageOptions';
 
 // CloudWatch caps GetMetricData at 500 queries per call.

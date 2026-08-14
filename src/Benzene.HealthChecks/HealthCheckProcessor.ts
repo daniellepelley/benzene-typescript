@@ -1,12 +1,12 @@
 /** Port of Benzene.HealthChecks.HealthCheckProcessor. */
-import { IBenzeneResult } from '@benzene/abstractions';
+import { IBenzeneResult } from '@benzenejs/abstractions';
 import {
   HealthCheckResponse,
   HealthCheckResult,
   HealthCheckStatus,
   IHealthCheck,
-} from '@benzene/health-checks-core';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/health-checks-core';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import { ExceptionHandlingHealthCheck } from './ExceptionHandlingHealthCheck';
 import { HealthCheckNamer } from './HealthCheckNamer';
 import { TimeOutHealthCheck } from './TimeOutHealthCheck';

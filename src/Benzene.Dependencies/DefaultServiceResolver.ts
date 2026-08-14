@@ -3,8 +3,8 @@ import {
   IServiceResolverFactory,
   ServiceIdentifier,
   serviceIdentifierName,
-} from '@benzene/abstractions';
-import { BenzeneException } from '@benzene/core';
+} from '@benzenejs/abstractions';
+import { BenzeneException } from '@benzenejs/core';
 import { ServiceCollection, ServiceDescriptor } from './ServiceCollection';
 import { disposeInstanceAsync, isAnyDisposable, isAsyncDisposable, isDisposable } from './disposal';
 

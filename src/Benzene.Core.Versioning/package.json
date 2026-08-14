@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/core-versioning",
+  "name": "@benzenejs/core-versioning",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Core.Versioning",
   "license": "MIT",
@@ -7,9 +7,9 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-messages": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-messages": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0"
   }
 }

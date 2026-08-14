@@ -1,13 +1,13 @@
-import { Constructor, ServiceIdentifier, VoidResult } from '@benzene/abstractions';
+import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
 import {
   IHandlerPipelineBuilder,
   IMessageHandlerDefinition,
   IMessageRouterBuilder,
   IMessageTopicGetter,
-} from '@benzene/abstractions-message-handlers';
-import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { Topic } from '@benzene/core-messages';
-import { tryAddScoped } from '@benzene/abstractions';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { Topic } from '@benzenejs/core-messages';
+import { tryAddScoped } from '@benzenejs/abstractions';
 import { addMessageHandlers } from './DI/Extensions';
 import { MessageHandlerDefinition } from './MessageHandlerDefinition';
 import { MessageRouter } from './MessageRouter';

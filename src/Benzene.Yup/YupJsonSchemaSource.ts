@@ -1,5 +1,5 @@
-import { Constructor } from '@benzene/abstractions';
-import { ITypeJsonSchemaSource } from '@benzene/abstractions-validation';
+import { Constructor } from '@benzenejs/abstractions';
+import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import { getYupSchema } from './YupSchemaRegistry';
 import { yupToJsonSchema } from './yupToJsonSchema';
 

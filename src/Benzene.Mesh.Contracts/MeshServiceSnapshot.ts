@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Contracts.MeshServiceSnapshot. */
-import { HealthCheckResponse } from '@benzene/health-checks-core';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 
 /**
  * The full per-service artifact a mesh aggregator publishes each run - the `services/{name}.json` shape.

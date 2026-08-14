@@ -1,6 +1,6 @@
 /**
  * Drives `@benzene-example/express-http` against a REAL Express server on an ephemeral loopback port,
- * exactly as the port's own `@benzene/express` integration tests do: create an order over `POST /orders`,
+ * exactly as the port's own `@benzenejs/express` integration tests do: create an order over `POST /orders`,
  * read it back over `GET /orders`, and confirm the strangler fall-through to the plain `/healthz` route.
  * The Node/Express analog of the .NET `Benzene.Example.Asp` integration tests.
  */

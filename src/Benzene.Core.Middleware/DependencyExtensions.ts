@@ -2,13 +2,13 @@ import {
   IBenzeneServiceContainer,
   IRegisterDependency,
   tryAddSingletonFactory,
-} from '@benzene/abstractions';
+} from '@benzenejs/abstractions';
 import {
   IMiddlewareFactory,
   IMiddlewarePipeline,
   IMiddlewareWrapper,
   PipelineBuilderAction,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 import { DefaultMiddlewareFactory } from './DefaultMiddlewareFactory';
 import { MiddlewarePipelineBuilder } from './MiddlewarePipelineBuilder';
 

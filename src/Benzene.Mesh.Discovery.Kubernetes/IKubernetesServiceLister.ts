@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Discovery.Kubernetes.IKubernetesServiceLister (+ KubernetesServiceInfo). */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The subset of a Kubernetes Service that mesh discovery needs. C# `record` -> a plain interface;

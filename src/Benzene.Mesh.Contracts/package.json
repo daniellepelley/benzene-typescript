@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/mesh-contracts",
+  "name": "@benzenejs/mesh-contracts",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Mesh.Contracts",
   "license": "MIT",
@@ -7,7 +7,7 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/health-checks-core": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/health-checks-core": "0.1.0"
   }
 }

@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Ui.MeshUiMiddleware. */
-import { IBenzeneResponseAdapter } from '@benzene/abstractions-message-handlers';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { IHttpContext, IHttpRequestAdapter } from '@benzene/http';
+import { IBenzeneResponseAdapter } from '@benzenejs/abstractions-message-handlers';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { MeshUiPage } from './MeshUiPage';
 
 /**
@@ -14,7 +14,7 @@ import { MeshUiPage } from './MeshUiPage';
  * `manifest.json`/`services/*.json`, needing no Benzene pipeline at all. On a matching GET/HEAD request to the
  * configured path it writes the page as `text/html` and short-circuits; any other request passes to `next`. It sets
  * content-type/status/body then finalizes — deliberately bypassing the message-result path, whose body handler
- * forces `application/json` — matching `@benzene/spec-ui`'s `SpecUiMiddleware` exactly.
+ * forces `application/json` — matching `@benzenejs/spec-ui`'s `SpecUiMiddleware` exactly.
  *
  * The C# had two constructors (with/without `envelopeUrl`); the TS port collapses them into one with an optional
  * `envelopeUrl`.

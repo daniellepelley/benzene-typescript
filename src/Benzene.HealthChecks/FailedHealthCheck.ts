@@ -1,5 +1,5 @@
 /** Port of Benzene.HealthChecks.FailedHealthCheck. */
-import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzene/health-checks-core';
+import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 /**
  * A placeholder `IHealthCheck` that always reports a failed result carrying the class name of a

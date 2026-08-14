@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/azure-function-http",
+  "name": "@benzenejs/azure-function-http",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Azure.Function.AspNet (retargeted from ASP.NET Core onto the @azure/functions v4 HTTP model)",
   "license": "MIT",
@@ -8,16 +8,16 @@
   "types": "./index.ts",
   "dependencies": {
     "@azure/functions": "^4",
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/abstractions-messages": "0.1.0",
-    "@benzene/abstractions-message-handlers": "0.1.0",
-    "@benzene/abstractions-middleware": "0.1.0",
-    "@benzene/core": "0.1.0",
-    "@benzene/core-messages": "0.1.0",
-    "@benzene/core-message-handlers": "0.1.0",
-    "@benzene/core-middleware": "0.1.0",
-    "@benzene/azure-function-core": "0.1.0",
-    "@benzene/http": "0.1.0",
-    "@benzene/results": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/abstractions-messages": "0.1.0",
+    "@benzenejs/abstractions-message-handlers": "0.1.0",
+    "@benzenejs/abstractions-middleware": "0.1.0",
+    "@benzenejs/core": "0.1.0",
+    "@benzenejs/core-messages": "0.1.0",
+    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/core-middleware": "0.1.0",
+    "@benzenejs/azure-function-core": "0.1.0",
+    "@benzenejs/http": "0.1.0",
+    "@benzenejs/results": "0.1.0"
   }
 }

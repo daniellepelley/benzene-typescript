@@ -3,7 +3,7 @@ import {
   IMessageHandlerResult,
   IResponseHandler,
   IResponseHandlerContainer,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Default `IResponseHandlerContainer<TContext>` implementation: runs every registered

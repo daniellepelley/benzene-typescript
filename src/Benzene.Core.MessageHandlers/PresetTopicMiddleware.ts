@@ -1,5 +1,5 @@
-import { ITopic } from '@benzene/abstractions-messages';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { ITopic } from '@benzenejs/abstractions-messages';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { PresetTopicHolder } from './PresetTopicHolder';
 
 /**

@@ -18,7 +18,7 @@ export interface EventGridTriggerEventInit {
 /**
  * Benzene's own model of an Event Grid delivery — dependency-free (a parsed-JSON value for the payload,
  * no `Azure.Messaging.EventGrid`), mirroring how the .NET package models it (and how
- * `@benzene/aws-lambda-kinesis`/`eventbridge` model their Lambda events). Covers both wire schemas
+ * `@benzenejs/aws-lambda-kinesis`/`eventbridge` model their Lambda events). Covers both wire schemas
  * Event Grid can deliver: the Event Grid schema (`eventType`/`topic`) and CloudEvents 1.0
  * (`type`/`source`, detected by `specversion`) — see {@link parse}.
  *

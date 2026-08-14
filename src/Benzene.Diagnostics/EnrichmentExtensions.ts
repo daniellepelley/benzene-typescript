@@ -1,16 +1,16 @@
 import { trace } from '@opentelemetry/api';
-import { ILoggerFactory, serviceIdentifierName } from '@benzene/abstractions';
+import { ILoggerFactory, serviceIdentifierName } from '@benzenejs/abstractions';
 import {
   ICurrentTransport,
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import {
   Capability,
   IBenzeneInvocation,
   IMiddlewarePipelineBuilder,
   capability,
-} from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-middleware';
 import { BenzeneDiagnostics } from './BenzeneDiagnostics';
 
 /**

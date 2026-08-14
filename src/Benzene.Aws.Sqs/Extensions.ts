@@ -1,6 +1,6 @@
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { IBenzeneWorkerStartup } from '@benzene/self-host';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { useBenzeneInvocation } from './Consumer/BenzeneInvocationExtensions';
 import { ISqsClientFactory } from './Consumer/ISqsClientFactory';
 import { SqsConsumer } from './Consumer/SqsConsumer';
@@ -15,9 +15,9 @@ import { addSqsConsumer } from './DependencyInjectionExtensions';
  * Port of Benzene.Aws.Sqs.Extensions (C# fluent extension method -> free function taking the worker
  * startup as its first argument).
  *
- * Adds a standalone SQS polling consumer to a Benzene worker. Unlike `@benzene/aws-lambda-sqs`, which
+ * Adds a standalone SQS polling consumer to a Benzene worker. Unlike `@benzenejs/aws-lambda-sqs`, which
  * processes SQS messages delivered via a Lambda event source mapping, this package polls SQS directly
- * using {@link SqsConsumer} — intended for long-running workers (e.g. `@benzene/self-host`) rather than
+ * using {@link SqsConsumer} — intended for long-running workers (e.g. `@benzenejs/self-host`) rather than
  * Lambda.
  *
  * Registers the benzene-message + SQS-consumer services, builds the inner per-message

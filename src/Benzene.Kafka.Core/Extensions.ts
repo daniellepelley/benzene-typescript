@@ -1,6 +1,6 @@
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { IBenzeneWorkerStartup } from '@benzene/self-host';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { IBenzeneWorkerStartup } from '@benzenejs/self-host';
 import { BenzeneKafkaConfig } from './BenzeneKafkaConfig';
 import { BenzeneKafkaWorker } from './BenzeneKafkaWorker';
 import { addKafkaConsumer } from './DependencyInjectionExtensions';
@@ -15,10 +15,10 @@ import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
  * Port of Benzene.Kafka.Core.Extensions.UseKafka (C# fluent extension method -> free function taking the
  * worker startup as its first argument).
  *
- * Adds a standalone Kafka consumer to a Benzene worker. Unlike `@benzene/aws-lambda-kafka` /
- * `@benzene/azure-function-kafka`, which process records delivered via a cloud trigger, this package
+ * Adds a standalone Kafka consumer to a Benzene worker. Unlike `@benzenejs/aws-lambda-kafka` /
+ * `@benzenejs/azure-function-kafka`, which process records delivered via a cloud trigger, this package
  * consumes topics directly using {@link BenzeneKafkaWorker} — intended for long-running workers (e.g.
- * `@benzene/self-host`).
+ * `@benzenejs/self-host`).
  *
  * DEFERRED from the C# `UseKafka`: the `deadLetterOptions` parameter (retry-then-dead-letter re-produce)
  * leans on Confluent's manual offset seams kafkajs does not expose the same way.
@@ -27,7 +27,7 @@ import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
  * `config.ConsumerConfig`; the TypeScript config carries no broker settings and `consumerFactory` yields a
  * `Consumer` (no route to an `Admin`), so the health check needs a separate {@link IKafkaAdminClientFactory}.
  * Pass one to enable the check (auto-registered on the deep `healthcheck` layer via
- * `@benzene/health-checks-core`); with no admin factory it is a no-op regardless of `healthCheck`. Set
+ * `@benzenejs/health-checks-core`); with no admin factory it is a no-op regardless of `healthCheck`. Set
  * `healthCheck = false` to opt out even when a factory is supplied.
  *
  * @param app The worker startup to add the Kafka consumer to.

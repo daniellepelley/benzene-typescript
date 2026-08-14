@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.EventBridge.EventBridgeLambdaHandler. */
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewareApplication } from '@benzene/abstractions-middleware';
-import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isEventBridgeEvent } from '@benzene/aws-lambda-core';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isEventBridgeEvent } from '@benzenejs/aws-lambda-core';
 import { EventBridgeEvent } from 'aws-lambda';
 
 /**

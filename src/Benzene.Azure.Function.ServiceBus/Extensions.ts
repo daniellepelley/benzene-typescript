@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.ServiceBus.Extensions + the UseServiceBus wiring from DependencyInjectionExtensions. */
 import { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { IAzureFunctionApp, IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { IAzureFunctionApp, IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { addServiceBus } from './DependencyInjectionExtensions';
 import { ServiceBusApplication } from './ServiceBusApplication';
 import { ServiceBusContext } from './ServiceBusContext';

@@ -1,6 +1,6 @@
-import { IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
 import { Context } from 'aws-lambda';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 import { IAwsLambdaEntryPoint } from './IAwsLambdaEntryPoint';

@@ -1,5 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.IMeshArtifactStore. */
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Publishes (and reads back) the JSON artifacts a `MeshAggregator` produces.

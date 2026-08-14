@@ -1,5 +1,5 @@
 /**
- * `@benzene/google-cloud-functions-http` — host a Benzene HTTP service on Google Cloud Functions Gen2.
+ * `@benzenejs/google-cloud-functions-http` — host a Benzene HTTP service on Google Cloud Functions Gen2.
  * Port of Benzene.GoogleCloud.Functions.Http.
  *
  * The same startup runs on the Functions Framework HTTP trigger (via {@link GoogleCloudFunctionHost})

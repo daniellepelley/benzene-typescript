@@ -10,8 +10,8 @@ import {
   ServiceDefinition,
   UntypedServiceImplementation,
 } from '@grpc/grpc-js';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { GrpcBenzeneBridge, useGrpc } from '@benzene/grpc';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { GrpcBenzeneBridge, useGrpc } from '@benzenejs/grpc';
 import { greeterServiceDefinition, GreeterMethods } from './greeter';
 import {
   HelloReply,

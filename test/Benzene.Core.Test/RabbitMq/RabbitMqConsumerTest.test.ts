@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { ChannelModel, ConsumeMessage, Options } from 'amqplib';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { addBenzene } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult } from '@benzene/results';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { addBenzene } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   addRabbitMqConsumer,
   IRabbitMqConnectionFactory,
@@ -17,7 +17,7 @@ import {
   RabbitMqMessageTopicGetter,
   RabbitMqWorker,
   withRabbitMqConfigDefaults,
-} from '@benzene/rabbitmq';
+} from '@benzenejs/rabbitmq';
 
 /**
  * Port of the C# Benzene.Core.Test.RabbitMq consumer tests (RabbitMqGettersTest, RabbitMqApplicationTest,

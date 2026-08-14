@@ -10,10 +10,10 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { Producer, ProducerRecord, RecordMetadata } from 'kafkajs';
-import { sendMessageAsync } from '@benzene/clients';
-import { BenzeneResultStatus } from '@benzene/results';
-import { benzeneTestHost, messageBuilder } from '@benzene/testing';
-import { asKafkaBenzeneMessage } from '@benzene/kafka-core-test-helpers';
+import { sendMessageAsync } from '@benzenejs/clients';
+import { BenzeneResultStatus } from '@benzenejs/results';
+import { benzeneTestHost, messageBuilder } from '@benzenejs/testing';
+import { asKafkaBenzeneMessage } from '@benzenejs/kafka-core-test-helpers';
 import {
   createOrderProducer,
   InMemoryOrderStore,

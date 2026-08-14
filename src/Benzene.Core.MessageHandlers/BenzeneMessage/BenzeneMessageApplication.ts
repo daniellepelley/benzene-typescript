@@ -1,11 +1,11 @@
-import { TransportNames } from '@benzene/abstractions-message-handlers';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   BenzeneMessageContext,
   IBenzeneMessageRequest,
   IBenzeneMessageResponse,
-} from '@benzene/core-messages';
-import { MiddlewareApplicationWithResult } from '@benzene/core-middleware';
+} from '@benzenejs/core-messages';
+import { MiddlewareApplicationWithResult } from '@benzenejs/core-middleware';
 import { TransportMiddlewarePipeline } from '../Info/TransportMiddlewarePipeline';
 
 /**

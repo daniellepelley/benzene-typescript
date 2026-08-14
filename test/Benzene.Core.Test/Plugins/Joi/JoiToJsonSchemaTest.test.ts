@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import Joi from 'joi';
-import { joiToJsonSchema } from '@benzene/joi';
+import { joiToJsonSchema } from '@benzenejs/joi';
 
 /**
  * Unit tests for `joiToJsonSchema` — the Joi → JSON Schema conversion (via `schema.describe()`) used to

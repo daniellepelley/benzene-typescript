@@ -1,6 +1,6 @@
 /** Port of Benzene.Clients.Azure.EventHub.EventHubClientMiddleware. */
 import { CreateBatchOptions, EventHubProducerClient } from '@azure/event-hubs';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { EventHubSendMessageContext } from './EventHubSendMessageContext';
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer, DefaultServiceResolverFactory, ServiceCollection } from '@benzene/dependencies';
-import { useTimer } from '@benzene/diagnostics';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer, DefaultServiceResolverFactory, ServiceCollection } from '@benzenejs/dependencies';
+import { useTimer } from '@benzenejs/diagnostics';
 
 /** Port of Benzene.Test.Core.Diagnostics.UseTimerTest. */
 describe('UseTimerTest', () => {

@@ -43,7 +43,7 @@ npx create-benzene my-svc --template aws-apigateway
 
 See [`../create-benzene/README.md`](../create-benzene/README.md) for the full option list and design.
 
-> **Heads-up:** a generated `package.json` references the **real** `@benzene/*` npm package names, which
+> **Heads-up:** a generated `package.json` references the **real** `@benzenejs/*` npm package names, which
 > aren't published to the registry yet — so a fresh project resolves them from a local `benzene-typescript`
 > workspace checkout for now (each template's own README explains how). A stated prerequisite, not a bug.
 

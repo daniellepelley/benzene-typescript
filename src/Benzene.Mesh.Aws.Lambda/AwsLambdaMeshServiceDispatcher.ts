@@ -1,9 +1,9 @@
 /** Port of Benzene.Mesh.Aws.Lambda.AwsLambdaMeshServiceDispatcher. */
 import { InvocationType } from '@aws-sdk/client-lambda';
-import { BenzeneMessageClientResponse } from '@benzene/clients';
-import { BenzeneMessageClientRequest, IAwsLambdaClient } from '@benzene/clients-aws-lambda';
-import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzene/mesh-contracts';
-import { IMeshServiceDispatcher, MeshDispatchEnvelope, MeshDispatchResult } from '@benzene/mesh-dispatch';
+import { BenzeneMessageClientResponse } from '@benzenejs/clients';
+import { BenzeneMessageClientRequest, IAwsLambdaClient } from '@benzenejs/clients-aws-lambda';
+import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
+import { IMeshServiceDispatcher, MeshDispatchEnvelope, MeshDispatchResult } from '@benzenejs/mesh-dispatch';
 import { resolveFunctionName } from './LambdaMeshServiceSource';
 import { raceWithSignal } from './raceWithSignal';
 

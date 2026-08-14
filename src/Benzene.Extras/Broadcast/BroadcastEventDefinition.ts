@@ -1,7 +1,7 @@
 /** Port of Benzene.Extras.Broadcast.BroadcastEventDefinition. */
-import { ServiceIdentifier } from '@benzene/abstractions';
-import { IMessageDefinition, ITopic } from '@benzene/abstractions-messages';
-import { Topic } from '@benzene/core-messages';
+import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMessageDefinition, ITopic } from '@benzenejs/abstractions-messages';
+import { Topic } from '@benzenejs/core-messages';
 
 /**
  * An {@link IMessageDefinition} describing a broadcastable event: a topic and the payload type it

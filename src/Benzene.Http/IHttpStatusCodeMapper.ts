@@ -1,4 +1,4 @@
-import { ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Maps a Benzene result-status string to an HTTP status-code string (e.g. `"Ok"` -> `"200"`).

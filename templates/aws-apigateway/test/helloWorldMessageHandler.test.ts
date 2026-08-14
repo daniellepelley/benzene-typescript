@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { benzeneTestHost, httpBuilder } from '@benzene/testing';
+import { benzeneTestHost, httpBuilder } from '@benzenejs/testing';
 // Importing the AWS testing package provides `asApiGatewayRequest` AND lights up the
 // `.buildAwsLambdaHost()` method on the neutral test host (module augmentation).
-import { asApiGatewayRequest } from '@benzene/aws-lambda-testing';
+import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { StartUp } from '../src/startUp';
 import { IGreeter } from '../src/greeter';
 

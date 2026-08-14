@@ -1,7 +1,7 @@
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { BenzeneMessageApplication } from '@benzene/core-message-handlers';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { BenzeneMessageApplication } from '@benzenejs/core-message-handlers';
 import { AwsEventStreamContext } from '../AwsEventStream/AwsEventStreamContext';
 import { AwsLambdaMiddlewareRouter } from '../AwsLambdaMiddlewareRouter';
 import { isBenzeneMessageEvent } from '../AwsEventPredicates';

@@ -1,15 +1,15 @@
 /** Port of Benzene.Azure.CosmosDb.CosmosChangeFeedApplication. */
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { TransportNames } from '@benzene/abstractions-message-handlers';
-import { TransportMiddlewarePipeline } from '@benzene/core-message-handlers';
-import { MiddlewareApplicationWithResult, StreamContext } from '@benzene/core-middleware';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
+import { MiddlewareApplicationWithResult, StreamContext } from '@benzenejs/core-middleware';
 import { CosmosChangeFeedBatch } from './CosmosChangeFeedBatch';
 import { CosmosChangeFeedStreamCheckpointer } from './CosmosChangeFeedStreamCheckpointer';
 
 /**
  * Runs a change feed batch through the streaming pipeline as a single {@link StreamContext} (fan-in):
  * the whole batch is exposed as one ordered `AsyncIterable` of documents, processed by one pipeline run
- * in one DI scope — the same shape as `@benzene/azure-function-cosmos-db`'s trigger adapter and AWS's
+ * in one DI scope — the same shape as `@benzenejs/azure-function-cosmos-db`'s trigger adapter and AWS's
  * Kinesis stream application. The context is wired with a real batch-level checkpointer (wrapping the
  * batch's checkpoint hook), and `handleAsync` returns whether the handler called it, so
  * {@link BenzeneCosmosChangeFeedWorker} can decide auto-checkpoint behaviour. Unlike Kinesis, a
@@ -17,7 +17,7 @@ import { CosmosChangeFeedStreamCheckpointer } from './CosmosChangeFeedStreamChec
  *
  * PORTING NOTE: C# extends `StreamMiddlewareApplication<CosmosChangeFeedBatch<TDocument>, TDocument,
  * bool>` — the result-producing (3-generic) stream application. That 3-generic overload was not part of
- * the TypeScript `@benzene/core-middleware` port (only the 2-generic `StreamMiddlewareApplication`), so
+ * the TypeScript `@benzenejs/core-middleware` port (only the 2-generic `StreamMiddlewareApplication`), so
  * this composes the ported {@link MiddlewareApplicationWithResult} directly — the exact base the C#
  * 3-generic type reduces to (`MiddlewareApplication<TEvent, StreamContext<TItem>, TResult>`), with the
  * same pipeline + `event → StreamContext` mapper + `StreamContext → result` mapper. See the README

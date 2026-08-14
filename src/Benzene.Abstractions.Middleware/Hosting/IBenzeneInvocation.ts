@@ -1,9 +1,9 @@
-import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Port of Benzene.Abstractions.Hosting.IBenzeneInvocation
  * (defined in the C# `Benzene.Abstractions.Pipelines` project; this port folds the
- * `Benzene.Abstractions.Hosting` namespace into `@benzene/abstractions-middleware`, the abstractions
+ * `Benzene.Abstractions.Hosting` namespace into `@benzenejs/abstractions-middleware`, the abstractions
  * package that already carries `IMiddlewarePipelineBuilder`/`IRegisterDependency` — the two types the
  * sibling `IBenzeneApplicationBuilder` depends on — so no separate hosting package is needed).
  *

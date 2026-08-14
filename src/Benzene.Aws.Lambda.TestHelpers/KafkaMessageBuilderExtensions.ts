@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Kafka.TestHelpers.MessageBuilderExtensions. */
 import { MSKEvent, MSKRecord } from 'aws-lambda';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 export interface AsAwsKafkaEventOptions {

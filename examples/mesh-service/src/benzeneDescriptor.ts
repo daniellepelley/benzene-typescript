@@ -7,24 +7,24 @@
  *
  * The topic list and identity come from `MeshDescriptorFactory`; the §2.1 payload schemas are supplied
  * by a `MapMeshSchemaProvider` (TypeScript erases the request/response types at runtime, so the port
- * injects schemas rather than reflecting - see `@benzene/mesh-wire`).
+ * injects schemas rather than reflecting - see `@benzenejs/mesh-wire`).
  */
 import {
   IMessageHandlerDefinition,
   IMessageHandlerDefinitionLookUp,
-} from '@benzene/abstractions-message-handlers';
-import { ITopic } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import {
   MessageHandlersRegistry,
   RegistryMessageHandlersFinder,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import {
   MapMeshSchemaProvider,
   MeshDescriptorFactory,
   MeshPlacement,
   MeshServiceDescriptor,
   MeshServiceInfo,
-} from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-wire';
 
 /** The §2.1 schemas for this service's topics, keyed by topic id. */
 const schemaProvider = new MapMeshSchemaProvider({

@@ -1,5 +1,5 @@
 {
-  "name": "@benzene/mesh-discovery-azure",
+  "name": "@benzenejs/mesh-discovery-azure",
   "version": "0.1.0",
   "description": "TypeScript port of Benzene.Mesh.Discovery.Azure",
   "license": "MIT",
@@ -7,8 +7,8 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@benzene/abstractions": "0.1.0",
-    "@benzene/mesh-contracts": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0",
+    "@benzenejs/mesh-contracts": "0.1.0",
     "@azure/arm-resources": "^8.0.0",
     "@azure/identity": "^4.13.1"
   }

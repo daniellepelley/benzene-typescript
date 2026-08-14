@@ -1,6 +1,6 @@
-import { IBenzeneServiceContainer, IServiceResolver, tryAddScoped } from '@benzene/abstractions';
-import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { FuncWrapperMiddleware } from '@benzene/core-middleware';
+import { IBenzeneServiceContainer, IServiceResolver, tryAddScoped } from '@benzenejs/abstractions';
+import { IMiddleware, IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { FuncWrapperMiddleware } from '@benzenejs/core-middleware';
 import { AuthResults } from './AuthResults';
 import { AuthenticationHolder } from './AuthenticationHolder';
 import { DelegateAuthorizationPolicy, PolicyPredicate } from './DelegateAuthorizationPolicy';

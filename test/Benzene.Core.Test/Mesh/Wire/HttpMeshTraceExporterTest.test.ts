@@ -6,7 +6,7 @@
  * -> an injectable `fetch`; the .NET `System.Threading.Channels` pump -> a bounded buffer + drain loop.
  */
 import { describe, expect, it } from 'vitest';
-import { HttpMeshTraceExporter, MeshTraceEvent } from '@benzene/mesh-wire';
+import { HttpMeshTraceExporter, MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 interface Call {
   url: string;

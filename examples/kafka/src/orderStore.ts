@@ -1,4 +1,4 @@
-import { serviceToken } from '@benzene/abstractions';
+import { serviceToken } from '@benzenejs/abstractions';
 
 /**
  * The stand-in "data store" the consumer's handlers write to, so a fire-and-forget Kafka consumer (which

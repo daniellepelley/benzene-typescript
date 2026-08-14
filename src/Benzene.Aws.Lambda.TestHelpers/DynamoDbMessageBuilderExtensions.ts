@@ -1,6 +1,6 @@
 /** Port of Benzene.Aws.Lambda.DynamoDb.TestHelpers.MessageBuilderExtensions. */
 import { AttributeValue, DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda';
-import { IMessageBuilder } from '@benzene/abstractions';
+import { IMessageBuilder } from '@benzenejs/abstractions';
 
 export interface AsDynamoDbOptions {
   /** How many identical stream records to emit, default 1. */

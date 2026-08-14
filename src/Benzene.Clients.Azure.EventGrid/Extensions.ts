@@ -1,6 +1,6 @@
 import { EventGridPublisherClient, InputSchema } from '@azure/eventgrid';
-import { IMiddlewarePipelineBuilder } from '@benzene/abstractions-middleware';
-import { OutboundContext } from '@benzene/clients';
+import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
+import { OutboundContext } from '@benzenejs/clients';
 import { EventGridClientMiddleware } from './EventGridClientMiddleware';
 import { EventGridSendMessageContext } from './EventGridSendMessageContext';
 import { OutboundEventGridContextConverter } from './OutboundEventGridContextConverter';
@@ -10,7 +10,7 @@ import { OutboundEventGridEventSchemaContextConverter } from './OutboundEventGri
  * Port of Benzene.Clients.Azure.EventGrid.Extensions (C# fluent extension methods -> free functions
  * taking the builder first).
  *
- * PORT SCOPE: like the `@benzene/clients-*` siblings, this ports the `OutboundContext` send path; the
+ * PORT SCOPE: like the `@benzenejs/clients-*` siblings, this ports the `OutboundContext` send path; the
  * generic `IBenzeneClientContext<T,Void>` overloads, the standalone `EventGridBenzeneMessageClient`, and
  * the native `EventGridBatchMessageClient` are deferred (see the README structure table). Two converters
  * are exposed, matching .NET: CloudEvents (`useEventGrid`, the preferred schema) and the classic Event

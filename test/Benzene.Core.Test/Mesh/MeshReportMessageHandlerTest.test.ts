@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MeshReportMessageHandler } from '@benzene/mesh-aggregator';
-import { IMeshReportPublisher, MeshServiceReport } from '@benzene/mesh-contracts';
+import { MeshReportMessageHandler } from '@benzenejs/mesh-aggregator';
+import { IMeshReportPublisher, MeshServiceReport } from '@benzenejs/mesh-contracts';
 
 /** Port of test/Benzene.Mesh.Test/MeshReportMessageHandlerTest.cs. */
 class RecordingMeshReportPublisher implements IMeshReportPublisher {

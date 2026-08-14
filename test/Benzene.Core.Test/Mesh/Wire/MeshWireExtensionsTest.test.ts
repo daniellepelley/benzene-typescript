@@ -6,16 +6,16 @@
  * (UseMeshTrace). Mockito's `Mock<IMeshTraceExporter>` maps to a small capturing/throwing fake.
  */
 import { describe, expect, it } from 'vitest';
-import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   addBenzene,
   addBenzeneMessage,
   addContextItems,
   BenzeneMessageApplication,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   BenzeneMessageMeshStatusReader,
   IMeshTraceExporter,
@@ -26,7 +26,7 @@ import {
   MeshTraceEvent,
   useMeshDescriptor,
   useMeshTrace,
-} from '@benzene/mesh-wire';
+} from '@benzenejs/mesh-wire';
 
 /** Captures every exported event (the port of the tests' `Mock<IMeshTraceExporter>` + callback). */
 class CapturingExporter implements IMeshTraceExporter {

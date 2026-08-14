@@ -1,6 +1,6 @@
 import { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { BenzeneStartUp } from '@benzene/abstractions-middleware';
-import { AzureFunctionHost } from '@benzene/azure-function-core';
+import { BenzeneStartUp } from '@benzenejs/abstractions-middleware';
+import { AzureFunctionHost } from '@benzenejs/azure-function-core';
 import { handleServiceBusMessages } from './Extensions';
 
 /**
@@ -17,9 +17,9 @@ export type AzureServiceBusFunction = (
  * Adds the `.serviceBusFunction` getter to {@link AzureFunctionHost} — the Service Bus counterpart of
  * `.httpFunction`. Returns the handler to register with
  * `app.serviceBusQueue(name, { …, handler: host.serviceBusFunction })`. Same `declare module` + prototype
- * pattern and rationale as the HTTP getter (see `@benzene/azure-function-http`'s `AzureFunctionHostExtensions`).
+ * pattern and rationale as the HTTP getter (see `@benzenejs/azure-function-http`'s `AzureFunctionHostExtensions`).
  */
-declare module '@benzene/azure-function-core' {
+declare module '@benzenejs/azure-function-core' {
   interface AzureFunctionHost<TStartUp extends BenzeneStartUp> {
     /** The Service Bus-trigger handler to register with `app.serviceBusQueue(name, { handler })`. */
     readonly serviceBusFunction: AzureServiceBusFunction;

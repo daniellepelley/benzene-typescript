@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Wire.MeshDescriptorFactory (and MeshDescriptorHashing). */
 import { createHash } from 'node:crypto';
-import { IMessageHandlerDefinitionLookUp } from '@benzene/abstractions-message-handlers';
+import { IMessageHandlerDefinitionLookUp } from '@benzenejs/abstractions-message-handlers';
 import { MeshJson } from './MeshJson';
 import {
   MeshPlacement,

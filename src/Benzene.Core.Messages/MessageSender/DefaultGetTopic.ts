@@ -1,4 +1,4 @@
-import { IGetTopic } from '@benzene/abstractions-messages';
+import { IGetTopic } from '@benzenejs/abstractions-messages';
 
 /**
  * The default `IGetTopic`: returns an empty topic, leaving topic selection to the transport

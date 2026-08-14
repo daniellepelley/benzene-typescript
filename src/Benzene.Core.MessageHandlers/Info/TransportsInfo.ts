@@ -1,4 +1,4 @@
-import { ITransportInfo, ITransportsInfo } from '@benzene/abstractions-message-handlers';
+import { ITransportInfo, ITransportsInfo } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Default ITransportsInfo implementation, aggregating the distinct names of every

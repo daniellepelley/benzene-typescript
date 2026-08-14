@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { Constructor, IBenzeneResult, ISerializer } from '@benzene/abstractions';
+import { Constructor, IBenzeneResult, ISerializer } from '@benzenejs/abstractions';
 import {
   IMessageHandlerResult,
   IMessageTopicGetter,
   IMessageVersionGetter,
   IResponsePayloadMapper,
-} from '@benzene/abstractions-message-handlers';
-import { IRawStringMessage, ITopic } from '@benzene/abstractions-messages';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzene/core-message-handlers';
-import { Topic } from '@benzene/core-messages';
-import { BenzeneResult } from '@benzene/results';
+} from '@benzenejs/abstractions-message-handlers';
+import { IRawStringMessage, ITopic } from '@benzenejs/abstractions-messages';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   CastingResponsePayloadMapper,
   ISchemaCasters,
   SchemaCasters,
   SchemaCastersBuilder,
-} from '@benzene/core-versioning';
+} from '@benzenejs/core-versioning';
 import { V1OrderPayload, V2OrderPayload } from './exampleSchemas';
 
 /** Port of test/Benzene.Core.Test/Core/Versioning/CastingResponsePayloadMapperTest.cs. */

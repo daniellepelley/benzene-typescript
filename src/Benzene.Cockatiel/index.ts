@@ -3,7 +3,7 @@
  *
  * Where the .NET package adapts [Polly v8](https://www.pollydocs.org/), this adapts its JavaScript
  * analogue [cockatiel](https://github.com/connor4312/cockatiel) (the "adapted, not reimplemented"
- * convention — see the README). It is a **sibling** to `@benzene/resilience` (the zero-dependency
+ * convention — see the README). It is a **sibling** to `@benzenejs/resilience` (the zero-dependency
  * homegrown retry), not a replacement: this one takes a `cockatiel` dependency in exchange for the whole
  * toolkit (retry, circuit breaker, timeout, bulkhead, fallback, and compositions via `wrap`).
  *

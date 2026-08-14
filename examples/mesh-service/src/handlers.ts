@@ -6,11 +6,11 @@
  * They register with a LOCAL `MessageHandlersRegistry` (not the global one), so importing this example
  * never pollutes another module's handler discovery.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message, MessageHandlersRegistry } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 /** The handler registry this service self-describes from. */
 export const registry = new MessageHandlersRegistry();

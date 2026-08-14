@@ -1,6 +1,6 @@
 /** Port of Benzene.Aws.Lambda.S3.S3MessageBodyGetter. */
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { S3Notification } from './S3Notification';
 import { S3RecordContext } from './S3RecordContext';
 

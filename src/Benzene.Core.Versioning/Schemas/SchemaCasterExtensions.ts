@@ -1,5 +1,5 @@
 /** Port of Benzene.Core.Versioning.Schemas.SchemaCasterExtensions. */
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { ISchemaCaster } from './ISchemaCaster';
 import { ISchemaCasters } from './ISchemaCasters';
 import { PayloadSchemaVersions } from './PayloadSchemaVersions';

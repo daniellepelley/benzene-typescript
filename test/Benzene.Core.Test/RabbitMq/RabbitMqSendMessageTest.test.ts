@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Channel, Options } from 'amqplib';
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { MiddlewarePipelineBuilder, NullBenzeneServiceContainer } from '@benzene/core-middleware';
-import { sendMessageAsync } from '@benzene/clients';
-import { BenzeneResultStatus } from '@benzene/results';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { MiddlewarePipelineBuilder, NullBenzeneServiceContainer } from '@benzenejs/core-middleware';
+import { sendMessageAsync } from '@benzenejs/clients';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   RabbitMqBenzeneMessageClient,
   RabbitMqClientMiddleware,
   RabbitMqContextConverter,
   RabbitMqSendMessageContext,
   useRabbitMqClient,
-} from '@benzene/rabbitmq';
+} from '@benzenejs/rabbitmq';
 
 /**
  * Port of the C# RabbitMqBenzeneMessageClientTest. The message client is driven over a FAKE amqplib

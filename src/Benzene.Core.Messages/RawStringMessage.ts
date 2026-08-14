@@ -1,5 +1,5 @@
 /** Port of Benzene.Core.Messages.RawStringMessage. */
-import { IRawStringMessage } from '@benzene/abstractions-messages';
+import { IRawStringMessage } from '@benzenejs/abstractions-messages';
 
 /**
  * A payload carrying its own pre-serialized string content, delivered as-is by the response renderer

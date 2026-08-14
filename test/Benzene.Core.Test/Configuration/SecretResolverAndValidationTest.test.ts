@@ -4,7 +4,7 @@ import {
   MissingSecretException,
   SecretResolver,
   SecretValidation,
-} from '@benzene/configuration-core';
+} from '@benzenejs/configuration-core';
 
 /**
  * Port of test/Benzene.Core.Test/Configuration/SecretResolverAndValidationTest.cs. SecretResolver

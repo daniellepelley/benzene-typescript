@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Kinesis (headers getter — see KinesisMessageContext's ADAPTATION note). */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { KinesisMessageContext } from './KinesisMessageContext';
 
 /**

@@ -1,4 +1,4 @@
-import { IMessageBodyGetter } from '@benzene/abstractions-messages';
+import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';
 
 /**

@@ -2,14 +2,14 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { HealthCheckResponse, HealthCheckResult } from '@benzene/health-checks-core';
+import { HealthCheckResponse, HealthCheckResult } from '@benzenejs/health-checks-core';
 import {
   FileSystemMeshArtifactStore,
   HttpMeshServiceSource,
   IMeshArtifactStore,
   IMeshServiceSource,
   MeshAggregator,
-} from '@benzene/mesh-aggregator';
+} from '@benzenejs/mesh-aggregator';
 import {
   IMeshUsageSource,
   MeshManifest,
@@ -23,8 +23,8 @@ import {
   MeshUsage,
   MeshUsageEntry,
   TopologyEdgeSource,
-} from '@benzene/mesh-contracts';
-import { BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/mesh-contracts';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshAggregatorTest.cs. The C# `RoutingHttpMessageHandler` + `HttpClient`
@@ -577,7 +577,7 @@ describe('MeshAggregator', () => {
         ['payments-api', '{"requests":[{"topic":"payments:capture"}]}'],
       ],
       // Wire statuses use the TS port's status vocabulary (PascalCase `BenzeneResultStatus` values) where
-      // the C# original used its lowercase-kebab wire values - the port-wide `@benzene/results` divergence.
+      // the C# original used its lowercase-kebab wire values - the port-wide `@benzenejs/results` divergence.
       usageOverTenMinutes(
         new MeshUsageEntry('payments:capture', undefined, undefined, undefined, 'success', 6, undefined, 'cw'),
         new MeshUsageEntry('payments:capture', undefined, undefined, undefined, BenzeneResultStatus.notFound, 2, undefined, 'cw'),

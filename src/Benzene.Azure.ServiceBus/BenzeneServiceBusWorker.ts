@@ -8,9 +8,9 @@ import {
   ServiceBusSessionReceiver,
   ServiceBusSessionReceiverOptions,
 } from '@azure/service-bus';
-import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzene/abstractions';
-import { IBenzeneWorker } from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
 import { BenzeneServiceBusConfig, withServiceBusConfigDefaults } from './BenzeneServiceBusConfig';
 import { IServiceBusClientFactory } from './IServiceBusClientFactory';
 import { IServiceBusMessageSettler } from './IServiceBusMessageSettler';
@@ -39,8 +39,8 @@ const NO_SESSION_BACKOFF_MS = 1_000;
 
 /**
  * A long-running worker that consumes a Service Bus queue or topic subscription and dispatches each
- * received message through the middleware pipeline — for `@benzene/self-host`, not Azure Functions
- * (use `@benzene/azure-function-service-bus` for a Service Bus trigger).
+ * received message through the middleware pipeline — for `@benzenejs/self-host`, not Azure Functions
+ * (use `@benzenejs/azure-function-service-bus` for a Service Bus trigger).
  *
  * PORTING NOTE — the SDK's push model. .NET uses `ServiceBusProcessor` (`ProcessMessageAsync`/
  * `ProcessErrorAsync` events, `StartProcessingAsync`/`StopProcessingAsync`) with settlement on the

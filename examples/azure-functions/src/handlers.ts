@@ -3,11 +3,11 @@
  * concrete: the same handler runs on Azure Functions and on AWS Lambda unchanged. It declares its topic
  * (and HTTP route) and knows nothing about the trigger that delivered the message.
  */
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 /** Records the orders the warehouse consumer received, so tests can observe routing. */
 export const warehouseNotifications: string[] = [];

@@ -1,7 +1,7 @@
 /** Port of Benzene.Core.Versioning.Request.CastingRequestMapper (RequestBodyReader folded in). */
-import { Constructor, ServiceIdentifier } from '@benzene/abstractions';
-import { IMessageVersionGetter, IRequestMapper } from '@benzene/abstractions-message-handlers';
-import { IMessageTopicGetter } from '@benzene/abstractions-message-handlers';
+import { Constructor, ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMessageVersionGetter, IRequestMapper } from '@benzenejs/abstractions-message-handlers';
+import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ISchemaCasters } from '../Schemas/ISchemaCasters';
 
 /**

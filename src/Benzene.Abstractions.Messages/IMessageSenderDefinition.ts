@@ -1,4 +1,4 @@
-import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { IRequestResponseMessageDefinition } from './IRequestResponseMessageDefinition';
 
 /**

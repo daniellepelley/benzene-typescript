@@ -1,6 +1,6 @@
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
-import { MiddlewareApplicationWithResult } from '@benzene/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzene/core-message-handlers';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { MiddlewareApplicationWithResult } from '@benzenejs/core-middleware';
+import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';
 

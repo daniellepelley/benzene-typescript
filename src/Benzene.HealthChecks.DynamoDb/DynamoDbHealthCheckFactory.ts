@@ -1,14 +1,14 @@
 /** Port of Benzene.HealthChecks.DynamoDb.DynamoDbHealthCheckFactory. */
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { IServiceResolver } from '@benzene/abstractions';
-import { IHealthCheck, IHealthCheckFactory } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IHealthCheck, IHealthCheckFactory } from '@benzenejs/health-checks-core';
 import { DynamoDbHealthCheck } from './DynamoDbHealthCheck';
 
 /**
  * Builds a {@link DynamoDbHealthCheck} for a fixed table.
  *
  * PORT DIVERGENCE: the C# factory resolves `IAmazonDynamoDB` from the container in `Create`; the
- * TypeScript port has no DI token for the raw AWS SDK client (matching the `@benzene/clients-aws-*`
+ * TypeScript port has no DI token for the raw AWS SDK client (matching the `@benzenejs/clients-aws-*`
  * convention), so the `DynamoDBClient` is supplied to the factory directly and `create`'s resolver is
  * unused.
  */

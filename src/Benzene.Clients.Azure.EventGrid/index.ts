@@ -6,7 +6,7 @@
  * route to send via a caller-supplied `@azure/eventgrid` `EventGridPublisherClient`. The topic becomes the
  * CloudEvent `type` (or the classic event `subject`/`eventType`), the routed message its `data`.
  *
- * PORT SCOPE (matching the `@benzene/clients-*` siblings): the `OutboundContext` send path only; the
+ * PORT SCOPE (matching the `@benzenejs/clients-*` siblings): the `OutboundContext` send path only; the
  * generic `IBenzeneClientContext<T,Void>` converters and the standalone `EventGridBenzeneMessageClient` are
  * deferred; the native `EventGridBatchMessageClient` IS now ported.
  */

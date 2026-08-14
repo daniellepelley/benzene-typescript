@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { BenzeneClientContext, IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
-import { registerZodSchema, ValidationClientMiddleware } from '@benzene/zod';
+import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { registerZodSchema, ValidationClientMiddleware } from '@benzenejs/zod';
 
 /**
  * Unit tests for the client-side `ValidationClientMiddleware` — port of

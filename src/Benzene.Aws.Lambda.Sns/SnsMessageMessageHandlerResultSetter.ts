@@ -1,5 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsMessageMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { SnsRecordContext } from './SnsRecordContext';
 
 /**

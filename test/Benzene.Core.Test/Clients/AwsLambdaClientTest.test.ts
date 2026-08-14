@@ -1,6 +1,6 @@
 import { InvocationType, InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { describe, expect, it } from 'vitest';
-import { AwsLambdaClient, AwsLambdaFunctionErrorException } from '@benzene/clients-aws-lambda';
+import { AwsLambdaClient, AwsLambdaFunctionErrorException } from '@benzenejs/clients-aws-lambda';
 
 /**
  * Port of test/Benzene.Core.Test/Aws/Client/Lambda/AwsLambdaClientTest.cs. The Moq `IAmazonLambda.InvokeAsync`

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ExecutionAlreadyExists, SFNClient } from '@aws-sdk/client-sfn';
-import { IServiceResolver } from '@benzene/abstractions';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { HealthCheckMode } from '@benzene/health-checks-core';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { HealthCheckMode } from '@benzenejs/health-checks-core';
 import {
   addStepFunctionsClient,
   IStepFunctionsClient,
   StepFunctionsClient,
   StepFunctionsHealthCheck,
-} from '@benzene/clients-aws-step-functions';
+} from '@benzenejs/clients-aws-step-functions';
 
 /**
  * Port of the C# Benzene.Clients.Aws.StepFunctions tests: the client starts an execution with the
@@ -36,7 +36,7 @@ function capturingSfn(behaviour?: (command: unknown) => Promise<unknown>): {
   return { commands, client };
 }
 
-const noopLogger = { logError: () => {} } as unknown as import('@benzene/abstractions').ILogger;
+const noopLogger = { logError: () => {} } as unknown as import('@benzenejs/abstractions').ILogger;
 
 describe('StepFunctionsClient', () => {
   it('starts an execution with the serialized message as input and returns accepted', async () => {

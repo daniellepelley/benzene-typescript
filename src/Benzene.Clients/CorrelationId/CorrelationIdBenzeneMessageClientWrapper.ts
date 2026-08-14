@@ -1,4 +1,4 @@
-import { ICorrelationId, IDependencyWrapper, IServiceResolver } from '@benzene/abstractions';
+import { ICorrelationId, IDependencyWrapper, IServiceResolver } from '@benzenejs/abstractions';
 import { IBenzeneMessageClient } from '../IBenzeneMessageClient';
 import { CorrelationIdBenzeneMessageClient } from './CorrelationIdBenzeneMessageClient';
 

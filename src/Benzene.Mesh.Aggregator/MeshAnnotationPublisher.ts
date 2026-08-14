@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Aggregator.MeshAnnotationPublisher. */
 import { randomUUID } from 'node:crypto';
-import { MeshAnnotation, MeshAnnotationLog, MeshAnnotationThread } from '@benzene/mesh-contracts';
+import { MeshAnnotation, MeshAnnotationLog, MeshAnnotationThread } from '@benzenejs/mesh-contracts';
 import { IMeshArtifactStore } from './IMeshArtifactStore';
 
 const ArtifactPath = 'annotations.json';

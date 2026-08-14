@@ -1,12 +1,12 @@
 /** Port of Benzene.Azure.EventHub.TestHelpers.MessageBuilderExtensions. */
 import type { ReceivedEventData } from '@azure/event-hubs';
-import { IMessageBuilder } from '@benzene/abstractions';
-import { EventHubConsumerMessageTopicGetter } from '@benzene/azure-event-hub';
-import { MessageSerializer } from '@benzene/testing';
+import { IMessageBuilder } from '@benzenejs/abstractions';
+import { EventHubConsumerMessageTopicGetter } from '@benzenejs/azure-event-hub';
+import { MessageSerializer } from '@benzenejs/testing';
 import { jsonMessageSerializer } from './defaults';
 
 /**
- * Turns a platform-neutral `@benzene/testing` `messageBuilder(...)` into a `ReceivedEventData` for the
+ * Turns a platform-neutral `@benzenejs/testing` `messageBuilder(...)` into a `ReceivedEventData` for the
  * self-hosted Event Hub consumer, so a component test can push the demo message through an
  * {@link EventHubWorkerBenzeneTestHost} exactly as the hub would deliver it. The consumer routes by the
  * `"topic"` event property (unlike the Azure Functions Event Hub trigger's envelope body), so the topic
@@ -14,7 +14,7 @@ import { jsonMessageSerializer } from './defaults';
  * header as a further property, and the serialized message as the body.
  *
  * MESSAGE-TYPE ADAPTATION: C# builds an `Azure.Messaging.EventHubs.EventData` (the send side). The TS
- * consumer's `EventHubConsumerApplication.handleAsync` — like `@benzene/azure-function-event-hub` — reads
+ * consumer's `EventHubConsumerApplication.handleAsync` — like `@benzenejs/azure-function-event-hub` — reads
  * a *received* event, so the port builds the read-side `ReceivedEventData` from `@azure/event-hubs`
  * directly (an interface with several service-populated fields, given placeholder values here and cast).
  * The body is the serialized string rather than a `BinaryData`; `EventHubConsumerMessageBodyGetter` reads

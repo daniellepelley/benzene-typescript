@@ -1,13 +1,13 @@
 /** Port of Benzene.Azure.Function.EventHub.Function.BenzeneMessageEventHubHandler. */
-import { ISerializer, IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddlewarePipeline } from '@benzene/abstractions-middleware';
+import { ISerializer, IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
   BenzeneMessageContext,
   BenzeneMessageRequest,
   IBenzeneMessageRequest,
-} from '@benzene/core-messages';
-import { BenzeneMessageApplication } from '@benzene/core-message-handlers';
-import { MiddlewareRouter } from '@benzene/core-middleware';
+} from '@benzenejs/core-messages';
+import { BenzeneMessageApplication } from '@benzenejs/core-message-handlers';
+import { MiddlewareRouter } from '@benzenejs/core-middleware';
 import { EventHubContext } from './EventHubContext';
 
 /**

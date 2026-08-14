@@ -1,4 +1,4 @@
-import { BenzeneException } from '@benzene/core';
+import { BenzeneException } from '@benzenejs/core';
 
 /** A single check's failure: the check's name and the error it threw. */
 export interface StartUpCheckFailure {

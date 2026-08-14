@@ -5,7 +5,7 @@ import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 
 /**
  * Verifies a DynamoDB table is reachable with a read-only `DescribeTable` call. Non-destructive

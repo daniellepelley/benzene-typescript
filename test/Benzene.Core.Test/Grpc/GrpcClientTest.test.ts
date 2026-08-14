@@ -1,12 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, it } from 'vitest';
 import { CallOptions, Client, Metadata, StatusObject, status } from '@grpc/grpc-js';
-import { BenzeneException } from '@benzene/core';
-import { MiddlewarePipelineBuilder, NullBenzeneServiceContainer } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { IBenzeneMessageClient, sendMessageAsync } from '@benzene/clients';
-import { JsonGrpcMessageAdapter } from '@benzene/grpc';
-import { BenzeneResultStatus } from '@benzene/results';
+import { BenzeneException } from '@benzenejs/core';
+import { MiddlewarePipelineBuilder, NullBenzeneServiceContainer } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IBenzeneMessageClient, sendMessageAsync } from '@benzenejs/clients';
+import { JsonGrpcMessageAdapter } from '@benzenejs/grpc';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   addGrpcClient,
   DefaultGrpcStatusReverseMapper,
@@ -15,7 +15,7 @@ import {
   GrpcClientRouteRegistry,
   GrpcSendMessageContext,
   useGrpcClient,
-} from '@benzene/grpc-client';
+} from '@benzenejs/grpc-client';
 
 /**
  * Port of the C# Benzene.Grpc.Client tests (DefaultGrpcStatusReverseMapperTest, GrpcClientMiddlewareTest,

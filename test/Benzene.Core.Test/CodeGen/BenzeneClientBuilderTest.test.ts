@@ -1,12 +1,12 @@
 /**
- * Pins the client generator (`buildBenzeneClient`) end of `@benzene/codegen-client`: given a mesh
+ * Pins the client generator (`buildBenzeneClient`) end of `@benzenejs/codegen-client`: given a mesh
  * ServiceDescriptor (mesh.md §2), it emits a typed client whose interfaces come from the §2.1 schemas
  * and whose methods call `IBenzeneMessageSender.sendAsync(topic, …)`. The descriptor is built by hand
  * here to stand in for one a service of any language would serve.
  */
 import { describe, expect, it } from 'vitest';
-import { MeshServiceDescriptor, MeshTopicDescriptor } from '@benzene/mesh-wire';
-import { buildBenzeneClient, generateBenzeneClientSource, TopicMethodName } from '@benzene/codegen-client';
+import { MeshServiceDescriptor, MeshTopicDescriptor } from '@benzenejs/mesh-wire';
+import { buildBenzeneClient, generateBenzeneClientSource, TopicMethodName } from '@benzenejs/codegen-client';
 
 function topic(id: string, requestSchema?: Record<string, unknown>, responseSchema?: Record<string, unknown>): MeshTopicDescriptor {
   const descriptor = new MeshTopicDescriptor();

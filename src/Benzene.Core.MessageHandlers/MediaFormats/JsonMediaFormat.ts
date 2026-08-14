@@ -1,5 +1,5 @@
-import { ISerializer, IServiceResolver } from '@benzene/abstractions';
-import { IMediaFormat } from '@benzene/abstractions-message-handlers';
+import { ISerializer, IServiceResolver } from '@benzenejs/abstractions';
+import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
 import { JsonSerializer } from '../Serialization/JsonSerializer';
 
 /**
@@ -10,7 +10,7 @@ import { JsonSerializer } from '../Serialization/JsonSerializer';
  * Port of Benzene.Core.MessageHandlers.MediaFormats.JsonMediaFormat&lt;TContext&gt;.
  *
  * Per wrinkle 3, `getSerializer` returns the container-resolved `JsonSerializer` (already ported at
- * `@benzene/core-message-handlers`) that this format is constructed with.
+ * `@benzenejs/core-message-handlers`) that this format is constructed with.
  */
 export class JsonMediaFormat<TContext> implements IMediaFormat<TContext> {
   constructor(private readonly jsonSerializer: JsonSerializer) {}

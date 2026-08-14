@@ -5,7 +5,7 @@ import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
-} from '@benzene/health-checks-core';
+} from '@benzenejs/health-checks-core';
 import { IKafkaAdminClientFactory } from './IKafkaAdminClientFactory';
 
 /**

@@ -1,12 +1,12 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneConfiguration,
   BenzeneStartUp,
   BenzeneStartUpOf,
   emptyConfiguration,
-} from '@benzene/abstractions-middleware';
-import { withStartUpChecks } from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions-middleware';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AzureFunctionApplicationBuilder } from './AzureFunctionApplicationBuilder';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
 

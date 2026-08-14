@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CorrelationExtensions } from '@benzene/diagnostics';
+import { CorrelationExtensions } from '@benzenejs/diagnostics';
 
 /**
  * Port of Benzene.Test.Diagnostics.W3CTraceContextTest.

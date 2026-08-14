@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.Function.ServiceBus.ServiceBusMessageHeadersGetter. */
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { ServiceBusContext } from './ServiceBusContext';
 
 /**

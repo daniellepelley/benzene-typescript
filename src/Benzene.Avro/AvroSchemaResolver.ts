@@ -1,5 +1,5 @@
 /** Port of Benzene.Avro.AvroSchemaResolver. */
-import { Constructor } from '@benzene/abstractions';
+import { Constructor } from '@benzenejs/abstractions';
 import * as avro from 'avsc';
 import { AvroOptions } from './AvroOptions';
 import { AvroSchemaRegistry } from './AvroSchemaRegistry';

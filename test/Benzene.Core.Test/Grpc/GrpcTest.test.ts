@@ -1,23 +1,23 @@
 import { handleUnaryCall, Metadata, ServerUnaryCall, status } from '@grpc/grpc-js';
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
 import {
   IMessageHandler,
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
-} from '@benzene/abstractions-message-handlers';
-import { BenzeneException } from '@benzene/core';
-import { Topic } from '@benzene/core-messages';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { BenzeneException } from '@benzenejs/core';
+import { Topic } from '@benzenejs/core-messages';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   message,
   MessageHandlerDefinition,
   MessageHandlersRegistry,
   useMessageHandlers,
-} from '@benzene/core-message-handlers';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+} from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   addGrpcMessageHandlers,
   DefaultGrpcStatusCodeMapper,
@@ -36,8 +36,8 @@ import {
   JsonGrpcMessageAdapter,
   ReflectionGrpcMethodFinder,
   useGrpc,
-} from '@benzene/grpc';
-import { createServerUnaryCall } from '@benzene/grpc-test-helpers';
+} from '@benzenejs/grpc';
+import { createServerUnaryCall } from '@benzenejs/grpc-test-helpers';
 
 /**
  * Vitest port of the core Benzene.Grpc unit + pipeline tests (GrpcMethodHandlerTest,
@@ -107,7 +107,7 @@ class AccessorAwareMessageHandler implements IMessageHandler<EchoRequest, EchoRe
   }
 }
 
-// The fake grpc-js ServerUnaryCall used throughout is now the shared `@benzene/grpc-test-helpers`
+// The fake grpc-js ServerUnaryCall used throughout is now the shared `@benzenejs/grpc-test-helpers`
 // `createServerUnaryCall` (the port of C#'s `TestServerCallContext`), imported above.
 
 async function expectReject<T>(promise: Promise<T>): Promise<GrpcBenzeneError> {

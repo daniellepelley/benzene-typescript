@@ -2,7 +2,7 @@ import {
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
   IResponseHandlerContainer,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Base `IMessageHandlerResultSetter<TContext>` for transports that report a handler's outcome by

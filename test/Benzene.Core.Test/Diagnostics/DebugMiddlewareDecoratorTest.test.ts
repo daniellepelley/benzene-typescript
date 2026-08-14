@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
-import { NullServiceResolver } from '@benzene/core-middleware';
-import { DebugMiddlewareDecorator, DebugMiddlewareWrapper } from '@benzene/diagnostics';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
+import { NullServiceResolver } from '@benzenejs/core-middleware';
+import { DebugMiddlewareDecorator, DebugMiddlewareWrapper } from '@benzenejs/diagnostics';
 
 /** Port of Benzene.Test.Diagnostics.DebugMiddlewareDecoratorTest. */
 

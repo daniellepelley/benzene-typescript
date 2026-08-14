@@ -8,7 +8,7 @@ import {
 
 /**
  * A `fetch`-like function. Port of the role played by .NET `HttpClient` (HttpClient -> fetch, as in
- * `@benzene/health-checks-http`); the C# `HttpClient.BaseAddress` becomes the `baseUrl` argument.
+ * `@benzenejs/health-checks-http`); the C# `HttpClient.BaseAddress` becomes the `baseUrl` argument.
  */
 export type ProbeFetch = (url: string, init?: RequestInit) => Promise<Response>;
 

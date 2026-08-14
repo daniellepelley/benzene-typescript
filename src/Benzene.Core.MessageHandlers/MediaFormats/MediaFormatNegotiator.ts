@@ -1,5 +1,5 @@
-import { IServiceResolver } from '@benzene/abstractions';
-import { IMediaFormat, IMediaFormatNegotiator } from '@benzene/abstractions-message-handlers';
+import { IServiceResolver } from '@benzenejs/abstractions';
+import { IMediaFormat, IMediaFormatNegotiator } from '@benzenejs/abstractions-message-handlers';
 import { JsonMediaFormat } from './JsonMediaFormat';
 
 /**

@@ -1,5 +1,5 @@
-import { IServiceResolver, IServiceResolverFactory } from '@benzene/abstractions';
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 
 /**
  * Base class for middleware that extract a request from the context and either

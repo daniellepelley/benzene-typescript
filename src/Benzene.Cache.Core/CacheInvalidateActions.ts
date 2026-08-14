@@ -1,5 +1,5 @@
 /** Port of Benzene.Cache.Core.CacheInvalidateActions. */
-import { IBenzeneResult, ILogger } from '@benzene/abstractions';
+import { IBenzeneResult, ILogger } from '@benzenejs/abstractions';
 import { ICacheInvalidateActions } from './ICacheInvalidateActions';
 
 /**

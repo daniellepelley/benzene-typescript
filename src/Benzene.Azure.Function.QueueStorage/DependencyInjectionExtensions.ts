@@ -1,21 +1,21 @@
 /** Port of Benzene.Azure.Function.QueueStorage.DependencyInjectionExtensions (C# extension methods -> free functions). */
-import { IBenzeneServiceContainer, tryAddScoped, tryAddScopedFactory } from '@benzene/abstractions';
+import { IBenzeneServiceContainer, tryAddScoped, tryAddScopedFactory } from '@benzenejs/abstractions';
 import {
   IMessageHandlerResultSetter,
   IMessageTopicGetter,
   ITransportInfo,
   TransportNames,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import {
   addHeaderMessageVersionGetter,
   JsonSerializer,
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
   TransportInfo,
-} from '@benzene/core-message-handlers';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+} from '@benzenejs/core-message-handlers';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { QueueStorageApplication } from './QueueStorageApplication';
 import { QueueStorageContext } from './QueueStorageContext';
 import { QueueStorageMessageBodyGetter } from './QueueStorageMessageBodyGetter';

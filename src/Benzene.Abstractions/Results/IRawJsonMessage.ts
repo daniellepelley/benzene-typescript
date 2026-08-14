@@ -4,7 +4,7 @@
  *
  * Deviation: in .NET this interface physically lives in the `Benzene.Abstractions.Pipelines`
  * assembly (under the `Benzene.Abstractions.Results` namespace). The port folds it into
- * `@benzene/abstractions` alongside the other result types rather than creating a separate package
+ * `@benzenejs/abstractions` alongside the other result types rather than creating a separate package
  * for two marker interfaces.
  */
 export interface IRawJsonMessage {

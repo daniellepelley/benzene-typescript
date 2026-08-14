@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { VoidResult } from '@benzene/abstractions';
-import { Topic } from '@benzene/core-messages';
+import { VoidResult } from '@benzenejs/abstractions';
+import { Topic } from '@benzenejs/core-messages';
 import {
   MessageHandlerDefinition,
   MessageHandlerDefinitionIndex,
   MessageHandlerDefinitionLookUp,
   MessageHandlersList,
   VersionSelector,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 
 /** Port of the version-selection and lookup scenarios from Benzene.Core.Test. */
 class OrderV1Handler {}

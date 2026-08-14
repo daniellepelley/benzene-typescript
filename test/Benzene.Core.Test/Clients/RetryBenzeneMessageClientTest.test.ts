@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResult, IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzene/results';
+import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
+import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   BenzeneClientRequest,
   IBenzeneMessageClient,
   RetryBenzeneMessageClient,
-} from '@benzene/clients';
+} from '@benzenejs/clients';
 
 /**
  * Port of Benzene.Test.Clients.RetryAwsLambdaClientTest (the retry decorator's semantics, exercised

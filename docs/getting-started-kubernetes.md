@@ -37,11 +37,11 @@ class each leg registers explicitly, not something auto-discovered:
 
 ```ts
 // src/domain.ts
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { message, MessageHandlersRegistry } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { BenzeneResult } from '@benzene/results';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { message, MessageHandlersRegistry } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { BenzeneResult } from '@benzenejs/results';
 
 export const registry = new MessageHandlersRegistry();
 export const PLACE_ORDER_TOPIC = 'order-place';
@@ -85,8 +85,8 @@ Each leg is its own small module exporting a `build*` function — no entry-poin
 ```ts
 // src/httpApp.ts
 import express, { type Express } from 'express';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { benzene } from '@benzene/express';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { benzene } from '@benzenejs/express';
 import { PlaceOrderHandler } from './domain.js';
 
 export function createOrderApp(): Express {
@@ -99,9 +99,9 @@ export function createOrderApp(): Express {
 ```ts
 // src/sqsWorker.ts
 import { SQSClient } from '@aws-sdk/client-sqs';
-import { SqsClientFactory, useSqs } from '@benzene/aws-sqs';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { SqsClientFactory, useSqs } from '@benzenejs/aws-sqs';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { PlaceOrderHandler } from './domain.js';
 
 const queueUrl = process.env['QUEUE_URL']!;
@@ -121,9 +121,9 @@ export function buildSqsWorker() {
 ```ts
 // src/kafkaWorker.ts
 import { Kafka } from 'kafkajs';
-import { useKafka } from '@benzene/kafka-core';
-import { useMessageHandlers } from '@benzene/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzene/self-host';
+import { useKafka } from '@benzenejs/kafka-core';
+import { useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
 import { PLACE_ORDER_TOPIC, PlaceOrderHandler } from './domain.js';
 
 const brokers = (process.env['KAFKA_BROKERS'] ?? 'localhost:9092').split(',');
@@ -186,7 +186,7 @@ promise.catch(...)` — never `await` — is what keeps all three legs independe
 
 ## 3. Containerise it
 
-One process, one `Dockerfile`, one image. Because `@benzene/*` packages are resolved as npm
+One process, one `Dockerfile`, one image. Because `@benzenejs/*` packages are resolved as npm
 workspace siblings rather than published packages, the build context has to be the whole monorepo
 checkout, not just `examples/k8s-orders/`:
 
@@ -286,7 +286,7 @@ more than that independence.
 
 - **Why this shape at all** — [Why not just Express?](getting-started.md#why-not-just-express).
 - **More self-hosted workers** — [Kafka Setup](getting-started-kafka.md) covers `useKafka` in depth;
-  `@benzene/aws-sqs` is documented in its own package. Both are worth reaching for even as a
+  `@benzenejs/aws-sqs` is documented in its own package. Both are worth reaching for even as a
   service's *only* transport, since neither's raw client (kafkajs, aws-sdk) gives you routing or a
   middleware pipeline the way Express gives HTTP.
 - **The cloud hosts** — [AWS Lambda](getting-started-aws.md) and

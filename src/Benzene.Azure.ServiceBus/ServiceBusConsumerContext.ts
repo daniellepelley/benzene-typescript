@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusConsumerContext. */
 import { ServiceBusReceivedMessage } from '@azure/service-bus';
-import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message-handlers';
+import { IHasMessageResult, IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Provides the middleware pipeline context for a single Service Bus message received by the
@@ -8,7 +8,7 @@ import { IHasMessageResult, IMessageResult } from '@benzene/abstractions-message
  *
  * MESSAGE-TYPE ADAPTATION: .NET wraps `Azure.Messaging.ServiceBus.ServiceBusReceivedMessage`; the
  * Node ecosystem-native equivalent is the same conceptual type from `@azure/service-bus`, so the
- * port depends on it directly (same as `@benzene/azure-function-service-bus`). Field-name mapping used
+ * port depends on it directly (same as `@benzenejs/azure-function-service-bus`). Field-name mapping used
  * by the getters (.NET PascalCase → Node camelCase): `Message.Body`→`message.body`,
  * `Message.ApplicationProperties`→`message.applicationProperties`, `Message.MessageId`→`message.messageId`.
  */

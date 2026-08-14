@@ -9,17 +9,17 @@
  * method becomes a TypeScript **fluent method** added to the builder by module augmentation + a
  * prototype assignment — the same shape the sibling Service Bus / Event Hub helpers use, keeping the
  * `benzeneTestHost(StartUp).withServices(...).buildRabbitMqWorkerHost()` chain intact. The neutral
- * `@benzene/testing` core stays free of any transport import; importing this package (for its
+ * `@benzenejs/testing` core stays free of any transport import; importing this package (for its
  * `asRabbitMqBenzeneMessage` builder) is what lights the method up. A `this` constraint pins it to a
  * startup whose `configure` receives the unified `IBenzeneApplicationBuilder`.
  */
-import { IBenzeneApplicationBuilder } from '@benzene/abstractions-middleware';
-import { RabbitMqApplication } from '@benzene/rabbitmq';
-import { WorkerApplicationBuilder } from '@benzene/self-host';
-import { BenzeneTestHostBuilder } from '@benzene/testing';
+import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { RabbitMqApplication } from '@benzenejs/rabbitmq';
+import { WorkerApplicationBuilder } from '@benzenejs/self-host';
+import { BenzeneTestHostBuilder } from '@benzenejs/testing';
 import { RabbitMqBenzeneTestHost } from './RabbitMqBenzeneTestHost';
 
-declare module '@benzene/testing' {
+declare module '@benzenejs/testing' {
   interface BenzeneTestHostBuilder<TAppBuilder> {
     /**
      * Builds a {@link RabbitMqBenzeneTestHost} from the startup + any `withServices`/`withConfiguration`

@@ -1,5 +1,5 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusConsumerMessageHandlerResultSetter. */
-import { MessageMessageHandlerResultSetterBase } from '@benzene/core-message-handlers';
+import { MessageMessageHandlerResultSetterBase } from '@benzenejs/core-message-handlers';
 import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
 
 /**
@@ -10,6 +10,6 @@ import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
  *
  * PORTING NOTE: C# subclasses `MessageHandlerResultSetterBase`; the port has a single equivalent base,
  * `MessageMessageHandlerResultSetterBase` (both write the handler's result onto the context's
- * `messageResult`), so this extends it — same as `@benzene/azure-function-service-bus`.
+ * `messageResult`), so this extends it — same as `@benzenejs/azure-function-service-bus`.
  */
 export class ServiceBusConsumerMessageHandlerResultSetter extends MessageMessageHandlerResultSetterBase<ServiceBusConsumerContext> {}

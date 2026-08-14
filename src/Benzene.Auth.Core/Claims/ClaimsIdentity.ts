@@ -3,7 +3,7 @@ import { ClaimTypes } from './ClaimTypes';
 
 /**
  * Minimal port of `System.Security.Claims.ClaimsIdentity` (BCL) - a single authenticated identity
- * and its claims. See {@link Claim} for why this BCL slice is ported into `@benzene/auth-core`.
+ * and its claims. See {@link Claim} for why this BCL slice is ported into `@benzenejs/auth-core`.
  *
  * Comparison semantics mirror the BCL: claim-type matching is case-insensitive (ordinal), claim-value
  * matching is case-sensitive (ordinal), exactly as `ClaimsIdentity.HasClaim`/`FindAll` behave.

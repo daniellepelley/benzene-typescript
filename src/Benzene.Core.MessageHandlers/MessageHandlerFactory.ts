@@ -1,12 +1,12 @@
-import { ILoggerFactory, IServiceResolver, NullLoggerFactory } from '@benzene/abstractions';
+import { ILoggerFactory, IServiceResolver, NullLoggerFactory } from '@benzenejs/abstractions';
 import {
   IExecutableMessageHandler,
   IMessageHandler,
   IMessageHandlerDefinition,
   IMessageHandlerFactory,
   IMessageHandlerWrapper,
-} from '@benzene/abstractions-message-handlers';
-import { Topic } from '@benzene/core-messages';
+} from '@benzenejs/abstractions-message-handlers';
+import { Topic } from '@benzenejs/core-messages';
 import { MessageHandler } from './MessageHandler';
 import { IDefaultStatuses } from './MessageResult';
 
@@ -27,7 +27,7 @@ export class MessageHandlerFactory implements IMessageHandlerFactory {
     private readonly messageHandlerWrapper: IMessageHandlerWrapper,
     private readonly loggerFactory: ILoggerFactory = NullLoggerFactory.instance,
     // Wire-contract status values (lowercase-kebab-case, per wire-contracts.md §3 / BenzeneResultStatus) -
-    // kept as literals here to avoid a dependency on @benzene/results from this package.
+    // kept as literals here to avoid a dependency on @benzenejs/results from this package.
     private readonly defaultStatuses: IDefaultStatuses = {
       validationError: 'validation-error',
       notFound: 'not-found',

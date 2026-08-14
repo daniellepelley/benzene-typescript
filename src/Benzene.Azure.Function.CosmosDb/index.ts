@@ -6,7 +6,7 @@ export * from './Extensions';
 // is ordered per partition-key range and checkpointed (via the trigger's lease) as a WHOLE batch, so it
 // is handed to the pipeline intact as one `StreamContext<TDocument>` (one pipeline run, one DI scope),
 // built on the already-ported streaming primitives (`StreamContext` / `StreamMiddlewareApplication` in
-// `@benzene/core-middleware`) — the Cosmos counterpart to Event Hub's `useEventHubStream` and AWS's
+// `@benzenejs/core-middleware`) — the Cosmos counterpart to Event Hub's `useEventHubStream` and AWS's
 // Kinesis. Unlike the opaque-payload transports, the trigger delivers already-deserialized documents, so
 // the entry point/context/pipeline are all generic over `TDocument` rather than routing message
 // envelopes. A null/undefined batch is treated as empty (the pipeline still runs once, sees no items).

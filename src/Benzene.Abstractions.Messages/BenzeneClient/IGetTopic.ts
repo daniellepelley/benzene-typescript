@@ -1,4 +1,4 @@
-import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzene/abstractions';
+import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstractions';
 
 /**
  * Maps a request type to the topic it should be published on.

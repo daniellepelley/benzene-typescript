@@ -2,7 +2,7 @@
  * Per-service health checks for the AWS Lambda mesh, mirroring .NET's `examples/AwsMesh/<Service>/HealthChecks`
  * one-for-one: each is a plain {@link IHealthCheck} declaring the external dependency it verifies and a
  * little diagnostic `data`. Registered per service in {@link file://./services.ts} and run by the real
- * `@benzene/health-checks` middleware on the reserved `healthcheck` topic (see
+ * `@benzenejs/health-checks` middleware on the reserved `healthcheck` topic (see
  * {@link file://./meshService.ts}), so every `services/{name}.json` the mesh writes carries a genuine
  * `HealthCheckResponse` — `{ isHealthy, healthChecks: { <type>: { status, type, data, dependencies } } }` —
  * which is exactly what the cross-language Mesh UI renders per service and per check.
@@ -11,8 +11,8 @@
  * its database/queue/HTTP dependency here and report a failed or warning result — but the *shapes*,
  * `type`s, and `dependencies` match the .NET demo so the two ports produce an identical estate.
  */
-import { IHealthCheck } from '@benzene/health-checks-core';
-import { HealthCheckDependency, HealthCheckResult, IHealthCheckResult } from '@benzene/health-checks-core';
+import { IHealthCheck } from '@benzenejs/health-checks-core';
+import { HealthCheckDependency, HealthCheckResult, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 // --- orders-api -----------------------------------------------------------------------------------
 

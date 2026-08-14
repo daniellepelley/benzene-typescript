@@ -1,4 +1,4 @@
-import { IMiddleware, NextFunc } from '@benzene/abstractions-middleware';
+import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { OperationCanceledException } from './OperationCanceledException';
 
 /** A function that delays for the given number of milliseconds. Port of C# `Func<TimeSpan, Task>`. */

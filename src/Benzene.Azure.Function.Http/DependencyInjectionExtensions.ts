@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
   IMediaFormatNegotiator,
@@ -9,14 +9,14 @@ import {
   IResponseHandlerContainer,
   IResponsePayloadMapper,
   IResponseRenderer,
-} from '@benzene/abstractions-message-handlers';
-import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzene/abstractions-messages';
-import { PipelineBuilderAction } from '@benzene/abstractions-middleware';
+} from '@benzenejs/abstractions-message-handlers';
+import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import {
   addMediaFormatNegotiation,
   RendererResponseHandler,
   SerializerResponseRenderer,
-} from '@benzene/core-message-handlers';
+} from '@benzenejs/core-message-handlers';
 import {
   addHttpMessageHandlers,
   HttpStatusCodeResponseHandler,
@@ -24,8 +24,8 @@ import {
   IHttpRequestAdapter,
   IHttpStatusCodeMapper,
   IRouteFinder,
-} from '@benzene/http';
-import { IAzureFunctionAppBuilder } from '@benzene/azure-function-core';
+} from '@benzenejs/http';
+import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { AzureHttpApplication } from './AzureHttpApplication';
 import { AzureHttpContext } from './AzureHttpContext';
 import { AzureHttpContextRequestEnricher } from './AzureHttpContextRequestEnricher';
@@ -38,7 +38,7 @@ import { AzureHttpResponseAdapter } from './AzureHttpResponseAdapter';
 
 /**
  * Port of Benzene.Azure.Function.AspNet.DependencyInjectionExtensions.AddAspNet (C# extension method
- * -> free function). Renamed `addAzureHttp` to match the package's `@benzene/azure-function-http`
+ * -> free function). Renamed `addAzureHttp` to match the package's `@benzenejs/azure-function-http`
  * surface (the ASP.NET -> `@azure/functions` HTTP retarget documented on `AzureHttpContext`). Called
  * automatically by `useAzureHttp`.
  *

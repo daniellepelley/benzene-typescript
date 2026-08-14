@@ -4,7 +4,7 @@ import {
   GetTraceSummariesCommand,
   XRayClient,
 } from '@aws-sdk/client-xray';
-import { XRayTraceSource, XRayTraceSourceOptions } from '@benzene/mesh-fleet-aws-xray';
+import { XRayTraceSource, XRayTraceSourceOptions } from '@benzenejs/mesh-fleet-aws-xray';
 
 /**
  * Port of test/Benzene.Mesh.Test/XRayTraceSourceTest.cs. The X-Ray-backed trace source: fetch a trace's

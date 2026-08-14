@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Aggregator.MeshSnapshotBuilder. */
-import { HealthCheckResponse } from '@benzene/health-checks-core';
-import { MeshHashing, MeshServiceSnapshot } from '@benzene/mesh-contracts';
+import { HealthCheckResponse } from '@benzenejs/health-checks-core';
+import { MeshHashing, MeshServiceSnapshot } from '@benzenejs/mesh-contracts';
 import { IMeshArtifactStore } from './IMeshArtifactStore';
 
 /**

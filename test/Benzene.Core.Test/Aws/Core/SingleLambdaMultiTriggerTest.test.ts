@@ -12,17 +12,17 @@
  */
 import { describe, expect, it } from 'vitest';
 import { Context, Handler } from 'aws-lambda';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzene/aws-lambda-core';
-import { useApiGateway } from '@benzene/aws-lambda-api-gateway';
-import { useSqs } from '@benzene/aws-lambda-sqs';
-import { useEventBridge } from '@benzene/aws-lambda-eventbridge';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
-import { asApiGatewayRequest, asEventBridge, asSqs } from '@benzene/aws-lambda-testing';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { InlineAwsLambdaStartUp, toLambdaHandler } from '@benzenejs/aws-lambda-core';
+import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { useSqs } from '@benzenejs/aws-lambda-sqs';
+import { useEventBridge } from '@benzenejs/aws-lambda-eventbridge';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
+import { asApiGatewayRequest, asEventBridge, asSqs } from '@benzenejs/aws-lambda-testing';
 
 const handled: string[] = [];
 const registry = new MessageHandlersRegistry();

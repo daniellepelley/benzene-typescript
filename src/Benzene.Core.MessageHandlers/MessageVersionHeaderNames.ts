@@ -3,9 +3,9 @@ import {
   IBenzeneServiceContainer,
   IServiceResolver,
   tryAddScopedFactory,
-} from '@benzene/abstractions';
-import { IMessageVersionGetter } from '@benzene/abstractions-message-handlers';
-import { IMessageHeadersGetter } from '@benzene/abstractions-messages';
+} from '@benzenejs/abstractions';
+import { IMessageVersionGetter } from '@benzenejs/abstractions-message-handlers';
+import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { HeaderMessageVersionGetter } from './HeaderMessageVersionGetter';
 
 /**

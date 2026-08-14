@@ -1,14 +1,14 @@
 /** Port of Benzene.Azure.Function.Core.AzureFunctionApp. */
-import { IServiceResolverFactory } from '@benzene/abstractions';
+import { IServiceResolverFactory } from '@benzenejs/abstractions';
 import {
   IEntryPointMiddlewareApplication,
   IEntryPointMiddlewareApplicationWithResult,
-} from '@benzene/abstractions-middleware';
-import { BenzeneException } from '@benzene/core';
+} from '@benzenejs/abstractions-middleware';
+import { BenzeneException } from '@benzenejs/core';
 import {
   EntryPointMiddlewareApplication,
   EntryPointMiddlewareApplicationWithResult,
-} from '@benzene/core-middleware';
+} from '@benzenejs/core-middleware';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
 
 /**

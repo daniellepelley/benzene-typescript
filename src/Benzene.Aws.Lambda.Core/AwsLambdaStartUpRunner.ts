@@ -1,14 +1,14 @@
-import { IBenzeneServiceContainer } from '@benzene/abstractions';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneConfiguration,
   BenzeneStartUp,
   BenzeneStartUpOf,
   IBenzeneApplicationBuilder,
   emptyConfiguration,
-} from '@benzene/abstractions-middleware';
-import { withStartUpChecks } from '@benzene/core-message-handlers';
-import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-import { DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+} from '@benzenejs/abstractions-middleware';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
 import { AwsLambdaApplicationBuilder } from './AwsLambdaApplicationBuilder';
 import { AwsLambdaEntryPoint } from './AwsLambdaEntryPoint';

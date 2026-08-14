@@ -1,27 +1,27 @@
 /**
- * The Azure test harness in action: each Azure Functions trigger builder (`@benzene/azure-function-testing`)
+ * The Azure test harness in action: each Azure Functions trigger builder (`@benzenejs/azure-function-testing`)
  * turns a platform-neutral `messageBuilder`/`httpBuilder` into that trigger's native payload, which is then
  * driven through the real Benzene pipeline for that trigger via `InlineAzureFunctionStartUp` + the `handle*`
  * helpers. A green assertion proves the generated payload routes and deserializes.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IMessageHandler } from '@benzene/abstractions-message-handlers';
-import { BenzeneResult } from '@benzene/results';
-import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzene/core-message-handlers';
-import { httpEndpoint } from '@benzene/http';
-import { InlineAzureFunctionStartUp } from '@benzene/azure-function-core';
-import { handleHttpRequest, useAzureHttp } from '@benzene/azure-function-http';
-import { handleServiceBusMessages, useServiceBus } from '@benzene/azure-function-service-bus';
-import { handleEventHub, useBenzeneMessage, useEventHub } from '@benzene/azure-function-event-hub';
-import { handleKafkaEvents, useKafka } from '@benzene/azure-function-kafka';
-import { httpBuilder, messageBuilder } from '@benzene/testing';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
+import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
+import { httpEndpoint } from '@benzenejs/http';
+import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
+import { handleHttpRequest, useAzureHttp } from '@benzenejs/azure-function-http';
+import { handleServiceBusMessages, useServiceBus } from '@benzenejs/azure-function-service-bus';
+import { handleEventHub, useBenzeneMessage, useEventHub } from '@benzenejs/azure-function-event-hub';
+import { handleKafkaEvents, useKafka } from '@benzenejs/azure-function-kafka';
+import { httpBuilder, messageBuilder } from '@benzenejs/testing';
 import {
   asAzureHttpRequest,
   asAzureKafkaEvent,
   asAzureServiceBusMessage,
   asEventHubBenzeneMessage,
-} from '@benzene/azure-function-testing';
+} from '@benzenejs/azure-function-testing';
 
 class Order {
   orderId?: string;

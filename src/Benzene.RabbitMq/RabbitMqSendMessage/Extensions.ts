@@ -1,8 +1,8 @@
 /** Port of Benzene.RabbitMq.RabbitMqSendMessage.Extensions (C# fluent extension methods -> free functions). */
-import { VoidResult } from '@benzene/abstractions';
-import { IBenzeneClientContext } from '@benzene/abstractions-messages';
-import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzene/abstractions-middleware';
-import { JsonSerializer } from '@benzene/core-message-handlers';
+import { VoidResult } from '@benzenejs/abstractions';
+import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { Channel } from 'amqplib';
 import { RabbitMqConstants } from '../RabbitMqConstants';
 import { RabbitMqClientMiddleware } from './RabbitMqClientMiddleware';
@@ -11,7 +11,7 @@ import { RabbitMqSendMessageContext } from './RabbitMqSendMessageContext';
 
 /**
  * Appends the terminal {@link RabbitMqClientMiddleware} (built from `channel`) to a RabbitMQ send
- * pipeline. Mirrors `@benzene/clients-aws-sqs`'s `useSqsClient` (takes the transport client explicitly).
+ * pipeline. Mirrors `@benzenejs/clients-aws-sqs`'s `useSqsClient` (takes the transport client explicitly).
  */
 export function useRabbitMqClient(
   app: IMiddlewarePipelineBuilder<RabbitMqSendMessageContext>,

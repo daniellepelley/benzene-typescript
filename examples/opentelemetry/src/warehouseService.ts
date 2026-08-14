@@ -3,7 +3,7 @@
  * its own child span on the example's tracer, so an `order_create` trace shows `Warehouse.ReserveStock`
  * and `Warehouse.Dispatch` nested under the handler span. Port of the .NET `WarehouseService`.
  */
-import { serviceToken } from '@benzene/abstractions';
+import { serviceToken } from '@benzenejs/abstractions';
 import { withSpan } from './exampleDiagnostics';
 
 export interface IWarehouseService {

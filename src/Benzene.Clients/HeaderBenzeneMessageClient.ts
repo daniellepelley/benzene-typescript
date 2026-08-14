@@ -1,5 +1,5 @@
-import { IBenzeneResultOf } from '@benzene/abstractions';
-import { IBenzeneClientRequest } from '@benzene/abstractions-messages';
+import { IBenzeneResultOf } from '@benzenejs/abstractions';
+import { IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import { IBenzeneMessageClient } from './IBenzeneMessageClient';
 import { BenzeneClientRequest } from './BenzeneClientRequest';
 

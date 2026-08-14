@@ -1,9 +1,9 @@
-import { ITopic } from '@benzene/abstractions-messages';
+import { ITopic } from '@benzenejs/abstractions-messages';
 import {
   IMessageHandler,
   IMessageHandlerNoResponse,
   IMessageHandlerWrapper,
-} from '@benzene/abstractions-message-handlers';
+} from '@benzenejs/abstractions-message-handlers';
 import { MessageHandlerNoResultWrapper } from './MessageHandlerNoResultWrapper';
 
 /**
