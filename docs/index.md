@@ -75,6 +75,8 @@ unchanged on Express, AWS Lambda, or Azure Functions.
 - **Clients & Resilience**
   - [Clients](clients.md) — call other Benzene services with outbound routing, retries, parallel fan-out, and
     the in-process transport (`@benzenejs/clients-in-process`) for the modular monolith
+  - [Generating a client from a Contract Document](codegen-contract-document.md) — a typed, topic-scoped
+    client from any Benzene service's committed `.spec.json`, no other language's SDK required
   - [Caching](caching.md) — the cache abstraction and the Redis-backed adapter
   - [Resilience](resilience.md) — retry-with-backoff around a pipeline stage
 

@@ -357,6 +357,35 @@ and the test-payloads handler; the `Benzene.CodeGen.Core`
 reflection plumbing, `Microsoft.OpenApi`, the C#-target type builder, and the generated health-check/hash/
 outbound-routing-contract extras, which are .NET-client-infrastructure specific.
 
+`@benzenejs/codegen-client` additionally realizes a **second, additional** input path -
+`Benzene.CodeGen.Client`'s `MessageClientSdkBuilder`/`AtomicClientSdkBuilder`/`ClientSdkOptions`/
+`TopicScope`/`SchemaClosure`, retargeted from `Microsoft.OpenApi.Models.OpenApiSchema`/C# to a
+hand-rolled `OpenApiSchemaObject`/TypeScript - parsing a service's committed **Contract Document**
+(`{Service}.spec.json`, `docs/specification/contract-document.md`, promoted 2026-08-14) rather than a
+running service's mesh descriptor, so a Node consumer of *any* Benzene service (including a .NET one)
+gets a typed, topic-scoped client with no .NET SDK involved; see the "Code generation" note below and
+`docs/codegen-contract-document.md`. `EventServiceDocumentDeserializer`'s read side is ported as
+`ContractDocumentParser.ts`, deliberately reading into a plain, JSON-shaped `ContractDocument`
+interface rather than reusing `@benzenejs/schema-openapi`'s producer-oriented `EventServiceDocument`
+class (which carries no `$ref`-following or `allOf`/`oneOf` support) - see `ContractDocument.ts`'s
+header. Three deliberate divergences from the C# reference, each recorded where it's implemented:
+- **`oneOf` → a TS discriminated union, not the shared-base-class typing C# emits.** A TypeScript
+  developer would never type a `oneOf` use site as its members' shared base when the actual union is
+  right there and compile-time narrowable - `OpenApiPayloadBuilder.ts` emits `export type D = E | F;`
+  instead of C#'s single base-class type. Not a conformance concern (contract-document.md §5.5: type
+  emission shape is idiom, not pinned).
+- **A dedicated, prefix-based `ContractReservedTopics.ts`, not `@benzenejs/schema-openapi`'s
+  `ReservedTopics`.** That module matches a name-list of short, unprefixed ids (`"spec"`,
+  `"healthcheck"`, …) — the TS mesh spec surface's own convention. contract-document.md §5.1 pins a
+  `benzene:`-prefix rule instead (matching .NET's `BenzeneTopic.IsReserved`), and the conformance
+  fixtures use prefixed ids (`benzene:spec`) — reusing the other module would misclassify every one.
+- **No `Benzene.CodeGen.Core` package.** That C# project holds the portable `ContractHash` (and
+  reflection plumbing this port never needed). Since no TS package maps to it, `ContractHash.ts` lives
+  directly in `Benzene.CodeGen.Client` instead - its only consumer here.
+- The `codegen-client` CLI (`Cli.ts`, this package's `bin`) ships as TypeScript source with no build
+  step (matching `examples/*`'s `tsx`-run convention): its `bin/generate.mjs` shim spawns the `tsx`
+  devDependency's own CLI against `Cli.ts` rather than requiring a compiled JS entry point.
+
 † Marks a third-party-library integration re-created against the JavaScript ecosystem rather than
 ported literally, per the "Third-party library integrations" convention. **Validation:** .NET's
 `Benzene.DataAnnotations` (→ `System.ComponentModel.DataAnnotations`) and `Benzene.FluentValidation`
@@ -902,6 +931,13 @@ next to its C# counterpart:
     `BenzeneWireNames.DefaultTopic` alias), so a published message round-trips to the port's own inbound
     getters and any conformant peer. Every inbound and outbound topic key is now pinned to the fixture
     default.
+  - **`contract-document-cases.json` / `contract-hash-cases.json` — client-generation conformance.**
+    Required only for a port that ships a client generator (`conformance/README.md`'s conditional
+    shape, same as the collector fixtures); `@benzenejs/codegen-client`'s Contract Document input path
+    (contract-document.md) makes this port one, so both are vendored and run by
+    `ContractDocumentConformanceTest` against `parseContractDocument`/`applyTopicScope`/
+    `reachableSchemaNames`/`computeContractHash` directly (no live handler pipeline needed - unlike
+    `envelope-cases`, these fixtures pin a pure document transform, not routed behavior).
 
 ## Multi-language interoperability
 
@@ -975,6 +1011,24 @@ byte-identical to .NET so the two interoperate:
   `test/Benzene.Core.Test/CodeGen/GeneratedClientRoundTripTest.test.ts` regenerates the committed client
   from `examples/mesh-service`'s live descriptor (asserting byte-for-byte match, so the checked-in client
   `tsc` compiles is exactly what the generator emits) and exercises it over a fake sender.
+- **Code generation from a Contract Document.** The same package's second input path generates from a
+  service's **committed** `{Service}.spec.json` (`docs/specification/contract-document.md`) instead of
+  a running service's descriptor - the file `Benzene.Descriptor` emits on the .NET side today, and every
+  language's generator parses identically. `buildMessageClientSdk` emits one service-level client
+  (topic include-list + reserved-topic scoping, contract-document.md §5.1-§5.2); `buildAtomicClientSdk`
+  emits one self-contained client **per topic**, narrowed to just that topic's reachable
+  `components.schemas` via the §5.3 schema-closure walk (`reachableSchemaNames`/`reachableSchemas`), and
+  embeds a spec-pinned `contractHash` (§6: RFC 8785/JCS canonicalization via the `canonicalize` package,
+  then SHA-256) so a consumer can detect drift between the client it holds and the contract it was
+  generated from. `examples/payments-client` dogfoods this against a **real, unedited** `.spec.json`
+  copied from the .NET port's own example (`benzene-dotnet/examples/AwsMesh/Orders/contracts/payments.spec.json`)
+  — proving a Node consumer gets a typed client for a .NET service with no .NET SDK involved;
+  `test/Benzene.Core.Test/CodeGen/PaymentsClientDogfoodTest.test.ts` regenerates it, asserts byte-for-byte
+  match against the committed client, asserts no `benzene:*` reserved topic leaks into the output even
+  though the source document has one, and independently re-derives the topic-scoped `contractHash` to
+  check the embedded value against it. `ContractDocumentConformanceTest.test.ts` runs
+  `docs/specification/conformance/contract-document-cases.json` and `contract-hash-cases.json`
+  end-to-end. See `docs/codegen-contract-document.md` for the consumer-facing guide.
 
 ## Porting status and roadmap
 

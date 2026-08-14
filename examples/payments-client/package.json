@@ -1,0 +1,20 @@
+{
+  "name": "@benzene-example/payments-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A generated, topic-scoped TypeScript client for a real .NET service's committed Contract Document (dogfoods @benzenejs/codegen-client's contract-document.md input path)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate": "codegen-client --file contracts/payments.spec.json --output topic-client --namespace generated --service-name Payments --topics payments:capture --out src"
+  },
+  "dependencies": {
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/clients": "0.1.0-beta.1"
+  },
+  "devDependencies": {
+    "@benzenejs/codegen-client": "0.1.0-beta.1"
+  }
+}
