@@ -1,16 +1,19 @@
 {
   "name": "@benzenejs/mesh-azure-blob",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Mesh.Azure.Blob",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/mesh-aggregator": "0.1.0",
-    "@benzenejs/mesh-contracts": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/mesh-aggregator": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
     "@azure/storage-blob": "^12.33.0",
     "@azure/identity": "^4.13.1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

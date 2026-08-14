@@ -9,14 +9,14 @@
   "types": "./src/index.ts",
   "dependencies": {
     "kafkajs": "^2.2.4",
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/abstractions-message-handlers": "0.1.0",
-    "@benzenejs/abstractions-middleware": "0.1.0",
-    "@benzenejs/clients": "0.1.0",
-    "@benzenejs/core-message-handlers": "0.1.0",
-    "@benzenejs/kafka-core": "0.1.0",
-    "@benzenejs/results": "0.1.0",
-    "@benzenejs/self-host": "0.1.0",
-    "@benzenejs/testing": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/clients": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/kafka-core": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
+    "@benzenejs/self-host": "0.1.0-beta.1",
+    "@benzenejs/testing": "0.1.0-beta.1"
   }
 }

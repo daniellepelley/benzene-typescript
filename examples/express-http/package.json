@@ -11,13 +11,13 @@
     "start": "tsx src/main.ts"
   },
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/abstractions-message-handlers": "0.1.0",
-    "@benzenejs/core-message-handlers": "0.1.0",
-    "@benzenejs/dependencies": "0.1.0",
-    "@benzenejs/express": "0.1.0",
-    "@benzenejs/http": "0.1.0",
-    "@benzenejs/results": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/dependencies": "0.1.0-beta.1",
+    "@benzenejs/express": "0.1.0-beta.1",
+    "@benzenejs/http": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
     "express": "^5.2.1"
   },
   "devDependencies": {

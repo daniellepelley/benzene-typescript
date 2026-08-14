@@ -1,19 +1,22 @@
 {
   "name": "@benzenejs/mesh-aws-lambda",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Mesh.Aws.Lambda",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/clients": "0.1.0",
-    "@benzenejs/clients-aws-lambda": "0.1.0",
-    "@benzenejs/mesh-aggregator": "0.1.0",
-    "@benzenejs/mesh-contracts": "0.1.0",
-    "@benzenejs/mesh-dispatch": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/clients": "0.1.0-beta.1",
+    "@benzenejs/clients-aws-lambda": "0.1.0-beta.1",
+    "@benzenejs/mesh-aggregator": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
+    "@benzenejs/mesh-dispatch": "0.1.0-beta.1",
     "@aws-sdk/client-lambda": "^3.700.0",
     "@opentelemetry/api": "^1.9.0"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

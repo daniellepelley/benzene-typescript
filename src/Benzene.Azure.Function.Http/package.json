@@ -1,23 +1,26 @@
 {
   "name": "@benzenejs/azure-function-http",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.Azure.Function.AspNet (retargeted from ASP.NET Core onto the @azure/functions v4 HTTP model)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@azure/functions": "^4",
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/abstractions-messages": "0.1.0",
-    "@benzenejs/abstractions-message-handlers": "0.1.0",
-    "@benzenejs/abstractions-middleware": "0.1.0",
-    "@benzenejs/core": "0.1.0",
-    "@benzenejs/core-messages": "0.1.0",
-    "@benzenejs/core-message-handlers": "0.1.0",
-    "@benzenejs/core-middleware": "0.1.0",
-    "@benzenejs/azure-function-core": "0.1.0",
-    "@benzenejs/http": "0.1.0",
-    "@benzenejs/results": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-messages": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/core": "0.1.0-beta.1",
+    "@benzenejs/core-messages": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/core-middleware": "0.1.0-beta.1",
+    "@benzenejs/azure-function-core": "0.1.0-beta.1",
+    "@benzenejs/http": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

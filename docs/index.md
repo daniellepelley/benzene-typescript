@@ -90,3 +90,8 @@ FluentValidation/DataAnnotations — the reasons are recorded in the README's
 [Porting conventions](https://github.com/daniellepelley/benzene-typescript#porting-conventions). Every doc
 here uses the real, current TypeScript API; when in doubt, the `src/` in the repository is the source of
 truth.
+
+### Maintaining
+
+- **[Publishing](publishing.md)** — how the 129 packages are released to npm under the `@benzenejs`
+  scope (trusted publishing, beta dist-tag).

@@ -11,7 +11,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

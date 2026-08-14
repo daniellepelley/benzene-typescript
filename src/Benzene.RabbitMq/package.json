@@ -1,27 +1,30 @@
 {
   "name": "@benzenejs/rabbitmq",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of the consumer-worker slice of Benzene.RabbitMq — the standalone, self-hosted RabbitMQ consumer worker, on amqplib",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/abstractions-messages": "0.1.0",
-    "@benzenejs/abstractions-message-handlers": "0.1.0",
-    "@benzenejs/abstractions-middleware": "0.1.0",
-    "@benzenejs/clients": "0.1.0",
-    "@benzenejs/core": "0.1.0",
-    "@benzenejs/core-messages": "0.1.0",
-    "@benzenejs/core-message-handlers": "0.1.0",
-    "@benzenejs/core-middleware": "0.1.0",
-    "@benzenejs/health-checks-core": "0.1.0",
-    "@benzenejs/results": "0.1.0",
-    "@benzenejs/self-host": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-messages": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/clients": "0.1.0-beta.1",
+    "@benzenejs/core": "0.1.0-beta.1",
+    "@benzenejs/core-messages": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/core-middleware": "0.1.0-beta.1",
+    "@benzenejs/health-checks-core": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
+    "@benzenejs/self-host": "0.1.0-beta.1",
     "amqplib": "^0.10"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

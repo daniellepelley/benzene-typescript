@@ -1,5 +1,6 @@
 /** Port of Benzene.Mesh.Ui.MeshUiPage. */
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * Provides the self-contained Benzene Mesh Explorer HTML page — a catalog viewer for a service mesh's
@@ -15,14 +16,14 @@ import { readFileSync } from 'node:fs';
  * `mesh-ui.html` as an **assembly resource** read via reflection. This is the cross-language mesh product UI and
  * must stay byte-identical to the reference — its embedded client JS contains backticks and `${…}`, so it cannot
  * be a TS template literal (unlike `@benzenejs/spec-ui`, which inlines a freshly-rewritten page). Instead the file
- * is copied verbatim next to this module and read lazily/memoized from disk via `import.meta.url` — the port of
+ * is copied verbatim next to this module and read lazily/memoized from disk via `__dirname` — the port of
  * C#'s `Lazy<string>` + embedded-resource read.
  */
 let cachedHtml: string | undefined;
 
 function html(): string {
   if (cachedHtml === undefined) {
-    cachedHtml = readFileSync(new URL('./mesh-ui.html', import.meta.url), 'utf8');
+    cachedHtml = readFileSync(join(__dirname, 'mesh-ui.html'), 'utf8');
   }
   return cachedHtml;
 }

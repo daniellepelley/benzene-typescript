@@ -9,9 +9,9 @@
  * freshly-rewritten page as a `String.raw` TS constant. This package does **not**. The two mesh HTML files are the
  * cross-language mesh **product** UI and must stay byte-identical to the reference; `mesh-ui.html` is ~281KB and its
  * embedded client JS contains backticks and `${…}`, so it cannot be a TS template literal. Instead the files are
- * copied verbatim next to `MeshUiPage`/`MeshSpecUiPage` and read lazily/memoized from disk via `import.meta.url`
- * (`readFileSync(new URL('./mesh-ui.html', import.meta.url))`) — the port of C#'s `Lazy<string>` +
- * embedded-assembly-resource read.
+ * copied verbatim next to `MeshUiPage`/`MeshSpecUiPage` and read lazily/memoized from disk via `__dirname`
+ * (`readFileSync(join(__dirname, 'mesh-ui.html'))`) — the port of C#'s `Lazy<string>` + embedded-assembly-resource
+ * read.
  */
 export * from './MeshUiPage';
 export * from './MeshSpecUiPage';

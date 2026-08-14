@@ -10,6 +10,10 @@ npm package per C# project, same type names, same file names, and tests ported f
 suite. Where the languages force a difference, the deviation is deliberate, minimal and
 documented (see [Porting conventions](#porting-conventions)).
 
+> **Not yet on npm for production use.** A `build` step, a `release` workflow, and npm trusted
+> publishing are in place; packages publish under the `beta` dist-tag once the one-time npm
+> trusted-publisher setup and a version tag land — see [`docs/publishing.md`](docs/publishing.md).
+
 ## Structure
 
 Mirrors the .NET repository:

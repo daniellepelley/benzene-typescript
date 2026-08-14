@@ -1,12 +1,15 @@
 {
   "name": "@benzenejs/codegen-client",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "TypeScript port of Benzene.CodeGen.Client (JSON-Schema-driven client generator)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/mesh-wire": "0.1.0"
-  }
+    "@benzenejs/mesh-wire": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

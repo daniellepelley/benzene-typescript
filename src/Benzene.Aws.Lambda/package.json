@@ -1,24 +1,27 @@
 {
   "name": "@benzenejs/aws-lambda",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Umbrella package for building an AWS Lambda service: re-exports the AWS Lambda core + event-source transports and the common message-handler building blocks (ports Benzene.Aws.Lambda)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/aws-lambda-core": "0.1.0",
-    "@benzenejs/aws-lambda-api-gateway": "0.1.0",
-    "@benzenejs/aws-lambda-sqs": "0.1.0",
-    "@benzenejs/aws-lambda-sns": "0.1.0",
-    "@benzenejs/aws-lambda-dynamodb": "0.1.0",
-    "@benzenejs/aws-lambda-kinesis": "0.1.0",
-    "@benzenejs/aws-lambda-s3": "0.1.0",
-    "@benzenejs/aws-lambda-eventbridge": "0.1.0",
-    "@benzenejs/aws-lambda-kafka": "0.1.0",
-    "@benzenejs/core-message-handlers": "0.1.0",
-    "@benzenejs/results": "0.1.0",
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/abstractions-message-handlers": "0.1.0"
-  }
+    "@benzenejs/aws-lambda-core": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-api-gateway": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-sqs": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-sns": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-dynamodb": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-kinesis": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-s3": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-eventbridge": "0.1.0-beta.1",
+    "@benzenejs/aws-lambda-kafka": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

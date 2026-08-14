@@ -1,18 +1,21 @@
 {
   "name": "@benzenejs/xml",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Benzene XML serialization integration, adapting fast-xml-parser (mirrors Benzene.Xml)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/abstractions-messages": "0.1.0",
-    "@benzenejs/abstractions-message-handlers": "0.1.0",
-    "@benzenejs/abstractions-middleware": "0.1.0",
-    "@benzenejs/core-messages": "0.1.0",
-    "@benzenejs/core-message-handlers": "0.1.0",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-messages": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/core-messages": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
     "fast-xml-parser": "^5.10.1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

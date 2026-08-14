@@ -11,8 +11,8 @@
     "start": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/results": "0.1.0",
-    "@benzenejs/saga": "0.1.0"
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
+    "@benzenejs/saga": "0.1.0-beta.1"
   }
 }

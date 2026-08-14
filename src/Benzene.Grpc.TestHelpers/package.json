@@ -1,12 +1,15 @@
 {
   "name": "@benzenejs/grpc-test-helpers",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Test helpers for @benzenejs/grpc (ports the Benzene.Grpc.TestHelpers project) - for testing purposes only",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@grpc/grpc-js": "^1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

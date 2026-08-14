@@ -1,5 +1,6 @@
 /** Port of Benzene.Mesh.Ui.MeshSpecUiPage. */
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * Provides the self-contained Benzene **mesh-hosted** Spec Explorer HTML page — a Swagger-UI-style viewer for a
@@ -14,14 +15,14 @@ import { readFileSync } from 'node:fs';
  * `data-manifest-url` so a page opened with no query param still knows where the artifacts live.
  *
  * Divergence from the C# original (documented in the README "Porting conventions"): as with {@link MeshUiPage}, the
- * verbatim `mesh-spec-ui.html` product asset is read lazily/memoized from disk via `import.meta.url` rather than
+ * verbatim `mesh-spec-ui.html` product asset is read lazily/memoized from disk via `__dirname` rather than
  * embedded as an assembly resource.
  */
 let cachedHtml: string | undefined;
 
 function html(): string {
   if (cachedHtml === undefined) {
-    cachedHtml = readFileSync(new URL('./mesh-spec-ui.html', import.meta.url), 'utf8');
+    cachedHtml = readFileSync(join(__dirname, 'mesh-spec-ui.html'), 'utf8');
   }
   return cachedHtml;
 }

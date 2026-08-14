@@ -1,0 +1,73 @@
+name: Release
+
+# Builds all 129 Benzene TypeScript packages to CommonJS and publishes them to npm via **trusted
+# publishing** (OpenID Connect — no npm tokens stored in the repo). Fires on a version tag (e.g.
+# `v0.1.0-beta.1`) and is also runnable on demand via the Actions tab. Publishes under the `beta`
+# npm dist-tag, so a plain `npm install @benzenejs/<pkg>` (no tag) never resolves to it.
+#
+# One-time maintainer setup (see docs/publishing.md):
+#   1. Unlike PyPI, npm cannot pre-register a "pending" trusted publisher for a package that doesn't
+#      exist yet — the package must be created by a real publish first. Once, locally:
+#        npm login
+#        npm run build
+#        npm publish --workspaces --access public --tag beta
+#      This creates all 129 @benzenejs/* packages on the registry (private workspaces under test/
+#      and examples/ are skipped automatically) at whatever version is currently in src/*/package.json.
+#   2. For EACH package, on npmjs.com -> Package -> Settings -> Trusted Publisher -> GitHub Actions:
+#        Organization or user = daniellepelley
+#        Repository           = benzene-typescript
+#        Workflow filename    = release.yml
+#        Allowed actions      = npm publish
+#      (Environment name is optional — only set one here if you also add a matching `environment:`
+#      to the publish job below, e.g. for required-reviewer approval gating.)
+# From then on, this workflow handles every release: it uploads all 129 packages in one command;
+# npm routes each to its own project and verifies the OIDC identity per package.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build-and-verify:
+    name: Build, typecheck, and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install
+        run: npm ci
+      - name: Verify versions are consistent (and match the tag, if tagged)
+        run: node scripts/check-release-version.mjs
+      - name: Build (CommonJS dist/ for every package)
+        run: npm run build
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Dry-run pack every package
+        run: npm publish --workspaces --dry-run --access public
+
+  publish:
+    name: Publish to npm (trusted publishing)
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # mint the OIDC token trusted publishing uses; no stored secret
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: "https://registry.npmjs.org"
+      - name: Install
+        run: npm ci
+      - name: Ensure npm CLI supports trusted publishing
+        run: npm install -g npm@latest
+      - name: Build (CommonJS dist/ for every package)
+        run: npm run build
+      - name: Publish to npm
+        run: npm publish --workspaces --access public --tag beta

@@ -1,15 +1,18 @@
 {
   "name": "@benzenejs/google-cloud-functions-http-testing",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "In-memory test harness for the Google Cloud Functions HTTP Benzene host (ports Benzene.GoogleCloud.Functions.Http.TestHelpers)",
   "license": "MIT",
-  "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@google-cloud/functions-framework": "^3",
-    "@benzenejs/abstractions": "0.1.0",
-    "@benzenejs/google-cloud-functions-http": "0.1.0",
-    "@benzenejs/testing": "0.1.0"
-  }
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/google-cloud-functions-http": "0.1.0-beta.1",
+    "@benzenejs/testing": "0.1.0-beta.1"
+  },
+  "files": [
+    "dist"
+  ]
 }

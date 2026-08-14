@@ -3,13 +3,413 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "strict": true,
     "noUncheckedIndexedAccess": false,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@benzenejs/abstractions": [
+        "./src/Benzene.Abstractions/index.ts"
+      ],
+      "@benzenejs/abstractions-message-handlers": [
+        "./src/Benzene.Abstractions.MessageHandlers/index.ts"
+      ],
+      "@benzenejs/abstractions-messages": [
+        "./src/Benzene.Abstractions.Messages/index.ts"
+      ],
+      "@benzenejs/abstractions-middleware": [
+        "./src/Benzene.Abstractions.Middleware/index.ts"
+      ],
+      "@benzenejs/abstractions-validation": [
+        "./src/Benzene.Abstractions.Validation/index.ts"
+      ],
+      "@benzenejs/ajv": [
+        "./src/Benzene.Ajv/index.ts"
+      ],
+      "@benzenejs/auth-basic": [
+        "./src/Benzene.Auth.Basic/index.ts"
+      ],
+      "@benzenejs/auth-core": [
+        "./src/Benzene.Auth.Core/index.ts"
+      ],
+      "@benzenejs/auth-oauth2": [
+        "./src/Benzene.Auth.OAuth2/index.ts"
+      ],
+      "@benzenejs/avro": [
+        "./src/Benzene.Avro/index.ts"
+      ],
+      "@benzenejs/aws-lambda": [
+        "./src/Benzene.Aws.Lambda/index.ts"
+      ],
+      "@benzenejs/aws-lambda-api-gateway": [
+        "./src/Benzene.Aws.Lambda.ApiGateway/index.ts"
+      ],
+      "@benzenejs/aws-lambda-core": [
+        "./src/Benzene.Aws.Lambda.Core/index.ts"
+      ],
+      "@benzenejs/aws-lambda-dynamodb": [
+        "./src/Benzene.Aws.Lambda.DynamoDb/index.ts"
+      ],
+      "@benzenejs/aws-lambda-eventbridge": [
+        "./src/Benzene.Aws.Lambda.EventBridge/index.ts"
+      ],
+      "@benzenejs/aws-lambda-kafka": [
+        "./src/Benzene.Aws.Lambda.Kafka/index.ts"
+      ],
+      "@benzenejs/aws-lambda-kinesis": [
+        "./src/Benzene.Aws.Lambda.Kinesis/index.ts"
+      ],
+      "@benzenejs/aws-lambda-s3": [
+        "./src/Benzene.Aws.Lambda.S3/index.ts"
+      ],
+      "@benzenejs/aws-lambda-sns": [
+        "./src/Benzene.Aws.Lambda.Sns/index.ts"
+      ],
+      "@benzenejs/aws-lambda-sqs": [
+        "./src/Benzene.Aws.Lambda.Sqs/index.ts"
+      ],
+      "@benzenejs/aws-lambda-testing": [
+        "./src/Benzene.Aws.Lambda.TestHelpers/index.ts"
+      ],
+      "@benzenejs/aws-lambda-xray": [
+        "./src/Benzene.Aws.Lambda.XRay/index.ts"
+      ],
+      "@benzenejs/aws-sqs": [
+        "./src/Benzene.Aws.Sqs/index.ts"
+      ],
+      "@benzenejs/aws-sqs-test-helpers": [
+        "./src/Benzene.Aws.Sqs.TestHelpers/index.ts"
+      ],
+      "@benzenejs/azure-cosmos-db": [
+        "./src/Benzene.Azure.CosmosDb/index.ts"
+      ],
+      "@benzenejs/azure-event-hub": [
+        "./src/Benzene.Azure.EventHub/index.ts"
+      ],
+      "@benzenejs/azure-event-hub-test-helpers": [
+        "./src/Benzene.Azure.EventHub.TestHelpers/index.ts"
+      ],
+      "@benzenejs/azure-function-blob-storage": [
+        "./src/Benzene.Azure.Function.BlobStorage/index.ts"
+      ],
+      "@benzenejs/azure-function-core": [
+        "./src/Benzene.Azure.Function.Core/index.ts"
+      ],
+      "@benzenejs/azure-function-cosmos-db": [
+        "./src/Benzene.Azure.Function.CosmosDb/index.ts"
+      ],
+      "@benzenejs/azure-function-event-grid": [
+        "./src/Benzene.Azure.Function.EventGrid/index.ts"
+      ],
+      "@benzenejs/azure-function-event-hub": [
+        "./src/Benzene.Azure.Function.EventHub/index.ts"
+      ],
+      "@benzenejs/azure-function-http": [
+        "./src/Benzene.Azure.Function.Http/index.ts"
+      ],
+      "@benzenejs/azure-function-kafka": [
+        "./src/Benzene.Azure.Function.Kafka/index.ts"
+      ],
+      "@benzenejs/azure-function-queue-storage": [
+        "./src/Benzene.Azure.Function.QueueStorage/index.ts"
+      ],
+      "@benzenejs/azure-function-service-bus": [
+        "./src/Benzene.Azure.Function.ServiceBus/index.ts"
+      ],
+      "@benzenejs/azure-function-testing": [
+        "./src/Benzene.Azure.Function.TestHelpers/index.ts"
+      ],
+      "@benzenejs/azure-function-timer": [
+        "./src/Benzene.Azure.Function.Timer/index.ts"
+      ],
+      "@benzenejs/azure-service-bus": [
+        "./src/Benzene.Azure.ServiceBus/index.ts"
+      ],
+      "@benzenejs/azure-service-bus-test-helpers": [
+        "./src/Benzene.Azure.ServiceBus.TestHelpers/index.ts"
+      ],
+      "@benzenejs/cache-core": [
+        "./src/Benzene.Cache.Core/index.ts"
+      ],
+      "@benzenejs/cache-redis": [
+        "./src/Benzene.Cache.Redis/index.ts"
+      ],
+      "@benzenejs/clients": [
+        "./src/Benzene.Clients/index.ts"
+      ],
+      "@benzenejs/clients-aws": [
+        "./src/Benzene.Clients.Aws/index.ts"
+      ],
+      "@benzenejs/clients-aws-eventbridge": [
+        "./src/Benzene.Clients.Aws.EventBridge/index.ts"
+      ],
+      "@benzenejs/clients-aws-lambda": [
+        "./src/Benzene.Clients.Aws.Lambda/index.ts"
+      ],
+      "@benzenejs/clients-aws-sns": [
+        "./src/Benzene.Clients.Aws.Sns/index.ts"
+      ],
+      "@benzenejs/clients-aws-sqs": [
+        "./src/Benzene.Clients.Aws.Sqs/index.ts"
+      ],
+      "@benzenejs/clients-aws-step-functions": [
+        "./src/Benzene.Clients.Aws.StepFunctions/index.ts"
+      ],
+      "@benzenejs/clients-azure-event-grid": [
+        "./src/Benzene.Clients.Azure.EventGrid/index.ts"
+      ],
+      "@benzenejs/clients-azure-event-hub": [
+        "./src/Benzene.Clients.Azure.EventHub/index.ts"
+      ],
+      "@benzenejs/clients-azure-queue-storage": [
+        "./src/Benzene.Clients.Azure.QueueStorage/index.ts"
+      ],
+      "@benzenejs/clients-azure-service-bus": [
+        "./src/Benzene.Clients.Azure.ServiceBus/index.ts"
+      ],
+      "@benzenejs/clients-google-cloud-pubsub": [
+        "./src/Benzene.Clients.GoogleCloud.PubSub/index.ts"
+      ],
+      "@benzenejs/clients-health-checks": [
+        "./src/Benzene.Clients.HealthChecks/index.ts"
+      ],
+      "@benzenejs/clients-http": [
+        "./src/Benzene.Clients.Http/index.ts"
+      ],
+      "@benzenejs/clients-in-process": [
+        "./src/Benzene.Clients.InProcess/index.ts"
+      ],
+      "@benzenejs/cloud-service": [
+        "./src/Benzene.CloudService/index.ts"
+      ],
+      "@benzenejs/cloud-service-probe": [
+        "./src/Benzene.CloudService.Probe/index.ts"
+      ],
+      "@benzenejs/cockatiel": [
+        "./src/Benzene.Cockatiel/index.ts"
+      ],
+      "@benzenejs/codegen-client": [
+        "./src/Benzene.CodeGen.Client/index.ts"
+      ],
+      "@benzenejs/configuration-core": [
+        "./src/Benzene.Configuration.Core/index.ts"
+      ],
+      "@benzenejs/core": [
+        "./src/Benzene.Core/index.ts"
+      ],
+      "@benzenejs/core-message-handlers": [
+        "./src/Benzene.Core.MessageHandlers/index.ts"
+      ],
+      "@benzenejs/core-messages": [
+        "./src/Benzene.Core.Messages/index.ts"
+      ],
+      "@benzenejs/core-middleware": [
+        "./src/Benzene.Core.Middleware/index.ts"
+      ],
+      "@benzenejs/core-versioning": [
+        "./src/Benzene.Core.Versioning/index.ts"
+      ],
+      "@benzenejs/dependencies": [
+        "./src/Benzene.Dependencies/index.ts"
+      ],
+      "@benzenejs/diagnostics": [
+        "./src/Benzene.Diagnostics/index.ts"
+      ],
+      "@benzenejs/express": [
+        "./src/Benzene.Express/index.ts"
+      ],
+      "@benzenejs/extras": [
+        "./src/Benzene.Extras/index.ts"
+      ],
+      "@benzenejs/google-cloud-functions-core": [
+        "./src/Benzene.GoogleCloud.Functions.Core/index.ts"
+      ],
+      "@benzenejs/google-cloud-functions-http": [
+        "./src/Benzene.GoogleCloud.Functions.Http/index.ts"
+      ],
+      "@benzenejs/google-cloud-functions-http-testing": [
+        "./src/Benzene.GoogleCloud.Functions.Http.TestHelpers/index.ts"
+      ],
+      "@benzenejs/google-cloud-functions-pubsub": [
+        "./src/Benzene.GoogleCloud.Functions.PubSub/index.ts"
+      ],
+      "@benzenejs/google-cloud-functions-pubsub-testing": [
+        "./src/Benzene.GoogleCloud.Functions.PubSub.TestHelpers/index.ts"
+      ],
+      "@benzenejs/grpc": [
+        "./src/Benzene.Grpc/index.ts"
+      ],
+      "@benzenejs/grpc-client": [
+        "./src/Benzene.Grpc.Client/index.ts"
+      ],
+      "@benzenejs/grpc-test-helpers": [
+        "./src/Benzene.Grpc.TestHelpers/index.ts"
+      ],
+      "@benzenejs/health-checks": [
+        "./src/Benzene.HealthChecks/index.ts"
+      ],
+      "@benzenejs/health-checks-azure-service-bus": [
+        "./src/Benzene.HealthChecks.Azure.ServiceBus/index.ts"
+      ],
+      "@benzenejs/health-checks-core": [
+        "./src/Benzene.HealthChecks.Core/index.ts"
+      ],
+      "@benzenejs/health-checks-disk": [
+        "./src/Benzene.HealthChecks.Disk/index.ts"
+      ],
+      "@benzenejs/health-checks-dynamodb": [
+        "./src/Benzene.HealthChecks.DynamoDb/index.ts"
+      ],
+      "@benzenejs/health-checks-http": [
+        "./src/Benzene.HealthChecks.Http/index.ts"
+      ],
+      "@benzenejs/health-checks-schema": [
+        "./src/Benzene.HealthChecks.Schema/index.ts"
+      ],
+      "@benzenejs/health-checks-tcp": [
+        "./src/Benzene.HealthChecks.Tcp/index.ts"
+      ],
+      "@benzenejs/health-checks-typeorm": [
+        "./src/Benzene.HealthChecks.TypeOrm/index.ts"
+      ],
+      "@benzenejs/http": [
+        "./src/Benzene.Http/index.ts"
+      ],
+      "@benzenejs/idempotency": [
+        "./src/Benzene.Idempotency/index.ts"
+      ],
+      "@benzenejs/joi": [
+        "./src/Benzene.Joi/index.ts"
+      ],
+      "@benzenejs/kafka-core": [
+        "./src/Benzene.Kafka.Core/index.ts"
+      ],
+      "@benzenejs/kafka-core-test-helpers": [
+        "./src/Benzene.Kafka.Core.TestHelpers/index.ts"
+      ],
+      "@benzenejs/mesh-aggregator": [
+        "./src/Benzene.Mesh.Aggregator/index.ts"
+      ],
+      "@benzenejs/mesh-aws-lambda": [
+        "./src/Benzene.Mesh.Aws.Lambda/index.ts"
+      ],
+      "@benzenejs/mesh-aws-s3": [
+        "./src/Benzene.Mesh.Aws.S3/index.ts"
+      ],
+      "@benzenejs/mesh-azure-blob": [
+        "./src/Benzene.Mesh.Azure.Blob/index.ts"
+      ],
+      "@benzenejs/mesh-collector": [
+        "./src/Benzene.Mesh.Collector/index.ts"
+      ],
+      "@benzenejs/mesh-contracts": [
+        "./src/Benzene.Mesh.Contracts/index.ts"
+      ],
+      "@benzenejs/mesh-discovery-aws": [
+        "./src/Benzene.Mesh.Discovery.Aws/index.ts"
+      ],
+      "@benzenejs/mesh-discovery-azure": [
+        "./src/Benzene.Mesh.Discovery.Azure/index.ts"
+      ],
+      "@benzenejs/mesh-discovery-kubernetes": [
+        "./src/Benzene.Mesh.Discovery.Kubernetes/index.ts"
+      ],
+      "@benzenejs/mesh-dispatch": [
+        "./src/Benzene.Mesh.Dispatch/index.ts"
+      ],
+      "@benzenejs/mesh-fleet-aws-xray": [
+        "./src/Benzene.Mesh.Fleet.Aws.XRay/index.ts"
+      ],
+      "@benzenejs/mesh-fleet-jaeger": [
+        "./src/Benzene.Mesh.Fleet.Jaeger/index.ts"
+      ],
+      "@benzenejs/mesh-fleet-tempo": [
+        "./src/Benzene.Mesh.Fleet.Tempo/index.ts"
+      ],
+      "@benzenejs/mesh-google-cloud-storage": [
+        "./src/Benzene.Mesh.GoogleCloud.Storage/index.ts"
+      ],
+      "@benzenejs/mesh-reporting": [
+        "./src/Benzene.Mesh.Reporting/index.ts"
+      ],
+      "@benzenejs/mesh-tracing-tempo": [
+        "./src/Benzene.Mesh.Tracing.Tempo/index.ts"
+      ],
+      "@benzenejs/mesh-ui": [
+        "./src/Benzene.Mesh.Ui/index.ts"
+      ],
+      "@benzenejs/mesh-usage-application-insights": [
+        "./src/Benzene.Mesh.Usage.ApplicationInsights/index.ts"
+      ],
+      "@benzenejs/mesh-usage-cloudwatch": [
+        "./src/Benzene.Mesh.Usage.CloudWatch/index.ts"
+      ],
+      "@benzenejs/mesh-wire": [
+        "./src/Benzene.Mesh.Wire/index.ts"
+      ],
+      "@benzenejs/messagepack": [
+        "./src/Benzene.MessagePack/index.ts"
+      ],
+      "@benzenejs/rabbitmq": [
+        "./src/Benzene.RabbitMq/index.ts"
+      ],
+      "@benzenejs/rabbitmq-test-helpers": [
+        "./src/Benzene.RabbitMq.TestHelpers/index.ts"
+      ],
+      "@benzenejs/rate-limiting": [
+        "./src/Benzene.RateLimiting/index.ts"
+      ],
+      "@benzenejs/resilience": [
+        "./src/Benzene.Resilience/index.ts"
+      ],
+      "@benzenejs/response-events": [
+        "./src/Benzene.ResponseEvents/index.ts"
+      ],
+      "@benzenejs/results": [
+        "./src/Benzene.Results/index.ts"
+      ],
+      "@benzenejs/saga": [
+        "./src/Benzene.Saga/index.ts"
+      ],
+      "@benzenejs/schema-openapi": [
+        "./src/Benzene.Schema.OpenApi/index.ts"
+      ],
+      "@benzenejs/schema-registry-core": [
+        "./src/Benzene.SchemaRegistry.Core/index.ts"
+      ],
+      "@benzenejs/self-host": [
+        "./src/Benzene.SelfHost/index.ts"
+      ],
+      "@benzenejs/spec-ui": [
+        "./src/Benzene.Spec.Ui/index.ts"
+      ],
+      "@benzenejs/testing": [
+        "./src/Benzene.Testing/index.ts"
+      ],
+      "@benzenejs/xml": [
+        "./src/Benzene.Xml/index.ts"
+      ],
+      "@benzenejs/yup": [
+        "./src/Benzene.Yup/index.ts"
+      ],
+      "@benzenejs/zod": [
+        "./src/Benzene.Zod/index.ts"
+      ]
+    }
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "examples/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "examples/**/*.ts"
+  ],
+  "exclude": [
+    "**/dist/**"
+  ]
 }
