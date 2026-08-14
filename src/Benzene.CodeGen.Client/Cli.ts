@@ -14,7 +14,7 @@
  * via the process entry point below) by this package's CLI tests.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { dirname, join } from 'node:path';
 import { AtomicClientSdkOptions, buildAtomicClientSdk } from './AtomicClientSdkBuilder';
 import { ContractDocumentParseError, parseContractDocument } from './ContractDocumentParser';
 import { GeneratedClient, MessageClientSdkOptions, buildMessageClientSdk } from './MessageClientSdkBuilder';
@@ -159,8 +159,8 @@ export async function run(argv: readonly string[]): Promise<void> {
 
   const outDir = args.out ?? process.cwd();
   for (const file of files) {
-    const target = path.join(outDir, file.fileName);
-    await mkdir(path.dirname(target), { recursive: true });
+    const target = join(outDir, file.fileName);
+    await mkdir(dirname(target), { recursive: true });
     await writeFile(target, file.source, 'utf8');
   }
 

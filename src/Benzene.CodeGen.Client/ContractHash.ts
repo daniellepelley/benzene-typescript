@@ -1,9 +1,16 @@
 /**
  * Computes the spec-pinned `contractHash` (contract-document.md §6):
- * `"sha256:" + lowercase-hex(sha256(canonicalJSON(normalize(document))))`, with `canonicalJSON` being
- * RFC 8785/JCS via the `canonicalize` npm package (the same one `contract-hash-cases.json` was
- * independently verified against - see its `description`). Port of
- * `Benzene.CodeGen.Core.ContractHash.Compute`.
+ * `"sha256:" + lowercase-hex(sha256(canonicalJSON(normalize(document))))`. `canonicalJSON` is
+ * RFC 8785/JCS, implemented inline by {@link canonicalizeJcs} rather than via the `canonicalize` npm
+ * package: that package ships ESM-only (no `require` export condition), which this repo's compiled
+ * CommonJS `dist/` output (see scripts/build.mjs) cannot load. For the plain-JSON values a Contract
+ * Document is built from - no `NaN`/`Infinity`, no exotic numbers - JCS reduces to exactly two rules
+ * beyond default `JSON.stringify`: object keys sorted by UTF-16 code unit, applied recursively at
+ * every level. `JSON.stringify`'s own number/string serialization already matches JCS's mandated
+ * ECMAScript `Number::toString` behaviour (including `-0` -> `"0"`) because JCS mandates that exact
+ * algorithm. Cross-checked byte-for-byte against the `canonicalize` package's output for every
+ * `contract-hash-cases.json` case and every `contract-document-cases.json` document before this
+ * inlining. Port of `Benzene.CodeGen.Core.ContractHash.Compute`.
  *
  * Operates on a plain JSON-shaped document: a `ContractDocument` value already *is* that shape, so
  * this accepts one directly (or an already-parsed raw object, e.g. a conformance fixture's `document`
@@ -11,10 +18,35 @@
  * typed `EventServiceDocument` through the OpenAPI writer specifically to get back to a JSON tree it
  * can strip fields from before canonicalizing.
  */
-import canonicalize from 'canonicalize';
 import { createHash } from 'node:crypto';
 import { ContractDocument } from './ContractDocument';
 import { isReservedEntry } from './ContractReservedTopics';
+
+/** RFC 8785 (JCS) canonicalization of a plain JSON value - see the module doc comment above. */
+function canonicalizeJcs(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+  const valueType = typeof value;
+  if (valueType === 'boolean' || valueType === 'string') {
+    return JSON.stringify(value);
+  }
+  if (valueType === 'number') {
+    if (!Number.isFinite(value as number)) {
+      throw new Error('JCS canonicalization does not support NaN/Infinity');
+    }
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalizeJcs).join(',')}]`;
+  }
+  if (valueType === 'object') {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalizeJcs(record[key])}`).join(',')}}`;
+  }
+  throw new Error(`Cannot canonicalize a value of type ${valueType}`);
+}
 
 export interface ComputeContractHashOptions {
   /**
@@ -38,12 +70,7 @@ export function computeContractHash(
 
   normalize(root, options.topicScoped === true);
 
-  const canonical = canonicalize(root);
-  if (canonical === undefined) {
-    // canonicalize() returns undefined only for a top-level `undefined` input, which JSON.parse can
-    // never produce - kept as a defensive guard, not a reachable path.
-    throw new Error('Failed to canonicalize the document for contractHash');
-  }
+  const canonical = canonicalizeJcs(root);
 
   const digest = createHash('sha256').update(canonical, 'utf8').digest('hex');
   return `sha256:${digest}`;

@@ -132,7 +132,9 @@
     "@benzenejs/testing": "0.1.0-beta.1",
     "@benzenejs/xml": "0.1.0-beta.1",
     "@benzenejs/yup": "0.1.0-beta.1",
-    "@benzenejs/zod": "0.1.0-beta.1",
+    "@benzenejs/zod": "0.1.0-beta.1"
+  },
+  "devDependencies": {
     "canonicalize": "^4.0.0"
   }
 }
