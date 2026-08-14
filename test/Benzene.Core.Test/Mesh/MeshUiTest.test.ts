@@ -17,8 +17,8 @@ import {
  * from disk + `data-manifest-url`/`data-fleet-url` injection) and the two middlewares (serve the page on a matching
  * GET/HEAD, otherwise pass through), driven through the transport-neutral request/response adapters.
  */
-const MeshUiTitle = '<title>Benzene Mesh Explorer</title>';
-const MeshSpecUiTitle = '<title>Benzene Mesh — Service Spec</title>';
+const MeshUiTitle = '<title>Benzene Mesh</title>';
+const MeshSpecUiTitle = '<title>Benzene Service Spec</title>';
 
 class FakeContext implements IHttpContext {}
 
