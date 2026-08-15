@@ -75,7 +75,7 @@ export function useBenzeneCloudService<TContext extends IHttpContext>(
   const info = builder.buildServiceInfo();
   const report = CloudServiceProfileReport.evaluate(builder);
   builder.profileReportCallback?.(report);
-  const descriptorSource = new CloudServiceDescriptorSource(info, report, builder.handlerTypes);
+  const descriptorSource = new CloudServiceDescriptorSource(info, report, builder.handlerTypes, builder.consumesDefinitions);
   const healthChecks = [...builder.healthChecks];
 
   const announcer =

@@ -26,11 +26,21 @@ export class MeshServiceDescriptor {
 
   topics: MeshTopicDescriptor[] = [];
 
+  /**
+   * Every registered outbound topic (spec §2.3, §2's `consumes`): what this service **consumes**.
+   * Same shape/schema-derivation rules as {@link topics}. Derived from explicit outbound
+   * registration - never inferred by scanning handler bodies or call sites - so a topic absent
+   * here is not consumed by this service, regardless of what traffic has or hasn't flowed. This is
+   * the field the collector (mesh.md §4) reads to build consumer edges.
+   */
+  consumes: MeshTopicDescriptor[] = [];
+
   descriptorHash?: string;
 
   /**
-   * Names the feeds that were unavailable when the descriptor was built (spec §2: currently only
-   * "registry"), so a reduced descriptor is distinguishable from a service with no topics.
+   * Names the feeds that were unavailable when the descriptor was built (spec §2: "registry" for
+   * {@link topics}, "outbound-registry" for {@link consumes}), so a reduced descriptor is
+   * distinguishable from a service that provides/consumes nothing.
    */
   degraded?: string[];
 

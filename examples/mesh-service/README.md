@@ -14,10 +14,14 @@ aggregator interrogates, so a mesh aggregator **written in any language** — th
 | `GET /orders/{id}` | The `order:get` handler. |
 | `GET /benzene/spec?type=benzene` | The service's **spec descriptor** (`{ requests, events, transports }`), derived from the handler registry — the same JSON a .NET Benzene service serves. |
 | `GET /benzene/health` | The **health document** (`{ isHealthy, healthChecks }`), the same shape .NET serves. |
-| `GET /benzene/descriptor` | The normative mesh **ServiceDescriptor** (`mesh.md` §2): identity, placement, the topic list with §2.1 request/response JSON schemas, and a per-port `descriptorHash` — the same shape a .NET or Go service emits. |
+| `GET /benzene/descriptor` | The normative mesh **ServiceDescriptor** (`mesh.md` §2): identity, placement, the provided-topic list (`topics`) and the outbound-registered list (`consumes`, §2.3), each with §2.1 request/response JSON schemas, and a per-port `descriptorHash` — the same shape a .NET or Go service emits. |
 
 Every endpoint is a projection of the running code (topics + HTTP mappings + schemas come straight from
 the handlers' `@message`/`@httpEndpoint` metadata and the registered schema provider), never hand-maintained.
+`consumes` is the one exception by design (mesh.md §2.3 forbids inferring it by scanning code): `order:create`
+declares an explicit outbound registration for `payments:capture` — no handler, no destination address, a
+pure contract declaration — demonstrating what lets a collector build the `orders -> payments` consumer edge
+from this descriptor alone, before a single message has ever flowed (mesh.md §4). See `benzeneDescriptor.ts`.
 
 ## Run it
 

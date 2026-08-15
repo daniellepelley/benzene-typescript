@@ -1,13 +1,18 @@
 /**
  * Runs docs/specification/conformance/mesh-descriptor-cases.json against the TypeScript port: derives
- * the ServiceDescriptor (mesh.md §2) from the canonical conformance handlers and asserts the derived
- * payload schemas plus the descriptorHash's format/invariance/sensitivity properties. `runtime` and
- * the hash value are per-port by design and not pinned by the fixture.
+ * the ServiceDescriptor (mesh.md §2) from the canonical conformance handlers (`topics`) plus the
+ * canonical outbound registration (`consumes`, mesh.md §2.3) and asserts the derived payload schemas
+ * plus the descriptorHash's format/invariance/sensitivity properties, including its sensitivity to the
+ * consumed-topic set (the 2026-08 revision). `runtime` and the hash value are per-port by design and
+ * not pinned by the fixture.
  *
- * The one divergence from the C# conformance test: where .NET recovers the §2.1 schemas by reflecting
- * over the handler request/response types, this port injects them via a `MapMeshSchemaProvider` (types
- * are erased at runtime - see `@benzenejs/mesh-wire`'s `MeshSchemaProvider`). The schemas supplied here
- * are exactly the fixture's expected schemas, so the test still pins the §2.1 mapping's output.
+ * Divergences from the C# conformance test: where .NET recovers the §2.1 schemas by reflecting over
+ * the handler/sender request-response types, this port injects them via a `MapMeshSchemaProvider`
+ * (types are erased at runtime - see `@benzenejs/mesh-wire`'s `MeshSchemaProvider`). The schemas
+ * supplied here are exactly the fixture's expected schemas, so the test still pins the §2.1 mapping's
+ * output. The canonical outbound registration (README.md's `conformance:log`, no handler) is expressed
+ * with `MessageSenderDefinition` + `DependencyMessageSendersFinder` (`@benzenejs/core-messages`) - the
+ * sender-side counterpart of the handler registry, mirroring inbound discovery exactly.
  */
 import { describe, expect, it } from 'vitest';
 import { Constructor } from '@benzenejs/abstractions';
@@ -17,6 +22,7 @@ import {
 } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
 import { RegistryMessageHandlersFinder } from '@benzenejs/core-message-handlers';
+import { DependencyMessageSendersFinder, MessageSenderDefinition } from '@benzenejs/core-messages';
 import {
   MapMeshSchemaProvider,
   MeshDescriptorFactory,
@@ -50,13 +56,16 @@ interface DescriptorFixture {
     invariantToInstanceId: boolean;
     sensitiveToServiceVersion: boolean;
     sensitiveToTopics: boolean;
+    sensitiveToConsumes: boolean;
   };
 }
 
 const fixture = load<DescriptorFixture>('mesh-descriptor-cases.json');
 
-// The §2.1 schemas the port would derive from the canonical handlers, supplied explicitly because
-// TypeScript erases the request/response types at runtime. These match the fixture's expected schemas.
+// The §2.1 schemas the port would derive from the canonical handlers/outbound registration, supplied
+// explicitly because TypeScript erases the request/response types at runtime. These match the
+// fixture's expected schemas - `conformance:log` (the canonical outbound registration, README.md)
+// declares no response type, so its responseSchema is `{}` (unconstrained), per §2.3.
 const schemaProvider = new MapMeshSchemaProvider({
   'conformance:greet': {
     request: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
@@ -81,7 +90,26 @@ const schemaProvider = new MapMeshSchemaProvider({
       required: ['applied'],
     },
   },
+  'conformance:log': {
+    request: { type: 'object', properties: { message: { type: 'string' } }, required: ['message'] },
+    response: {},
+  },
 });
+
+/** The canonical outbound registration's request payload (README.md's `conformance:log`). */
+class LogRequest {
+  message = '';
+}
+
+/**
+ * The canonical outbound registration (docs/specification/conformance/README.md): one registered
+ * `IMessageSenderDefinition` for `conformance:log` - no handler, since nothing here receives (mesh.md
+ * §2.3). `DependencyMessageSendersFinder` mirrors `IMessageHandlerDefinitionLookUp`'s role for
+ * `topics`, projected into `consumes`.
+ */
+function canonicalSendersFinder(): DependencyMessageSendersFinder {
+  return new DependencyMessageSendersFinder([MessageSenderDefinition.create('conformance:log', LogRequest)]);
+}
 
 function info(instanceId?: string, serviceVersion?: string): MeshServiceInfo {
   const placement = new MeshPlacement();
@@ -128,7 +156,12 @@ void StatusReply;
 
 describe('MeshDescriptorConformanceTest', () => {
   it('derives the expected descriptor', () => {
-    const descriptor = MeshDescriptorFactory.create(canonicalLookUp(), info(), schemaProvider);
+    const descriptor = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info(),
+      schemaProvider,
+      canonicalSendersFinder(),
+    );
 
     const actual = JSON.parse(MeshJson.serialize(descriptor)) as unknown;
     const mismatch = findSubsetMismatch(fixture.expectedDescriptor, actual);
@@ -136,7 +169,12 @@ describe('MeshDescriptorConformanceTest', () => {
   });
 
   it('produces a descriptorHash with the wire format', () => {
-    const hash = MeshDescriptorFactory.create(canonicalLookUp(), info(), schemaProvider).descriptorHash;
+    const hash = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info(),
+      schemaProvider,
+      canonicalSendersFinder(),
+    ).descriptorHash;
 
     expect(hash).toBeDefined();
     expect(hash!.startsWith(fixture.hash.prefix)).toBe(true);
@@ -147,8 +185,18 @@ describe('MeshDescriptorConformanceTest', () => {
   it('produces a descriptorHash invariant to instanceId', () => {
     if (!fixture.hash.invariantToInstanceId) return;
 
-    const first = MeshDescriptorFactory.create(canonicalLookUp(), info('instance-1'), schemaProvider);
-    const second = MeshDescriptorFactory.create(canonicalLookUp(), info('instance-2'), schemaProvider);
+    const first = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info('instance-1'),
+      schemaProvider,
+      canonicalSendersFinder(),
+    );
+    const second = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info('instance-2'),
+      schemaProvider,
+      canonicalSendersFinder(),
+    );
 
     expect(first.descriptorHash).toBe(second.descriptorHash);
   });
@@ -156,11 +204,17 @@ describe('MeshDescriptorConformanceTest', () => {
   it('produces a descriptorHash sensitive to serviceVersion', () => {
     if (!fixture.hash.sensitiveToServiceVersion) return;
 
-    const baseline = MeshDescriptorFactory.create(canonicalLookUp(), info(), schemaProvider);
+    const baseline = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info(),
+      schemaProvider,
+      canonicalSendersFinder(),
+    );
     const bumped = MeshDescriptorFactory.create(
       canonicalLookUp(),
       info(undefined, `${fixture.serviceInfo.serviceVersion}-changed`),
       schemaProvider,
+      canonicalSendersFinder(),
     );
 
     expect(baseline.descriptorHash).not.toBe(bumped.descriptorHash);
@@ -169,22 +223,72 @@ describe('MeshDescriptorConformanceTest', () => {
   it('produces a descriptorHash sensitive to the topic set', () => {
     if (!fixture.hash.sensitiveToTopics) return;
 
-    const baseline = MeshDescriptorFactory.create(canonicalLookUp(), info(), schemaProvider);
+    const baseline = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info(),
+      schemaProvider,
+      canonicalSendersFinder(),
+    );
     const grown = MeshDescriptorFactory.create(
       canonicalLookUp(PanicConformanceHandler),
       info(),
       schemaProvider,
+      canonicalSendersFinder(),
     );
 
     expect(baseline.descriptorHash).not.toBe(grown.descriptorHash);
   });
 
-  it('degrades the feed, not the descriptor, when the registry is missing', () => {
-    const descriptor = MeshDescriptorFactory.create(undefined, info(), schemaProvider);
+  it('produces a descriptorHash sensitive to the consumed-topic set', () => {
+    if (!fixture.hash.sensitiveToConsumes) return;
+
+    const baseline = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info(),
+      schemaProvider,
+      canonicalSendersFinder(),
+    );
+    const grown = MeshDescriptorFactory.create(
+      canonicalLookUp(),
+      info(),
+      schemaProvider,
+      new DependencyMessageSendersFinder([
+        MessageSenderDefinition.create('conformance:log', LogRequest),
+        MessageSenderDefinition.create('conformance:audit', LogRequest),
+      ]),
+    );
+
+    expect(baseline.descriptorHash).not.toBe(grown.descriptorHash);
+  });
+
+  it('degrades the registry feed, not the descriptor, when the handler registry is missing', () => {
+    // sendersFinder still supplied, so only the inbound (`topics`) feed is degraded - isolates the
+    // registry-side degradation from the outbound-registry-side degradation asserted below.
+    const descriptor = MeshDescriptorFactory.create(undefined, info(), schemaProvider, canonicalSendersFinder());
 
     expect(descriptor.topics).toHaveLength(0);
+    expect(descriptor.consumes).toHaveLength(1);
     expect(descriptor.degraded).toEqual([MeshDescriptorFactory.registryFeed]);
     expect(descriptor.service).toBe(fixture.serviceInfo.service);
     expect(descriptor.descriptorHash).toBeDefined();
+  });
+
+  it('degrades the outbound-registry feed, not an empty consumes, when no sendersFinder is supplied', () => {
+    // Per mesh.md §2.3: a port that hasn't wired outbound registration MUST mark `consumes` degraded
+    // rather than assert "consumes nothing" via an empty array.
+    const descriptor = MeshDescriptorFactory.create(canonicalLookUp(), info(), schemaProvider);
+
+    expect(descriptor.consumes).toHaveLength(0);
+    expect(descriptor.topics).toHaveLength(2);
+    expect(descriptor.degraded).toEqual([MeshDescriptorFactory.outboundRegistryFeed]);
+  });
+
+  it('degrades both feeds when neither the registry nor a sendersFinder is supplied', () => {
+    const descriptor = MeshDescriptorFactory.create(undefined, info(), schemaProvider);
+
+    expect(descriptor.degraded).toEqual([
+      MeshDescriptorFactory.registryFeed,
+      MeshDescriptorFactory.outboundRegistryFeed,
+    ]);
   });
 });
