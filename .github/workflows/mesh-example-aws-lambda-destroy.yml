@@ -1,7 +1,7 @@
-name: Destroy AWS Lambda Mesh Example
+name: Mesh Example AWS Lambda Destroy
 
-# Manual-only teardown for examples/aws-lambda-mesh — the counterpart of "Deploy AWS Lambda Mesh
-# Example", and the Node equivalent of .NET's destroy-aws-mesh-example.yml.
+# Manual-only teardown for examples/aws-lambda-mesh — the counterpart of "Mesh Example AWS Lambda
+# Deploy", and the Node equivalent of .NET's mesh-example-aws-destroy.yml.
 #
 # WHY THIS EXISTS: the deployed demo costs money while it merely exists. It is not idle — the
 # EventBridge schedule invokes the mesh Lambda, which fans spec + healthcheck calls out to every
