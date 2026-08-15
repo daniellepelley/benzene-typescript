@@ -1,11 +1,14 @@
 import { ISerializer } from '@benzenejs/abstractions';
 import { IMessageHandlerResult, IResponsePayloadMapper } from '@benzenejs/abstractions-message-handlers';
 import { isRawStringMessage } from '@benzenejs/abstractions-messages';
-import { ErrorPayload } from '@benzenejs/results';
+import { ProblemTypes } from '@benzenejs/results';
 
 /**
  * Default `IResponsePayloadMapper<TContext>` implementation: serializes the handler's success
- * payload, or an `ErrorPayload` built from the result's status and errors on failure.
+ * payload, or — on failure — an RFC 9457 problem document synthesized from the result's status and
+ * errors by `ProblemTypes.from` (wire-contracts.md §1.3). This replaced the pre-RFC-9457
+ * `ErrorPayload` body; `detail` is the compatibility member, carrying the same joined error string
+ * that shape's only populated member did.
  * Port of Benzene.Core.MessageHandlers.Response.DefaultResponsePayloadMapper&lt;TContext&gt;.
  *
  * Deviations: C# returns `null` when no handler was resolved or the success payload is null; the port
@@ -26,14 +29,7 @@ export class DefaultResponsePayloadMapper<TContext> implements IResponsePayloadM
 
     return messageHandlerResult.benzeneResult.isSuccessful
       ? this.serializePayload(messageHandlerResult.benzeneResult.payloadAsObject, serializer)
-      : serializer.serialize(DefaultResponsePayloadMapper.asErrorPayload(messageHandlerResult));
-  }
-
-  private static asErrorPayload(messageHandlerResult: IMessageHandlerResult): ErrorPayload {
-    return new ErrorPayload(
-      messageHandlerResult.benzeneResult.status,
-      messageHandlerResult.benzeneResult.errors,
-    );
+      : serializer.serialize(ProblemTypes.from(messageHandlerResult.benzeneResult));
   }
 
   private serializePayload(payload: unknown, serializer: ISerializer): string | undefined {

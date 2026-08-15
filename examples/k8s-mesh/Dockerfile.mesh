@@ -1,0 +1,16 @@
+# Build context MUST be the repo root — see Dockerfile.service's comment. Separate image (discovery +
+# aggregator + UI + collector) from the three domain services, matching .NET K8sMesh's Mesh/ vs Service/
+# split; here that's two Dockerfiles sharing one npm package rather than two csproj's, since this repo
+# builds examples as ordinary npm workspace packages (see the example's README for why).
+#   docker build -f examples/k8s-mesh/Dockerfile.mesh -t benzene-k8smesh-mesh:local .
+FROM node:22-alpine
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY src ./src
+COPY examples/k8s-mesh ./examples/k8s-mesh
+RUN npm install
+
+ENV PORT=8080
+EXPOSE 8080
+CMD ["npx", "tsx", "examples/k8s-mesh/src/meshIndex.ts"]

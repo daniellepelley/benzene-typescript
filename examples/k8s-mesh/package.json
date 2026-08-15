@@ -1,0 +1,42 @@
+{
+  "name": "@benzene-example/k8s-mesh",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Kubernetes mesh: three Benzene Cloud Services chained over HTTP (orders -> payments -> shipping), discovered by label via the Kubernetes API and aggregated into a live catalog (the TypeScript equivalent of .NET's K8sMesh example)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "start:service": "tsx src/index.ts",
+    "start:mesh": "tsx src/meshIndex.ts"
+  },
+  "dependencies": {
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-messages": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/clients": "0.1.0-beta.1",
+    "@benzenejs/clients-http": "0.1.0-beta.1",
+    "@benzenejs/cloud-service": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/core-messages": "0.1.0-beta.1",
+    "@benzenejs/dependencies": "0.1.0-beta.1",
+    "@benzenejs/express": "0.1.0-beta.1",
+    "@benzenejs/health-checks": "0.1.0-beta.1",
+    "@benzenejs/health-checks-core": "0.1.0-beta.1",
+    "@benzenejs/http": "0.1.0-beta.1",
+    "@benzenejs/mesh-aggregator": "0.1.0-beta.1",
+    "@benzenejs/mesh-collector": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
+    "@benzenejs/mesh-discovery-kubernetes": "0.1.0-beta.1",
+    "@benzenejs/mesh-ui": "0.1.0-beta.1",
+    "@benzenejs/mesh-wire": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
+    "@benzenejs/spec-ui": "0.1.0-beta.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

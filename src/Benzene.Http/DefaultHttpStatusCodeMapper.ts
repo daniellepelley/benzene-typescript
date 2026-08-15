@@ -34,11 +34,17 @@ export class DefaultHttpStatusCodeMapper implements IHttpStatusCodeMapper {
     [BenzeneResultStatus.timeout]: '504',
   };
 
-  map(benzeneResultStatus: string | undefined): string {
-    if (benzeneResultStatus === undefined) {
-      return DefaultHttpStatusCodeMapper.defaultValue;
+  /**
+   * @param isSuccessful The result's authoritative success flag. Consulted only when
+   * `benzeneResultStatus` is outside the table above: an application-defined *successful* status maps
+   * to `"200"` instead of the generic-error `"500"` row (wire-contracts.md §4.1). Omitted (C#'s
+   * status-only overload) it behaves as `false`, i.e. an unknown status falls to `"500"`.
+   */
+  map(benzeneResultStatus: string | undefined, isSuccessful?: boolean): string {
+    if (benzeneResultStatus !== undefined && benzeneResultStatus in this.dictionary) {
+      return this.dictionary[benzeneResultStatus];
     }
 
-    return this.dictionary[benzeneResultStatus] ?? DefaultHttpStatusCodeMapper.defaultValue;
+    return isSuccessful === true ? '200' : DefaultHttpStatusCodeMapper.defaultValue;
   }
 }

@@ -27,6 +27,15 @@ export class BenzeneMessageResponseAdapter implements IBenzeneResponseAdapter<Be
     context.benzeneMessageResponse.statusCode = statusCode;
   }
 
+  /**
+   * The `BenzeneMessage` envelope is the one wire format that carries the success flag as its own
+   * field, so this transport implements the optional `setSuccessful` (wire-contracts.md §1.2).
+   */
+  setSuccessful(context: BenzeneMessageContext, isSuccessful: boolean): void {
+    ensureResponseExists(context);
+    context.benzeneMessageResponse.isSuccessful = isSuccessful;
+  }
+
   setBody(context: BenzeneMessageContext, body: string): void;
   setBody(context: BenzeneMessageContext, body: Uint8Array): void;
   setBody(context: BenzeneMessageContext, body: string | Uint8Array): void {

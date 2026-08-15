@@ -148,7 +148,7 @@ console.log(response.body);       // '{"orderId":"..."}'
 if (response.statusCode !== BenzeneResultStatus.ok) process.exitCode = 1;
 ```
 
-The response is the wire envelope `{ statusCode, headers, body }`, with `body` the serialized payload as a
+The response is the wire envelope `{ statusCode, isSuccessful, headers, body }`, with `body` the serialized payload as a
 JSON string. The `statusCode` is a `BenzeneResultStatus` (`ok`, `notFound`, `validationError`, …) — assert
 against the constant rather than a raw string. Because the envelope is byte-for-byte identical across
 languages, a payload a TypeScript service answers classifies the same in a .NET peer.

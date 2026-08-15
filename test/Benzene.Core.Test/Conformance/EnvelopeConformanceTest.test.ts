@@ -6,7 +6,8 @@
  *
  * Each case pushes a `BenzeneMessageRequest` (topic + headers + body) through the same
  * `addBenzene` + `addBenzeneMessage` + `useMessageHandlers` pipeline an adopter wires, and asserts the
- * response's `statusCode`, body (subset match) and headers (subset match, case-insensitive keys).
+ * response's `statusCode`, `isSuccessful`, body (subset match, plus `bodyExclude` absence checks) and
+ * headers (subset match, case-insensitive keys).
  */
 import { describe, expect, it } from 'vitest';
 import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
@@ -29,6 +30,23 @@ interface EnvelopeCase {
     statusCode: string;
     body?: unknown;
     headers?: Record<string, string>;
+
+    /**
+     * Optional (wire-contracts.md §1.2): when present, asserted against the response envelope's
+     * `isSuccessful` field — the wire's authoritative success/failure signal, which a receiver honors
+     * over any classification it derives from `statusCode` text.
+     */
+    isSuccessful?: boolean;
+
+    /**
+     * Optional (the fixture README's envelope case format): members that must be genuinely absent
+     * from the parsed response body — not present-with-undefined, but missing as a JSON key entirely.
+     * Mirrors `transport-metadata-cases.json`'s `headersExclude`. A subset match on `body` alone
+     * can't pin absence (an unmentioned member is unconstrained either way), so this is the only way
+     * a case can assert that e.g. no numeric `status` member leaked onto a transport with no HTTP
+     * response (wire-contracts.md §1.3).
+     */
+    bodyExclude?: string[];
   };
 }
 
@@ -66,12 +84,31 @@ describe('EnvelopeConformanceTest', () => {
       expect(response).toBeDefined();
       expect(response.statusCode).toBe(envelopeCase.expected.statusCode);
 
+      if (envelopeCase.expected.isSuccessful !== undefined) {
+        expect(
+          response.isSuccessful,
+          `${envelopeCase.name}: expected isSuccessful=${envelopeCase.expected.isSuccessful}`,
+        ).toBe(envelopeCase.expected.isSuccessful);
+      }
+
       if (envelopeCase.expected.body !== undefined) {
         expect(response.body, `${envelopeCase.name}: expected a response body but none was written`)
           .toBeTruthy();
         const actualBody = JSON.parse(response.body) as unknown;
         const mismatch = findSubsetMismatch(envelopeCase.expected.body, actualBody);
         expect(mismatch, mismatch ?? undefined).toBeNull();
+      }
+
+      if (envelopeCase.expected.bodyExclude !== undefined) {
+        expect(response.body, `${envelopeCase.name}: expected a response body but none was written`)
+          .toBeTruthy();
+        const actualBody = JSON.parse(response.body) as Record<string, unknown>;
+        for (const excludedMember of envelopeCase.expected.bodyExclude) {
+          expect(
+            excludedMember in actualBody,
+            `${envelopeCase.name}: body member '${excludedMember}' was expected to be genuinely absent but was present`,
+          ).toBe(false);
+        }
       }
 
       if (envelopeCase.expected.headers !== undefined) {

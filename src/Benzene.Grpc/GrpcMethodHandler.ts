@@ -172,10 +172,11 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
     }
 
     const rawStatus = grpcContext.messageHandlerResult?.benzeneResult.status;
+    const isSuccessful = grpcContext.messageHandlerResult?.benzeneResult.isSuccessful ?? false;
     const trailer = new Metadata();
     trailer.set(BENZENE_STATUS_TRAILER, rawStatus ?? 'Unknown');
 
-    const statusCode = resolver.getService(IGrpcStatusCodeMapper).map(rawStatus);
+    const statusCode = resolver.getService(IGrpcStatusCodeMapper).map(rawStatus, isSuccessful);
     if (statusCode !== status.OK) {
       const errors = grpcContext.messageHandlerResult?.benzeneResult.errors;
       const detail =

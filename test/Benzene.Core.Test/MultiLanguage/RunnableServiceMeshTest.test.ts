@@ -66,6 +66,7 @@ describe('runnable TypeScript service in a mesh', () => {
       runtime: string;
       placement: { cloud: string };
       topics: { id: string; requestSchema?: unknown; responseSchema?: unknown }[];
+      consumes: { id: string; requestSchema?: unknown; responseSchema?: unknown }[];
       descriptorHash: string;
     };
 
@@ -77,6 +78,11 @@ describe('runnable TypeScript service in a mesh', () => {
     expect(descriptor.topics.map((t) => t.id)).toEqual(['order:create', 'order:get']);
     const create = descriptor.topics.find((t) => t.id === 'order:create')!;
     expect(create.requestSchema).toEqual({ type: 'object', properties: { customerId: { type: 'string' } } });
+
+    // consumes is the outbound registration (mesh.md §2.3): this is what would let a collector build the
+    // orders -> payments consumer edge from the descriptor alone, before any message has ever flowed (§4).
+    expect(descriptor.consumes.map((t) => t.id)).toEqual(['payments:capture']);
+    expect(descriptor.consumes[0]!.responseSchema).toEqual({});
 
     // The §2.2 contract hash: "sha256:" + 64 lowercase hex chars.
     expect(descriptor.descriptorHash).toMatch(/^sha256:[0-9a-f]{64}$/);

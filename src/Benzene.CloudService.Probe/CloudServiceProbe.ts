@@ -247,7 +247,8 @@ function evaluateR8(options: CloudServiceProbeOptions, invoke: ProbeOutcome, mes
   const baseReason =
     'trace context propagation cannot be verified by a single-service black-box HTTP probe; proving it ' +
     'requires either a second service to observe forwarded traceparent headers, or a mesh collector ' +
-    'deriving consumer edges from trace parentage (mesh.md §3-4)';
+    'observing trace parentage as the additive, observed-only liveness/drift signal it feeds (never the ' +
+    'producer/consumer graph itself, which is declared from ServiceDescriptor alone - mesh.md §3-4, §4.2)';
 
   if (!options.sendTraceParentProbe) {
     return new CloudServiceProbeRequirement('R8', description, CloudServiceProbeVerdict.Inconclusive, baseReason);

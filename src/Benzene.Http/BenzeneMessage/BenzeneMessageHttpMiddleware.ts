@@ -83,7 +83,10 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
 
     const response = await this.dispatchAsync(context);
 
-    this.responseAdapter.setStatusCode(context, this.httpStatusCodeMapper.map(response.statusCode));
+    this.responseAdapter.setStatusCode(
+      context,
+      this.httpStatusCodeMapper.map(response.statusCode, response.isSuccessful),
+    );
     this.responseAdapter.setContentType(context, 'application/json; charset=utf-8');
     this.responseAdapter.setBody(context, BenzeneMessageHttpMiddleware.serializer.serialize(response));
     await this.responseAdapter.finalizeAsync(context);
@@ -125,6 +128,7 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
 function errorResponse(statusCode: string, message: string): IBenzeneMessageResponse {
   const response = new BenzeneMessageResponse();
   response.statusCode = statusCode;
+  response.isSuccessful = false;
   response.headers = {};
   response.body = JSON.stringify({ message });
   return response;

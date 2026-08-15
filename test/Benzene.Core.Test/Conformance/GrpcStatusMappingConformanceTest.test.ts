@@ -18,6 +18,13 @@ import { load } from './ConformanceFixtures';
 interface MappingRow {
   from: string;
   to: string;
+
+  /**
+   * Only meaningful on a `"<unknown>"` `from` row (wire-contracts.md §4.2): which of the two
+   * unknown-status outcomes (isSuccessful true vs false) this row covers. Absent on a known-status
+   * row, which maps by its own row regardless.
+   */
+  isSuccessful?: boolean;
 }
 
 interface MappingFixture {
@@ -46,9 +53,9 @@ describe('GrpcStatusMappingConformanceTest', () => {
   describe('forward: Benzene status -> gRPC status code', () => {
     const mapper = new DefaultGrpcStatusCodeMapper();
     for (const row of fixture.forward) {
-      it(`${row.from} -> ${row.to}`, () => {
+      it(`${row.from}${row.isSuccessful === undefined ? '' : ` (isSuccessful=${row.isSuccessful})`} -> ${row.to}`, () => {
         const input = row.from === '<unknown>' ? 'SomeUnknownStatus' : row.from;
-        expect(mapper.map(input)).toBe(statusCode(row.to));
+        expect(mapper.map(input, row.isSuccessful ?? false)).toBe(statusCode(row.to));
       });
     }
   });

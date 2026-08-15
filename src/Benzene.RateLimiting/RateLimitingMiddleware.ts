@@ -75,7 +75,7 @@ export class RateLimitingMiddleware<TContext> implements IMiddleware<TContext> {
       error = `Rate limit exceeded; retry after ${Math.round(retryAfter.value / 1000)}s`;
     }
 
-    // Attach the topic's handler definition so the response pipeline writes the ErrorPayload body (it
+    // Attach the topic's handler definition so the response pipeline writes the problem-document body (it
     // skips definition-less results) - same pattern as Benzene.JsonSchema.
     const topicGetter = this.serviceResolver.tryGetService(
       IMessageTopicGetter,

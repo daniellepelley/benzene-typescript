@@ -4,14 +4,21 @@ import {
   IssuesMessageHandler,
   MeshCollectorStore,
 } from '@benzenejs/mesh-collector';
-import { MeshIssue, MeshIssueBatch, MeshTraceEvent } from '@benzenejs/mesh-wire';
+import {
+  MeshIssue,
+  MeshIssueBatch,
+  MeshServiceDescriptor,
+  MeshTopicDescriptor,
+  MeshTraceEvent,
+} from '@benzenejs/mesh-wire';
 import { BenzeneResultStatus } from '@benzenejs/results';
 
 /**
  * Port of test/Benzene.Mesh.Test/MeshCollectorStoreTest.cs. Store behaviors the conformance sequences
  * don't pin: the bounded ring window (eviction, with cumulative stats deliberately outliving it), the fleet
- * flow-list cap, consumer derivation, and the correlation lookup. `DateTimeOffset` -> epoch-ms `number`;
- * a null wire status -> `undefined` on `MeshTraceEvent.status`; `null` returns -> `undefined`.
+ * flow-list cap, the declared-graph/§4.2 observed-signal behaviors the mesh.md 2026-08 revision added, and
+ * the correlation lookup. `DateTimeOffset` -> epoch-ms `number`; a null wire status -> `undefined` on
+ * `MeshTraceEvent.status`; `null` returns -> `undefined`.
  */
 function event(
   traceId: string,
@@ -30,6 +37,21 @@ function event(
   evt.durationMs = 1;
   evt.startedAt = startedAt;
   return evt;
+}
+
+/** Builds a registrable `MeshServiceDescriptor` declaring `provides` as `topics` and `consumes` as `consumes` (ids only). */
+function descriptor(service: string, provides: string[], consumes: string[]): MeshServiceDescriptor {
+  const value = new MeshServiceDescriptor();
+  value.service = service;
+  value.topics = provides.map(topicDescriptor);
+  value.consumes = consumes.map(topicDescriptor);
+  return value;
+}
+
+function topicDescriptor(id: string): MeshTopicDescriptor {
+  const value = new MeshTopicDescriptor();
+  value.id = id;
+  return value;
 }
 
 function issue(
@@ -129,20 +151,137 @@ describe('MeshCollectorStore', () => {
     expect(fleet.traces[0].topic).toBe('topic'); // the flow's entry topic (earliest event's)
   });
 
-  it('Consumers_AreDerivedAtQueryTimeFromParentage', () => {
+  // ---- declared producer/consumer graph (mesh.md §4, the 2026-08 revision) ----
+
+  it('TraceParentage_NeverAdmitsAConsumerEdge_TheGraphIsDeclaredOnly', () => {
+    // Same shape as the pre-revision test this replaces (a genuine caller/callee parentage, plus a
+    // same-service self-call that would never have counted either way) - but NEITHER service ever
+    // registered, so under the 2026-08 revision the declared graph stays empty regardless of traffic.
     const store = new MeshCollectorStore();
     const now = Date.now();
     const parent = event('trace-1', 'span-parent', 'caller', 'outer', now);
     const child = event('trace-1', 'span-child', 'callee', 'inner', now + 1);
     child.parentSpanId = 'span-parent';
     const selfCall = event('trace-2', 'span-self', 'callee', 'inner', now + 2);
-    selfCall.parentSpanId = 'span-child'; // same-service parent: no edge
+    selfCall.parentSpanId = 'span-child';
 
     store.addEvents([parent, child, selfCall]);
 
     const inner = store.topic('inner', undefined);
     expect(inner).toBeDefined();
-    expect(inner!.consumers).toEqual(['caller']);
+    expect(inner!.consumers).toEqual([]); // no ServiceDescriptor ever declared it - trace parentage alone never does
+    expect(inner!.providers).toEqual([]);
+    expect(inner!.invocations).toBe(2); // stats still accrue (child + selfCall); only graph membership is unaffected
+  });
+
+  it('Register_ZeroTraffic_ReportsTheFullDeclaredGraph', () => {
+    // Spec §4: "A collector MUST report this graph in full for a service that has registered but never
+    // sent or received a single message."
+    const store = new MeshCollectorStore();
+    store.register(descriptor('payments', ['payments:capture'], []));
+    store.register(descriptor('orders', ['order:create'], ['payments:capture']));
+
+    const capture = store.topic('payments:capture', undefined);
+    expect(capture).toBeDefined();
+    expect(capture!.providers).toEqual(['payments']);
+    expect(capture!.consumers).toEqual(['orders']);
+    expect(capture!.invocations).toBe(0);
+    // Declared but never exercised: present-but-empty activity per edge, not absent (the §4.2 "Unobserved"
+    // decommission-candidate signal, distinguished from "never declared" by presence of the key at all).
+    expect(capture!.providerActivity).toEqual({ payments: {} });
+    expect(capture!.consumerActivity).toEqual({ orders: {} });
+  });
+
+  it('Reregistration_ReplacesBothProviderAndConsumerEdges', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('payments', ['payments:capture'], []));
+    store.register(descriptor('orders', ['order:create'], ['payments:capture']));
+    // Redeploy: orders keeps providing order:cancel instead, and stops consuming payments:capture.
+    store.register(descriptor('orders', ['order:cancel'], []));
+
+    expect(store.topic('order:create', undefined)!.providers).toEqual([]);
+    expect(store.topic('payments:capture', undefined)!.consumers).toEqual([]);
+    expect(store.topic('payments:capture', undefined)!.providers).toEqual(['payments']); // unrelated edge untouched
+    expect(store.topic('order:cancel', undefined)!.providers).toEqual(['orders']);
+  });
+
+  it('ProviderActivity_TracksLastObservedAtPerDeclaredEdge_OnceTrafficArrives', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('payments', ['payments:capture'], []));
+    store.register(descriptor('orders', ['order:create'], ['payments:capture']));
+
+    const provide = event('trace-1', 'span-1', 'payments', 'payments:capture', Date.now());
+    const consume = event('trace-1', 'span-2', 'orders', 'order:create', Date.now() + 1);
+    consume.parentSpanId = undefined; // the caller of order:create is unmeshed here; irrelevant to this case
+    const call = event('trace-2', 'span-3', 'payments', 'payments:capture', Date.now() + 2);
+    call.parentSpanId = 'span-4';
+    const callerSpan = event('trace-2', 'span-4', 'orders', 'order:create', Date.now() - 1);
+
+    store.addEvents([callerSpan, call, provide, consume]);
+
+    const capture = store.topic('payments:capture', undefined)!;
+    expect(capture.providers).toEqual(['payments']);
+    expect(capture.consumers).toEqual(['orders']);
+    expect(capture.providerActivity['payments']?.lastObservedAt).toBeDefined();
+    expect(capture.consumerActivity['orders']?.lastObservedAt).toBeDefined(); // seen via span-4's parentage
+  });
+
+  // ---- declared vs. observed: undeclared edges (mesh.md §4.2, contract-drift) ----
+
+  it('ContractDrift_RegisteredProviderHandlingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['order:create'], [])); // does NOT declare order:cancel
+
+    store.addEvents([event('trace-1', 'span-1', 'orders', 'order:cancel', Date.now())]);
+
+    const issues = store.fleet().issues;
+    expect(issues).toHaveLength(1);
+    expect(issues[0].classification).toBe('contract-drift');
+    expect(issues[0].service).toBe('orders');
+    expect(issues[0].topic).toBe('order:cancel');
+    expect(issues[0].count).toBe(1);
+    // The graph itself is unaffected by the drift - orders still doesn't provide order:cancel.
+    expect(store.topic('order:cancel', undefined)!.providers).toEqual([]);
+  });
+
+  it('ContractDrift_RegisteredConsumerCallingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('payments', ['payments:capture'], []));
+    store.register(descriptor('orders', ['order:create'], [])); // does NOT declare payments:capture
+
+    const callerSpan = event('trace-1', 'span-1', 'orders', 'order:create', Date.now());
+    const call = event('trace-1', 'span-2', 'payments', 'payments:capture', Date.now() + 1);
+    call.parentSpanId = 'span-1';
+    store.addEvents([callerSpan, call]);
+
+    const issues = store.fleet().issues;
+    const driftIssues = issues.filter((i) => i.classification === 'contract-drift');
+    expect(driftIssues).toHaveLength(1);
+    expect(driftIssues[0].service).toBe('orders');
+    expect(driftIssues[0].topic).toBe('payments:capture');
+    expect(store.topic('payments:capture', undefined)!.consumers).toEqual([]); // graph unaffected
+  });
+
+  it('ContractDrift_AnonymousNeverRegisteredService_IsNeverFlagged', () => {
+    // Spec §4.2: "An anonymous/never-registered service is never flagged - it has no contract to diverge from."
+    const store = new MeshCollectorStore();
+    store.addEvents([event('trace-1', 'span-1', 'ghost', 'some:topic', Date.now())]);
+
+    expect(store.fleet().issues).toHaveLength(0);
+  });
+
+  it('ContractDrift_MergesRepeatOccurrencesByFingerprint', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['order:create'], []));
+
+    store.addEvents([event('trace-1', 'span-1', 'orders', 'order:cancel', 1_000)]);
+    store.addEvents([event('trace-2', 'span-2', 'orders', 'order:cancel', 2_000)]);
+
+    const issues = store.fleet().issues;
+    expect(issues).toHaveLength(1);
+    expect(issues[0].count).toBe(2); // one occurrence per event, merged by the shared fingerprint
+    expect(issues[0].firstSeen).toBe(1_000);
+    expect(issues[0].lastSeen).toBe(2_000);
   });
 
   // ---- correlation lookup (mesh:query:correlation) ----

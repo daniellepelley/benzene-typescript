@@ -8,7 +8,10 @@ const ambient = new AsyncLocalStorage<MeshSpan | undefined>();
  * The current invocation's position in a trace: the ids the trace middleware assigned (or adopted
  * from the caller's traceparent) for the event it will export. A handler making a downstream Benzene
  * call forwards `toTraceparent()` as the `traceparent` header (docs/specification/mesh.md §3) - the
- * join that lets a collector derive consumer edges from parentage.
+ * join that lets a collector correlate an *observed* call with the declared edge it exercises (§4.2's
+ * liveness/drift signals), never the producer/consumer graph itself, which is declared from
+ * `ServiceDescriptor.topics`/`consumes` alone regardless of whether any call has ever propagated a
+ * trace at all (§4).
  *
  * Flows via `MeshSpan.current` (`AsyncLocalStorage`, the Node idiom for invocation-ambient state,
  * the port of C# `AsyncLocal`). Where C# sets `MeshSpan.Current = span` and restores it in a
