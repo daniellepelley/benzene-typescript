@@ -149,7 +149,7 @@ export class ServiceQueryMessageHandler implements IMessageHandler<ServiceQuery,
   }
 }
 
-/** One topic's catalog row, consumers derived from trace parentage at query time. */
+/** One topic's catalog row: providers/consumers from the latest registered ServiceDescriptor's `topics`/`consumes` (mesh.md §4). */
 export class TopicQueryMessageHandler implements IMessageHandler<TopicQuery, TopicSummary> {
   constructor(private readonly readModel: IMeshFleetReadModel) {}
 

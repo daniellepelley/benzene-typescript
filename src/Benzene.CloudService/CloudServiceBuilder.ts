@@ -1,8 +1,9 @@
 /** Port of Benzene.CloudService.CloudServiceBuilder (and ICloudServiceBuilder). */
 import { randomUUID } from 'node:crypto';
-import { Constructor } from '@benzenejs/abstractions';
+import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
-import { BenzeneMessageContext } from '@benzenejs/core-messages';
+import { IMessageSenderDefinition } from '@benzenejs/abstractions-messages';
+import { BenzeneMessageContext, MessageSenderDefinition } from '@benzenejs/core-messages';
 import { IHealthCheck } from '@benzenejs/health-checks-core';
 import { IMeshTraceExporter, MeshPlacement, MeshServiceInfo } from '@benzenejs/mesh-wire';
 import { CloudServicePaths } from './CloudServicePaths';
@@ -44,6 +45,21 @@ export interface ICloudServiceBuilder {
    * the container's existing registrations and the descriptor is derived on the first invocation instead.
    */
   withHandlers(...handlerTypes: Constructor<unknown>[]): ICloudServiceBuilder;
+
+  /**
+   * Declares an outbound topic this service may send (mesh.md §2.3's outbound registration) - no handler,
+   * since nothing here receives. This is what populates the descriptor's `consumes` field, the sole source
+   * a collector reads to build this service's consumer edges (mesh.md §4) - a topic never declared here is
+   * never a consumer edge, however much traffic actually flows. Mirrors `withHandlers` for the inbound side;
+   * `requestType`/`responseType` default to "no payload" (matching `MessageSenderDefinition.create`'s
+   * `VoidResult` sentinel) when the service doesn't need §2.1 schema derivation for this topic.
+   */
+  withConsumes(
+    topic: string,
+    requestType?: ServiceIdentifier<unknown>,
+    responseType?: ServiceIdentifier<unknown>,
+    version?: string,
+  ): ICloudServiceBuilder;
 
   /**
    * Adds custom middleware to the wire-envelope pipeline, inside the profile's own middleware (trace,
@@ -100,6 +116,7 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
   collectorEnvelopeUrl?: string;
   readonly healthChecks: IHealthCheck[] = [];
   handlerTypes?: Constructor<unknown>[];
+  readonly consumesDefinitions: IMessageSenderDefinition[] = [];
   envelopeMiddleware?: PipelineBuilderAction<BenzeneMessageContext>;
   invokePath: string = CloudServicePaths.invoke;
   specPath: string = CloudServicePaths.spec;
@@ -156,6 +173,16 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
 
   withHandlers(...handlerTypes: Constructor<unknown>[]): ICloudServiceBuilder {
     this.handlerTypes = this.handlerTypes === undefined ? handlerTypes : [...this.handlerTypes, ...handlerTypes];
+    return this;
+  }
+
+  withConsumes(
+    topic: string,
+    requestType: ServiceIdentifier<unknown> = VoidResult,
+    responseType: ServiceIdentifier<unknown> = VoidResult,
+    version = '',
+  ): ICloudServiceBuilder {
+    this.consumesDefinitions.push(MessageSenderDefinition.create(topic, requestType, responseType, VoidResult, version));
     return this;
   }
 

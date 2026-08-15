@@ -85,8 +85,26 @@ export class ServiceSummary {
 }
 
 /**
- * One topic's catalog row: providers from descriptors, consumers observed from trace parentage, stats
- * from the trace feed - nothing is declared.
+ * One declared edge's §4.2 observed-only liveness: `{}` when the collector has never seen trace evidence
+ * for it (a decommission CANDIDATE - trace export is lossy, so absence of evidence is not evidence of
+ * absence), `{lastObservedAt}` (ISO-8601) once it has. Keyed by service name on {@link TopicActivity}.
+ */
+export interface TopicEdgeActivity {
+  lastObservedAt?: string;
+}
+
+/**
+ * Per-service §4.2 observed-only activity for one topic's declared providers or consumers - one entry per
+ * declared service name (see {@link TopicSummary.providerActivity}/{@link TopicSummary.consumerActivity}).
+ */
+export type TopicActivity = Record<string, TopicEdgeActivity>;
+
+/**
+ * One topic's catalog row: providers/consumers from the latest registered `ServiceDescriptor`'s `topics`/
+ * `consumes` (mesh.md §4's 2026-08 revision - the DECLARED graph, unconditioned on traffic), stats from the
+ * trace feed. `providerActivity`/`consumerActivity` layer the §4.2 observed-only liveness signal on top,
+ * additively - they never change who counts as a provider/consumer, only whether trace evidence has ever
+ * confirmed a declared edge.
  */
 export class TopicSummary {
   topic = '';
@@ -96,6 +114,12 @@ export class TopicSummary {
   providers: string[] = [];
 
   consumers: string[] = [];
+
+  /** §4.2 "Unobserved" for each entry in {@link providers}, keyed by service name. */
+  providerActivity: TopicActivity = {};
+
+  /** §4.2 "Unobserved" for each entry in {@link consumers}, keyed by service name. */
+  consumerActivity: TopicActivity = {};
 
   invocations = 0;
 

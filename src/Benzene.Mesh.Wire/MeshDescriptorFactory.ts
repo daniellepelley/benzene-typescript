@@ -1,6 +1,7 @@
 /** Port of Benzene.Mesh.Wire.MeshDescriptorFactory (and MeshDescriptorHashing). */
 import { createHash } from 'node:crypto';
 import { IMessageHandlerDefinitionLookUp } from '@benzenejs/abstractions-message-handlers';
+import { IMessageSendersFinder, ITopic } from '@benzenejs/abstractions-messages';
 import { MeshJson } from './MeshJson';
 import {
   MeshPlacement,
@@ -17,23 +18,32 @@ function ordinal(a: string, b: string): number {
 
 /**
  * Builds the ServiceDescriptor (docs/specification/mesh.md §2) from the live message-handler
- * registry plus static identity. Call it after registration is complete (registration is a startup
- * activity). An undefined lookup is not an error: per the spec's degradation rule (§6) the
- * descriptor is built without a topic list and the missing feed is recorded in `degraded`, so a
- * service whose registry feed isn't wired up still participates in the mesh reduced, rather than not
- * at all.
+ * registry (what the service **provides**), the outbound registration (§2.3, what it **consumes**),
+ * plus static identity. Call it after registration is complete (registration is a startup activity).
+ * An undefined `lookUp`/`sendersFinder` is not an error: per the spec's degradation rule (§6) the
+ * descriptor is built without that list and the missing feed is recorded in `degraded`, so a service
+ * whose registry or outbound-registry feed isn't wired up still participates in the mesh reduced,
+ * rather than not at all.
  *
- * Divergence from C#: the schemas come from an injected `IMeshSchemaProvider` (keyed by topic)
- * instead of CLR reflection over the request/response types - see `MeshSchemaProvider`. Everything
- * else (topic ordering, degradation, hashing) matches the original.
+ * Divergences from C#: the schemas come from an injected `IMeshSchemaProvider` (keyed by topic)
+ * instead of CLR reflection over the request/response types - see `MeshSchemaProvider`. Outbound
+ * registration mirrors inbound handler discovery (core-concepts.md §9, mesh.md §2.3): `IMessageHandlerDefinitionLookUp`'s
+ * sender-side counterpart is `@benzenejs/abstractions-messages`' `IMessageSendersFinder` - already
+ * present in this port for the OpenAPI/AsyncAPI spec builders - so no new abstraction was needed, just
+ * a second, optional source the factory projects the same way. Everything else (topic ordering,
+ * degradation, hashing) matches the original.
  */
 export const MeshDescriptorFactory = {
   registryFeed: 'registry',
+
+  /** Names the outbound-registration feed in `degraded` (spec §2/§2.3) when no `sendersFinder` is supplied. */
+  outboundRegistryFeed: 'outbound-registry',
 
   create(
     lookUp: IMessageHandlerDefinitionLookUp | undefined,
     info: MeshServiceInfo,
     schemaProvider: IMeshSchemaProvider = new NoMeshSchemaProvider(),
+    sendersFinder?: IMessageSendersFinder,
   ): MeshServiceDescriptor {
     const descriptor = new MeshServiceDescriptor();
     descriptor.service = info.service;
@@ -42,28 +52,46 @@ export const MeshDescriptorFactory = {
     descriptor.binding = info.binding;
     descriptor.placement = placementFor(info.placement);
 
+    const degraded: string[] = [];
+
     if (lookUp === undefined) {
-      descriptor.degraded = [MeshDescriptorFactory.registryFeed];
+      degraded.push(MeshDescriptorFactory.registryFeed);
     } else {
       descriptor.topics = lookUp
         .getAllHandlers()
         .slice()
         .sort((a, b) => ordinal(a.topic.id, b.topic.id) || ordinal(a.topic.version, b.topic.version))
-        .map((definition) => {
-          const schemas = schemaProvider.getSchemas(definition.topic);
-          const topic = new MeshTopicDescriptor();
-          topic.id = definition.topic.id;
-          topic.version = definition.topic.version ? definition.topic.version : undefined;
-          topic.requestSchema = schemas.request;
-          topic.responseSchema = schemas.response;
-          return topic;
-        });
+        .map((definition) => topicDescriptorFor(definition.topic, schemaProvider));
+    }
+
+    if (sendersFinder === undefined) {
+      degraded.push(MeshDescriptorFactory.outboundRegistryFeed);
+    } else {
+      descriptor.consumes = sendersFinder
+        .findDefinitions()
+        .slice()
+        .sort((a, b) => ordinal(a.topic.id, b.topic.id) || ordinal(a.topic.version, b.topic.version))
+        .map((definition) => topicDescriptorFor(definition.topic, schemaProvider));
+    }
+
+    if (degraded.length > 0) {
+      descriptor.degraded = degraded;
     }
 
     descriptor.descriptorHash = MeshDescriptorHashing.computeHash(descriptor);
     return descriptor;
   },
 } as const;
+
+function topicDescriptorFor(topic: ITopic, schemaProvider: IMeshSchemaProvider): MeshTopicDescriptor {
+  const schemas = schemaProvider.getSchemas(topic);
+  const descriptor = new MeshTopicDescriptor();
+  descriptor.id = topic.id;
+  descriptor.version = topic.version ? topic.version : undefined;
+  descriptor.requestSchema = schemas.request;
+  descriptor.responseSchema = schemas.response;
+  return descriptor;
+}
 
 function placementFor(placement: MeshPlacement | undefined): MeshPlacement {
   const result = new MeshPlacement();
@@ -114,6 +142,7 @@ function canonicalDescriptor(descriptor: MeshServiceDescriptor): Record<string, 
   }
   canonical['placement'] = canonicalPlacement(descriptor.placement);
   canonical['topics'] = descriptor.topics.map(canonicalTopic);
+  canonical['consumes'] = descriptor.consumes.map(canonicalTopic);
   // descriptorHash, degraded, profile blanked (§2.2)
   return canonical;
 }

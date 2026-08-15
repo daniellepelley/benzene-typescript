@@ -3,10 +3,23 @@
  *
  * The in-memory state behind the spec collector (docs/specification/mesh.md §4-§6): cumulative per-service
  * and per-topic stats, the latest heartbeat per instance, registered descriptors, and a bounded ring of
- * recent trace events (the window consumer edges and the trace query derive from). Everything is derived - a
+ * recent trace events (the window the trace/correlation queries derive from). Everything is derived - a
  * service that never registered still appears once its traces do (anonymous but live, with its missing feeds
  * named), a registered service with no traffic is a catalog entry with no stats, and no missing feed ever
  * fails ingestion or a query: the §6 degradation rule, collector side.
+ *
+ * **Declared vs. observed (the 2026-08 revision, mesh.md §4/§4.2):** the producer/consumer graph is now built
+ * ENTIRELY from the latest registered `ServiceDescriptor` - `topics` gives provider edges, `consumes` gives
+ * consumer edges (`register` replaces both wholesale) - never from trace parentage. Trace parentage is kept
+ * only as a separate, additive, observed-only signal, layered on top of the declared graph and never fed back
+ * into it: a `spanId -> service` index (`spanIdToService`, scoped to the same bounded ring window as the trace
+ * queries) lets ingestion notice, per event, which service actually provided/called a topic, which feeds two
+ * things that are NOT graph membership - (a) per-edge `lastObservedAt` (`providerObservedAt`/
+ * `consumerObservedAt` on `TopicState`, surfaced as `TopicSummary.providerActivity`/`consumerActivity`), the
+ * "Unobserved" decommission-candidate signal, and (b) a synthesized `contract-drift` issue (mesh.md §4.1's
+ * classification, filed exactly like a wire-fed `mesh:issues` entry) when a *registered* service's traffic
+ * names a topic it never declared providing/consuming - the "Undeclared" signal. An anonymous/never-registered
+ * service is never flagged (no descriptor, no contract to diverge from).
  *
  * Divergences from the C# original:
  * - `DateTimeOffset` -> epoch-millisecond `number`; `DateTimeOffset.UtcNow` -> `Date.now()`.
@@ -18,7 +31,16 @@
  * - `StringComparer.Ordinal` ordering -> a local `ordinalCompare` (UTF-16 code-unit order, ordinal for the
  *   ASCII ids in play), the same helper `@benzenejs/mesh-aggregator` uses.
  */
-import { MeshHeartbeat, MeshIssue, MeshIssueBatch, MeshServiceDescriptor, MeshTraceEvent } from '@benzenejs/mesh-wire';
+import {
+  MeshHeartbeat,
+  MeshIssue,
+  MeshIssueBatch,
+  MeshIssueClassification,
+  MeshIssueFingerprint,
+  MeshServiceDescriptor,
+  MeshTopicDescriptor,
+  MeshTraceEvent,
+} from '@benzenejs/mesh-wire';
 import { BenzeneResultStatus } from '@benzenejs/results';
 import { IMeshFleetReadModel } from './IMeshFleetReadModel';
 import { MeshTimeRangeResolver, ResolvedWindow } from './MeshTimeRangeResolver';
@@ -31,6 +53,7 @@ import {
   MeshWindow,
   ServiceSummary,
   ServiceView,
+  TopicActivity,
   TopicSummary,
   TraceSummary,
   TraceView,
@@ -54,7 +77,16 @@ class ServiceState {
 }
 
 class TopicState {
+  // Declared graph membership (mesh.md §4, the 2026-08 revision): providers from every registered
+  // ServiceDescriptor's `topics`, consumers from its `consumes`. Populated/replaced wholesale by `register`
+  // ONLY - trace parentage never admits or removes an entry here (spec §4.2's "not for graph membership").
   readonly providers = new Set<string>();
+  readonly consumers = new Set<string>();
+  // Observed-only liveness signal (§4.2 "Unobserved"): per-edge last-observed-at, epoch ms, keyed by the
+  // provider/consumer service name. Cumulative since store start (like the stats below), NOT bounded by the
+  // ring window - an edge doesn't need its exemplar trace retained to remember it was once exercised.
+  readonly providerObservedAt = new Map<string, number>();
+  readonly consumerObservedAt = new Map<string, number>();
   readonly statusCounts = new Map<string, number>();
   invocations = 0;
   errors = 0;
@@ -74,6 +106,15 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
   private next = 0;
 
   /**
+   * `spanId -> service` index over exactly the ring's current window (kept in lockstep with every push/evict
+   * below) - used ONLY for the §4.2 observed-only signals (per-edge `lastObservedAt` and undeclared-edge
+   * `contract-drift`), NEVER for graph membership (spec §4: the declared graph comes from `register` alone).
+   * A parent span that has already aged out of the window is indistinguishable from one that was never
+   * meshed - the same "absence of evidence is not evidence of absence" posture the spec calls for.
+   */
+  private readonly spanIdToService = new Map<string, string>();
+
+  /**
    * When this store started accumulating - the window start for anything reporting the cumulative stats
    * (storage is in-memory, so counts always cover "since process start"). Epoch milliseconds.
    */
@@ -86,19 +127,29 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   /**
    * Stores the descriptor as the service's current contract, replacing any previous registration wholesale
-   * - a redeploy that drops a topic drops the provider claim with it.
+   * - a redeploy that drops a topic from `topics` drops the provider edge with it, and a redeploy that drops
+   * a topic from `consumes` drops the consumer edge with it, the same rule applied symmetrically to both
+   * declared lists (spec §4). This is the ONLY thing that ever changes the declared graph.
    */
   register(descriptor: MeshServiceDescriptor): void {
     for (const topic of this.topics.values()) {
       topic.providers.delete(descriptor.service);
+      topic.consumers.delete(descriptor.service);
     }
 
     const state = this.ensureService(descriptor.service);
     state.descriptor = descriptor;
     state.lastSeen = Date.now();
 
-    for (const topic of descriptor.topics) {
+    // A wire body is deserialized straight off parsed JSON (no class construction), so an omitted
+    // `topics`/`consumes` - legal on the wire, e.g. a service that declares no outbound registration -
+    // is genuinely `undefined` here, not the class field's `[]` default. Coalesce rather than assume,
+    // against the §6 "no feed fails ingestion" rule.
+    for (const topic of descriptor.topics ?? []) {
       this.ensureTopic(topicKey(topic.id, topic.version ?? '')).providers.add(descriptor.service);
+    }
+    for (const topic of descriptor.consumes ?? []) {
+      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).consumers.add(descriptor.service);
     }
   }
 
@@ -115,15 +166,31 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   /**
    * Ingests a trace batch: the bounded ring window plus cumulative stats (which deliberately outlive the
-   * window). Returns how many events were accepted.
+   * window), PLUS the §4.2 observed-only signals derived from trace parentage - per-edge `lastObservedAt`
+   * and undeclared-edge `contract-drift` issues. None of this ever touches the declared graph (`providers`/
+   * `consumers` on `TopicState`) - only `register` does that. Returns how many events were accepted.
    */
   addEvents(events: readonly MeshTraceEvent[]): number {
     for (const traceEvent of events) {
+      // The caller (if any) is whoever currently owns the parent span in the ring window - looked up BEFORE
+      // this event's own span joins the index, so an event never resolves itself as its own caller.
+      const callerService =
+        traceEvent.parentSpanId !== undefined && traceEvent.parentSpanId.length > 0
+          ? this.spanIdToService.get(traceEvent.parentSpanId)
+          : undefined;
+
       if (this.ring.length < this.capacity) {
         this.ring.push(traceEvent);
       } else {
+        const evicted = this.ring[this.next];
+        if (evicted !== undefined) {
+          this.spanIdToService.delete(evicted.spanId);
+        }
         this.ring[this.next] = traceEvent;
         this.next = (this.next + 1) % this.capacity;
+      }
+      if (traceEvent.service !== undefined && traceEvent.service.length > 0 && traceEvent.spanId.length > 0) {
+        this.spanIdToService.set(traceEvent.spanId, traceEvent.service);
       }
 
       const failed = !BenzeneResultStatus.isSuccess(traceEvent.status);
@@ -131,7 +198,8 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       // A wire payload can carry a null/absent status; coalesce it so it never reaches a count key as
       // null-ish (against the §6 "no feed fails ingestion" rule).
       const status = traceEvent.status ?? '';
-      const topic = this.ensureTopic(topicKey(traceEvent.topic, traceEvent.topicVersion ?? ''));
+      const topicRecordKey = topicKey(traceEvent.topic, traceEvent.topicVersion ?? '');
+      const topic = this.ensureTopic(topicRecordKey);
       topic.invocations++;
       topic.statusCounts.set(status, (topic.statusCounts.get(status) ?? 0) + 1);
       topic.totalDurationMs += traceEvent.durationMs;
@@ -140,16 +208,61 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
         topic.errors++;
       }
 
+      let providerService: ServiceState | undefined;
       if (traceEvent.service !== undefined && traceEvent.service.length > 0) {
-        const service = this.ensureService(traceEvent.service);
-        service.invocations++;
-        service.lastSeen = Date.now();
+        providerService = this.ensureService(traceEvent.service);
+        providerService.invocations++;
+        providerService.lastSeen = Date.now();
         if (failed) {
-          service.errors++;
+          providerService.errors++;
         }
+
+        // §4.2 "Unobserved": this service just exercised the topic it provides - stamp its liveness.
+        topic.providerObservedAt.set(traceEvent.service, Date.now());
       }
+
+      let callerState: ServiceState | undefined;
+      if (callerService !== undefined && callerService !== traceEvent.service) {
+        callerState = this.services.get(callerService);
+        topic.consumerObservedAt.set(callerService, Date.now());
+      }
+
+      this.detectContractDrift(traceEvent, providerService, callerService, callerState);
     }
     return events.length;
+  }
+
+  /**
+   * §4.2 "Undeclared": a REGISTERED service's own traffic naming a topic it never declared. Provider side -
+   * the handling service's descriptor doesn't list this topic in `topics`; consumer side - the calling
+   * service's descriptor doesn't list it in `consumes`. An anonymous/never-registered service (no descriptor)
+   * is never flagged - it has no contract to diverge from. Filed as a `contract-drift` issue, merged by the
+   * same fingerprint scheme as a wire-fed `mesh:issues` entry (§4.1).
+   */
+  private detectContractDrift(
+    traceEvent: MeshTraceEvent,
+    providerService: ServiceState | undefined,
+    callerService: string | undefined,
+    callerState: ServiceState | undefined,
+  ): void {
+    const topicId = traceEvent.topic;
+    const version = traceEvent.topicVersion;
+
+    if (
+      traceEvent.service !== undefined &&
+      providerService?.descriptor !== undefined &&
+      !declaresTopic(providerService.descriptor.topics, topicId, version)
+    ) {
+      this.mergeIssue(driftIssue(traceEvent.service, topicId, version, traceEvent));
+    }
+
+    if (
+      callerService !== undefined &&
+      callerState?.descriptor !== undefined &&
+      !declaresTopic(callerState.descriptor.consumes, topicId, version)
+    ) {
+      this.mergeIssue(driftIssue(callerService, topicId, version, traceEvent));
+    }
   }
 
   /**
@@ -167,61 +280,71 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       if (incoming.fingerprint.length === 0 || incoming.topic.length === 0) {
         continue; // skipped, never rejected (§6: no feed fails ingestion)
       }
-
-      let issue = this.issues.get(incoming.fingerprint);
-      if (issue === undefined) {
-        if (this.issues.size >= this.maxIssues) {
-          // Evict the least recently observed issue - the least actionable one.
-          let oldest: MeshIssue | undefined;
-          for (const candidate of this.issues.values()) {
-            if (oldest === undefined || candidate.lastSeen < oldest.lastSeen) {
-              oldest = candidate;
-            }
-          }
-          if (oldest !== undefined) {
-            this.issues.delete(oldest.fingerprint);
-          }
-        }
-        issue = new MeshIssue();
-        issue.fingerprint = incoming.fingerprint;
-        issue.classification = incoming.classification;
-        issue.service = incoming.service;
-        issue.topic = incoming.topic;
-        issue.version = incoming.version;
-        issue.firstSeen = incoming.firstSeen;
-        issue.lastSeen = incoming.lastSeen;
-        this.issues.set(incoming.fingerprint, issue);
-      }
-
-      issue.count += incoming.count; // deltas merge by summation - restart-proof, no instance keying
-      if (incoming.firstSeen < issue.firstSeen) {
-        issue.firstSeen = incoming.firstSeen;
-      }
-      if (incoming.lastSeen > issue.lastSeen) {
-        issue.lastSeen = incoming.lastSeen;
-      }
-      issue.classification = incoming.classification.length === 0 ? issue.classification : incoming.classification;
-      issue.transport = incoming.transport ?? issue.transport;
-      issue.status = incoming.status.length === 0 ? issue.status : incoming.status;
-      issue.exceptionType = incoming.exceptionType ?? issue.exceptionType;
-      issue.resolutionHint = incoming.resolutionHint ?? issue.resolutionHint;
-      for (const exemplar of incoming.exemplarTraceIds) {
-        if (exemplar.length === 0 || issue.exemplarTraceIds.includes(exemplar)) {
-          continue;
-        }
-        issue.exemplarTraceIds.push(exemplar);
-        if (issue.exemplarTraceIds.length > 3) {
-          issue.exemplarTraceIds.shift(); // keep the newest
-        }
-      }
+      this.mergeIssue(incoming);
       accepted++;
     }
     return accepted;
   }
 
+  /**
+   * Merges one issue record (fingerprint-keyed, spec §4.1's delta semantics) into the issue map, bounded
+   * (evict oldest `lastSeen` when full). Shared by the wire-fed `mesh:issues` batch above and the
+   * collector-synthesized `contract-drift` issues §4.2 produces from trace ingestion - both are "one
+   * occurrence, merge by fingerprint," so both funnel through the identical merge/eviction logic. Assumes
+   * `incoming.fingerprint`/`incoming.topic` are already non-empty (the caller validates wire-fed entries;
+   * synthesized drift issues are always well-formed by construction).
+   */
+  private mergeIssue(incoming: MeshIssue): void {
+    let issue = this.issues.get(incoming.fingerprint);
+    if (issue === undefined) {
+      if (this.issues.size >= this.maxIssues) {
+        // Evict the least recently observed issue - the least actionable one.
+        let oldest: MeshIssue | undefined;
+        for (const candidate of this.issues.values()) {
+          if (oldest === undefined || candidate.lastSeen < oldest.lastSeen) {
+            oldest = candidate;
+          }
+        }
+        if (oldest !== undefined) {
+          this.issues.delete(oldest.fingerprint);
+        }
+      }
+      issue = new MeshIssue();
+      issue.fingerprint = incoming.fingerprint;
+      issue.classification = incoming.classification;
+      issue.service = incoming.service;
+      issue.topic = incoming.topic;
+      issue.version = incoming.version;
+      issue.firstSeen = incoming.firstSeen;
+      issue.lastSeen = incoming.lastSeen;
+      this.issues.set(incoming.fingerprint, issue);
+    }
+
+    issue.count += incoming.count; // deltas merge by summation - restart-proof, no instance keying
+    if (incoming.firstSeen < issue.firstSeen) {
+      issue.firstSeen = incoming.firstSeen;
+    }
+    if (incoming.lastSeen > issue.lastSeen) {
+      issue.lastSeen = incoming.lastSeen;
+    }
+    issue.classification = incoming.classification.length === 0 ? issue.classification : incoming.classification;
+    issue.transport = incoming.transport ?? issue.transport;
+    issue.status = incoming.status.length === 0 ? issue.status : incoming.status;
+    issue.exceptionType = incoming.exceptionType ?? issue.exceptionType;
+    issue.resolutionHint = incoming.resolutionHint ?? issue.resolutionHint;
+    for (const exemplar of incoming.exemplarTraceIds) {
+      if (exemplar.length === 0 || issue.exemplarTraceIds.includes(exemplar)) {
+        continue;
+      }
+      issue.exemplarTraceIds.push(exemplar);
+      if (issue.exemplarTraceIds.length > 3) {
+        issue.exemplarTraceIds.shift(); // keep the newest
+      }
+    }
+  }
+
   fleet(range?: MeshTimeRange): FleetView {
     const window = MeshTimeRangeResolver.resolve(range, Date.now());
-    const consumers = this.consumersByTopic();
     const view = new FleetView();
     view.generatedAt = Date.now();
     view.services = [...this.services.keys()]
@@ -229,7 +352,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       .map((name) => this.serviceSummary(name));
     view.topics = [...this.topics.keys()]
       .sort(compareTopicKeys)
-      .map((key) => this.topicSummary(key, consumers.get(key)));
+      .map((key) => this.topicSummary(key));
     // Flows honor the window (ring filtered by trace start); the per-topic/service counts above are
     // cumulative-since-start and can't be sub-windowed - collectorWindow says so.
     view.traces = this.traceSummaries(MaxFleetTraces, window);
@@ -293,7 +416,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     if (!this.topics.has(key)) {
       return undefined;
     }
-    const summary = this.topicSummary(key, this.consumersByTopic().get(key));
+    const summary = this.topicSummary(key);
     // Standalone topic response carries the window (cumulative counts on this plane); embedded in a
     // FleetView it stays undefined - the fleet's one window covers the whole view.
     const w = this.collectorWindow(MeshTimeRangeResolver.resolve(range, Date.now()));
@@ -426,39 +549,6 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     return state;
   }
 
-  /**
-   * Derives who-calls-whom from the ring window: an event whose parent span belongs to another service
-   * makes that service a consumer of the event's topic (spec §4). Unmeshed callers have no parent span in
-   * the window and produce no edge - never a guess.
-   */
-  private consumersByTopic(): Map<string, Set<string>> {
-    const spanService = new Map<string, string>();
-    for (const traceEvent of this.ring) {
-      if (traceEvent.service !== undefined && traceEvent.service.length > 0) {
-        spanService.set(traceEvent.spanId, traceEvent.service);
-      }
-    }
-
-    const consumers = new Map<string, Set<string>>();
-    for (const traceEvent of this.ring) {
-      if (traceEvent.parentSpanId === undefined || traceEvent.parentSpanId.length === 0) {
-        continue;
-      }
-      const caller = spanService.get(traceEvent.parentSpanId);
-      if (caller === undefined || caller === traceEvent.service) {
-        continue;
-      }
-      const key = topicKey(traceEvent.topic, traceEvent.topicVersion ?? '');
-      let set = consumers.get(key);
-      if (set === undefined) {
-        set = new Set<string>();
-        consumers.set(key, set);
-      }
-      set.add(caller);
-    }
-    return consumers;
-  }
-
   private serviceSummary(name: string): ServiceSummary {
     const state = this.services.get(name)!;
     const summary = new ServiceSummary();
@@ -473,7 +563,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       summary.runtime = state.descriptor.runtime;
       summary.binding = state.descriptor.binding;
       summary.placement = state.descriptor.placement;
-      summary.topics = state.descriptor.topics.length;
+      summary.topics = (state.descriptor.topics ?? []).length;
     } else {
       summary.missingFeeds.push('descriptor'); // known only from traffic: anonymous but live
     }
@@ -499,14 +589,23 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     return summary;
   }
 
-  private topicSummary(key: string, consumers: Set<string> | undefined): TopicSummary {
+  /**
+   * Providers/consumers are read straight off the DECLARED graph (`TopicState.providers`/`consumers`,
+   * populated wholesale by `register` alone - spec §4's 2026-08 revision). `providerActivity`/
+   * `consumerActivity` layer the §4.2 "Unobserved" signal on top, additively: one entry per declared
+   * edge, `{lastObservedAt}` when trace evidence has ever confirmed it, `{}` (present but empty) when
+   * it hasn't - a decommission CANDIDATE, not a verdict (trace export is lossy by design).
+   */
+  private topicSummary(key: string): TopicSummary {
     const state = this.topics.get(key)!;
     const { id, version } = parseTopicKey(key);
     const summary = new TopicSummary();
     summary.topic = id;
     summary.version = version.length === 0 ? undefined : version;
     summary.providers = [...state.providers].sort(ordinalCompare);
-    summary.consumers = [...(consumers ?? new Set<string>())].sort(ordinalCompare);
+    summary.consumers = [...state.consumers].sort(ordinalCompare);
+    summary.providerActivity = activityFor(state.providers, state.providerObservedAt);
+    summary.consumerActivity = activityFor(state.consumers, state.consumerObservedAt);
     summary.invocations = state.invocations;
     summary.errors = state.errors;
     summary.avgDurationMs = state.invocations > 0 ? state.totalDurationMs / state.invocations : 0;
@@ -572,6 +671,60 @@ function compareTopicKeys(a: string, b: string): number {
 
 function ordinalCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * Projects a declared edge set plus its observed-at map into the §4.2 `TopicActivity` shape: one entry per
+ * declared service, `{lastObservedAt}` (ISO-8601) when observed, `{}` when not - present-but-empty is the
+ * "declared, never observed" decommission-candidate signal, deliberately distinct from absence.
+ */
+function activityFor(declared: ReadonlySet<string>, observedAt: ReadonlyMap<string, number>): TopicActivity {
+  const activity: TopicActivity = {};
+  for (const service of declared) {
+    const at = observedAt.get(service);
+    activity[service] = at === undefined ? {} : { lastObservedAt: MeshTimeRangeResolver.toIso(at) };
+  }
+  return activity;
+}
+
+/**
+ * Whether `topics`/`consumes` (a descriptor's declared list) names `(id, version)` - spec §4.2's "Undeclared"
+ * test. `declared` may be `undefined`: a wire-deserialized descriptor with the field genuinely omitted (see
+ * `register`'s coalescing note) declares nothing, not everything.
+ */
+function declaresTopic(
+  declared: readonly MeshTopicDescriptor[] | undefined,
+  id: string,
+  version: string | undefined,
+): boolean {
+  return (declared ?? []).some((topic) => topic.id === id && (topic.version ?? '') === (version ?? ''));
+}
+
+/** Builds the one-occurrence `contract-drift` issue §4.2 synthesizes for an undeclared edge, ready to merge. */
+function driftIssue(service: string, topic: string, version: string | undefined, traceEvent: MeshTraceEvent): MeshIssue {
+  const status = traceEvent.status ?? '';
+  const issue = new MeshIssue();
+  issue.fingerprint = MeshIssueFingerprint.compute(
+    service,
+    topic,
+    version,
+    MeshIssueClassification.contractDrift,
+    traceEvent.exceptionType,
+    status,
+  );
+  issue.classification = MeshIssueClassification.contractDrift;
+  issue.service = service;
+  issue.topic = topic;
+  issue.version = version;
+  issue.status = status;
+  issue.exceptionType = traceEvent.exceptionType;
+  issue.count = 1;
+  issue.firstSeen = traceEvent.startedAt;
+  issue.lastSeen = traceEvent.startedAt;
+  if (traceEvent.traceId.length > 0) {
+    issue.exemplarTraceIds = [traceEvent.traceId];
+  }
+  return issue;
 }
 
 // A defensive copy of a stored issue for the fleet view - the C# snapshot that keeps a view serialized outside

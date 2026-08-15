@@ -138,6 +138,27 @@ describe('useBenzeneCloudService', () => {
     expect(response.body).toContain('R6');
   });
 
+  it('declares consumes via withConsumes (mesh.md §2.3 outbound registration)', async () => {
+    const host = createHost((cloud) => cloud.withConsumes('payments:capture'));
+
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('consumes');
+    expect(response.body).toContain('payments:capture');
+    // consumes is no longer degraded once the service declares at least one outbound registration.
+    expect(response.body).not.toContain('outbound-registry');
+  });
+
+  it('degrades consumes (not an empty array) when no outbound registration was declared', async () => {
+    const host = createHost();
+
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('outbound-registry');
+  });
+
   it('reports fully conformant with a collector configured', async () => {
     // Port 9 is the discard service — registration fails and is retried, exactly the spec's degradation
     // behaviour: an unreachable collector never affects the service.
