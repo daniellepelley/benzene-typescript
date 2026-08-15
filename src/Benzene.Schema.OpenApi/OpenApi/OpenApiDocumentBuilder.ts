@@ -50,18 +50,33 @@ const ERROR_RESPONSES: Record<string, string> = {
 };
 
 /**
- * The problem-details schema referenced by every error response. C# reflects `ErrorPayload` into a schema
- * (Swashbuckle); TypeScript erases types, so — as everywhere in this package — the shape is supplied
- * directly rather than reflected. Mirrors {@link ProblemDetails}: five optional string fields.
+ * The RFC 9457 problem-document schema referenced by every error response (wire-contracts.md §1.3).
+ * C# reflects `ProblemDetails` into a schema (Swashbuckle); TypeScript erases types, so — as everywhere in
+ * this package — the shape is supplied directly rather than reflected. Mirrors `ProblemDetails`: the five
+ * RFC 9457 members (`status` is the **integer** HTTP code, not the Benzene status) plus Benzene's two
+ * additions, `benzeneStatus` and the structured `errors` array.
  */
-const ERROR_PAYLOAD_SCHEMA: Record<string, unknown> = {
+const PROBLEM_DETAILS_SCHEMA: Record<string, unknown> = {
   type: 'object',
   properties: {
     type: { type: 'string' },
     title: { type: 'string' },
-    status: { type: 'string' },
+    status: { type: 'integer' },
     detail: { type: 'string' },
     instance: { type: 'string' },
+    benzeneStatus: { type: 'string' },
+    errors: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          field: { type: 'string' },
+          code: { type: 'string' },
+        },
+        required: ['message'],
+      },
+    },
   },
 };
 
@@ -192,7 +207,7 @@ export class OpenApiDocumentBuilder {
       },
     };
 
-    const errorSchema = this.schemaBuilder.addNamedSchema('ErrorPayload', ERROR_PAYLOAD_SCHEMA);
+    const errorSchema = this.schemaBuilder.addNamedSchema('ProblemDetails', PROBLEM_DETAILS_SCHEMA);
     for (const [status, description] of Object.entries(ERROR_RESPONSES)) {
       responses[status] = {
         description,

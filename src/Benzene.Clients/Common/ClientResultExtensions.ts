@@ -60,6 +60,13 @@ export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneRe
  *
  * The envelope's `statusCode` may be a Benzene result status (`"ok"`, `"not-found"`) or a numeric HTTP code;
  * both are normalized via {@link BenzeneResultHttpMapper.normalizeStatus}.
+ *
+ * Success/failure classification prefers the envelope's own `isSuccessful` (the wire's authoritative
+ * signal, wire-contracts.md §1.2) when the sender wrote it. `undefined` means the sender is an older
+ * service, or a language port that hasn't picked up the field yet, so classification falls back to
+ * {@link BenzeneResultHttpMapper.isSuccessStatus} — which only recognizes the framework's own known
+ * statuses, so a custom status from such a sender still classifies as failure (the historical
+ * behavior, since there is no other signal to trust it with).
  */
 export function asBenzeneResult<TResponse>(
   response: BenzeneMessageClientResponse,
@@ -70,11 +77,13 @@ export function asBenzeneResult<TResponse>(
     return BenzeneResult.unexpectedError<TResponse>(`Status code ${response.statusCode} not mapped`);
   }
 
-  if (BenzeneResultHttpMapper.isSuccessStatus(status)) {
+  const isSuccessful = response.isSuccessful ?? BenzeneResultHttpMapper.isSuccessStatus(status);
+
+  if (isSuccessful) {
     const payload = response.body === '' ? undefined : serializer.deserialize<TResponse>(response.body);
     return BenzeneResult.set<TResponse>(status, payload as TResponse, true);
   }
 
-  // Failure: payload-less, matching convertStatusCode (the error-payload body is not surfaced in this cut).
+  // Failure: payload-less, matching convertStatusCode (the problem document is not surfaced in this cut).
   return BenzeneResult.set<TResponse>(status, undefined, false);
 }

@@ -28,7 +28,7 @@ the whole batch instead of failing just the one message. You want:
 No new package is required — `useExceptionHandler` is a member of `IMiddlewarePipelineBuilder<TContext>`
 (`@benzenejs/abstractions-middleware`), implemented once in `MiddlewarePipelineBuilderBase`
 (`@benzenejs/core-middleware`), which every Benzene transport package already depends on. For the HTTP
-example below you'll also use `@benzenejs/results` (`ErrorPayload`, `BenzeneResultStatus`), a dependency of
+example below you'll also use `@benzenejs/results` (`ProblemTypes`, `BenzeneResult`), a dependency of
 any HTTP-based transport package.
 
 ```bash
@@ -118,7 +118,7 @@ registered before it is unprotected.
 
 There's an important gap between this and how Benzene normally reports handler failures: when a handler
 *returns* `BenzeneResult.unexpectedError(...)` (an unsuccessful [result](../message-result.md), not a
-thrown error), the framework's own response pipeline automatically serializes an `ErrorPayload` and maps
+thrown error), the framework's own response pipeline automatically serializes an RFC 9457 problem document and maps
 the status to an HTTP code. A raw *thrown* error caught by `useExceptionHandler` bypasses that pipeline
 entirely — nothing builds a response for you. Your `onException` callback is responsible for constructing
 whatever response shape you want.
@@ -130,7 +130,7 @@ whatever response shape you want.
 ```ts
 import { useApiGateway, ApiGatewayContext, ensureResponseExists } from '@benzenejs/aws-lambda';
 import { useMessageHandlers } from '@benzenejs/core-message-handlers';
-import { BenzeneResultStatus, ErrorPayload } from '@benzenejs/results';
+import { BenzeneResult, ProblemTypes } from '@benzenejs/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 
 useApiGateway(app, (api) => {
@@ -142,7 +142,7 @@ useApiGateway(app, (api) => {
     // Build the same body shape the framework serializes for a failed result — with a generic,
     // safe message, never the raw error, so no internal detail leaks to the client.
     response.body = JSON.stringify(
-      new ErrorPayload(BenzeneResultStatus.unexpectedError, ['An unexpected error occurred.']),
+      ProblemTypes.from(BenzeneResult.unexpectedError('An unexpected error occurred.')),
     );
   });
   useMessageHandlers(api, CreateOrderHandler);
@@ -153,10 +153,10 @@ useApiGateway(app, (api) => {
 `BenzeneResultStatus.unexpectedError` to for handlers that fail normally (see
 [Message Results — HTTP](../message-result.md#transport-mapping)), so a thrown error and a handler
 explicitly returning `BenzeneResult.unexpectedError()` end up looking identical to the client.
-`ErrorPayload` (`@benzenejs/results`) is the same RFC 7807-style payload `DefaultResponsePayloadMapper`
-uses for unsuccessful results — it extends `ProblemDetails` and serializes to `{ status, detail }`, where
-`detail` is the errors joined with `", "`. You're just building it by hand because the exception path
-doesn't run that mapper for you.
+`ProblemTypes.from` (`@benzenejs/results`) builds the very same [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+problem document `DefaultResponsePayloadMapper` serializes for unsuccessful results: `{ type, title,
+benzeneStatus, detail, errors }`, where `detail` is the errors joined with `", "`. You're just building it
+by hand because the exception path doesn't run that mapper for you.
 
 `ensureResponseExists(context)` (a free function exported from `@benzenejs/aws-lambda-api-gateway`)
 lazily creates `context.apiGatewayProxyResponse` with safe defaults if no earlier middleware wrote one —
@@ -243,7 +243,7 @@ import {
   useSqs,
   SqsMessageContext,
 } from '@benzenejs/aws-lambda';
-import { BenzeneResultStatus, ErrorPayload } from '@benzenejs/results';
+import { BenzeneResult, ProblemTypes } from '@benzenejs/results';
 import { CreateOrderHandler } from './CreateOrderHandler.js';
 import { ProcessOrderHandler } from './ProcessOrderHandler.js';
 
@@ -261,7 +261,7 @@ export class StartUp implements BenzeneStartUp {
           response.statusCode = 500;
           response.headers = { ...response.headers, 'content-type': 'application/json' };
           response.body = JSON.stringify(
-            new ErrorPayload(BenzeneResultStatus.unexpectedError, ['An unexpected error occurred.']),
+            ProblemTypes.from(BenzeneResult.unexpectedError('An unexpected error occurred.')),
           );
         });
         useMessageHandlers(api, CreateOrderHandler);
@@ -362,7 +362,7 @@ rarely an issue with the standard setup — but if you constructed the container
 
 ### HTTP responses come back with the wrong status or no body
 
-The automatic `ErrorPayload`/status-code mapping (`DefaultResponsePayloadMapper`,
+The automatic problem-document/status-code mapping (`DefaultResponsePayloadMapper`,
 `HttpStatusCodeResponseHandler`) only runs for handlers that *return* an unsuccessful `IBenzeneResultOf<T>`
 — it never runs for a caught, thrown error. Your `onException` callback has to set the status code and
 write the body itself, as in the API Gateway example. If you also called `ensureResponseExists`, make sure
@@ -429,7 +429,7 @@ test above) — it just isn't swallowed afterward.
 - [Middleware — `useExceptionHandler`](../middleware.md#useexceptionhandler) — pipeline-construction
   reference for this middleware.
 - [Common Middleware](../common-middleware.md) — the ready-made middleware Benzene ships.
-- [Message Results](../message-result.md) — the `BenzeneResult` factory, statuses, `ErrorPayload`, and
+- [Message Results](../message-result.md) — the `BenzeneResult` factory, statuses, problem documents, and
   each transport's mapping.
 - [Handling SQS Message Failures](handling-sqs-failures.md) — DLQ, partial-batch-failure, and retry
   patterns for the SQS transport specifically.

@@ -23,7 +23,10 @@ export class HttpStatusCodeResponseHandler<TContext> implements IResponseHandler
   handleAsync(context: TContext, messageHandlerResult: IMessageHandlerResult): Promise<void> {
     this.benzeneResponseAdapter.setStatusCode(
       context,
-      this.httpStatusCodeMapper.map(messageHandlerResult.benzeneResult.status),
+      this.httpStatusCodeMapper.map(
+        messageHandlerResult.benzeneResult.status,
+        messageHandlerResult.benzeneResult.isSuccessful,
+      ),
     );
     return Promise.resolve();
   }

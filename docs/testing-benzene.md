@@ -372,7 +372,7 @@ describe('hello via the message pipeline', () => {
 });
 ```
 
-The response is the wire envelope `{ statusCode, headers, body }` with `body` the serialized payload
+The response is the wire envelope `{ statusCode, isSuccessful, headers, body }` with `body` the serialized payload
 as a JSON string — identical across languages, so a topic a TypeScript service answers classifies the
 same in a .NET peer.
 

@@ -32,12 +32,17 @@ export class DefaultGrpcStatusCodeMapper implements IGrpcStatusCodeMapper {
     [BenzeneResultStatus.unexpectedError]: status.INTERNAL,
   };
 
-  map(benzeneResultStatus: string | undefined): status {
-    if (benzeneResultStatus === undefined) {
-      return DefaultGrpcStatusCodeMapper.DefaultValue;
+  /**
+   * @param isSuccessful The result's authoritative success flag. Consulted only when
+   * `benzeneResultStatus` is outside the table above: an application-defined *successful* status maps
+   * to {@link status.OK} instead of {@link status.INTERNAL} (wire-contracts.md §4.2). Omitted (C#'s
+   * status-only overload) it behaves as `false`.
+   */
+  map(benzeneResultStatus: string | undefined, isSuccessful?: boolean): status {
+    if (benzeneResultStatus !== undefined && benzeneResultStatus in this.dictionary) {
+      return this.dictionary[benzeneResultStatus];
     }
 
-    const mapped = this.dictionary[benzeneResultStatus];
-    return mapped ?? DefaultGrpcStatusCodeMapper.DefaultValue;
+    return isSuccessful === true ? status.OK : DefaultGrpcStatusCodeMapper.DefaultValue;
   }
 }

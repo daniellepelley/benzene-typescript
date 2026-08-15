@@ -155,10 +155,13 @@ failure (a `404`/`422`).
 
 `HttpStatusCodeResponseHandler<TContext>` applies this mapping to the HTTP response. On success, the
 response renderer (see [Message Handlers](message-handlers.md#response-handling)) serializes the
-`payload`; on failure, `DefaultResponsePayloadMapper<TContext>` serializes an `ErrorPayload` instead — an
-RFC 7807-style body carrying `{ status, detail }`, where `detail` is the result's `errors` joined with
-`", "`. So a `BenzeneResult.notFound<OrderDto>('Order 123 not found')` becomes an HTTP `404` with a JSON
-body describing the error, not the (empty) `OrderDto` payload.
+`payload`; on failure, `DefaultResponsePayloadMapper<TContext>` serializes an
+[RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem document instead — `{ type, title,
+benzeneStatus, detail, errors }`, where `detail` is the result's `errors` joined with `", "` and `errors`
+carries them individually. (The Benzene status travels as `benzeneStatus`: RFC 9457 defines `status` as
+the integer HTTP code, which is added only on HTTP transports.) So a
+`BenzeneResult.notFound<OrderDto>('Order 123 not found')` becomes an HTTP `404` with a JSON body
+describing the error, not the (empty) `OrderDto` payload.
 
 ### Async/event transports — settlement (ack/nack/retry)
 

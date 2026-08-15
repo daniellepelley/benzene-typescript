@@ -194,14 +194,14 @@ describe('SpecBuilder (openapi document)', () => {
       properties: { orderId: { type: 'string', minLength: 1 } },
     });
 
-    // Every operation carries the standard error responses, referencing a shared ErrorPayload schema.
+    // Every operation carries the standard error responses, referencing a shared ProblemDetails schema.
     expect(post.responses['400']!.content!['application/json']!.schema).toEqual({
-      $ref: '#/components/schemas/ErrorPayload',
+      $ref: '#/components/schemas/ProblemDetails',
     });
     expect(Object.keys(post.responses)).toEqual(
       expect.arrayContaining(['200', '400', '401', '403', '404', '422', '500', '503']),
     );
-    expect(doc.components.schemas['ErrorPayload']).toMatchObject({ type: 'object' });
+    expect(doc.components.schemas['ProblemDetails']).toMatchObject({ type: 'object' });
 
     // GET /orders/{id} — a path parameter, and no request body on a GET.
     const get = doc.paths['/orders/{id}']!.get!;

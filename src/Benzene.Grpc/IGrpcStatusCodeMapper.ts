@@ -8,7 +8,15 @@ import { status } from '@grpc/grpc-js';
  * of .NET's `Grpc.Core.StatusCode`; same numeric values and names).
  */
 export interface IGrpcStatusCodeMapper {
-  map(benzeneResultStatus: string | undefined): status;
+  /**
+   * Deviation: C# declares `Map(string)` plus a `Map(string, bool)` overload; TypeScript has no
+   * overload defaulting, so the pair collapses into one method with an **optional** `isSuccessful`.
+   * It is consulted only for a status outside the known vocabulary — an application-defined
+   * *successful* status maps to {@link status.OK} rather than {@link status.INTERNAL}, since the
+   * caller's `isSuccessful` is the authoritative signal for a custom status. The raw status string
+   * still reaches the client verbatim via the `benzene-status` trailer regardless.
+   */
+  map(benzeneResultStatus: string | undefined, isSuccessful?: boolean): status;
 }
 
 export const IGrpcStatusCodeMapper: ServiceToken<IGrpcStatusCodeMapper> =

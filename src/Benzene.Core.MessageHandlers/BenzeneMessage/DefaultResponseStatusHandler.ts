@@ -6,7 +6,8 @@ import {
 
 /**
  * Response handler that copies the handler's result status onto the transport response's status code
- * via `IBenzeneResponseAdapter<TContext>.setStatusCode`. Registered by `addBenzeneMessage` alongside
+ * via `IBenzeneResponseAdapter<TContext>.setStatusCode`, and its authoritative success flag via the
+ * adapter's optional `setSuccessful` (wire-contracts.md §1.2). Registered by `addBenzeneMessage` alongside
  * `RendererResponseHandler<TContext>` so both body and status are written for every `BenzeneMessage`
  * response.
  * Port of Benzene.Core.MessageHandlers.BenzeneMessage.DefaultResponseStatusHandler&lt;TContext&gt;.
@@ -20,6 +21,12 @@ export class DefaultResponseStatusHandler<TContext> implements IResponseHandler<
 
   handleAsync(context: TContext, messageHandlerResult: IMessageHandlerResult): Promise<void> {
     this.benzeneResponseAdapter.setStatusCode(context, messageHandlerResult.benzeneResult.status);
+    // Optional on the adapter (see IBenzeneResponseAdapter): a no-op for transports whose numeric
+    // status code already carries success/failure.
+    this.benzeneResponseAdapter.setSuccessful?.(
+      context,
+      messageHandlerResult.benzeneResult.isSuccessful,
+    );
     return Promise.resolve();
   }
 }

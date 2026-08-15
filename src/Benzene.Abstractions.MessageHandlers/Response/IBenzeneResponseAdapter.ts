@@ -22,6 +22,23 @@ export interface IBenzeneResponseAdapter<TContext> {
   /** Sets the status code of the outgoing response. Port of C# `SetStatusCode`. */
   setStatusCode(context: TContext, statusCode: string): void;
 
+  /**
+   * Records the handler result's authoritative success/failure flag alongside the status code, for
+   * adapters whose wire format can carry it (currently the `BenzeneMessage` envelope's
+   * `isSuccessful` field — see `docs/specification/wire-contracts.md` §1.2). A receiver cannot always
+   * classify success from {@link setStatusCode}'s value alone: an application-defined status is
+   * outside the framework's known vocabulary, so this is the signal a client honors instead of
+   * guessing from status text.
+   * Port of C# `SetSuccessful`.
+   *
+   * Deviation: C# gives this a default no-op body on the interface, so numeric-status-code transports
+   * (HTTP, gRPC, API Gateway) — where the status code itself already carries the success/failure
+   * signal — don't need to implement it. TypeScript interfaces cannot carry a default
+   * implementation, so it is declared **optional** instead and callers invoke it as
+   * `adapter.setSuccessful?.(...)`; an adapter that omits it behaves exactly like C#'s no-op.
+   */
+  setSuccessful?(context: TContext, isSuccessful: boolean): void;
+
   /** Sets the body of the outgoing response. Port of C# `SetBody(TContext, string)`. */
   setBody(context: TContext, body: string): void;
 

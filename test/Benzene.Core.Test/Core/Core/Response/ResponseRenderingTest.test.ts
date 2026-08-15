@@ -4,7 +4,7 @@ import {
   IBenzeneResponseAdapter,
   IMessageHandlerDefinition,
 } from '@benzenejs/abstractions-message-handlers';
-import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { BenzeneResult, BenzeneResultStatus, ProblemTypes } from '@benzenejs/results';
 import {
   DefaultResponsePayloadMapper,
   JsonMediaFormat,
@@ -115,7 +115,7 @@ describe('ResponseRenderingTest', () => {
     expect(adapter.contentType).toBeUndefined();
   });
 
-  it('SerializerResponseRenderer_RendersErrorPayload_ForFailedResult', async () => {
+  it('SerializerResponseRenderer_RendersProblemDocument_ForFailedResult', async () => {
     const resolver = createResolver();
     const adapter = new FakeResponseAdapter();
     const renderer = createRenderer(resolver);
@@ -128,9 +128,23 @@ describe('ResponseRenderingTest', () => {
 
     await renderer.renderAsync(new TestContext(), result, adapter);
 
-    const errorBody = JSON.parse(adapter.body) as { status: string; detail: string };
-    expect(errorBody.status).toBe(BenzeneResultStatus.notFound);
+    // An RFC 9457 problem document (wire-contracts.md §1.3), not the pre-RFC-9457 `ErrorPayload`:
+    // the Benzene status now travels as `benzeneStatus`, since RFC 9457 defines `status` as the
+    // integer HTTP code - and there is no HTTP response here, so `status` is absent entirely.
+    const errorBody = JSON.parse(adapter.body) as {
+      type: string;
+      title: string;
+      benzeneStatus: string;
+      detail: string;
+      errors: { message: string }[];
+      status?: unknown;
+    };
+    expect(errorBody.benzeneStatus).toBe(BenzeneResultStatus.notFound);
+    expect(errorBody.type).toBe(ProblemTypes.notFound);
+    expect(errorBody.title).toBe('Not found');
     expect(errorBody.detail).toBe('order missing');
+    expect(errorBody.errors).toEqual([{ message: 'order missing' }]);
+    expect('status' in errorBody).toBe(false);
     expect(adapter.contentType).toBe('application/json');
   });
 

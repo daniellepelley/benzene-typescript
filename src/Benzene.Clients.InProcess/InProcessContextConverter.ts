@@ -38,7 +38,12 @@ export class InProcessContextConverter implements IContextConverter<OutboundCont
     // DefaultBenzeneMessageSender to deserialize into the caller's TResponse — the one frame that still has
     // that type. (Previously collapsed to a fixed VoidResult, discarding the handler's real response.)
     const response = contextOut.response;
-    contextIn.response = new BenzeneMessageClientResponse(response.statusCode, response.body, response.headers);
+    contextIn.response = new BenzeneMessageClientResponse(
+      response.statusCode,
+      response.body,
+      response.headers,
+      response.isSuccessful,
+    );
     return Promise.resolve();
   }
 }
