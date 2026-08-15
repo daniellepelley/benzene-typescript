@@ -34,15 +34,15 @@ the code **inline** (`filename`), unlike the .NET stack which must stage tens-of
 
 ### From GitHub Actions (recommended)
 
-The **Deploy AWS Lambda Mesh Example** workflow
-(`.github/workflows/deploy-aws-lambda-mesh-example.yml`) does the whole thing on a manual trigger,
-mirroring .NET's *Deploy AWS Mesh Example*. It bundles the seven functions, keeps Terraform state in a
+The **Mesh Example AWS Lambda Deploy** workflow
+(`.github/workflows/mesh-example-aws-lambda-deploy.yml`) does the whole thing on a manual trigger,
+mirroring .NET's *Mesh Example AWS Deploy*. It bundles the seven functions, keeps Terraform state in a
 per-account S3 bucket (so it survives between runs), and applies the stack.
 
 1. On the repo's **`test`** GitHub Environment (Settings → Environments → test), set
    `AWS_ACCESS_KEY_ID` (a Variable or Secret) and `AWS_SECRET_ACCESS_KEY` (a Secret) for an IAM
    principal that can manage Lambda, IAM, S3, SQS, SNS, API Gateway, and EventBridge.
-2. Actions → **Deploy AWS Lambda Mesh Example** → *Run workflow*. Pick a `region`; leave `recreate`
+2. Actions → **Mesh Example AWS Lambda Deploy** → *Run workflow*. Pick a `region`; leave `recreate`
    off for a normal deploy (tick it once to clean-slate after a failed run left partial resources).
 
 The state bucket (`benzene-ts-mesh-tfstate-<account>`) is created on first run. The committed

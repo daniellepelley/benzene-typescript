@@ -1,9 +1,9 @@
-name: Deploy AWS Lambda Mesh Example
+name: Mesh Example AWS Lambda Deploy
 
 # Manual-only: deploys examples/aws-lambda-mesh (6 Cloud Service Lambdas + the mesh Lambda) to AWS via
 # Terraform. Set the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY credentials on the "test" GitHub
 # Environment (an IAM user/role that can manage Lambda, IAM, S3, SQS, SNS, API Gateway, and EventBridge).
-# Nothing here runs on push. Mirrors .NET's deploy-aws-mesh-example.yml, adapted for the Node toolchain.
+# Nothing here runs on push. Mirrors .NET's mesh-example-aws-deploy.yml, adapted for the Node toolchain.
 on:
   workflow_dispatch:
     inputs:
