@@ -1,0 +1,50 @@
+{
+  "name": "@benzene-example/azure-functions-mesh",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The all-Azure-Functions mesh: six Benzene Cloud Service Azure Functions discovered by tag via Azure Resource Manager, interrogated over HTTPS, and aggregated into a catalog on Blob Storage (the TypeScript equivalent of .NET's AzureFunctionsMesh example)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  },
+  "dependencies": {
+    "@azure/functions": "^4",
+    "@azure/service-bus": "^7",
+    "@azure/event-hubs": "^6",
+    "@azure/eventgrid": "^5",
+    "@azure/storage-blob": "^12.33.0",
+    "@azure/identity": "^4.13.1",
+    "@benzenejs/abstractions": "0.1.0-beta.1",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/core-messages": "0.1.0-beta.1",
+    "@benzenejs/http": "0.1.0-beta.1",
+    "@benzenejs/results": "0.1.0-beta.1",
+    "@benzenejs/clients": "0.1.0-beta.1",
+    "@benzenejs/health-checks": "0.1.0-beta.1",
+    "@benzenejs/health-checks-core": "0.1.0-beta.1",
+    "@benzenejs/response-events": "0.1.0-beta.1",
+    "@benzenejs/cloud-service": "0.1.0-beta.1",
+    "@benzenejs/azure-function-core": "0.1.0-beta.1",
+    "@benzenejs/azure-function-http": "0.1.0-beta.1",
+    "@benzenejs/azure-function-service-bus": "0.1.0-beta.1",
+    "@benzenejs/azure-function-event-hub": "0.1.0-beta.1",
+    "@benzenejs/azure-function-event-grid": "0.1.0-beta.1",
+    "@benzenejs/azure-function-timer": "0.1.0-beta.1",
+    "@benzenejs/clients-azure-service-bus": "0.1.0-beta.1",
+    "@benzenejs/clients-azure-event-hub": "0.1.0-beta.1",
+    "@benzenejs/clients-azure-event-grid": "0.1.0-beta.1",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
+    "@benzenejs/mesh-aggregator": "0.1.0-beta.1",
+    "@benzenejs/mesh-discovery-azure": "0.1.0-beta.1",
+    "@benzenejs/mesh-azure-blob": "0.1.0-beta.1",
+    "@benzenejs/mesh-ui": "0.1.0-beta.1"
+  }
+}
