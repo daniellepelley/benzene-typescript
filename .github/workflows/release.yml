@@ -50,6 +50,15 @@ jobs:
       - name: Dry-run pack every package
         run: npm publish --workspaces --dry-run --access public
 
+      # Refuse a publish that cannot succeed, and say why. npm never overwrites a published
+      # version: re-running the release without bumping fails with a bare 404 on the first package
+      # it reaches, which reads like a missing scope or a broken trusted-publisher setup rather
+      # than "this version is already out". This also catches a PARTIALLY published release, which
+      # is how the 0.1.0-beta.1 publish ended - 25 packages on the registry, 104 not, invisible
+      # because the failure looked like a permissions problem.
+      - name: Preflight — nothing here is already published
+        run: node scripts/check-not-already-published.mjs
+
   publish:
     name: Publish to npm (trusted publishing)
     needs: build-and-verify
