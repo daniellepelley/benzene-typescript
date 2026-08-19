@@ -1,6 +1,6 @@
 /** Port of Benzene.GoogleCloud.Functions.Core.GoogleCloudStartUpRunner. */
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
-import { BenzeneConfiguration, emptyConfiguration } from '@benzenejs/abstractions-middleware';
+import { BenzeneConfiguration, environmentConfiguration } from '@benzenejs/abstractions-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 
 /**
@@ -19,7 +19,7 @@ import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
  *
  * The startup's optional `getConfiguration()` IS now read and threaded (as the AWS/Azure runners do), so a
  * unified {@link BenzeneStartUp} — whose `configureServices`/`configure` take a {@link BenzeneConfiguration}
- * — boots identically here. A startup that declares no `getConfiguration` gets {@link emptyConfiguration}.
+ * — boots identically here. A startup that declares no `getConfiguration` gets {@link environmentConfiguration}.
  */
 export interface GoogleCloudBootstrapResult<TStartUp> {
   /** The constructed startup instance whose `configureServices`/`configure` the host will run. */
@@ -56,7 +56,7 @@ export class GoogleCloudStartUpRunner {
     startUpFactory: new () => TStartUp,
   ): GoogleCloudBootstrapResult<TStartUp> {
     const startUp = new startUpFactory();
-    const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+    const configuration = startUp.getConfiguration?.() ?? environmentConfiguration();
     const container = new DefaultBenzeneServiceContainer();
     return { startUp, container, configuration };
   }

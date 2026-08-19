@@ -20,7 +20,7 @@ import {
   BenzeneStartUp,
   BenzeneStartUpConstructor,
   BenzeneStartUpOf,
-  emptyConfiguration,
+  environmentConfiguration,
   layerConfiguration,
 } from '@benzenejs/abstractions-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
@@ -88,7 +88,7 @@ export class BenzeneTestHostBuilder<TAppBuilder> {
    */
   build<THost>(factory: (context: BenzeneTestHostContext<TAppBuilder>) => THost): THost {
     const startUp = new this.startUpFactory();
-    const baseConfiguration = startUp.getConfiguration?.() ?? emptyConfiguration();
+    const baseConfiguration = startUp.getConfiguration?.() ?? environmentConfiguration();
     const configuration = layerConfiguration(baseConfiguration, this.configOverrides);
 
     const container = new DefaultBenzeneServiceContainer();

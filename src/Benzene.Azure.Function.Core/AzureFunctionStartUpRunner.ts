@@ -3,7 +3,7 @@ import {
   BenzeneConfiguration,
   BenzeneStartUp,
   BenzeneStartUpOf,
-  emptyConfiguration,
+  environmentConfiguration,
 } from '@benzenejs/abstractions-middleware';
 import { withStartUpChecks } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
@@ -35,7 +35,7 @@ export class AzureFunctionStartUpRunner {
     startUpFactory: new () => TStartUp,
   ): IAzureFunctionApp {
     const startUp = new startUpFactory();
-    const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+    const configuration = startUp.getConfiguration?.() ?? environmentConfiguration();
     const container = new DefaultBenzeneServiceContainer();
     startUp.configureServices(container, configuration);
     return AzureFunctionStartUpRunner.buildEntryPoint(startUp, container, configuration);

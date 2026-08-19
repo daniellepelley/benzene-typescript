@@ -20,9 +20,12 @@ import { BenzeneConfiguration } from './BenzeneConfiguration';
  * {@link IStartUp} and {@link IBenzeneApplicationBuilder}) rather than in `@benzenejs/testing`, so a
  * production host never depends on the testing package. `@benzenejs/testing` re-exports it unchanged.
  *
- * BEND FROM .NET: `getConfiguration` is optional here (`IStartUp.GetConfiguration()` is required). A host
- * treats an absent `getConfiguration` as {@link emptyConfiguration}, so the many startups that read only
- * `process.env` need not implement it. Faithful otherwise.
+ * BEND FROM .NET: `getConfiguration` is optional here, where `IStartUp.GetConfiguration()` used to be
+ * required. A host treats an absent `getConfiguration` as {@link environmentConfiguration} — the same
+ * default .NET's `BenzeneStartUp` now supplies — so a startup that only wants environment variables
+ * need not implement it, and gets them through the same {@link BenzeneConfiguration} everything else
+ * arrives on rather than by reaching for `process.env` (which `withConfiguration(...)` cannot
+ * override). Faithful otherwise.
  */
 export interface BenzeneStartUp {
   /** Optional: produces the configuration threaded into `configureServices`/`configure`. */

@@ -2,7 +2,7 @@ import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   BenzeneStartUp,
   IBenzeneWorker,
-  emptyConfiguration,
+  environmentConfiguration,
 } from '@benzenejs/abstractions-middleware';
 import { withStartUpChecks } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
@@ -53,7 +53,7 @@ export interface BenzeneRunOptions extends BenzeneHostOptions {
  *
  * ```ts
  * const startUp = new OrdersStartUp();
- * const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+ * const configuration = startUp.getConfiguration?.() ?? environmentConfiguration();
  * const container = new DefaultBenzeneServiceContainer();   // @benzenejs/dependencies
  * startUp.configureServices(container, configuration);
  * const builder = new WorkerApplicationBuilder(container);  // @benzenejs/self-host
@@ -91,7 +91,7 @@ export class BenzeneHost {
     options: BenzeneHostOptions = {},
   ): IBenzeneWorker {
     const startUp = new startUpFactory();
-    const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+    const configuration = startUp.getConfiguration?.() ?? environmentConfiguration();
 
     const container = new DefaultBenzeneServiceContainer();
     // Before the startup's own registrations: see BenzeneHostOptions.configureServices.

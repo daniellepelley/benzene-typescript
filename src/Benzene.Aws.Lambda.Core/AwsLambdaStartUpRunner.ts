@@ -4,7 +4,7 @@ import {
   BenzeneStartUp,
   BenzeneStartUpOf,
   IBenzeneApplicationBuilder,
-  emptyConfiguration,
+  environmentConfiguration,
 } from '@benzenejs/abstractions-middleware';
 import { withStartUpChecks } from '@benzenejs/core-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
@@ -41,7 +41,7 @@ export class AwsLambdaStartUpRunner {
     startUpFactory: new () => TStartUp,
   ): AwsLambdaEntryPoint {
     const startUp = new startUpFactory();
-    const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+    const configuration = startUp.getConfiguration?.() ?? environmentConfiguration();
     const container = new DefaultBenzeneServiceContainer();
     startUp.configureServices(container, configuration);
     return AwsLambdaStartUpRunner.buildEntryPoint(startUp, container, configuration);
