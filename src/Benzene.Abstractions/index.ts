@@ -9,6 +9,7 @@ export * from './DI/Extensions';
 export * from './Logging/ILogger';
 export * from './Logging/ILogContextBuilder';
 export * as LogContextBuilderExtensions from './Logging/LogContextBuilderExtensions';
+export * from './Results/BenzeneError';
 export * from './Results/IBenzeneResult';
 export * from './Results/IRawJsonMessage';
 export * from './Results/IBase64JsonMessage';

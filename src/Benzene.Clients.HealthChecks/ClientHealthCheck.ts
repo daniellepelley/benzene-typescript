@@ -65,7 +65,10 @@ export class ClientHealthCheck implements IHealthCheck {
       if (result !== undefined && result !== null) {
         data.status = result.status;
         if (result.errors !== undefined && result.errors.length > 0) {
-          data.errors = result.errors;
+          // The messages, not the structured errors: this is a health-check data bag read by
+          // dashboards and probes, and a flat string list is what they already understand. The
+          // field/code detail belongs on the wire's problem document, not here.
+          data.errors = result.errors.map((error) => error.message);
         }
       }
 

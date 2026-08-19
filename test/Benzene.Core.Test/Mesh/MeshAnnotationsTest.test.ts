@@ -104,7 +104,7 @@ describe('MeshAnnotations', () => {
       const result = await handler.handleAsync(req);
 
       expect(result.status).toBe(BenzeneResultStatus.badRequest);
-      expect(result.errors.join(' ')).toContain(named);
+      expect(result.errors.map((e) => e.message).join(' ')).toContain(named);
     },
   );
 

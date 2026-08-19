@@ -98,7 +98,7 @@ describe('MessageHandlerFactoryTest', () => {
 
     expect(result.status).toBe(BenzeneResultStatus.serviceUnavailable);
     expect(result.isSuccessful).toBe(false);
-    expect(result.errors).toEqual(['Message handler threw an exception', 'boom']);
+    expect(result.errors.map((e) => e.message)).toEqual(['Message handler threw an exception', 'boom']);
   });
 
   it('Handler_ThrowingArgumentException_MapsToValidationError', async () => {
@@ -119,7 +119,7 @@ describe('MessageHandlerFactoryTest', () => {
     const result = await factory.create(definition).handleAsync(new InlineRequestMapperThunk({}));
 
     expect(result.status).toBe(BenzeneResultStatus.validationError);
-    expect(result.errors).toEqual(['orderId is required']);
+    expect(result.errors.map((e) => e.message)).toEqual(['orderId is required']);
   });
 
   it('Thunk_Throwing_MapsToBadRequest', async () => {
@@ -135,6 +135,6 @@ describe('MessageHandlerFactoryTest', () => {
     const result = await factory.create(definition).handleAsync(throwingThunk);
 
     expect(result.status).toBe(BenzeneResultStatus.badRequest);
-    expect(result.errors).toEqual(['Message is not valid', 'malformed body']);
+    expect(result.errors.map((e) => e.message)).toEqual(['Message is not valid', 'malformed body']);
   });
 });

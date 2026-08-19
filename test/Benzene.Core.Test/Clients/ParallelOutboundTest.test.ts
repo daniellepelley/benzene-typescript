@@ -108,7 +108,7 @@ describe('useParallel', () => {
 
     expect(result.isSuccessful).toBe(false);
     expect(snsRan).toBe(true); // a failing branch must not abort the fan-out
-    expect(result.errors.some((e) => e.includes('sqs') && e.includes('access denied'))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes('sqs') && e.message.includes('access denied'))).toBe(true);
   });
 
   it('one branch returning a failure result fails and names it', async () => {
@@ -124,6 +124,6 @@ describe('useParallel', () => {
     const result = await sender.sendAsync<string, VoidResult>('order:create', 'payload');
 
     expect(result.isSuccessful).toBe(false);
-    expect(result.errors.some((e) => e.includes('sns'))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes('sns'))).toBe(true);
   });
 });

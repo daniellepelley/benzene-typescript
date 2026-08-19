@@ -1,5 +1,5 @@
 import { IBenzeneResult } from '@benzenejs/abstractions';
-import { BenzeneError } from './BenzeneError';
+import { BenzeneError } from '@benzenejs/abstractions';
 import { BenzeneResultStatus } from './BenzeneResultStatus';
 import { ProblemDetails } from './ProblemDetails';
 
@@ -106,28 +106,32 @@ export const ProblemTypes = {
   /**
    * Builds the problem document for a failed `result`: {@link ProblemDetails.type}/
    * {@link ProblemDetails.title} from the registry (both `undefined` for an application-defined
-   * status), {@link ProblemDetails.detail} as the result's error messages joined with `", "`
-   * (unchanged from the retired `ErrorPayload`'s construction), {@link ProblemDetails.benzeneStatus}
-   * as the result's status, and {@link ProblemDetails.errors} as the result's structured errors when
-   * non-empty (else `undefined`, so the member is omitted from the wire). Deliberately never sets
-   * {@link ProblemDetails.status} — the numeric HTTP status is an HTTP-binding concern, filled in by
-   * the HTTP-aware response mapper, not this transport-neutral factory.
+   * status), {@link ProblemDetails.detail} as the result's error messages joined with `", "`,
+   * {@link ProblemDetails.benzeneStatus} as the result's status, and {@link ProblemDetails.errors}
+   * as the result's structured errors when non-empty (else `undefined`, so the member is omitted
+   * from the wire). Deliberately never sets {@link ProblemDetails.status} — the numeric HTTP status
+   * is an HTTP-binding concern, filled in by the HTTP-aware response mapper, not this
+   * transport-neutral factory.
    *
-   * Deviation: `IBenzeneResult.errors` is `string[]` in the port (C# carries a
-   * `IReadOnlyList<BenzeneError>`), so each message is lifted into a {@link BenzeneError} with only
-   * its required `message` member — `field`/`code` have no source to come from here.
+   * A result built by `BenzeneResult.problem(...)` carries its authored document, which is returned
+   * verbatim: re-deriving one here would overwrite an application-owned `type` with the registry
+   * URI, which is the whole reason that factory exists (wire-contracts.md §1.3).
    */
   from(result: IBenzeneResult): ProblemDetails {
-    const messages = result.errors ?? [];
-    const detail = messages.join(', ');
+    const authored = (result as { problem?: ProblemDetails }).problem;
+    if (authored !== undefined) {
+      return authored;
+    }
+
+    const errors = result.errors ?? [];
+    const detail = errors.map((error) => error.message).join(', ');
 
     const problem = new ProblemDetails();
     problem.type = ProblemTypes.typeFor(result.status);
     problem.title = ProblemTypes.titleFor(result.status);
     problem.detail = detail === '' ? undefined : detail;
     problem.benzeneStatus = result.status;
-    problem.errors =
-      messages.length > 0 ? messages.map((message): BenzeneError => ({ message })) : undefined;
+    problem.errors = errors.length > 0 ? [...errors] : undefined;
 
     return problem;
   },

@@ -59,7 +59,7 @@ describe('ValidationMiddleware (handler-level)', () => {
 
     expect(nextCalled).toBe(false);
     expect(context.response.status).toBe(BenzeneResultStatus.validationError);
-    expect(context.response.errors).toContain('Request is null');
+    expect(context.response.errors.map((e) => e.message)).toContain('Request is null');
   });
 
   it('calls next for a valid request and leaves the response untouched', async () => {
@@ -94,6 +94,6 @@ describe('ValidationMiddleware (handler-level)', () => {
 
     expect(nextCalled).toBe(false);
     expect(context.response.status).toBe(BenzeneResultStatus.validationError);
-    expect(context.response.errors.some((e) => e.startsWith('/name'))).toBe(true);
+    expect(context.response.errors.some((e) => e.message.startsWith('/name'))).toBe(true);
   });
 });

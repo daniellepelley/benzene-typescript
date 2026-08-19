@@ -180,7 +180,7 @@ describe('MessageRouterTest', () => {
 
     expect(setter.result?.benzeneResult.status).toBe(BenzeneResultStatus.validationError);
     expect(setter.result?.benzeneResult.isSuccessful).toBe(false);
-    expect(setter.result?.benzeneResult.errors).toEqual(['Topic is missing']);
+    expect(setter.result?.benzeneResult.errors.map((e) => e.message)).toEqual(['Topic is missing']);
   });
 
   it('Route_UnknownTopic_ShortCircuitsWithNotFound', async () => {
@@ -189,7 +189,7 @@ describe('MessageRouterTest', () => {
     await router.handleAsync(new TestContext('does-not-exist', new Order()), () => Promise.resolve());
 
     expect(setter.result?.benzeneResult.status).toBe(BenzeneResultStatus.notFound);
-    expect(setter.result?.benzeneResult.errors).toEqual([
+    expect(setter.result?.benzeneResult.errors.map((e) => e.message)).toEqual([
       'No handler found for topic does-not-exist',
     ]);
   });
@@ -214,7 +214,7 @@ describe('MessageRouterTest', () => {
     await router.handleAsync(new TestContext('create-order', new Order()), () => Promise.resolve());
 
     expect(setter.result?.benzeneResult.status).toBe(BenzeneResultStatus.notFound);
-    expect(setter.result?.benzeneResult.errors).toEqual(['No handler found for topic create-order']);
+    expect(setter.result?.benzeneResult.errors.map((e) => e.message)).toEqual(['No handler found for topic create-order']);
     // The found definition is preserved on the result (distinguishing this from the unknown-topic path).
     expect(setter.result?.messageHandlerDefinition?.handlerType).toBe(CreateOrderHandler);
   });
@@ -280,7 +280,7 @@ describe('MessageRouterTest', () => {
     // Missing orderId -> validation middleware short-circuits, handler never runs.
     await router.handleAsync(new TestContext('create-order', new Order()), () => Promise.resolve());
     expect(setter.result?.benzeneResult.status).toBe(BenzeneResultStatus.validationError);
-    expect(setter.result?.benzeneResult.errors).toEqual(['orderId is required']);
+    expect(setter.result?.benzeneResult.errors.map((e) => e.message)).toEqual(['orderId is required']);
 
     // Present orderId -> passes validation, handler produces the response.
     const order = new Order();

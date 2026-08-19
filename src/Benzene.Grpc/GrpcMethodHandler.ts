@@ -180,7 +180,9 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
     if (statusCode !== status.OK) {
       const errors = grpcContext.messageHandlerResult?.benzeneResult.errors;
       const detail =
-        errors !== undefined && errors.length > 0 ? errors.join('; ') : (rawStatus ?? 'Error');
+        errors !== undefined && errors.length > 0
+          ? errors.map((error) => error.message).join('; ')
+          : (rawStatus ?? 'Error');
       throw new GrpcBenzeneError(statusCode, detail, trailer);
     }
 

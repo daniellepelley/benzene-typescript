@@ -1,4 +1,4 @@
-import { BenzeneError } from './BenzeneError';
+import { BenzeneError } from '@benzenejs/abstractions';
 
 /**
  * An [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem document — the body of a failed

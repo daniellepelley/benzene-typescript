@@ -241,7 +241,7 @@ describe('GrpcBenzeneMessageClient', () => {
 
     expect(result.isSuccessful).toBe(false);
     expect(result.status).toBe(BenzeneResultStatus.notFound);
-    expect(result.errors).toContain('no such thing');
+    expect(result.errors.map((e) => e.message)).toContain('no such thing');
   });
 
   it('returns NotImplemented when no route is registered', async () => {

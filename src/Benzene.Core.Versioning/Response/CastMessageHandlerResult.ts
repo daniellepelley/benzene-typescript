@@ -1,5 +1,5 @@
 /** Port of Benzene.Core.Versioning.Response.CastMessageHandlerResult. */
-import { IBenzeneResult } from '@benzenejs/abstractions';
+import { BenzeneError, IBenzeneResult } from '@benzenejs/abstractions';
 import { IMessageHandlerDefinition, IMessageHandlerResult } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
 
@@ -45,7 +45,7 @@ class CastBenzeneResult implements IBenzeneResult {
     return this.original.isSuccessful;
   }
 
-  get errors(): string[] {
+  get errors(): BenzeneError[] {
     return this.original.errors;
   }
 }

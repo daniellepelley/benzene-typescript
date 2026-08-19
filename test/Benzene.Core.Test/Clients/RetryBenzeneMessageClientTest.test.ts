@@ -76,7 +76,7 @@ describe('RetryBenzeneMessageClientTest', () => {
 
     expect(inner.attempts).toBe(3);
     expect(result.status).toBe(BenzeneResultStatus.tooManyRequests);
-    expect(result.errors).toContain('throttled');
+    expect(result.errors.map((e) => e.message)).toContain('throttled');
   });
 
   it('DoesNotRetry_timeout_byDefault', async () => {
