@@ -1,12 +1,12 @@
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
-import { addBenzene } from '@benzenejs/core-message-handlers';
-import { MiddlewareApplication, MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { addBenzene, withStartUpChecks } from '@benzenejs/core-message-handlers';
+import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
-import { IRouteFinder } from '@benzenejs/http';
+import { middlewareFor } from './BenzeneMiddlewareFactory';
 import { ExpressContext } from './ExpressContext';
 import { addExpress } from './DependencyInjectionExtensions';
-import { BenzeneExpressMiddleware, ExpressRequestLike } from './types';
+import { BenzeneExpressMiddleware } from './types';
 
 /** Options for {@link benzene}. */
 export interface BenzeneExpressOptions {
@@ -55,46 +55,9 @@ export function benzene(
   configure(pipelineBuilder);
   const pipeline = pipelineBuilder.build();
 
-  const factory = container.createServiceResolverFactory();
-  const application = new MiddlewareApplication<ExpressContext, ExpressContext>(pipeline, (context) => context);
-
-  // Routes are discovered once at RouteFinder construction and stay stable for the app's lifetime, so
-  // resolve the finder a single time rather than per request.
-  const routeScope = factory.createScope();
-  const routeFinder = routeScope.getService(IRouteFinder);
-  routeScope.dispose();
-
-  return (req, res, next) => {
-    const method = (req.method ?? 'GET').toUpperCase();
-    const path = req.path ?? new URL(req.url ?? '/', 'http://localhost').pathname;
-
-    if (routeFinder.find(method, path) === undefined) {
-      next(); // strangler fallback: Benzene owns no route here, hand back to Express untouched
-      return;
-    }
-
-    readRawBody(req)
-      .then((rawBody) => application.handleAsync(new ExpressContext(req, res, rawBody), factory))
-      .catch((err: unknown) => next(err));
-  };
-}
-
-/**
- * Reads the raw request body string. Prefers a body parser's already-parsed `req.body` (re-serializing a
- * parsed JSON object as a best-effort fallback); otherwise consumes the request stream directly. Only
- * called for a matched route, so consuming the stream is safe (an unmatched request already fell through).
- */
-async function readRawBody(req: ExpressRequestLike): Promise<string> {
-  if (typeof req.body === 'string') {
-    return req.body;
-  }
-  if (req.body !== undefined && req.body !== null) {
-    return JSON.stringify(req.body);
-  }
-
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : (chunk as Buffer));
-  }
-  return Buffer.concat(chunks).toString('utf8');
+  // Run the boot-time wiring checks once, while the app is still being assembled, exactly as every
+  // other host does (AwsLambdaStartUpRunner, GoogleCloudFunctionHost, BenzeneHost): a duplicate topic or a
+  // missing registration fails `app.use(benzene(...))` rather than the first request that reaches it.
+  const factory = withStartUpChecks(container.createServiceResolverFactory());
+  return middlewareFor(pipeline, factory);
 }

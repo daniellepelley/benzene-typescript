@@ -30,7 +30,10 @@ spec:
             - name: KAFKA_BROKERS
               value: "kafka-bootstrap.kafka.svc.cluster.local:9092"   # <- replace
           readinessProbe:
-            httpGet: { path: /healthz, port: 8080 }
+            # Benzene owns the HTTP listener here (useExpress), so every route is a message handler;
+            # a TCP probe checks the listener without inventing a non-domain HTTP route. For an HTTP
+            # readiness surface at /benzene/health, wire useBenzeneCloudService (@benzenejs/cloud-service).
+            tcpSocket: { port: 8080 }
             initialDelaySeconds: 3
 ---
 apiVersion: v1

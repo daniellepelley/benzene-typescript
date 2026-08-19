@@ -1,5 +1,6 @@
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AwsEventStreamContext } from './AwsEventStream/AwsEventStreamContext';
@@ -47,6 +48,7 @@ export class InlineAwsLambdaStartUp implements IAwsEntryPointBuilder {
     this.appAction(app);
     this.servicesAction(container);
 
-    return new AwsLambdaEntryPoint(app.build(), container.createServiceResolverFactory());
+    // Boot-time wiring checks, as AwsLambdaStartUpRunner runs them for the StartUp-class path.
+    return new AwsLambdaEntryPoint(app.build(), withStartUpChecks(container.createServiceResolverFactory()));
   }
 }

@@ -1,5 +1,6 @@
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { BenzeneWorkerBuilder } from './BenzeneWorkerBuilder';
 import { IBenzeneWorkerStartup } from './IBenzeneWorkerStartup';
@@ -40,6 +41,9 @@ export class InlineSelfHostedStartUp implements IBenzeneWorkerBuilder {
     this.appAction(app);
     this.servicesAction(container);
 
-    return app.createWorker(container.createServiceResolverFactory());
+    // Run the boot-time wiring checks before the worker goes live, exactly as every other host does
+    // (AwsLambdaStartUpRunner, AzureFunctionStartUpRunner, GoogleCloudFunctionHost, BenzeneHost) - a
+    // registration mistake fails the build here rather than on the first polled message.
+    return app.createWorker(withStartUpChecks(container.createServiceResolverFactory()));
   }
 }

@@ -1,5 +1,6 @@
 /** Port of Benzene.Azure.Function.Core.InlineAzureFunctionStartUp. */
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { withStartUpChecks } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { AzureFunctionAppBuilder } from './AzureFunctionAppBuilder';
 import { IAzureFunctionApp } from './IAzureFunctionApp';
@@ -43,6 +44,7 @@ export class InlineAzureFunctionStartUp {
     this.appAction(app);
     this.servicesAction(container);
 
-    return app.createApp(container.createServiceResolverFactory());
+    // Boot-time wiring checks, as AzureFunctionStartUpRunner runs them for the StartUp-class path.
+    return app.createApp(withStartUpChecks(container.createServiceResolverFactory()));
   }
 }

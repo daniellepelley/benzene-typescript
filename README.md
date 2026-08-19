@@ -476,6 +476,31 @@ The same `StartUp` shape hosts on Azure (`new AzureFunctionHost(StartUp).httpFun
 (`new GoogleCloudFunctionHost(StartUp).httpFunction`) — only the `use<Cloud>` line inside `configure`
 differs. The terse `InlineAwsLambdaStartUp` builder remains for inline tests/advanced use.
 
+…or run the same `StartUp` as a **long-running process** — a container, a pod, a VM — where Benzene owns
+the listener and the poll loops. Declare the transports as workers and the entry point is one line:
+
+```ts
+class StartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer): void {}
+  configure(app: IBenzeneApplicationBuilder): void {
+    useWorker(app, (workers) => {
+      useExpress(workers, { port: 8080 }, (http) => useMessageHandlers(http, CreateOrderHandler));
+      useSqs(workers, sqsConfig, sqsFactory, (sqs) => useMessageHandlers(sqs, CreateOrderHandler));
+    });
+  }
+}
+
+// main.ts, entire
+await BenzeneHost.runAsync(StartUp);
+```
+
+`BenzeneHost.runAsync` (`@benzenejs/self-host`) starts every worker, waits for `SIGINT`/`SIGTERM`, then
+stops them and drains — the counterpart of .NET's `BenzeneHost.RunAsync<Startup>(args)`. Drop a level with
+`BenzeneHost.build(StartUp)` (the built worker, not started) or `BenzeneHost.runWorkerAsync(worker)`
+(signals and shutdown for a worker you built yourself); see [docs/hosting.md](docs/hosting.md#self-hosted-worker--benzenehost).
+The runnable version is [`examples/k8s-orders`](examples/k8s-orders): one handler, three transports, one
+process, one line of entry point.
+
 The same handler runs on every transport of both clouds — see
 [`examples/aws-lambda-functions`](examples/aws-lambda-functions) (one domain on API Gateway, SQS, SNS,
 EventBridge, and Kafka) and [`examples/azure-functions`](examples/azure-functions) (the same domain on
@@ -1343,7 +1368,9 @@ Ported (with tests):
 - Self-hosted workers (`@benzenejs/self-host`): the platform-neutral worker model — `WorkerApplicationBuilder`
   + `useWorker`, `BenzeneWorkerBuilder`/`IBenzeneWorkerStartup`, `CompositeBenzeneWorker` (materializes its
   deferred worker sequence exactly once, so stop targets the started instances), `InlineSelfHostedStartUp`,
-  and `BoundedConcurrentDispatcher` — a per-lane, key-ordered, backpressured fan-out for a poll loop.
+  `BenzeneHost` (the one-line entry point — `await BenzeneHost.runAsync(StartUp)`, the counterpart of .NET's
+  `Benzene.HostedService.BenzeneHost.RunAsync<TStartUp>(args)`; `build`/`runWorkerAsync` are the rungs below
+  it), and `BoundedConcurrentDispatcher` — a per-lane, key-ordered, backpressured fan-out for a poll loop.
   Because Node has no `System.Threading.Channels`, the used subset is re-created in-package as a
   capacity-1 single-reader `BoundedChannel`; `Interlocked`/`Volatile` on the outstanding-count array
   become plain reads/writes (single-threaded event loop), `CancellationToken` → optional `AbortSignal`,
@@ -1660,7 +1687,12 @@ Ported (with tests):
   adapters, enricher, result setter, `addExpress`) is a structural analog of
   `@benzenejs/aws-lambda-api-gateway`'s. Typed against Node's `http` (`IncomingMessage`/`ServerResponse`)
   with no runtime `express` dependency (Express is an optional peer); the raw body is read up front
-  (ASP.NET's `UseBufferedRequestBody` equivalent), so mount it before any body parser. Tested end-to-end
+  (ASP.NET's `UseBufferedRequestBody` equivalent), so mount it before any body parser. The package also
+  ships `useExpress(workers, options, action)` — the counterpart of .NET's `UseAspNet` *inside*
+  `UseWorker`, where Benzene owns a `node:http` listener as one worker among several (`useSqs`,
+  `useKafka`, …) in a single self-hosted process; it reuses the same adapter set and the same request
+  handling, differing only in that an unrouted request is a 404 rather than a `next()` fallthrough. Also
+  no runtime `express` dependency. Tested end-to-end
   against a real Express 5 app. Known limitation (port-wide, not Express-specific): a bodyless request
   (GET) yields `{} as TRequest`, and `enrich` only fills properties the object already has, so path/query
   params can't populate a field the empty body lacks — TypeScript has no `Activator.CreateInstance<T>()`

@@ -8,13 +8,16 @@ independent ways, from **one** running process:
 ```
         HTTP        ─────────┐
         SQS queue   ─────────┼──▶  orders-app (Deployment)  ──▶  PlaceOrderHandler
-        Kafka topic ─────────┘         (src/app.ts)               (src/domain.ts)
+        Kafka topic ─────────┘        (src/startUp.ts)            (src/domain.ts)
 ```
 
-Nothing in the handler knows which transport called it. That's the point: `src/app.ts` starts the
-Express server, the SQS poller, and the Kafka consumer together, in the same Node process, all
-dispatching into the exact same handler class — a bare Express route alone gives you the HTTP leg;
+Nothing in the handler knows which transport called it. That's the point: `src/startUp.ts` declares the
+HTTP listener, the SQS poller, and the Kafka consumer as three peer workers in the same Node process,
+all dispatching into the exact same handler class — a bare Express route alone gives you the HTTP leg;
 Benzene gives you all three from one class, one image, one Deployment.
+
+The entry point is one line — `await BenzeneHost.runAsync(OrdersStartUp)` — because starting, signal
+handling, and graceful shutdown are the framework's job, not the service's.
 
 ## Files
 
@@ -23,10 +26,8 @@ This is one npm package (`@benzene-example/k8s-orders`) with one entry point sha
 | Path | What it is |
 |---|---|
 | `src/domain.ts` | the shared handler - `PlaceOrderHandler`, decorated with both `@httpEndpoint('POST', '/orders')` and `@message('order-place')` |
-| `src/httpApp.ts` | the Express app (`@benzenejs/express`) - `POST /orders` |
-| `src/sqsWorker.ts` | `buildSqsWorker()` - `@benzenejs/aws-sqs`'s `useSqs`, the self-hosted SQS poller, not the Lambda-trigger `@benzenejs/aws-lambda-sqs` |
-| `src/kafkaWorker.ts` | `buildKafkaWorker()` - `@benzenejs/kafka-core`'s `useKafka`, the self-hosted Kafka consumer |
-| `src/app.ts` | the one entry point - starts all three together (see its own comment for **why** the SQS/Kafka legs are started fire-and-forget, not awaited before `app.listen()`) |
+| `src/startUp.ts` | the whole service - all three transports declared as peer workers in one `useWorker(...)` block: `useExpress` (`@benzenejs/express`), `useSqs` (`@benzenejs/aws-sqs`'s self-hosted poller, not the Lambda-trigger `@benzenejs/aws-lambda-sqs`) and `useKafka` (`@benzenejs/kafka-core`) |
+| `src/app.ts` | the entry point, in full: `await BenzeneHost.runAsync(OrdersStartUp)` - starting, signal handling and graceful shutdown are the framework's job, and adding a fourth transport does not touch this file |
 | `k8s/` | one Deployment + Service, pointed at a real SQS queue and Kafka cluster via env vars - no bundled infra |
 | `compose/` | `docker-compose.yml` - LocalStack (SQS) + a throwaway Kafka broker + the one service, for a credential-free local run |
 

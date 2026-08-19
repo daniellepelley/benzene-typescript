@@ -9,6 +9,8 @@
     "@benzene-example/aws-lambda-functions": "0.1.0",
     "@benzene-example/aws-lambda-mesh": "0.1.0",
     "@benzene-example/azure-functions": "0.1.0",
+    "@benzene-example/k8s-orders": "0.1.0",
+    "@benzene-example/kafka": "0.1.0",
     "@benzene-example/mesh-service": "0.1.0",
     "@benzene-example/payments-client": "0.1.0",
     "@benzenejs/abstractions": "0.1.0-beta.1",

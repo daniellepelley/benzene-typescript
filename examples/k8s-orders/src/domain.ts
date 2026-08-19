@@ -1,8 +1,8 @@
 /**
  * The one piece of business logic this example is about. It is reached three different ways by three
- * different Kubernetes Deployments — `api.ts` maps `POST /orders` straight onto it (the `@httpEndpoint`
- * decorator below), `sqsWorker.ts` polls an SQS queue and dispatches every message to it, and
- * `kafkaWorker.ts` consumes a Kafka topic and dispatches every record to it — all three registering it
+ * transports, wired side by side in `startUp.ts` — `useExpress` maps `POST /orders` straight onto it (the
+ * `@httpEndpoint` decorator below), `useSqs` polls an SQS queue and dispatches every message to it, and
+ * `useKafka` consumes a Kafka topic and dispatches every record to it — all three registering it
  * under the same `@message('order-place')`. Nothing in this class knows which of the three called it: no
  * transport type, no queue/topic name, no HTTP request/response. That's deliberate — it's what "write the
  * handler once, run it behind whichever transport reaches a pod fastest for the traffic you actually
@@ -41,8 +41,8 @@ export class PlaceOrderHandler implements IMessageHandler<PlaceOrderRequest, Ord
   handleAsync(request: PlaceOrderRequest): Promise<IBenzeneResultOf<OrderPlaced>> {
     const orderId = `order-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 
-    // The same line, unmodified, is what you'll find in the logs for all three Deployments — proof
-    // it's the same code path, not a transport-specific copy of it.
+    // The same line, unmodified, is what you'll find in the logs whichever transport delivered the
+    // message — proof it's the same code path, not a transport-specific copy of it.
     console.log(
       `order placed: ${orderId} - ${request.quantity}x ${request.sku} for ${request.customerId}`,
     );

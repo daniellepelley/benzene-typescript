@@ -16,7 +16,12 @@
     "@benzenejs/core-message-handlers": "0.1.0-beta.1",
     "@benzenejs/kafka-core": "0.1.0-beta.1",
     "@benzenejs/results": "0.1.0-beta.1",
-    "@benzenejs/self-host": "0.1.0-beta.1",
-    "@benzenejs/testing": "0.1.0-beta.1"
+    "@benzenejs/self-host": "0.1.0-beta.1"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
   }
 }

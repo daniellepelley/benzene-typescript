@@ -1,7 +1,12 @@
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { BenzeneException } from '@benzenejs/core';
-import { addBenzene, TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
+import {
+  addBenzene,
+  TransportMiddlewarePipeline,
+  TransportNames,
+  withStartUpChecks,
+} from '@benzenejs/core-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
@@ -241,7 +246,9 @@ export function useGrpc(
 
   // The route table is discovered once and stays stable for the process lifetime, so resolve the finder a
   // single time rather than per call.
-  const factory = container.createServiceResolverFactory();
+  // Boot-time wiring checks, run once here as every other host runs them - a duplicate `@grpcMethod`
+  // or a missing registration fails `useGrpc(...)` rather than the first RPC that reaches it.
+  const factory = withStartUpChecks(container.createServiceResolverFactory());
   const routeScope = factory.createScope();
   const routeFinder = routeScope.getService(IGrpcRouteFinder);
   routeScope.dispose();

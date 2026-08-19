@@ -9,12 +9,11 @@
  * broker is created under test.
  */
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
-import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
+import { BenzeneStartUp, IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
 import { useMessageHandlers } from '@benzenejs/core-message-handlers';
 import { IKafkaConsumerFactory, useKafka } from '@benzenejs/kafka-core';
 import { useWorker } from '@benzenejs/self-host';
 import { Kafka } from 'kafkajs';
-import type { BenzeneStartUp } from '@benzenejs/testing';
 import { CreateOrderHandler, DeleteOrderHandler, Topics } from './handlers';
 import { IOrderStore, InMemoryOrderStore } from './orderStore';
 
@@ -24,7 +23,7 @@ import { IOrderStore, InMemoryOrderStore } from './orderStore';
  * calls), so booting this StartUp under a component test never touches kafkajs.
  */
 export function kafkaConsumerFactory(
-  brokers: string[] = ['localhost:9092'],
+  brokers: string[] = (process.env['KAFKA_BROKERS'] ?? 'localhost:9092').split(','),
   groupId = 'benzene-example-kafka',
 ): IKafkaConsumerFactory {
   return {

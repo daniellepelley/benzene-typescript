@@ -61,11 +61,12 @@ actively receives work (a broker poll loop) and keeps the process alive — no e
 invokes you, and no separate host is already listening. This is the one mode where how many events run
 *at once* is Benzene's own decision; see [Worker concurrency](#worker-concurrency).
 
-> **Not yet ported.** Two host shapes from the .NET model have no TypeScript equivalent: ASP.NET Core /
-> Kestrel (use Express in its place), and the generic `IHostedService` worker host
-> (`Benzene.HostedService`) — the .NET generic-host adapter that owns a worker process's start/stop
-> lifecycle; instead, drive the composite worker's `startAsync`/`stopAsync` from your own process
-> lifecycle (below). gRPC hosting *is* ported — `@benzenejs/grpc`'s `useGrpc` bridges a `@grpc/grpc-js`
+> **Not yet ported.** One host shape from the .NET model has no TypeScript equivalent: ASP.NET Core /
+> Kestrel. Use Express in its place — either as middleware inside your own app (`benzene(...)`) or as a
+> Benzene-owned listener worker (`useExpress`, below). The .NET generic-host adapter
+> (`Benzene.HostedService`) has a counterpart: `BenzeneHost` in `@benzenejs/self-host` owns a worker
+> process's start/stop lifecycle, so `BenzeneHost.runAsync(StartUp)` is the whole entry point. gRPC
+> hosting *is* ported — `@benzenejs/grpc`'s `useGrpc` bridges a `@grpc/grpc-js`
 > `Server` into the same handler pipeline (the grpc-js `Server` replaces .NET's ASP.NET-hosted gRPC). And
 > on the self-hosted side, both the platform-neutral worker *scaffolding* (`@benzenejs/self-host`) **and**
 > the ready-made broker/stream consumers — SQS, Service Bus, Event Hub, RabbitMQ, Kafka, and the Cosmos DB
@@ -274,12 +275,77 @@ For a Pub/Sub-triggered function, swap `useHttp` for `usePubSub` and `GoogleClou
 `GooglePubSubFunctionHost` (`.cloudEventFunction`) — everything else is identical. See
 [Google Cloud Functions](getting-started-google.md) for the full walkthrough and deployment.
 
-### Self-hosted worker — `InlineSelfHostedStartUp`
+### Self-hosted worker — `BenzeneHost`
 
 Package: `@benzenejs/self-host`. Unlike the hosts above, a worker owns a long-running process rather than
-responding to an external caller. `InlineSelfHostedStartUp` registers services and one or more
-`IBenzeneWorker`s, then `build()` returns a single composite worker with `startAsync`/`stopAsync` you
-drive from your process's lifecycle:
+responding to an external caller. Declare the transports in a `BenzeneStartUp` and the entry point is one
+line:
+
+```ts
+// src/startUp.ts — the only place hosting is described
+export class OrdersStartUp implements BenzeneStartUp {
+  configureServices(services: IBenzeneServiceContainer, _c: BenzeneConfiguration): void {
+    services.addSingleton(IOrderStore, InMemoryOrderStore);
+  }
+
+  configure(app: IBenzeneApplicationBuilder, _c: BenzeneConfiguration): void {
+    useWorker(app, (workers) => {
+      useExpress(workers, { port: 8080 }, (http) => useMessageHandlers(http, PlaceOrderHandler));
+      useSqs(workers, sqsConfig, sqsFactory, (sqs) => useMessageHandlers(sqs, PlaceOrderHandler));
+    });
+  }
+}
+```
+
+```ts
+// src/main.ts, entire
+await BenzeneHost.runAsync(OrdersStartUp);
+```
+
+`runAsync` starts every worker, waits for `SIGINT`/`SIGTERM`, then stops them and drains. Adding a third
+transport never touches `main.ts`. The counterpart of .NET's `BenzeneHost.RunAsync<TStartUp>(args)`.
+
+#### Dropping a level
+
+`runAsync` is composed from two public steps, and you can stop at either:
+
+| Rung | Call | What you get |
+| --- | --- | --- |
+| Shorthand | `BenzeneHost.runAsync(StartUp)` | build + run + signals + shutdown |
+| One down | `BenzeneHost.build(StartUp)` | the built `IBenzeneWorker`, not started (the seam a test uses) |
+| One down | `BenzeneHost.runWorkerAsync(worker)` | signals + shutdown for a worker you built yourself |
+| Explicit | `worker.startAsync(signal)` / `worker.stopAsync()` | everything by hand |
+
+And `build` itself is only this, all public API:
+
+```ts
+const startUp = new OrdersStartUp();
+const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+const container = new DefaultBenzeneServiceContainer();   // @benzenejs/dependencies
+startUp.configureServices(container, configuration);
+const builder = new WorkerApplicationBuilder(container);  // @benzenejs/self-host
+startUp.configure(builder, configuration);
+const worker = builder.createWorker(
+  withStartUpChecks(container.createServiceResolverFactory()), // @benzenejs/core-message-handlers
+);
+```
+
+`withStartUpChecks` is why a wiring mistake — two handlers on one topic, a transport pointed at nothing —
+fails the process at start-up with a message naming the fix, rather than on the first message that reaches
+the broken link. Every host runs it; `BenzeneHost.build` is no exception.
+
+> `runAsync` waits for the **shutdown signal**, not for the workers. A polling worker's `startAsync` *is*
+> its loop and resolves only once stopped, while a push-based one (kafkajs, an HTTP listener) resolves as
+> soon as it is subscribed or bound — so "every worker's promise resolved" is not a reason to exit. A
+> worker that *fails* to start does trigger shutdown, so the process never waits on a signal that will
+> never come.
+
+### Self-hosted worker, inline — `InlineSelfHostedStartUp`
+
+For a test or a small script, `InlineSelfHostedStartUp` skips the startup class: register services and one
+or more `IBenzeneWorker`s inline, then `build()` returns a single composite worker with
+`startAsync`/`stopAsync` you drive from your process's lifecycle (or hand to
+`BenzeneHost.runWorkerAsync`):
 
 ```ts
 // src/worker.ts
@@ -292,10 +358,12 @@ const worker = new InlineSelfHostedStartUp()
   .configureServices((services) => addBenzene(services))
   .build();
 
-await worker.startAsync();
+// Signals + graceful shutdown, without the startup class:
+await BenzeneHost.runWorkerAsync(worker);
 
-// Keep the process alive; drain in-flight work on shutdown.
-process.on('SIGTERM', () => void worker.stopAsync());
+// ...or entirely by hand, if you own the process lifecycle already:
+// await worker.startAsync(signal);
+// process.on('SIGTERM', () => void worker.stopAsync());
 ```
 
 `workers.add((resolver) => …)` registers a factory that builds one worker from the invocation's resolver
@@ -317,12 +385,20 @@ the worker to the composite:
 
 | Package | `use*` function | Transport | Inner pipeline |
 | --- | --- | --- | --- |
+| `@benzenejs/express` | `useExpress(workers, options, action)` | `"express"` | `useMessageHandlers(...)` |
 | `@benzenejs/aws-sqs` | `useSqs(workers, config, clientFactory, action)` | `"sqs"` | `useMessageHandlers(...)` |
 | `@benzenejs/azure-service-bus` | `useServiceBus(workers, config, clientFactory, action)` | `"service-bus"` | `useMessageHandlers(...)` |
 | `@benzenejs/azure-event-hub` | `useEventHub(workers, config, processorClientFactory, action)` | `"event-hub"` | `useMessageHandlers(...)` |
 | `@benzenejs/rabbitmq` | `useRabbitMq(workers, config, connectionFactory, action)` | `"rabbitmq"` | `useMessageHandlers(...)` |
 | `@benzenejs/kafka-core` | `useKafka(workers, config, consumerFactory, action)` | `"kafka"` | `useMessageHandlers(...)` |
 | `@benzenejs/azure-cosmos-db` | `useCosmosDbChangeFeed(workers, config, processorFactory, action)` | `"cosmos-db"` | `useStream(...)` |
+
+`useExpress` is the odd one out: it *listens* rather than consumes, and it is the counterpart of .NET's
+`UseAspNet` inside `UseWorker` — Benzene owns a `node:http` listener, so HTTP is one worker among several
+and one process serves all of them. It is a different rung from [`benzene(...)`](#express--benzene): use
+that when the process is *your* Express app and Benzene handles some of its routes and falls through for
+the rest; use `useExpress` when the process is a Benzene service that happens to speak HTTP, where a
+request no handler owns is a 404. Despite the name it adds no runtime dependency on Express.
 
 The message-based consumers route by topic, so their `action` is the same
 `useMessageHandlers(pipeline, PlaceOrderHandler)` you write on every other host — the *same*

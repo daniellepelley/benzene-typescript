@@ -78,111 +78,122 @@ topic-id convention on Kafka the way there is for HTTP (see [Kafka
 Setup](getting-started-kafka.md)). That's why `order-place` was picked over the colon-style
 `order:place` this port otherwise favors: Kafka topic names may not contain `:`.
 
-## 2. Build each leg, then start them together
+## 2. Declare all three transports in one startup
 
-Each leg is its own small module exporting a `build*` function — no entry-point code of its own:
-
-```ts
-// src/httpApp.ts
-import express, { type Express } from 'express';
-import { useMessageHandlers } from '@benzenejs/core-message-handlers';
-import { benzene } from '@benzenejs/express';
-import { PlaceOrderHandler } from './domain.js';
-
-export function createOrderApp(): Express {
-  const app = express();
-  app.use(benzene((pipeline) => useMessageHandlers(pipeline, PlaceOrderHandler)));
-  return app;
-}
-```
+Hosting belongs in the startup, not the entry point. One `BenzeneStartUp` declares every transport as
+a peer worker, all dispatching into the same handler:
 
 ```ts
-// src/sqsWorker.ts
+// src/startUp.ts
 import { SQSClient } from '@aws-sdk/client-sqs';
+import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import {
+  BenzeneConfiguration,
+  BenzeneStartUp,
+  IBenzeneApplicationBuilder,
+} from '@benzenejs/abstractions-middleware';
 import { SqsClientFactory, useSqs } from '@benzenejs/aws-sqs';
 import { useMessageHandlers } from '@benzenejs/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
-import { PlaceOrderHandler } from './domain.js';
-
-const queueUrl = process.env['QUEUE_URL']!;
-const sqsClient = new SQSClient(); // default credential chain - an IRSA role on EKS
-
-export function buildSqsWorker() {
-  return new InlineSelfHostedStartUp()
-    .configure((app) =>
-      useSqs(app, { queueUrl, maxNumberOfMessages: 10 }, new SqsClientFactory(sqsClient), (sqs) =>
-        useMessageHandlers(sqs, PlaceOrderHandler),
-      ),
-    )
-    .build();
-}
-```
-
-```ts
-// src/kafkaWorker.ts
-import { Kafka } from 'kafkajs';
+import { useExpress } from '@benzenejs/express';
 import { useKafka } from '@benzenejs/kafka-core';
-import { useMessageHandlers } from '@benzenejs/core-message-handlers';
-import { InlineSelfHostedStartUp } from '@benzenejs/self-host';
+import { useWorker } from '@benzenejs/self-host';
+import { Kafka } from 'kafkajs';
 import { PLACE_ORDER_TOPIC, PlaceOrderHandler } from './domain.js';
 
-const brokers = (process.env['KAFKA_BROKERS'] ?? 'localhost:9092').split(',');
-const consumerFactory = {
-  create: () => new Kafka({ clientId: 'orders-kafka-worker', brokers }).consumer({
-    groupId: 'orders-kafka-worker',
-  }),
-};
+export class OrdersStartUp implements BenzeneStartUp {
+  getConfiguration(): BenzeneConfiguration {
+    return { get: (key) => process.env[key] };
+  }
 
-export function buildKafkaWorker() {
-  return new InlineSelfHostedStartUp()
-    .configure((app) =>
-      useKafka(app, { topics: [PLACE_ORDER_TOPIC], fromBeginning: true }, consumerFactory, (kafka) =>
-        useMessageHandlers(kafka, PlaceOrderHandler),
-      ),
-    )
-    .build();
+  configureServices(_services: IBenzeneServiceContainer, _configuration: BenzeneConfiguration): void {}
+
+  configure(app: IBenzeneApplicationBuilder, configuration: BenzeneConfiguration): void {
+    const sqsClient = new SQSClient(); // default credential chain - an IRSA role on EKS
+    const brokers = (configuration.get('KAFKA_BROKERS') ?? 'localhost:9092').split(',');
+
+    useWorker(app, (workers) => {
+      useExpress(workers, { port: Number(configuration.get('PORT') ?? 8080) }, (http) =>
+        useMessageHandlers(http, PlaceOrderHandler),
+      );
+
+      useSqs(
+        workers,
+        { queueUrl: configuration.get('QUEUE_URL')!, maxNumberOfMessages: 10 },
+        new SqsClientFactory(sqsClient),
+        (sqs) => useMessageHandlers(sqs, PlaceOrderHandler),
+      );
+
+      useKafka(
+        workers,
+        { topics: [PLACE_ORDER_TOPIC], fromBeginning: true },
+        { create: () => new Kafka({ clientId: 'orders', brokers }).consumer({ groupId: 'orders' }) },
+        (kafka) => useMessageHandlers(kafka, PlaceOrderHandler),
+      );
+    });
+  }
 }
 ```
 
-Now the one entry point that starts all three — and the one thing in this whole guide that's easy to
-get wrong:
+`useExpress` here means **Benzene owns the HTTP listener** — HTTP is one worker among three, and a
+request no handler owns gets a 404. That is a different rung from `benzene(...)`, which returns
+ordinary Express middleware for when the process is *your* Express app and Benzene handles some of its
+routes; see [Getting Started](getting-started.md).
+
+Then the entry point, in full:
 
 ```ts
 // src/app.ts
-import { createOrderApp } from './httpApp.js';
-import { buildSqsWorker } from './sqsWorker.js';
-import { buildKafkaWorker } from './kafkaWorker.js';
+import { BenzeneHost } from '@benzenejs/self-host';
+import { OrdersStartUp } from './startUp.js';
 
-const controller = new AbortController();
-process.on('SIGINT', () => controller.abort());
-process.on('SIGTERM', () => controller.abort());
-
-// NOT awaited inline. SqsConsumer.startAsync IS its poll loop - it doesn't resolve until stopped.
-// `await`ing it here would mean app.listen() below never runs at all.
-void buildSqsWorker().startAsync(controller.signal).catch((err: unknown) => {
-  console.error('orders-sqs-worker failed', err);
-  process.exit(1);
-});
-
-// kafkajs's consumer.run is push-based, so this resolves promptly on its own - but it's started the
-// same fire-and-forget way for consistency, and so a startup failure is caught.
-void buildKafkaWorker().startAsync(controller.signal).catch((err: unknown) => {
-  console.error('orders-kafka-worker failed', err);
-  process.exit(1);
-});
-
-const port = Number(process.env['PORT'] ?? 8080);
-createOrderApp().listen(port, () => console.log(`orders-api listening on http://localhost:${port}`));
+await BenzeneHost.runAsync(OrdersStartUp);
 ```
 
-Node has no "generic host" sequencing startup the way .NET's does (that port's version of this guide
-has to work around a real bug there: a self-hosted worker's `startAsync` starving Kestrel's own
-startup — see its [Kubernetes guide](https://github.com/daniellepelley/benzene-dotnet/blob/main/docs/getting-started-kubernetes.md)
-if you're curious). The event loop schedules `app.listen()`'s callback independently of a pending
-promise elsewhere — **but only once `app.listen()` is actually called**, and a sequential `await
-buildSqsWorker().startAsync(...)` placed *before* it would prevent that call from ever being reached,
-the same practical effect as the .NET bug by a different mechanism. `void
-promise.catch(...)` — never `await` — is what keeps all three legs independent.
+`BenzeneHost.runAsync` starts every worker, waits for `SIGINT`/`SIGTERM` — the signal Kubernetes sends
+before the termination grace period — then stops them and drains. Adding a fourth transport never
+touches this file, which is the whole reason hosting lives in the startup.
+
+### Dropping a level
+
+`runAsync` is composed from two public steps, and you can stop at either:
+
+```ts
+// Build the worker without running it - the seam a test uses, and where you resolve services
+// from the container the startup registered.
+const worker = BenzeneHost.build(OrdersStartUp);
+
+// ...then run it on your own terms, with the signal handling still done for you:
+await BenzeneHost.runWorkerAsync(worker, { signal: myController.signal });
+
+// ...or fully by hand, no host at all:
+await worker.startAsync(myController.signal);
+await worker.stopAsync();
+```
+
+And `build` itself is only this, all public API — write it out whenever you need something in the
+middle:
+
+```ts
+const startUp = new OrdersStartUp();
+const configuration = startUp.getConfiguration?.() ?? emptyConfiguration();
+const container = new DefaultBenzeneServiceContainer();   // @benzenejs/dependencies
+startUp.configureServices(container, configuration);
+const builder = new WorkerApplicationBuilder(container);  // @benzenejs/self-host
+startUp.configure(builder, configuration);
+const worker = builder.createWorker(
+  withStartUpChecks(container.createServiceResolverFactory()), // @benzenejs/core-message-handlers
+);
+```
+
+`withStartUpChecks` is the reason a wiring mistake — two handlers on one topic, a transport pointed at
+nothing — fails the process at start-up with a message naming the fix, rather than on the first
+message that reaches the broken link. `BenzeneHost.build` runs it for you.
+
+A note on why this used to be harder: a polling worker's `startAsync` *is* its loop and does not
+resolve until the worker is stopped, while a push-based one (kafkajs, an HTTP listener) resolves as
+soon as it is subscribed or bound. Hand-rolling the entry point means getting that difference right —
+`await`ing a polling worker inline starves everything after it. `BenzeneHost` waits on the shutdown
+signal rather than on the workers, so the distinction stops being yours to get right.
 
 ## 3. Containerise it
 
@@ -233,7 +244,10 @@ spec:
             - { name: PORT, value: "8080" }
             - { name: QUEUE_URL, value: "https://sqs.eu-west-1.amazonaws.com/<account-id>/orders-in" }
             - { name: KAFKA_BROKERS, value: "kafka-bootstrap.kafka.svc.cluster.local:9092" }
-          readinessProbe: { httpGet: { path: /healthz, port: 8080 }, initialDelaySeconds: 3 }
+          # Benzene owns the HTTP listener (useExpress), so every route is a message handler; a TCP
+          # probe checks the listener without inventing a non-domain HTTP route. For an HTTP readiness
+          # surface at /benzene/health, wire useBenzeneCloudService (@benzenejs/cloud-service).
+          readinessProbe: { tcpSocket: { port: 8080 }, initialDelaySeconds: 3 }
 ---
 apiVersion: v1
 kind: Service
@@ -269,8 +283,8 @@ kubectl scale deploy/orders-app --replicas=4   # scales all three transports' co
 ## One process, or one per transport?
 
 This guide combines all three transports into a single process because Node's event loop makes it
-cheap to, once you know the one rule above (fire-and-forget, never await a long-running `startAsync`
-inline). It is not the *only* shape, though, and it is not always the right one. Splitting the
+cheap to, and because one startup declaring three workers is no more code than one declaring one. It
+is not the *only* shape, though, and it is not always the right one. Splitting the
 transports into **separate** entry points/Deployments (one for HTTP, one for the SQS poller, one for
 the Kafka consumer, each its own image) is a legitimate alternative: each transport then scales,
 rolls back, and fails independently — a bad Kafka-consumer deploy, or the Kafka leg falling behind

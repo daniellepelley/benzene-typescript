@@ -21,3 +21,4 @@ export * from './ExpressResponseAdapter';
 export * from './ExpressMessageMessageHandlerResultSetter';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
+export * from './ExpressWorker';
