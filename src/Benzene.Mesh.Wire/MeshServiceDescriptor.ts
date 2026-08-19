@@ -27,20 +27,25 @@ export class MeshServiceDescriptor {
   topics: MeshTopicDescriptor[] = [];
 
   /**
-   * Every registered outbound topic (spec §2.3, §2's `consumes`): what this service **consumes**.
+   * Every registered outbound topic (spec §2.3, §2's `produces`): what this service **produces**.
    * Same shape/schema-derivation rules as {@link topics}. Derived from explicit outbound
    * registration - never inferred by scanning handler bodies or call sites - so a topic absent
-   * here is not consumed by this service, regardless of what traffic has or hasn't flowed. This is
-   * the field the collector (mesh.md §4) reads to build consumer edges.
+   * here is not produced by this service, regardless of what traffic has or hasn't flowed. This is
+   * the field the collector (mesh.md §4) reads to build **provider** edges.
+   *
+   * Named `produces`, and paired with {@link topics} meaning what this service consumes, since the
+   * 2026-08 role inversion: a service that registers a handler for a topic is that topic's
+   * CONSUMER, which is how Kafka, SQS/SNS, EventBridge and Pub/Sub all use the word. Before that
+   * this field was `consumes` and the two roles were the other way round.
    */
-  consumes: MeshTopicDescriptor[] = [];
+  produces: MeshTopicDescriptor[] = [];
 
   descriptorHash?: string;
 
   /**
    * Names the feeds that were unavailable when the descriptor was built (spec §2: "registry" for
-   * {@link topics}, "outbound-registry" for {@link consumes}), so a reduced descriptor is
-   * distinguishable from a service that provides/consumes nothing.
+   * {@link topics}, "outbound-registry" for {@link produces}), so a reduced descriptor is
+   * distinguishable from a service that produces/consumes nothing.
    */
   degraded?: string[];
 

@@ -15,13 +15,13 @@ import { CloudServiceProfileReport } from './CloudServiceProfileReport';
  * lazily from the container's registry on first use. Both paths stamp the profile self-assessment onto the
  * descriptor (mesh.md §2's `profile` field, excluded from the contract hash).
  *
- * `consumesDefinitions` (mesh.md §2.3, `ICloudServiceBuilder.withConsumes`) is the outbound-registration
- * counterpart of `handlerTypes`: when the builder declared any, they populate `consumes` eagerly the same
+ * `producesDefinitions` (mesh.md §2.3, `ICloudServiceBuilder.withProduces`) is the outbound-registration
+ * counterpart of `handlerTypes`: when the builder declared any, they populate `produces` eagerly the same
  * way `handlerTypes` populates `topics`; when it declared none, the lazy path still checks the container for
  * an `IMessageSendersFinder` a host may have registered independently, exactly mirroring how the lazy
  * `topics` path checks for `IMessageHandlerDefinitionLookUp`. Neither path guesses at outbound registration
  * from handler bodies (mesh.md §2.3 forbids it) - an app with no `withConsumes` calls and no registered
- * finder degrades `consumes` (`degraded: ["outbound-registry"]`), same as an app with no handlers degrades
+ * finder degrades `produces` (`degraded: ["outbound-registry"]`), same as an app with no handlers degrades
  * `topics`.
  *
  * Divergence from C#: the eager reflection finder (`ReflectionMessageHandlersFinder`) maps to the port's
@@ -35,7 +35,7 @@ export class CloudServiceDescriptorSource {
     private readonly info: MeshServiceInfo,
     private readonly report: CloudServiceProfileReport,
     handlerTypes?: Constructor<unknown>[],
-    private readonly consumesDefinitions?: IMessageSenderDefinition[],
+    private readonly producesDefinitions?: IMessageSenderDefinition[],
   ) {
     if (handlerTypes !== undefined) {
       const definitions = new CacheMessageHandlersFinder(
@@ -60,9 +60,9 @@ export class CloudServiceDescriptorSource {
 
   /** `withConsumes`-declared definitions, wrapped as a finder; `undefined` when the builder declared none. */
   private eagerSendersFinder(): IMessageSendersFinder | undefined {
-    return this.consumesDefinitions === undefined || this.consumesDefinitions.length === 0
+    return this.producesDefinitions === undefined || this.producesDefinitions.length === 0
       ? undefined
-      : new ListSendersFinder(this.consumesDefinitions);
+      : new ListSendersFinder(this.producesDefinitions);
   }
 
   private build(

@@ -39,12 +39,16 @@ function event(
   return evt;
 }
 
-/** Builds a registrable `MeshServiceDescriptor` declaring `provides` as `topics` and `consumes` as `consumes` (ids only). */
-function descriptor(service: string, provides: string[], consumes: string[]): MeshServiceDescriptor {
+/**
+ * Builds a registrable `MeshServiceDescriptor`. Note what the two lists mean since the 2026-08 role
+ * inversion: `handles` becomes `topics`, which makes the service those topics' CONSUMER, and `sends`
+ * becomes `produces`, which makes it their PROVIDER.
+ */
+function descriptor(service: string, handles: string[], sends: string[]): MeshServiceDescriptor {
   const value = new MeshServiceDescriptor();
   value.service = service;
-  value.topics = provides.map(topicDescriptor);
-  value.consumes = consumes.map(topicDescriptor);
+  value.topics = handles.map(topicDescriptor);
+  value.produces = sends.map(topicDescriptor);
   return value;
 }
 
@@ -181,28 +185,29 @@ describe('MeshCollectorStore', () => {
     store.register(descriptor('payments', ['payments:capture'], []));
     store.register(descriptor('orders', ['order:create'], ['payments:capture']));
 
+    // orders SENDS payments:capture, so it provides it; payments HANDLES it, so it consumes it.
     const capture = store.topic('payments:capture', undefined);
     expect(capture).toBeDefined();
-    expect(capture!.providers).toEqual(['payments']);
-    expect(capture!.consumers).toEqual(['orders']);
+    expect(capture!.providers).toEqual(['orders']);
+    expect(capture!.consumers).toEqual(['payments']);
     expect(capture!.invocations).toBe(0);
     // Declared but never exercised: present-but-empty activity per edge, not absent (the §4.2 "Unobserved"
     // decommission-candidate signal, distinguished from "never declared" by presence of the key at all).
-    expect(capture!.providerActivity).toEqual({ payments: {} });
-    expect(capture!.consumerActivity).toEqual({ orders: {} });
+    expect(capture!.providerActivity).toEqual({ orders: {} });
+    expect(capture!.consumerActivity).toEqual({ payments: {} });
   });
 
   it('Reregistration_ReplacesBothProviderAndConsumerEdges', () => {
     const store = new MeshCollectorStore();
     store.register(descriptor('payments', ['payments:capture'], []));
     store.register(descriptor('orders', ['order:create'], ['payments:capture']));
-    // Redeploy: orders keeps providing order:cancel instead, and stops consuming payments:capture.
+    // Redeploy: orders handles order:cancel instead, and stops producing payments:capture.
     store.register(descriptor('orders', ['order:cancel'], []));
 
-    expect(store.topic('order:create', undefined)!.providers).toEqual([]);
-    expect(store.topic('payments:capture', undefined)!.consumers).toEqual([]);
-    expect(store.topic('payments:capture', undefined)!.providers).toEqual(['payments']); // unrelated edge untouched
-    expect(store.topic('order:cancel', undefined)!.providers).toEqual(['orders']);
+    expect(store.topic('order:create', undefined)!.consumers).toEqual([]);
+    expect(store.topic('payments:capture', undefined)!.providers).toEqual([]);
+    expect(store.topic('payments:capture', undefined)!.consumers).toEqual(['payments']); // unrelated edge untouched
+    expect(store.topic('order:cancel', undefined)!.consumers).toEqual(['orders']);
   });
 
   it('ProviderActivity_TracksLastObservedAtPerDeclaredEdge_OnceTrafficArrives', () => {
@@ -220,15 +225,17 @@ describe('MeshCollectorStore', () => {
     store.addEvents([callerSpan, call, provide, consume]);
 
     const capture = store.topic('payments:capture', undefined)!;
-    expect(capture.providers).toEqual(['payments']);
-    expect(capture.consumers).toEqual(['orders']);
-    expect(capture.providerActivity['payments']?.lastObservedAt).toBeDefined();
-    expect(capture.consumerActivity['orders']?.lastObservedAt).toBeDefined(); // seen via span-4's parentage
+    expect(capture.providers).toEqual(['orders']);
+    expect(capture.consumers).toEqual(['payments']);
+    // The observed side follows the declared side: payments HANDLED it (consumer), orders SENT it
+    // (provider, seen via span-4's parentage).
+    expect(capture.consumerActivity['payments']?.lastObservedAt).toBeDefined();
+    expect(capture.providerActivity['orders']?.lastObservedAt).toBeDefined();
   });
 
   // ---- declared vs. observed: undeclared edges (mesh.md §4.2, contract-drift) ----
 
-  it('ContractDrift_RegisteredProviderHandlingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
+  it('ContractDrift_RegisteredConsumerHandlingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
     const store = new MeshCollectorStore();
     store.register(descriptor('orders', ['order:create'], [])); // does NOT declare order:cancel
 
@@ -240,11 +247,11 @@ describe('MeshCollectorStore', () => {
     expect(issues[0].service).toBe('orders');
     expect(issues[0].topic).toBe('order:cancel');
     expect(issues[0].count).toBe(1);
-    // The graph itself is unaffected by the drift - orders still doesn't provide order:cancel.
-    expect(store.topic('order:cancel', undefined)!.providers).toEqual([]);
+    // The graph itself is unaffected by the drift - orders still doesn't declare order:cancel.
+    expect(store.topic('order:cancel', undefined)!.consumers).toEqual([]);
   });
 
-  it('ContractDrift_RegisteredConsumerCallingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
+  it('ContractDrift_RegisteredProviderSendingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
     const store = new MeshCollectorStore();
     store.register(descriptor('payments', ['payments:capture'], []));
     store.register(descriptor('orders', ['order:create'], [])); // does NOT declare payments:capture
@@ -259,7 +266,7 @@ describe('MeshCollectorStore', () => {
     expect(driftIssues).toHaveLength(1);
     expect(driftIssues[0].service).toBe('orders');
     expect(driftIssues[0].topic).toBe('payments:capture');
-    expect(store.topic('payments:capture', undefined)!.consumers).toEqual([]); // graph unaffected
+    expect(store.topic('payments:capture', undefined)!.providers).toEqual([]); // graph unaffected
   });
 
   it('ContractDrift_AnonymousNeverRegisteredService_IsNeverFlagged', () => {

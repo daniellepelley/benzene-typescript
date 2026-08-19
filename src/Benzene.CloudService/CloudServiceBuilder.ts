@@ -48,11 +48,24 @@ export interface ICloudServiceBuilder {
 
   /**
    * Declares an outbound topic this service may send (mesh.md §2.3's outbound registration) - no handler,
-   * since nothing here receives. This is what populates the descriptor's `consumes` field, the sole source
-   * a collector reads to build this service's consumer edges (mesh.md §4) - a topic never declared here is
-   * never a consumer edge, however much traffic actually flows. Mirrors `withHandlers` for the inbound side;
+   * since nothing here receives. This is what populates the descriptor's `produces` field, the sole source
+   * a collector reads to build this service's PROVIDER edges (mesh.md §4) - a topic never declared here is
+   * never a provider edge, however much traffic actually flows. Mirrors `withHandlers` for the inbound side;
    * `requestType`/`responseType` default to "no payload" (matching `MessageSenderDefinition.create`'s
    * `VoidResult` sentinel) when the service doesn't need §2.1 schema derivation for this topic.
+   */
+  withProduces(
+    topic: string,
+    requestType?: ServiceIdentifier<unknown>,
+    responseType?: ServiceIdentifier<unknown>,
+    version?: string,
+  ): ICloudServiceBuilder;
+
+  /**
+   * The former name of {@link withProduces}, kept so existing composition roots still compile.
+   *
+   * @deprecated The 2026-08 role inversion (mesh.md §4) made a service's outbound registration its
+   * PRODUCER claim, so the old name says the opposite of what the method does. Use `withProduces`.
    */
   withConsumes(
     topic: string,
@@ -116,7 +129,7 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
   collectorEnvelopeUrl?: string;
   readonly healthChecks: IHealthCheck[] = [];
   handlerTypes?: Constructor<unknown>[];
-  readonly consumesDefinitions: IMessageSenderDefinition[] = [];
+  readonly producesDefinitions: IMessageSenderDefinition[] = [];
   envelopeMiddleware?: PipelineBuilderAction<BenzeneMessageContext>;
   invokePath: string = CloudServicePaths.invoke;
   specPath: string = CloudServicePaths.spec;
@@ -176,14 +189,24 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
     return this;
   }
 
+  withProduces(
+    topic: string,
+    requestType: ServiceIdentifier<unknown> = VoidResult,
+    responseType: ServiceIdentifier<unknown> = VoidResult,
+    version = '',
+  ): ICloudServiceBuilder {
+    this.producesDefinitions.push(MessageSenderDefinition.create(topic, requestType, responseType, VoidResult, version));
+    return this;
+  }
+
+  /** @deprecated Use {@link withProduces}. */
   withConsumes(
     topic: string,
     requestType: ServiceIdentifier<unknown> = VoidResult,
     responseType: ServiceIdentifier<unknown> = VoidResult,
     version = '',
   ): ICloudServiceBuilder {
-    this.consumesDefinitions.push(MessageSenderDefinition.create(topic, requestType, responseType, VoidResult, version));
-    return this;
+    return this.withProduces(topic, requestType, responseType, version);
   }
 
   withMiddleware(configure: PipelineBuilderAction<BenzeneMessageContext>): ICloudServiceBuilder {

@@ -7,7 +7,7 @@
  *
  * `getSchemas(topic)` first looks for an inbound handler definition (`IMessageHandlerDefinitionLookUp`,
  * what the topic is served by, mesh.md §2's `topics`); when none matches, it falls back to an outbound sender
- * definition (`IMessageSendersFinder`, when supplied - mesh.md §2.3's `consumes`, "same schema-derivation
+ * definition (`IMessageSendersFinder`, when supplied - mesh.md §2.3's `produces`, "same schema-derivation
  * rules applied to the sender's declared request/response types"). Either way it takes the definition's
  * request/response type constructors and asks each registered source in turn for a JSON Schema (first hit
  * wins). A topic matching neither — or types with no registered schema — yields `{}` (unconstrained), the

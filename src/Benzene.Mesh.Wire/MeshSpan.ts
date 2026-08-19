@@ -10,7 +10,7 @@ const ambient = new AsyncLocalStorage<MeshSpan | undefined>();
  * call forwards `toTraceparent()` as the `traceparent` header (docs/specification/mesh.md §3) - the
  * join that lets a collector correlate an *observed* call with the declared edge it exercises (§4.2's
  * liveness/drift signals), never the producer/consumer graph itself, which is declared from
- * `ServiceDescriptor.topics`/`consumes` alone regardless of whether any call has ever propagated a
+ * `ServiceDescriptor.produces`/`topics` alone regardless of whether any call has ever propagated a
  * trace at all (§4).
  *
  * Flows via `MeshSpan.current` (`AsyncLocalStorage`, the Node idiom for invocation-ambient state,

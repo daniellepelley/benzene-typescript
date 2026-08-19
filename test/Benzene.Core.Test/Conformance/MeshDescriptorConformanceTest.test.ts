@@ -267,18 +267,18 @@ describe('MeshDescriptorConformanceTest', () => {
     const descriptor = MeshDescriptorFactory.create(undefined, info(), schemaProvider, canonicalSendersFinder());
 
     expect(descriptor.topics).toHaveLength(0);
-    expect(descriptor.consumes).toHaveLength(1);
+    expect(descriptor.produces).toHaveLength(1);
     expect(descriptor.degraded).toEqual([MeshDescriptorFactory.registryFeed]);
     expect(descriptor.service).toBe(fixture.serviceInfo.service);
     expect(descriptor.descriptorHash).toBeDefined();
   });
 
-  it('degrades the outbound-registry feed, not an empty consumes, when no sendersFinder is supplied', () => {
-    // Per mesh.md §2.3: a port that hasn't wired outbound registration MUST mark `consumes` degraded
-    // rather than assert "consumes nothing" via an empty array.
+  it('degrades the outbound-registry feed, not an empty produces, when no sendersFinder is supplied', () => {
+    // Per mesh.md §2.3: a port that hasn't wired outbound registration MUST mark `produces` degraded
+    // rather than assert "produces nothing" via an empty array.
     const descriptor = MeshDescriptorFactory.create(canonicalLookUp(), info(), schemaProvider);
 
-    expect(descriptor.consumes).toHaveLength(0);
+    expect(descriptor.produces).toHaveLength(0);
     expect(descriptor.topics).toHaveLength(2);
     expect(descriptor.degraded).toEqual([MeshDescriptorFactory.outboundRegistryFeed]);
   });

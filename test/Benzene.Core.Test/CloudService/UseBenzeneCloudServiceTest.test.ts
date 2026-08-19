@@ -138,19 +138,32 @@ describe('useBenzeneCloudService', () => {
     expect(response.body).toContain('R6');
   });
 
-  it('declares consumes via withConsumes (mesh.md §2.3 outbound registration)', async () => {
+  it('declares produces via withProduces (mesh.md §2.3 outbound registration)', async () => {
+    const host = createHost((cloud) => cloud.withProduces('payments:capture'));
+
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('produces');
+    expect(response.body).toContain('payments:capture');
+    // produces is no longer degraded once the service declares at least one outbound registration.
+    expect(response.body).not.toContain('outbound-registry');
+  });
+
+  it('withConsumes still works as a deprecated alias for withProduces', async () => {
+    // The rename is source-compatible: an existing composition root keeps compiling and keeps
+    // producing the same descriptor.
     const host = createHost((cloud) => cloud.withConsumes('payments:capture'));
 
     const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toContain('consumes');
+    expect(response.body).toContain('produces');
     expect(response.body).toContain('payments:capture');
-    // consumes is no longer degraded once the service declares at least one outbound registration.
     expect(response.body).not.toContain('outbound-registry');
   });
 
-  it('degrades consumes (not an empty array) when no outbound registration was declared', async () => {
+  it('degrades produces (not an empty array) when no outbound registration was declared', async () => {
     const host = createHost();
 
     const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');

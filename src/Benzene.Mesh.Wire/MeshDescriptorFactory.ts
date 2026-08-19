@@ -18,7 +18,7 @@ function ordinal(a: string, b: string): number {
 
 /**
  * Builds the ServiceDescriptor (docs/specification/mesh.md §2) from the live message-handler
- * registry (what the service **provides**), the outbound registration (§2.3, what it **consumes**),
+ * registry (what the service **provides**), the outbound registration (§2.3, what it **produces**),
  * plus static identity. Call it after registration is complete (registration is a startup activity).
  * An undefined `lookUp`/`sendersFinder` is not an error: per the spec's degradation rule (§6) the
  * descriptor is built without that list and the missing feed is recorded in `degraded`, so a service
@@ -67,7 +67,7 @@ export const MeshDescriptorFactory = {
     if (sendersFinder === undefined) {
       degraded.push(MeshDescriptorFactory.outboundRegistryFeed);
     } else {
-      descriptor.consumes = sendersFinder
+      descriptor.produces = sendersFinder
         .findDefinitions()
         .slice()
         .sort((a, b) => ordinal(a.topic.id, b.topic.id) || ordinal(a.topic.version, b.topic.version))
@@ -142,7 +142,7 @@ function canonicalDescriptor(descriptor: MeshServiceDescriptor): Record<string, 
   }
   canonical['placement'] = canonicalPlacement(descriptor.placement);
   canonical['topics'] = descriptor.topics.map(canonicalTopic);
-  canonical['consumes'] = descriptor.consumes.map(canonicalTopic);
+  canonical['produces'] = descriptor.produces.map(canonicalTopic);
   // descriptorHash, degraded, profile blanked (§2.2)
   return canonical;
 }

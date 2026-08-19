@@ -9,7 +9,7 @@
  * fails ingestion or a query: the §6 degradation rule, collector side.
  *
  * **Declared vs. observed (the 2026-08 revision, mesh.md §4/§4.2):** the producer/consumer graph is now built
- * ENTIRELY from the latest registered `ServiceDescriptor` - `topics` gives provider edges, `consumes` gives
+ * ENTIRELY from the latest registered `ServiceDescriptor` - `produces` gives provider edges, `topics` gives
  * consumer edges (`register` replaces both wholesale) - never from trace parentage. Trace parentage is kept
  * only as a separate, additive, observed-only signal, layered on top of the declared graph and never fed back
  * into it: a `spanId -> service` index (`spanIdToService`, scoped to the same bounded ring window as the trace
@@ -77,8 +77,9 @@ class ServiceState {
 }
 
 class TopicState {
-  // Declared graph membership (mesh.md §4, the 2026-08 revision): providers from every registered
-  // ServiceDescriptor's `topics`, consumers from its `consumes`. Populated/replaced wholesale by `register`
+  // Declared graph membership (mesh.md §4): providers from every registered ServiceDescriptor's
+  // `produces`, consumers from its `topics` - handling a topic makes you its consumer, the way every
+  // broker in the field uses the word. Populated/replaced wholesale by `register`
   // ONLY - trace parentage never admits or removes an entry here (spec §4.2's "not for graph membership").
   readonly providers = new Set<string>();
   readonly consumers = new Set<string>();
@@ -128,7 +129,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
   /**
    * Stores the descriptor as the service's current contract, replacing any previous registration wholesale
    * - a redeploy that drops a topic from `topics` drops the provider edge with it, and a redeploy that drops
-   * a topic from `consumes` drops the consumer edge with it, the same rule applied symmetrically to both
+   * a topic from `produces` drops the provider edge with it, the same rule applied symmetrically to both
    * declared lists (spec §4). This is the ONLY thing that ever changes the declared graph.
    */
   register(descriptor: MeshServiceDescriptor): void {
@@ -142,14 +143,14 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     state.lastSeen = Date.now();
 
     // A wire body is deserialized straight off parsed JSON (no class construction), so an omitted
-    // `topics`/`consumes` - legal on the wire, e.g. a service that declares no outbound registration -
+    // `topics`/`produces` - legal on the wire, e.g. a service that declares no outbound registration -
     // is genuinely `undefined` here, not the class field's `[]` default. Coalesce rather than assume,
     // against the §6 "no feed fails ingestion" rule.
     for (const topic of descriptor.topics ?? []) {
-      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).providers.add(descriptor.service);
-    }
-    for (const topic of descriptor.consumes ?? []) {
       this.ensureTopic(topicKey(topic.id, topic.version ?? '')).consumers.add(descriptor.service);
+    }
+    for (const topic of descriptor.produces ?? []) {
+      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).providers.add(descriptor.service);
     }
   }
 
@@ -217,14 +218,15 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
           providerService.errors++;
         }
 
-        // §4.2 "Unobserved": this service just exercised the topic it provides - stamp its liveness.
-        topic.providerObservedAt.set(traceEvent.service, Date.now());
+        // §4.2 "Unobserved": this service just handled the topic it consumes - stamp its liveness.
+        topic.consumerObservedAt.set(traceEvent.service, Date.now());
       }
 
       let callerState: ServiceState | undefined;
       if (callerService !== undefined && callerService !== traceEvent.service) {
         callerState = this.services.get(callerService);
-        topic.consumerObservedAt.set(callerService, Date.now());
+        // The caller SENT the message, so it is the provider on this edge.
+        topic.providerObservedAt.set(callerService, Date.now());
       }
 
       this.detectContractDrift(traceEvent, providerService, callerService, callerState);
@@ -233,9 +235,9 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
   }
 
   /**
-   * §4.2 "Undeclared": a REGISTERED service's own traffic naming a topic it never declared. Provider side -
-   * the handling service's descriptor doesn't list this topic in `topics`; consumer side - the calling
-   * service's descriptor doesn't list it in `consumes`. An anonymous/never-registered service (no descriptor)
+   * §4.2 "Undeclared": a REGISTERED service's own traffic naming a topic it never declared. Consumer side -
+   * the handling service's descriptor doesn't list this topic in `topics`; provider side - the calling
+   * service's descriptor doesn't list it in `produces`. An anonymous/never-registered service (no descriptor)
    * is never flagged - it has no contract to diverge from. Filed as a `contract-drift` issue, merged by the
    * same fingerprint scheme as a wire-fed `mesh:issues` entry (§4.1).
    */
@@ -259,7 +261,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     if (
       callerService !== undefined &&
       callerState?.descriptor !== undefined &&
-      !declaresTopic(callerState.descriptor.consumes, topicId, version)
+      !declaresTopic(callerState.descriptor.produces, topicId, version)
     ) {
       this.mergeIssue(driftIssue(callerService, topicId, version, traceEvent));
     }
@@ -688,7 +690,7 @@ function activityFor(declared: ReadonlySet<string>, observedAt: ReadonlyMap<stri
 }
 
 /**
- * Whether `topics`/`consumes` (a descriptor's declared list) names `(id, version)` - spec §4.2's "Undeclared"
+ * Whether `topics`/`produces` (a descriptor's declared list) names `(id, version)` - spec §4.2's "Undeclared"
  * test. `declared` may be `undefined`: a wire-deserialized descriptor with the field genuinely omitted (see
  * `register`'s coalescing note) declares nothing, not everything.
  */
