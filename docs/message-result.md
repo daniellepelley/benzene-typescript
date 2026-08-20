@@ -20,7 +20,13 @@ export interface IBenzeneResult {
   readonly status: string;
   readonly isSuccessful: boolean;
   readonly payloadAsObject: unknown;
-  readonly errors: string[];
+  readonly errors: BenzeneError[];
+}
+
+export interface BenzeneError {
+  message: string;
+  field?: string; // the producer's property path, when it has one
+  code?: string;  // the producer's own rule identifier, emitted verbatim
 }
 
 export interface IBenzeneResultOf<T> extends IBenzeneResult {
@@ -62,7 +68,10 @@ BenzeneResult.unexpectedError<OrderDto>('Something went wrong');
 The success-style factories (`ok`, `created`, `accepted`, `updated`, `deleted`, `ignored`) produce
 `isSuccessful === true`. The error-style factories (`notFound`, `badRequest`, `validationError`,
 `forbidden`, `unauthorized`, `serviceUnavailable`, `tooManyRequests`, `unexpectedError`) accept
-`...errors: string[]` and produce `isSuccessful === false`.
+`...errors: (string | BenzeneError)[]` and produce `isSuccessful === false`. A plain string becomes a
+message-only error, so the common case stays a one-liner; pass a `BenzeneError` when the producer
+knows the `field` the value came from and the `code` of the rule that rejected it, and both reach the
+caller's problem document instead of being flattened into prose it has to parse.
 
 There's also a lower-level escape hatch for a custom status string that isn't one of the built-in
 factories:

@@ -316,10 +316,18 @@ know and the shape of its API:
 | Schema builder | `z.object({ ... })` | `Joi.object({ ... })` | `yup.object({ ... })` | a JSON Schema object (`{ type: 'object', ... }`) |
 | Validation call | `schema.safeParse` (sync) | `schema.validate(..., { abortEarly: false })` (sync) | `await schema.validate(..., { abortEarly: false })` (async) | `validate(request)` (sync, pre-compiled) |
 | Reports failure by | returning `{ success: false, error }` | returning `{ error }` | **throwing** a `ValidationError` | returning `false`, errors on `validate.errors` |
-| Messages source | `error.issues[].message` | `error.details[].message` | `error.errors` (`string[]`) | `errors[].instancePath` + `errors[].message` |
+| Message source | `error.issues[].message` | `error.details[].message` | `inner[].message` | `errors[].message` |
+| `field` source | `issues[].path` (as a JSON Pointer) | `details[].path` (as a JSON Pointer) | `inner[].path` (yup's dotted path) | `errors[].instancePath` (already a pointer) |
+| `code` source | `issues[].code` (`too_big`, …) | `details[].type` (`string.max`, …) | `inner[].type` (`max`, …) | `errors[].keyword` (`maxLength`, …) |
 
 The adapters normalize all of this: whichever you pick, a failure becomes a `validation-error` result
-carrying one message per issue, and the handler is skipped. Pick the library your team already uses; if
+carrying one **structured error** per issue — the message, the field it came from, and the identifier
+of the rule that rejected it — and the handler is skipped. A caller therefore does not need to know
+which validator a service happens to use in order to attach an error to the right input.
+
+`field` is the validator's own path, verbatim, which is why ajv reports a JSON Pointer and yup a
+dotted path; where the validator reports a path as an array with no native string form (Zod, Joi) the
+adapters render an RFC 6901 JSON Pointer. Pick the library your team already uses; if
 you have no preference, Zod's static type inference pairs most naturally with the port's typed schema
 registry, and `@benzenejs/ajv` fits best when the contract is a shared or externally-authored JSON Schema
 rather than something you'd hand-write in TypeScript.
