@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Contracts.MeshAnnotationRequest. */
 
 /**
- * The `mesh:annotations:add` payload: attach one note to one entity. Plain settable properties
+ * The `benzene:mesh:annotations:add` payload: attach one note to one entity. Plain settable properties
  * (wire-deserialized input) - validation and bounds are the handler's job, not the shape's.
  * C# `{ get; set; }` auto-properties -> mutable fields; `string?` -> `string | undefined`.
  */

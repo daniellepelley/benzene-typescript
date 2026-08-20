@@ -109,8 +109,8 @@ describe('CloudServiceProbe', () => {
       onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) => {
-        if (topic === 'healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
-        if (topic === 'mesh') return { status: 200, json: envelope('{"service":"orders","topics":[{"id":"order:create"}]}') };
+        if (topic === 'benzene:healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
+        if (topic === 'benzene:mesh') return { status: 200, json: envelope('{"service":"orders","topics":[{"id":"order:create"}]}') };
         return { status: 404, json: '{}' };
       },
     });
@@ -140,7 +140,7 @@ describe('CloudServiceProbe', () => {
       onHealth: () => ({ status: 503, json: '{"isHealthy":false}' }),
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) =>
-        topic === 'healthcheck' ? { status: 503, json: envelope('{"isHealthy":false}') } : { status: 404, json: '{}' },
+        topic === 'benzene:healthcheck' ? { status: 503, json: envelope('{"isHealthy":false}') } : { status: 404, json: '{}' },
     });
 
     const report = await CloudServiceProbe.runAsync(baseUrl);
@@ -180,7 +180,7 @@ describe('CloudServiceProbe', () => {
       onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
       onSpec: () => ({ status: 404, json: '{}' }),
       onInvoke: (topic) =>
-        topic === 'healthcheck' ? { status: 200, json: envelope('{"isHealthy":true}') } : { status: 404, json: '{}' },
+        topic === 'benzene:healthcheck' ? { status: 200, json: envelope('{"isHealthy":true}') } : { status: 404, json: '{}' },
     });
 
     const report = await CloudServiceProbe.runAsync(baseUrl);
@@ -199,8 +199,8 @@ describe('CloudServiceProbe', () => {
       onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) => {
-        if (topic === 'healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
-        if (topic === 'mesh') return { status: 200, json: envelope('{"service":"orders","topics":[]}') };
+        if (topic === 'benzene:healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
+        if (topic === 'benzene:mesh') return { status: 200, json: envelope('{"service":"orders","topics":[]}') };
         return { status: 404, json: '{}' };
       },
     });
@@ -225,8 +225,8 @@ describe('CloudServiceProbe', () => {
       onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) => {
-        if (topic === 'healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
-        if (topic === 'mesh') return { status: 200, json: envelope('{"service":"orders","topics":[]}') };
+        if (topic === 'benzene:healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
+        if (topic === 'benzene:mesh') return { status: 200, json: envelope('{"service":"orders","topics":[]}') };
         return { status: 404, json: '{}' };
       },
     });

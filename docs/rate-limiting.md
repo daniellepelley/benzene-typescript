@@ -59,7 +59,7 @@ import { useFixedWindowRateLimiting } from '@benzenejs/rate-limiting';
 
 useApiGateway(app, (api) => {
   useFixedWindowRateLimiting(api, 60, 60_000); // 60 requests / minute
-  useHealthCheck(api, 'healthcheck', (checks) => checks.addHealthCheck(DatabaseHealthCheck));
+  useHealthCheck(api, 'benzene:healthcheck', (checks) => checks.addHealthCheck(DatabaseHealthCheck));
   useMessageHandlers(api, CreateOrderHandler);
 });
 ```

@@ -189,7 +189,7 @@ import {
 
 .configure((app) =>
   useApiGateway(app, (api) => {
-    useHealthCheck(api, 'healthcheck', (checks) => {
+    useHealthCheck(api, 'benzene:healthcheck', (checks) => {
       addDatabaseConnectionHealthCheck(checks, dataSource);                // reachable? (SELECT 1)
       addDatabaseHealthCheck(checks, dataSource, 'Initial1700000000000');  // reachable AND on this migration?
     });

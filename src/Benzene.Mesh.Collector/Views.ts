@@ -1,6 +1,6 @@
 /**
- * Port of Benzene.Mesh.Collector.Views - the read-model DTOs the `mesh:query:*` handlers return
- * (the `mesh:query:fleet`/`service`/`topic`/`trace`/`correlation` responses) plus their request
+ * Port of Benzene.Mesh.Collector.Views - the read-model DTOs the `benzene:mesh:query:*` handlers return
+ * (the `benzene:mesh:query:fleet`/`service`/`topic`/`trace`/`correlation` responses) plus their request
  * bodies, the health vocabulary, and the time-range/window shapes (docs/specification/mesh.md §4-§6).
  *
  * C# `[JsonIgnore(WhenWritingNull)]` optional fields -> `undefined` (never `null`) so `MeshJson.serialize`
@@ -26,7 +26,7 @@ export class Ack {
   accepted = 0;
 }
 
-/** The `mesh:query:fleet` response: the whole known fleet in one shape. */
+/** The `benzene:mesh:query:fleet` response: the whole known fleet in one shape. */
 export class FleetView {
   /** Epoch milliseconds (the port of C# `DateTimeOffset GeneratedAt`). */
   generatedAt = 0;
@@ -142,7 +142,7 @@ export class TopicSummary {
   missingFeeds: string[] = [];
 
   /**
-   * The time window this row answers, populated only on the standalone `mesh:query:topic` response when
+   * The time window this row answers, populated only on the standalone `benzene:mesh:query:topic` response when
    * the query carried a window; omitted (`undefined`) when embedded in a {@link FleetView} (the fleet's
    * one {@link FleetView.window} covers the whole view) and when no window was requested.
    */
@@ -172,7 +172,7 @@ export class TraceSummary {
 }
 
 /**
- * The `mesh:query:service` response: the fleet row plus the registered descriptor and per-instance
+ * The `benzene:mesh:query:service` response: the fleet row plus the registered descriptor and per-instance
  * heartbeat state. `hashMatches` is false when an instance runs a different contract than the collector
  * knows (a redeploy it hasn't re-learned), `undefined` when either side didn't supply a hash.
  */
@@ -219,7 +219,7 @@ export class InstanceView {
   hashMatches?: boolean;
 }
 
-/** The `mesh:query:trace` response: the flow's events in start order. */
+/** The `benzene:mesh:query:trace` response: the flow's events in start order. */
 export class TraceView {
   traceId = '';
 
@@ -227,7 +227,7 @@ export class TraceView {
 }
 
 /**
- * The `mesh:query:correlation` response: every flow that carried a business correlation id, grouped by
+ * The `benzene:mesh:query:correlation` response: every flow that carried a business correlation id, grouped by
  * trace. A correlation id is a business identifier that can span more than one trace, so this returns one
  * {@link TraceView} per matching trace rather than a single flattened event list.
  */
@@ -279,7 +279,7 @@ export class MeshWindow {
   countsSince?: string;
 }
 
-/** The `mesh:query:fleet` request body. */
+/** The `benzene:mesh:query:fleet` request body. */
 export class FleetQuery {
   /** Optional query time range (additive; undefined => unfiltered, today's behavior). */
   window?: MeshTimeRange;
@@ -293,7 +293,7 @@ export class FleetQuery {
   includeFlows?: boolean;
 }
 
-/** The `mesh:query:service` request body. */
+/** The `benzene:mesh:query:service` request body. */
 export class ServiceQuery {
   service?: string;
 
@@ -301,7 +301,7 @@ export class ServiceQuery {
   window?: MeshTimeRange;
 }
 
-/** The `mesh:query:topic` request body. */
+/** The `benzene:mesh:query:topic` request body. */
 export class TopicQuery {
   topic?: string;
 
@@ -312,14 +312,14 @@ export class TopicQuery {
 }
 
 /**
- * The `mesh:query:trace` request body. Deliberately carries no window - a trace lookup is by id, and a
+ * The `benzene:mesh:query:trace` request body. Deliberately carries no window - a trace lookup is by id, and a
  * window on it would only let a valid id outside the range answer `NotFound`.
  */
 export class TraceQuery {
   traceId?: string;
 }
 
-/** The `mesh:query:correlation` request body. */
+/** The `benzene:mesh:query:correlation` request body. */
 export class CorrelationQuery {
   correlationId?: string;
 

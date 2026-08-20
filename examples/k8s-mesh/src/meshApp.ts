@@ -117,14 +117,14 @@ export function createMeshApp(artifactDir: string): MeshApp {
 
       // The live spec collector behind its own wire-envelope endpoint: services push register/
       // heartbeat/trace here (MESH_COLLECTOR_ENVELOPE_URL), and the Mesh UI's Fleet plane queries it
-      // (mesh:query:fleet etc). Its own inner pipeline routes only the collector's reserved topics, over
+      // (benzene:mesh:query:fleet etc). Its own inner pipeline routes only the collector's reserved topics, over
       // the singleton MeshCollectorStore this envelope container owns.
       useBenzeneMessage(pipeline, { path: COLLECTOR_ENVELOPE_PATH }, (envelope) => {
         envelope.register((container) => addMeshCollector(container));
         useMessageHandlers(envelope);
       });
 
-      // Terminal message router for the outer pipeline: mesh:aggregate/mesh:report/mesh:annotations
+      // Terminal message router for the outer pipeline: benzene:mesh:aggregate/benzene:mesh:report/benzene:mesh:annotations
       // (registered by addMeshAggregator above) plus mesh:refresh (registered by registerMeshRefresh).
       useMessageHandlers(pipeline);
     }, { container }),

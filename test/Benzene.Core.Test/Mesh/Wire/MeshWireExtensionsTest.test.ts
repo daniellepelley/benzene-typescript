@@ -1,6 +1,6 @@
 /**
  * Port of Benzene.Test.Mesh.Wire.ExtensionsTest: drive a real BenzeneMessage pipeline and assert the
- * reserved `mesh` topic (plus aliases) short-circuits with the descriptor while every other topic falls
+ * reserved `benzene:mesh` topic (plus aliases) short-circuits with the descriptor while every other topic falls
  * through (UseMeshDescriptor), and that the trace feed produces a `MeshTraceEvent` per invocation with
  * W3C trace-context join semantics, ambient `MeshSpan` propagation, and full §6 degradation
  * (UseMeshTrace). Mockito's `Mock<IMeshTraceExporter>` maps to a small capturing/throwing fake.

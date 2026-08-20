@@ -1,7 +1,7 @@
 /**
  * Port of Benzene.Mesh.Fleet.Tempo - the non-AWS reference realisation of the trace-backed fleet reader
- * (alongside `@benzenejs/mesh-fleet-jaeger` and the X-Ray adapter): it answers the mesh's `mesh:query:trace`,
- * `mesh:query:correlation`, and the fleet view's recent-flows from **Grafana Tempo's trace API**, reusing
+ * (alongside `@benzenejs/mesh-fleet-jaeger` and the X-Ray adapter): it answers the mesh's `benzene:mesh:query:trace`,
+ * `benzene:mesh:query:correlation`, and the fleet view's recent-flows from **Grafana Tempo's trace API**, reusing
  * the same `CompositeMeshFleetReadModel`, query handlers, and mesh UI - a backend on the `IMeshTraceSource`
  * seam with zero upstream change.
  *

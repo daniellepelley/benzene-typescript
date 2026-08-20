@@ -58,7 +58,7 @@ export function addMeshCollector(container: IBenzeneServiceContainer): void {
     new IssuesMessageHandler(r.getService(MeshCollectorStore)),
   );
 
-  // The mesh:query:* read models — depend only on IMeshFleetReadModel.
+  // The benzene:mesh:query:* read models — depend only on IMeshFleetReadModel.
   registerHandler(container, MeshCollectorTopics.queryFleet, FleetQuery, FleetView, FleetQueryMessageHandler, (r) =>
     new FleetQueryMessageHandler(r.getService(IMeshFleetReadModel)),
   );

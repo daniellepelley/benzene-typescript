@@ -27,7 +27,7 @@ interface SearchWindow {
 }
 
 /**
- * An {@link IMeshTraceSource} that answers `mesh:query:trace` and `mesh:query:correlation` from AWS X-Ray:
+ * An {@link IMeshTraceSource} that answers `benzene:mesh:query:trace` and `benzene:mesh:query:correlation` from AWS X-Ray:
  * it fetches a trace's segments with `BatchGetTraces` and maps the topic-bearing spans into a
  * {@link TraceView} (see {@link XRaySegmentMapper}), and finds a business correlation id's flows with
  * `GetTraceSummaries` filtered on the correlation-id annotation. The AWS realisation of the trace-backed

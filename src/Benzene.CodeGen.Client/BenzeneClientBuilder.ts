@@ -1,7 +1,7 @@
 /**
  * Port of Benzene.CodeGen.Client.MessageClientSdkBuilder, retargeted to the mesh ServiceDescriptor and
  * TypeScript. Given a service's descriptor (docs/specification/mesh.md §2 - the same JSON a C#, Go, or
- * TypeScript service emits at its reserved `mesh` topic / `/benzene/descriptor`), it generates a fully
+ * TypeScript service emits at its reserved `benzene:mesh` topic / `/benzene/descriptor`), it generates a fully
  * typed TypeScript client: a payload interface per topic request/response (from the §2.1 schemas) and a
  * `<Service>ServiceClient` class + `I<Service>ServiceClient` interface with one method per topic that
  * calls `IBenzeneMessageSender.sendAsync`.

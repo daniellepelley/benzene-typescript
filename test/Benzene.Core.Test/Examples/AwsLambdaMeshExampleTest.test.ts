@@ -12,7 +12,7 @@ import { buildServiceLambdas, receipts, runMeshAggregation } from '@benzene-exam
 /**
  * Proves the AWS Lambda mesh works end-to-end in TypeScript, the same way the .NET `examples/AwsMesh` does:
  * six Benzene Cloud Service Lambdas are discovered by tag, interrogated by a (in-memory) synchronous Lambda
- * invoke on the reserved `spec`/`healthcheck` topics, and aggregated into a catalog whose topics and
+ * invoke on the reserved `benzene:spec`/`benzene:healthcheck` topics, and aggregated into a catalog whose topics and
  * structural topology reflect the real estate — with no cloud account.
  */
 describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
@@ -129,7 +129,7 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
     const services = buildServiceLambdas();
 
     const response = (await services['orders-api']!(
-      { topic: 'spec', headers: {}, body: '' },
+      { topic: 'benzene:spec', headers: {}, body: '' },
       {} as Context,
       () => undefined,
     )) as { statusCode: number; body: string };
@@ -144,7 +144,7 @@ describe('AWS Lambda mesh (end-to-end, in-memory)', () => {
     const services = buildServiceLambdas();
 
     const response = (await services['orders-api']!(
-      { topic: 'healthcheck', headers: {}, body: '' },
+      { topic: 'benzene:healthcheck', headers: {}, body: '' },
       {} as Context,
       () => undefined,
     )) as { statusCode: number; body: string };

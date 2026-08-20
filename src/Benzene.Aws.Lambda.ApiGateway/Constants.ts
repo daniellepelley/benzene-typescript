@@ -3,10 +3,12 @@
  *
  * Constants used across the API Gateway package.
  */
+import { BenzeneTopic } from '@benzenejs/abstractions';
+
 export const Constants = {
   /** The `content-type` response header name. */
   contentTypeHeader: 'content-type',
 
   /** The default topic used for health-check requests when none is specified. */
-  defaultHealthCheckTopic: 'healthcheck',
+  defaultHealthCheckTopic: BenzeneTopic.healthCheck,
 } as const;

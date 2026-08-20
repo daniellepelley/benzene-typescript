@@ -291,7 +291,7 @@ describe('MeshCollectorStore', () => {
     expect(issues[0].lastSeen).toBe(2_000);
   });
 
-  // ---- correlation lookup (mesh:query:correlation) ----
+  // ---- correlation lookup (benzene:mesh:query:correlation) ----
 
   it('Correlation_GroupsMatchingFlowsByTrace_OrderedByEarliestStart_EventsInStartOrder', () => {
     // One business correlation id spans two distinct traces; a third trace carries a different id.
@@ -344,7 +344,7 @@ describe('MeshCollectorStore', () => {
     expect(ok.payload.traces.length).toBe(1);
   });
 
-  // ---- issue feed (mesh:issues), porting docs/specification/conformance/mesh-issue-cases.json ----
+  // ---- issue feed (benzene:mesh:issues), porting docs/specification/conformance/mesh-issue-cases.json ----
 
   it('IssuesHandler_ServiceIsRequired_BadRequest', async () => {
     const handler = new IssuesMessageHandler(new MeshCollectorStore());

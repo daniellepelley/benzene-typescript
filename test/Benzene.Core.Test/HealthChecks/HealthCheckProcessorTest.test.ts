@@ -62,7 +62,7 @@ describe('HealthCheckProcessor', () => {
 
     const checks = builder.getHealthChecks(scope);
     const result = (await HealthCheckProcessor.performHealthChecksAsync(
-      'healthcheck',
+      'benzene:healthcheck',
       checks,
     )) as IBenzeneResultOf<HealthCheckResponse>;
     scope.dispose();
@@ -91,7 +91,7 @@ describe('HealthCheckProcessor', () => {
 
     const scope = container.createServiceResolverFactory().createScope();
     const result = (await HealthCheckProcessor.performHealthChecksAsync(
-      'healthcheck',
+      'benzene:healthcheck',
       builder.getHealthChecks(scope),
     )) as IBenzeneResultOf<HealthCheckResponse>;
     scope.dispose();
@@ -108,7 +108,7 @@ describe('HealthCheckProcessor', () => {
       executeAsync: () => Promise.resolve(HealthCheckResult.createWarning('Cautious')),
     };
 
-    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', [
       warningCheck,
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 
@@ -125,7 +125,7 @@ describe('HealthCheckProcessor', () => {
       },
     };
 
-    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', [
       throwingCheck,
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 
@@ -143,7 +143,7 @@ describe('HealthCheckProcessor', () => {
       executeAsync: () => Promise.resolve(HealthCheckResult.createInstance(false, 'Downstream')),
     };
 
-    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', [
       nonCriticalFailing,
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 
@@ -162,7 +162,7 @@ describe('HealthCheckProcessor', () => {
         Promise.resolve(HealthCheckResult.createPersistentFailure('Denied', { StatusCode: 403 }, [])),
     };
 
-    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', [
       nonCriticalPersistent,
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 
@@ -181,7 +181,7 @@ describe('HealthCheckProcessor', () => {
         ),
     };
 
-    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', [
       slowish,
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 

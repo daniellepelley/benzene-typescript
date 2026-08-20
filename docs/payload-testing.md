@@ -212,7 +212,7 @@ These two answer different questions, and it is worth being deliberate about whi
 `@benzenejs/testing` sends payloads *in-process*. The one ported tool that fires an envelope at a *live*
 service over HTTP is the Cloud Service conformance probe (`@benzenejs/cloud-service-probe`) — but note that
 it is **not** a general topic-dispatch tool. It POSTs a small set of fixed synthetic envelopes (its own
-`healthcheck` and `mesh` envelopes) at a service's `/benzene/*` surfaces to assess black-box conformance to
+`benzene:healthcheck` and `benzene:mesh` envelopes) at a service's `/benzene/*` surfaces to assess black-box conformance to
 the Cloud Service Profile (R1–R8), and reports a tri-state verdict built only from what it observed:
 
 ```ts

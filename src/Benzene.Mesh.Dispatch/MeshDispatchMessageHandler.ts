@@ -10,7 +10,7 @@ import { MeshDispatchGate } from './MeshDispatchGate';
 import { MeshDispatchRequest } from './MeshDispatchRequest';
 
 /**
- * Serves the `mesh:dispatch` topic: invokes ONE registered service's real handler with a caller-supplied
+ * Serves the `benzene:mesh:dispatch` topic: invokes ONE registered service's real handler with a caller-supplied
  * payload and returns its response. Off unless {@link MeshDispatchGate.isAllowed} (opt-in registration AND
  * non-Production / allowInProduction) - a real handler runs, with real side-effects. Bounded to one
  * declared service, never a shared queue.

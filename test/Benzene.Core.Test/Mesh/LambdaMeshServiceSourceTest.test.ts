@@ -52,7 +52,7 @@ describe('LambdaMeshServiceSource', () => {
 
   it('TryFetchSpecAsync_InvokesSpecTopicWithTheRequestedType_ReturnsBody', async () => {
     // The composite-AsyncAPI feature: the aggregator asks for the asyncapi spec, which invokes the same
-    // "spec" topic but with a SpecRequest body selecting the type.
+    // "benzene:spec" topic but with a SpecRequest body selecting the type.
     let sent: BenzeneMessageClientRequest | undefined;
     const client = lambdaClient(new BenzeneMessageClientResponse('ok', '{"asyncapi":"2.0.0"}'), (r) => (sent = r));
     const source = new LambdaMeshServiceSource(client);
@@ -60,13 +60,13 @@ describe('LambdaMeshServiceSource', () => {
     const result = await source.tryFetchSpecAsync(entry(), 'asyncapi');
 
     expect(result).toBe('{"asyncapi":"2.0.0"}');
-    expect(sent!.topic).toBe('spec');
+    expect(sent!.topic).toBe('benzene:spec');
     expect(sent!.body).toContain('asyncapi'); // the SpecRequest body carries type=asyncapi
   });
 
   it('FetchSpecAsync_SendsTheSharedSpecTopic', async () => {
     // Cross-check: the hardcoded topic literal (deliberately, to avoid pulling a schema package in) still
-    // matches "spec". (The C# also cross-checks against Benzene.Schema.OpenApi.Constants.DefaultSpecTopic,
+    // matches "benzene:spec". (The C# also cross-checks against Benzene.Schema.OpenApi.Constants.DefaultSpecTopic,
     // which isn't ported; the literal assertion is the equivalent regression guard.)
     let sentTopic: string | undefined;
     const client = lambdaClient(new BenzeneMessageClientResponse('ok', '{}'), (r) => (sentTopic = r.topic));
@@ -74,7 +74,7 @@ describe('LambdaMeshServiceSource', () => {
 
     await source.fetchSpecAsync(entry());
 
-    expect(sentTopic).toBe('spec');
+    expect(sentTopic).toBe('benzene:spec');
   });
 
   it('FetchHealthAsync_SendsTheSharedHealthCheckTopic_MatchingBenzeneHealthChecks', async () => {

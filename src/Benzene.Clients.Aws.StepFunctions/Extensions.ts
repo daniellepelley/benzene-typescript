@@ -24,7 +24,7 @@ import { StepFunctionsHealthCheck } from './StepFunctionsHealthCheck';
 /**
  * Registers an {@link IStepFunctionsClientFactory} / {@link IStepFunctionsClient} for a fixed state
  * machine, sending via the given `SFNClient`. By default also auto-registers a non-destructive
- * reachability health check (`DescribeStateMachine`) for the state machine on the deep `healthcheck`
+ * reachability health check (`DescribeStateMachine`) for the state machine on the deep `benzene:healthcheck`
  * layer — never a Kubernetes probe (a broker/service being unreachable is shared-fate). Pass
  * `healthCheck: false` to opt out. Deduped by `StepFunctions:{arn}`.
  */

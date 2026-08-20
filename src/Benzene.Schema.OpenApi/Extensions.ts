@@ -11,8 +11,8 @@ import { SpecMessageHandler } from './SpecMessageHandler';
 import { SpecRequest } from './SpecRequest';
 
 /**
- * Registers the `spec` handler, which serves the service's benzene spec document (topics + payload JSON
- * Schemas + `components.schemas`) on the reserved `spec` topic. Opt-in, like the C# `UseSpec`: nothing is
+ * Registers the `benzene:spec` handler, which serves the service's benzene spec document (topics + payload JSON
+ * Schemas + `components.schemas`) on the reserved `benzene:spec` topic. Opt-in, like the C# `UseSpec`: nothing is
  * exposed unless called. C# extension method → free function taking the pipeline builder first.
  *
  * The handler is DI-registered (definition + scoped factory), so it's dispatched by the message-handler

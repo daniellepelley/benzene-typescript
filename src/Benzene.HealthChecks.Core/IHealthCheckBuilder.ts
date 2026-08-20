@@ -24,7 +24,7 @@ export interface IHealthCheckBuilder {
    * Resolves the registered health checks. When `includeDependencyChecks` is `false` the
    * dependency-category checks (`IDependencyHealthCheck` — auto-wired external-dependency checks) are
    * excluded, so a liveness or readiness probe never fails over a shared-downstream blip; only the
-   * general `healthcheck` probe includes them. Defaults to `true` (include everything), matching the
+   * general `benzene:healthcheck` probe includes them. Defaults to `true` (include everything), matching the
    * C# `GetHealthChecks(resolver)` behaviour.
    */
   getHealthChecks(resolver: IServiceResolver, includeDependencyChecks?: boolean): IHealthCheck[];

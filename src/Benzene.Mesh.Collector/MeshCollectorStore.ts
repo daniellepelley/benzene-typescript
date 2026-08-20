@@ -17,7 +17,7 @@
  * things that are NOT graph membership - (a) per-edge `lastObservedAt` (`providerObservedAt`/
  * `consumerObservedAt` on `TopicState`, surfaced as `TopicSummary.providerActivity`/`consumerActivity`), the
  * "Unobserved" decommission-candidate signal, and (b) a synthesized `contract-drift` issue (mesh.md §4.1's
- * classification, filed exactly like a wire-fed `mesh:issues` entry) when a *registered* service's traffic
+ * classification, filed exactly like a wire-fed `benzene:mesh:issues` entry) when a *registered* service's traffic
  * names a topic it never declared providing/consuming - the "Undeclared" signal. An anonymous/never-registered
  * service is never flagged (no descriptor, no contract to diverge from).
  *
@@ -71,7 +71,7 @@ class ServiceState {
   lastSeen = 0;
   invocations = 0;
   errors = 0;
-  // True once ANY mesh:issues batch (including an empty liveness batch) named this service - what lets "quiet
+  // True once ANY benzene:mesh:issues batch (including an empty liveness batch) named this service - what lets "quiet
   // wired feed" be distinguished from "feed not wired" (spec §4.1).
   issueFeedSeen = false;
 }
@@ -239,7 +239,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
    * the handling service's descriptor doesn't list this topic in `topics`; provider side - the calling
    * service's descriptor doesn't list it in `produces`. An anonymous/never-registered service (no descriptor)
    * is never flagged - it has no contract to diverge from. Filed as a `contract-drift` issue, merged by the
-   * same fingerprint scheme as a wire-fed `mesh:issues` entry (§4.1).
+   * same fingerprint scheme as a wire-fed `benzene:mesh:issues` entry (§4.1).
    */
   private detectContractDrift(
     traceEvent: MeshTraceEvent,
@@ -294,7 +294,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   /**
    * Merges one issue record (fingerprint-keyed, spec §4.1's delta semantics) into the issue map, bounded
-   * (evict oldest `lastSeen` when full). Shared by the wire-fed `mesh:issues` batch above and the
+   * (evict oldest `lastSeen` when full). Shared by the wire-fed `benzene:mesh:issues` batch above and the
    * collector-synthesized `contract-drift` issues §4.2 produces from trace ingestion - both are "one
    * occurrence, merge by fingerprint," so both funnel through the identical merge/eviction logic. Assumes
    * `incoming.fingerprint`/`incoming.topic` are already non-empty (the caller validates wire-fed entries;
@@ -590,7 +590,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       summary.missingFeeds.push('traces');
     }
     // Feed-absence only matters when there's failure it should have explained: a service with failing traffic
-    // that has never sent a mesh:issues batch (not even the empty liveness one) is flagged; a healthy
+    // that has never sent a benzene:mesh:issues batch (not even the empty liveness one) is flagged; a healthy
     // never-emitting service is indistinguishable from a healthy emitting one, and that's fine (spec §4.1 /
     // drains-up 3.2 ruling).
     if (!state.issueFeedSeen && state.errors > 0) {

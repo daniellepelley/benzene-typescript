@@ -11,7 +11,7 @@ import { TempoServiceGraphTopologyBuilder } from './TempoServiceGraphTopologyBui
  * result as `topology.json` - reachable on whatever transport the host already runs, the same "dogfooded"
  * shape as `MeshAggregateMessageHandler`.
  *
- * The C# `[HttpEndpoint("POST", "/mesh/topology")]` + `[Message("mesh:topology")]` attributes are declared
+ * The C# `[HttpEndpoint("POST", "/mesh/topology")]` + `[Message("benzene:mesh:topology")]` attributes are declared
  * in `addTempoTopology` (as registered `IHttpEndpointDefinition`/`IMessageHandlerDefinition`s), the port's
  * Extensions-registration convention. `Void` request -> `VoidResult`.
  */

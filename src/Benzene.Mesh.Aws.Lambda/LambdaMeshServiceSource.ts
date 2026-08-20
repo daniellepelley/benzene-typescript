@@ -10,12 +10,12 @@ import { raceWithSignal } from './raceWithSignal';
 // Deliberately hardcoded, not referencing the spec/health topic constants directly - keeps this adapter's
 // dependency graph to just the mesh aggregator + the Lambda client + the AWS Lambda SDK. The
 // "...MatchingBenzene..." tests pin these against the real constants so a future rename fails loudly here.
-const SpecTopic = 'spec';
-const HealthTopic = 'healthcheck';
+const SpecTopic = 'benzene:spec';
+const HealthTopic = 'benzene:healthcheck';
 
 /**
  * Fetches a service's spec/health via a synchronous AWS Lambda `RequestResponse` invoke, for services with
- * no public HTTP surface. Sends the literal topics `"spec"`/`"healthcheck"` - any service wired the normal
+ * no public HTTP surface. Sends the literal topics `"benzene:spec"`/`"benzene:healthcheck"` - any service wired the normal
  * Benzene way already answers a direct Lambda invocation carrying either topic, with zero target-side changes.
  *
  * `IAwsLambdaClient` is taken lazily (a `() => IAwsLambdaClient` thunk): `MeshAggregator` resolves every

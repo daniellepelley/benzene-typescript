@@ -1,6 +1,6 @@
 /**
  * Port of the HttpMeshTraceExporter behavior asserted across Benzene.Test.Mesh.Wire and the mesh
- * disposal test: the exporter batches events into a `mesh:traces` wire envelope, is lossy in every
+ * disposal test: the exporter batches events into a `benzene:mesh:traces` wire envelope, is lossy in every
  * failure mode (a failing send never escapes, a full buffer drops the newest event), flushes its tail
  * on dispose, and its sync `dispose()` neither throws nor conflicts with `disposeAsync()`. `HttpClient`
  * -> an injectable `fetch`; the .NET `System.Threading.Channels` pump -> a bounded buffer + drain loop.
@@ -35,7 +35,7 @@ function event(traceId: string): MeshTraceEvent {
 const NEVER = 3_600_000; // an effectively-disabled flush interval, so tests drive flushing explicitly
 
 describe('HttpMeshTraceExporter', () => {
-  it('batches buffered events into one mesh:traces envelope', async () => {
+  it('batches buffered events into one benzene:mesh:traces envelope', async () => {
     const calls: Call[] = [];
     const exporter = new HttpMeshTraceExporter(recordingFetch(calls), 'http://collector/envelope', 64, NEVER);
 
@@ -46,7 +46,7 @@ describe('HttpMeshTraceExporter', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]!.url).toBe('http://collector/envelope');
     const envelope = JSON.parse(calls[0]!.body) as { topic: string; body: string };
-    expect(envelope.topic).toBe('mesh:traces');
+    expect(envelope.topic).toBe('benzene:mesh:traces');
     const batch = JSON.parse(envelope.body) as { events: { traceId: string }[] };
     expect(batch.events.map((e) => e.traceId)).toEqual(['a', 'b']);
 

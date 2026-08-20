@@ -32,7 +32,7 @@ import { RabbitMqWorker } from './RabbitMqWorker';
  *   credentials, vhost, TLS).
  * @param action Configures the inner RabbitMQ message pipeline.
  * @param healthCheck When `true` (the default) a non-destructive passive-declare reachability check for
- *   the consumed queue is auto-registered on the deep `healthcheck` layer (a dedicated reused connection,
+ *   the consumed queue is auto-registered on the deep `benzene:healthcheck` layer (a dedicated reused connection,
  *   a cheap channel per probe) — never a Kubernetes probe (a broker being unreachable is shared-fate; see
  *   `IDependencyHealthCheck`). Pass `false` to opt out.
  * @returns The worker startup, for chaining.

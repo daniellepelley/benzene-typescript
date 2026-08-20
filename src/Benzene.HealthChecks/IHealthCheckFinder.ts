@@ -14,7 +14,7 @@ export interface IHealthCheckFinder {
   /**
    * Returns the dependency-category checks (`IDependencyHealthCheck` — auto-wired external dependency
    * checks), de-duplicated by `dedupKey` so two registrations of the same dependency collapse to one.
-   * Harvested by the general `healthcheck` probe only, never by liveness/readiness/contracts.
+   * Harvested by the general `benzene:healthcheck` probe only, never by liveness/readiness/contracts.
    */
   findDependencyHealthChecks(): IDependencyHealthCheck[];
 }

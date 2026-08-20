@@ -17,8 +17,12 @@ const InvokeDescription = 'Wire-envelope invocability';
 const SpecDescription = 'Derived spec';
 const MeshDescription = 'Mesh service-side feeds (observable half - see reason)';
 
-const HealthcheckEnvelope = '{"topic":"healthcheck","headers":{},"body":"{}"}';
-const MeshEnvelope = '{"topic":"mesh","headers":{},"body":"{}"}';
+// The reserved topic ids of cloud-service-profile.md R3/R6, spelled out rather than imported: this
+// package deliberately has no dependencies (it is a black-box probe, and must be able to probe a
+// service built on any Benzene version). `BenzeneTopic` in `@benzenejs/abstractions` is the in-process
+// source of truth for the same strings.
+const HealthcheckEnvelope = '{"topic":"benzene:healthcheck","headers":{},"body":"{}"}';
+const MeshEnvelope = '{"topic":"benzene:mesh","headers":{},"body":"{}"}';
 
 interface HttpResult {
   reached: boolean;
@@ -146,7 +150,7 @@ async function probeSpecAsync(
     `GET ${options.specPath} returned 200 with a non-empty JSON object body`, true);
 }
 
-// ---- R6 (observable half only): POST topic "mesh"; satisfied iff 200 envelope wraps a descriptor with a non-empty "service". ----
+// ---- R6 (observable half only): POST topic "benzene:mesh"; satisfied iff 200 envelope wraps a descriptor with a non-empty "service". ----
 async function probeMeshAsync(
   baseUrl: string,
   options: CloudServiceProbeOptions,
@@ -154,34 +158,34 @@ async function probeMeshAsync(
   signal: AbortSignal | undefined,
 ): Promise<ProbeOutcome> {
   const caveat =
-    'Registration (mesh:register) and heartbeat (mesh:heartbeat) delivery to a collector cannot be observed ' +
+    'Registration (benzene:mesh:register) and heartbeat (benzene:mesh:heartbeat) delivery to a collector cannot be observed ' +
     'by probing the service alone, so that half of R6 stays unverified even when the descriptor endpoint ' +
     'itself checks out - a passing descriptor check does not imply the whole of R6.';
 
   const r = await postAsync(baseUrl, options.invokePath, MeshEnvelope, options.sendTraceParentProbe, fetchFn, signal);
   if (!r.reached) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `POST ${options.invokePath} with topic 'mesh' did not reach the service: ${r.failureReason}. ${caveat}`, false);
+      `POST ${options.invokePath} with topic 'benzene:mesh' did not reach the service: ${r.failureReason}. ${caveat}`, false);
   }
   if (r.status !== 200) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `POST ${options.invokePath} with topic 'mesh' returned ${r.status}, expected 200 (the reserved mesh topic does not appear to be served). ${caveat}`, true);
+      `POST ${options.invokePath} with topic 'benzene:mesh' returned ${r.status}, expected 200 (the reserved mesh topic does not appear to be served). ${caveat}`, true);
   }
   const envelope = tryParseEnvelopeResponse(r.body);
   if (!envelope.ok) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response to the 'mesh' topic did not have the {statusCode, headers, body} envelope shape (wire-contracts.md §1.2): ${envelope.reason}. ${caveat}`, true);
+      `200 response to the 'benzene:mesh' topic did not have the {statusCode, headers, body} envelope shape (wire-contracts.md §1.2): ${envelope.reason}. ${caveat}`, true);
   }
   const descriptor = tryParseDescriptor(envelope.innerBody);
   if (!descriptor.ok) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response to the 'mesh' topic did not parse as a descriptor with a non-empty 'service' field (mesh.md §2): ${descriptor.reason}. ${caveat}`, true);
+      `200 response to the 'benzene:mesh' topic did not parse as a descriptor with a non-empty 'service' field (mesh.md §2): ${descriptor.reason}. ${caveat}`, true);
   }
 
   const topics = Array.isArray(descriptor.descriptor.topics) ? (descriptor.descriptor.topics as unknown[]) : undefined;
   return {
     requirement: new CloudServiceProbeRequirement('R6', MeshDescription, CloudServiceProbeVerdict.Satisfied,
-      `the reserved 'mesh' topic served a descriptor for service '${String(descriptor.descriptor.service)}' - the observable half of R6 checks out. ${caveat}`),
+      `the reserved 'benzene:mesh' topic served a descriptor for service '${String(descriptor.descriptor.service)}' - the observable half of R6 checks out. ${caveat}`),
     reached: true,
     topics,
   };

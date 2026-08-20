@@ -27,7 +27,7 @@ export function addMeshLambdaSource(services: IBenzeneServiceContainer): IBenzen
 
 /**
  * Registers `AwsLambdaMeshServiceDispatcher` (as an additional `IMeshServiceDispatcher`) so the opt-in
- * `mesh:dispatch` handler can invoke AWS-Lambda services (`source == AwsLambdaInvoke`). Reuses the same
+ * `benzene:mesh:dispatch` handler can invoke AWS-Lambda services (`source == AwsLambdaInvoke`). Reuses the same
  * lazily-built Lambda client / `lambda:InvokeFunction` grant as {@link addMeshLambdaSource}.
  */
 export function addMeshLambdaDispatcher(services: IBenzeneServiceContainer): IBenzeneServiceContainer {

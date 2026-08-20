@@ -1,5 +1,5 @@
 /**
- * Port of Benzene.Schema.OpenApi — the spec document a Cloud Service serves on the reserved `spec` topic, in
+ * Port of Benzene.Schema.OpenApi — the spec document a Cloud Service serves on the reserved `benzene:spec` topic, in
  * three formats selected by the request's `type`: the default `benzene` event-service document (`{ requests,
  * events, transports?, components.schemas }`), real `openapi` (OpenAPI 3.0), and real `asyncapi`
  * (AsyncAPI 3.0). Each topic carries its request/response (or message) payload as a JSON Schema `$ref` into

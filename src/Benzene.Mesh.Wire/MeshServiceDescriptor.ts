@@ -4,7 +4,7 @@ import { JsonObject } from './MeshJson';
 /**
  * The mesh ServiceDescriptor wire shape (docs/specification/mesh.md §2): the service's
  * self-description, derived at startup from the message-handler registry - never hand-maintained.
- * Also the body of a `mesh:register` message (§4). Wire field names are camelCase; optional fields
+ * Also the body of a `benzene:mesh:register` message (§4). Wire field names are camelCase; optional fields
  * are `undefined` (not `null`) so `MeshJson.serialize` omits them (the C# `WhenWritingNull`).
  *
  * `runtime` defaults to `"node"` - the implementing port identifier for this TypeScript port

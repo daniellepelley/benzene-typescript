@@ -12,7 +12,7 @@ import { BenzeneMessageLambdaHandler } from './BenzeneMessageLambdaHandler';
  * Adds direct-invoke BenzeneMessage handling to an AWS Lambda (`AwsEventStreamContext`) pipeline: registers
  * the BenzeneMessage services, builds the inner `BenzeneMessageContext` pipeline from `action`, and appends
  * a `BenzeneMessageLambdaHandler`. This is what makes a service answer a synchronous Lambda `Invoke`
- * carrying a `{ topic, headers, body }` envelope — the surface the mesh interrogates for `spec`/`healthcheck`.
+ * carrying a `{ topic, headers, body }` envelope — the surface the mesh interrogates for `benzene:spec`/`benzene:healthcheck`.
  * Mirrors the structure of `useApiGateway`/`useSqs`.
  */
 export function useBenzeneMessage(

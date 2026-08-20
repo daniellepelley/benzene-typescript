@@ -25,7 +25,7 @@ export const IMeshTraceExporter: ServiceToken<IMeshTraceExporter> =
 export type TraceFetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * Batches trace events and POSTs them to a mesh collector's wire-envelope endpoint as `mesh:traces`
+ * Batches trace events and POSTs them to a mesh collector's wire-envelope endpoint as `benzene:mesh:traces`
  * messages, from a single background flush loop. Lossy by design in every failure mode, per spec §4:
  * a full buffer drops the new event, a failed send drops the batch, and `disposeAsync` flushes the
  * tail so shutdown doesn't lose it. Works against any envelope-speaking collector.

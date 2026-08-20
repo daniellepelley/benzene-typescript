@@ -12,7 +12,7 @@ import { TempoTopologyOptions } from './TempoTopologyOptions';
 
 /**
  * Registers `TempoServiceGraphTopologyBuilder`, backed by a `PrometheusQueryClient`, against the given
- * `options`, plus the `mesh:topology` handler and its `POST /mesh/topology` endpoint. C# extension method
+ * `options`, plus the `benzene:mesh:topology` handler and its `POST /mesh/topology` endpoint. C# extension method
  * -> free function.
  *
  * Deliberately does not register an `IMeshArtifactStore` - this requires `addMeshAggregator(...)` to already
@@ -39,9 +39,9 @@ export function addTempoTopology(
   );
   services.addSingletonInstance(
     IMessageHandlerDefinition,
-    MessageHandlerDefinition.createInstance('mesh:topology', '', VoidResult, MeshTopology, TempoTopologyMessageHandler),
+    MessageHandlerDefinition.createInstance('benzene:mesh:topology', '', VoidResult, MeshTopology, TempoTopologyMessageHandler),
   );
-  services.addSingletonInstance(IHttpEndpointDefinition, HttpEndpointDefinition.createInstance('POST', '/mesh/topology', 'mesh:topology'));
+  services.addSingletonInstance(IHttpEndpointDefinition, HttpEndpointDefinition.createInstance('POST', '/mesh/topology', 'benzene:mesh:topology'));
 
   return services;
 }

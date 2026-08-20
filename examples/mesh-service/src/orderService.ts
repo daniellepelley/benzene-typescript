@@ -37,7 +37,7 @@ export function createOrderService(): Express {
   });
 
   // The normative mesh ServiceDescriptor (mesh.md §2), derived from the same running registry and carrying
-  // its per-port `descriptorHash`. In a message-transport deployment this is served over the reserved `mesh`
+  // its per-port `descriptorHash`. In a message-transport deployment this is served over the reserved `benzene:mesh`
   // topic via `useMeshDescriptor`; here it's exposed as an HTTP route so `curl` (and the demo test) can read
   // the identical cross-language shape.
   const descriptor = buildDescriptor(registry);

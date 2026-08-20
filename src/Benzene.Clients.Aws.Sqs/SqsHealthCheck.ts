@@ -4,6 +4,7 @@ import {
   SendMessageCommand,
   SQSClient,
 } from '@aws-sdk/client-sqs';
+import { BenzeneTopic } from '@benzenejs/abstractions';
 import {
   HealthCheckDependency,
   HealthCheckError,
@@ -15,8 +16,8 @@ import {
 import { awsErrorDetails } from './awsErrorDetails';
 import { OutboundSqsContextConverter } from './OutboundSqsContextConverter';
 
-/** The topic value a ping message carries in active mode (matches .NET's `BenzeneTopic.Ping`). */
-const pingTopic = 'benzene:ping';
+/** The topic value a ping message carries in active mode. */
+const pingTopic = BenzeneTopic.ping;
 
 /**
  * Verifies connectivity to an SQS queue. In the default `reachability` mode this is a

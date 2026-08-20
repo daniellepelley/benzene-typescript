@@ -23,13 +23,13 @@ asserts the end result.
 
 Each service is **one Lambda** — a composite entry point (`compositeAwsLambda`) that:
 
-- answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
-  mesh interrogates — via `useBenzeneMessage` (`@benzenejs/aws-lambda-core`). The `spec` topic is served by the
+- answers a **direct Lambda invoke** carrying the reserved `benzene:spec`/`benzene:healthcheck` topics — the surface the
+  mesh interrogates — via `useBenzeneMessage` (`@benzenejs/aws-lambda-core`). The `benzene:spec` topic is served by the
   **library `useSpec`** (`@benzenejs/schema-openapi`) — the standard, dogfooded self-description path — which
   builds the benzene spec document (`{ requests, events, transports, components.schemas }`, payload schemas
   as `$ref`s) from the service's own DI feeds. There is **no hand-built spec**: `useSpec` is the single
   source of truth, so running the example proves `useSpec` emits the correct spec end-to-end. The reserved
-  `healthcheck` topic is likewise served by the **library `useHealthCheck`** (`@benzenejs/health-checks`, the
+  `benzene:healthcheck` topic is likewise served by the **library `useHealthCheck`** (`@benzenejs/health-checks`, the
   same path .NET's `.UseHealthCheck("benzene:healthcheck", …)` takes), which runs the service's registered
   `IHealthCheck`s (`src/healthChecks.ts`, one per .NET `examples/AwsMesh/<Service>/HealthChecks` class) and
   aggregates a `HealthCheckResponse` — `{ isHealthy, healthChecks: { <type>: { status, type, data,
@@ -50,7 +50,7 @@ One `runMeshAggregation` pass does exactly what the .NET `MeshAggregateHandler` 
 1. **Discover** the benzene-tagged Lambdas — `AwsLambdaDiscoveryProvider` (`ListFunctions` + `ListTags`) →
    `aws-lambda-invoke` registry entries.
 2. **Interrogate + aggregate** — `MeshAggregator` resolves each entry to the `LambdaMeshServiceSource`,
-   which invokes the service on `spec` and `healthcheck`, then writes the catalog:
+   which invokes the service on `benzene:spec` and `benzene:healthcheck`, then writes the catalog:
    `manifest.json`, `services/*.json`, `topics.json`, `topology.json`, `asyncapi.json`.
 
 Here the catalog is written to a `FileSystemMeshArtifactStore` (the .NET example writes to S3 via
@@ -61,11 +61,11 @@ Here the catalog is written to a `FileSystemMeshArtifactStore` (the .NET example
 Running the test asserts the full mesh story on a real, non-trivial graph:
 
 - all six tagged Lambdas are **discovered** as `aws-lambda-invoke` entries;
-- each is **interrogated** and reported **healthy** — its `healthcheck` invoke returns a real
+- each is **interrogated** and reported **healthy** — its `benzene:healthcheck` invoke returns a real
   `HealthCheckResponse` whose per-check `status`/`type`/`data`/`dependencies` land in `services/{name}.json`;
 - the **topic catalog** lists each cross-service topic's producers and consumers;
 - the **structural topology** has all nine producer→consumer edges;
-- a service genuinely answers a **direct Lambda invoke** on `spec` (the interrogation seam), and the same
+- a service genuinely answers a **direct Lambda invoke** on `benzene:spec` (the interrogation seam), and the same
   service handles its domain topic over a **real transport** (SQS).
 
 ## Runtime cascade

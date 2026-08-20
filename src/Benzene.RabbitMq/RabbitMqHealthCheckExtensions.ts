@@ -26,7 +26,7 @@ export function addRabbitMqHealthCheck(
 
 /**
  * Auto-registers a {@link RabbitMqHealthCheck} for `config`'s queue on the **dependency** category (deep
- * `healthcheck` layer only — never a Kubernetes probe; see `IDependencyHealthCheck`), deduped by the queue
+ * `benzene:healthcheck` layer only — never a Kubernetes probe; see `IDependencyHealthCheck`), deduped by the queue
  * name. Called by `useRabbitMq(..., healthCheck = true)`. A single {@link RabbitMqConnectionProvider} is
  * captured and reused across probes (one connection, a cheap channel per probe).
  *

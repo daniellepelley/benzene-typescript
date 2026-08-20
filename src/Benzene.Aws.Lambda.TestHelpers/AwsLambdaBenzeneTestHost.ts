@@ -38,7 +38,7 @@ export class AwsLambdaBenzeneTestHost {
    */
   sendBenzeneMessageAsync<TResponse = unknown>(message: IMessageBuilder<unknown>, context?: Context): Promise<TResponse>;
   /**
-   * @param topic The reserved/domain topic to invoke (e.g. `'order:create'`, `'healthcheck'`).
+   * @param topic The reserved/domain topic to invoke (e.g. `'order:create'`, `'benzene:healthcheck'`).
    * @param payload The message payload (omit for a topic-only message).
    * @param context An optional Lambda context.
    */

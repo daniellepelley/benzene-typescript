@@ -149,7 +149,7 @@ app.listen(3000, () => console.log('Listening on http://localhost:3000'));
 `useSns(pipeline, topicArn, sns)` converts the outbound route to publish via SNS: the routed message
 becomes the SNS message body, and the topic is written to the `topic` message attribute (the reserved key
 every Benzene subscriber routes on). It also auto-registers a non-destructive SNS reachability check for
-the topic on the deep `healthcheck` layer — pass a trailing `false` to opt out. See
+the topic on the deep `benzene:healthcheck` layer — pass a trailing `false` to opt out. See
 [Clients](../clients.md#basic-usage).
 
 ### 3. The SQS worker: consume the event from a queue

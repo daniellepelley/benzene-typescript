@@ -13,7 +13,7 @@ import { IKafkaAdminClientFactory } from './IKafkaAdminClientFactory';
  * metadata request (kafkajs `admin.describeCluster` + `admin.fetchTopicMetadata`) — the Kafka analogue of
  * the AWS/Azure reachability checks, non-destructive (it neither consumes, commits, nor produces). Proves
  * the bootstrap brokers are reachable, the credentials authenticate, and each configured topic is present.
- * Reported on the **dependency** category (deep `healthcheck` layer only — a broker being unreachable is
+ * Reported on the **dependency** category (deep `benzene:healthcheck` layer only — a broker being unreachable is
  * shared-fate; see `IDependencyHealthCheck`). A Kafka authorization failure is a **persistent** failure —
  * it surfaces as unhealthy even for the auto-wired dependency check rather than being softened to a
  * Warning, since a bad credential/ACL is a deterministic misconfiguration that won't self-heal; the

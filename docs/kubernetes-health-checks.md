@@ -30,7 +30,7 @@ Kubernetes' guidance is specific about what belongs in each, and Benzene doesn't
 > turning a *degradation* into a *total outage*. De-routing only helps when some replicas are healthy
 > to shed to; for a shared dependency there are none. Gate readiness on a dependency **only** when
 > you've reasoned it's a hard, synchronous dependency you truly cannot serve *any* traffic without.
-> When in doubt, use the deep `healthcheck` layer instead (below).
+> When in doubt, use the deep `benzene:healthcheck` layer instead (below).
 
 For a dependency you *have* reasoned is safe to gate on, register it explicitly under readiness — e.g.
 `@benzenejs/health-checks-http`'s [`addHttpPing`](health-checks.md#httppinghealthcheck--addhttpping-benzenejshealth-checks-http),
@@ -38,10 +38,10 @@ For a dependency you *have* reasoned is safe to gate on, register it explicitly 
 [`addTcpPing`](health-checks.md#tcphealthcheck--addtcpping-benzenejshealth-checks-tcp), or your own
 check via `useReadinessCheck(...)`.
 
-### The deep `healthcheck` layer, not a probe
+### The deep `benzene:healthcheck` layer, not a probe
 
-Point a Kubernetes probe at liveness/readiness, and your monitoring/mesh at the general `healthcheck`
-topic — not the other way around. The `healthcheck` layer (`useHealthCheck`) is meant to be scraped
+Point a Kubernetes probe at liveness/readiness, and your monitoring/mesh at the general `benzene:healthcheck`
+topic — not the other way around. The `benzene:healthcheck` layer (`useHealthCheck`) is meant to be scraped
 by monitoring, the mesh, or humans; it triggers no automated Kubernetes action, so a rich set of
 external-dependency checks there gives you *visibility* without the shared-fate cascading-failure risk
 above.
@@ -108,10 +108,10 @@ useReadinessCheck(app, (checks) => {
 });
 ```
 
-Each responds only to its own topic — `Constants.defaultLivenessTopic` (`'liveness'`) and
-`Constants.defaultReadinessTopic` (`'readiness'`). Unlike `useHealthCheck`, **neither also matches**
-`Constants.defaultHealthCheckTopic` (`'healthcheck'`). This is deliberate: if both did, whichever was
-registered first in the pipeline would silently swallow every request for the shared `'healthcheck'`
+Each responds only to its own topic — `Constants.defaultLivenessTopic` (`'benzene:liveness'`) and
+`Constants.defaultReadinessTopic` (`'benzene:readiness'`). Unlike `useHealthCheck`, **neither also matches**
+`Constants.defaultHealthCheckTopic` (`'benzene:healthcheck'`). This is deliberate: if both did, whichever was
+registered first in the pipeline would silently swallow every request for the shared `'benzene:healthcheck'`
 topic, and the other would never run for it.
 
 ## HTTP-path wiring (Express and other HTTP hosts)

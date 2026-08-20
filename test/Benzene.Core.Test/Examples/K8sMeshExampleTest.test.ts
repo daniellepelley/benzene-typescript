@@ -90,7 +90,7 @@ describe('K8sMeshExampleTest', () => {
     const invokeRes = await fetch(`${ordersHost.url}/benzene/invoke`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ topic: 'healthcheck', headers: {}, body: '' }),
+      body: JSON.stringify({ topic: 'benzene:healthcheck', headers: {}, body: '' }),
     });
     expect(invokeRes.status).toBe(200);
   });

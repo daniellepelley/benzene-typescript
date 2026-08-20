@@ -15,7 +15,7 @@ import {
 /**
  * The direct-invoke BenzeneMessage surface (`useBenzeneMessage`): a service answers a synchronous Lambda
  * invoke carrying a `{ topic, headers, body }` envelope with no HTTP/queue event — the seam the mesh uses to
- * interrogate a service on the reserved `spec`/`healthcheck` topics.
+ * interrogate a service on the reserved `benzene:spec`/`benzene:healthcheck` topics.
  */
 const registry = new MessageHandlersRegistry();
 

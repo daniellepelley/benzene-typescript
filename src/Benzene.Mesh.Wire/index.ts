@@ -2,7 +2,7 @@
  * Port of Benzene.Mesh.Wire - the ServiceDescriptor path of the mesh wire contract
  * (docs/specification/mesh.md §2): a service's normative, self-derived description of the topics it
  * serves, its identity/placement, and a per-port contract hash, plus the middleware that serves it
- * over the reserved `mesh` topic (§1). This is the cross-language self-description a collector reads
+ * over the reserved `benzene:mesh` topic (§1). This is the cross-language self-description a collector reads
  * to catalog a service - the same shape a .NET, Go, or TypeScript service emits.
  *
  * `MeshServiceDescriptor` and friends are derived by `MeshDescriptorFactory.create` from the live

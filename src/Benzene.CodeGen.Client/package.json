@@ -10,6 +10,7 @@
     "codegen-client": "dist/bin/generate.mjs"
   },
   "dependencies": {
+    "@benzenejs/abstractions": "0.1.0-beta.1",
     "@benzenejs/mesh-wire": "0.1.0-beta.1"
   },
   "files": [

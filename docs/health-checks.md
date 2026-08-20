@@ -11,7 +11,7 @@ it needs and is in the right state to operate.
 
 In Benzene, a health check isn't a special HTTP-only concept bolted onto the framework — it's just
 another topic in the middleware pipeline. `useHealthCheck(app, topic, config)` adds a middleware
-that intercepts messages for that topic (and the default `'healthcheck'` topic), runs your
+that intercepts messages for that topic (and the default `'benzene:healthcheck'` topic), runs your
 registered `IHealthCheck`s, and returns an aggregated `IHealthCheckResponse`. Because it's ordinary
 middleware, it works identically across every transport Benzene supports — AWS Lambda (API Gateway,
 SNS, SQS, Kafka), Azure Functions, Express, or a self-hosted worker — with no special endpoint
@@ -77,7 +77,7 @@ import {
 import { HealthCheckResult } from '@benzenejs/health-checks-core';
 import { SimpleHealthCheck } from '@benzenejs/health-checks';
 
-useHealthCheck(app, 'healthcheck', (checks) => {
+useHealthCheck(app, 'benzene:healthcheck', (checks) => {
   checks.addHealthCheck(SimpleHealthCheck);                        // a DI-resolved check class
   addBoolHealthCheckWithType(checks, 'inline', () => true);        // named boolean check
   addBoolHealthCheckWithType(checks, 'inline', async () => true);  // async boolean check
@@ -90,7 +90,7 @@ Send it a health check request the same way you'd send any other message. For a 
 transport (SNS/SQS/Kafka) that's a message with the matching topic:
 
 ```json
-{ "topic": "healthcheck" }
+{ "topic": "benzene:healthcheck" }
 ```
 
 The response is a JSON payload describing whether the service is healthy overall and the result of
@@ -303,7 +303,7 @@ aggregate `isHealthy`), otherwise healthy. `type` is `'Disk'`; `data` includes `
 ```ts
 import { addDiskSpaceCheck } from '@benzenejs/health-checks-disk';
 
-useHealthCheck(app, 'healthcheck', (checks) =>
+useHealthCheck(app, 'benzene:healthcheck', (checks) =>
   addDiskSpaceCheck(checks, '/', 500 * 1024 * 1024, 1024 * 1024 * 1024),
   //                        path  minimumFreeBytes    warningFreeBytes (optional)
 );
@@ -322,7 +322,7 @@ attaches one `HealthCheckDependency('Http', url)`.
 ```ts
 import { addHttpPing } from '@benzenejs/health-checks-http';
 
-useHealthCheck(app, 'healthcheck', (checks) =>
+useHealthCheck(app, 'benzene:healthcheck', (checks) =>
   addHttpPing(checks, 'https://downstream-service/health'));
 ```
 
@@ -342,7 +342,7 @@ failure), with one `HealthCheckDependency('Tcp', 'host:port')`.
 ```ts
 import { addTcpPing } from '@benzenejs/health-checks-tcp';
 
-useHealthCheck(app, 'healthcheck', (checks) =>
+useHealthCheck(app, 'benzene:healthcheck', (checks) =>
   addTcpPing(checks, 'db.internal', 5432));
 ```
 
@@ -381,7 +381,7 @@ import {
 
 const dataSource = new DataSource({ /* ...your TypeORM config... */ });
 
-useHealthCheck(app, 'healthcheck', (checks) => {
+useHealthCheck(app, 'benzene:healthcheck', (checks) => {
   addDatabaseConnectionHealthCheck(checks, dataSource);               // reachable?
   addDatabaseHealthCheck(checks, dataSource, 'Initial1700000000000'); // reachable AND on this migration?
 });
@@ -403,7 +403,7 @@ calls; you can also call it directly (e.g. in tests — see [Testing](testing-be
 ```ts
 import { HealthCheckProcessor } from '@benzenejs/health-checks';
 
-const result = await HealthCheckProcessor.performHealthChecksAsync('healthcheck', checks);
+const result = await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', checks);
 ```
 
 What it does:
@@ -469,9 +469,9 @@ already-built `IHealthCheckBuilder` — C#'s three `UseHealthCheck` overloads co
 parameter dispatched at runtime.
 
 The middleware checks the incoming message's topic against **both** the `topic` you passed and the
-constant default topic `'healthcheck'` (`Constants.defaultHealthCheckTopic`) — so even if you wire it
+constant default topic `'benzene:healthcheck'` (`Constants.defaultHealthCheckTopic`) — so even if you wire it
 up under a custom topic like `'orders-service:healthcheck'`, it's still reachable via the plain
-`'healthcheck'` topic too. If neither matches, the middleware calls `next()` and gets out of the way.
+`'benzene:healthcheck'` topic too. If neither matches, the middleware calls `next()` and gets out of the way.
 
 ```ts
 import { useHealthCheck } from '@benzenejs/health-checks';
@@ -644,7 +644,7 @@ don't hand-write an `IHealthCheck` per dependency.
 ### Where they run — the dependency category, never a probe
 
 Auto-wired dependency checks are registered under a distinct DI category, `IDependencyHealthCheck`, and
-are harvested **only by the deep `'healthcheck'` topic** — never by the Kubernetes liveness or readiness
+are harvested **only by the deep `'benzene:healthcheck'` topic** — never by the Kubernetes liveness or readiness
 probes. A dependency check is *shared-fate*: every replica runs the same probe against the same
 downstream, so a transient blip fails them all at once. Gating liveness on that would restart-storm the
 fleet; gating readiness on it would pull every pod from the load balancer together. So these checks feed
@@ -683,7 +683,7 @@ cluster-metadata access the consumer config doesn't carry, so it stays off until
 `IKafkaAdminClientFactory`:
 
 ```ts
-// Auto-wired: adding the consumer also registers its reachability check on the deep 'healthcheck' topic.
+// Auto-wired: adding the consumer also registers its reachability check on the deep 'benzene:healthcheck' topic.
 useServiceBus(app, { queueName: 'orders' }, clientFactory, (pipeline) => { /* … */ });
 
 // Opt out (routing only, no dependency check):
@@ -714,7 +714,7 @@ To register a dependency check yourself (a resource with no auto-wiring, or a be
   [naming](#result-naming-and-deduplication) — look for the `-2`/`-3` suffix, or give each check a
   distinct `type`.
 - **My health topic isn't reachable from outside.** Remember `useHealthCheck` also always responds to
-  the plain `'healthcheck'` topic in addition to whatever topic you passed, and — on HTTP hosts —
+  the plain `'benzene:healthcheck'` topic in addition to whatever topic you passed, and — on HTTP hosts —
   that the request path must resolve to that topic via a registered route (see
   [HTTP path based](#http-path-based-express-and-other-http-hosts)).
 - **`addHealthCheck(Class)` doesn't pick up my check.** Confirm the class is resolvable (scoped) in

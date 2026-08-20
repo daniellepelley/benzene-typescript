@@ -176,8 +176,8 @@ describe('MeshAggregator', () => {
   it('RunOnceAsync_PublishesTopicsCatalog_AcrossServices_WithReservedFlag', async () => {
     const paymentsSpecUrl = 'https://payments-api.example/spec?type=benzene';
     const paymentsHealthUrl = 'https://payments-api.example/healthcheck';
-    const ordersSpec = '{"requests":[{"topic":"order:create","httpMappings":[{"method":"post","path":"/orders"}]},{"topic":"spec","reserved":true}]}';
-    const paymentsSpec = '{"requests":[{"topic":"payment:take"},{"topic":"spec","reserved":true}]}';
+    const ordersSpec = '{"requests":[{"topic":"order:create","httpMappings":[{"method":"post","path":"/orders"}]},{"topic":"benzene:spec","reserved":true}]}';
+    const paymentsSpec = '{"requests":[{"topic":"payment:take"},{"topic":"benzene:spec","reserved":true}]}';
 
     const handler = routingFetch()
       .mapGet(SpecUrl, 200, ordersSpec)
@@ -198,7 +198,7 @@ describe('MeshAggregator', () => {
     expect(json).not.toBeUndefined();
     const catalog = JSON.parse(json!) as Json;
 
-    const spec = catalog.topics.filter((t: Json) => t.topic === 'spec');
+    const spec = catalog.topics.filter((t: Json) => t.topic === 'benzene:spec');
     expect(spec).toHaveLength(1);
     expect(spec[0].reserved).toBe(true);
     expect(spec[0].status ?? undefined).toBeUndefined();
@@ -254,8 +254,8 @@ describe('MeshAggregator', () => {
   it('RunOnceAsync_PublishesCompositeAsyncApi_FromEachServicesAsyncApiEndpoint', async () => {
     const paymentsSpecUrl = 'https://payments-api.example/spec?type=benzene';
     const paymentsHealthUrl = 'https://payments-api.example/healthcheck';
-    const ordersBenzene = '{"requests":[{"topic":"order:create"},{"topic":"spec","reserved":true}]}';
-    const paymentsBenzene = '{"requests":[{"topic":"payment:take"},{"topic":"spec","reserved":true}]}';
+    const ordersBenzene = '{"requests":[{"topic":"order:create"},{"topic":"benzene:spec","reserved":true}]}';
+    const paymentsBenzene = '{"requests":[{"topic":"payment:take"},{"topic":"benzene:spec","reserved":true}]}';
     const ordersAsyncApi = asyncApiDoc('orders-api', 'order:create', 'Order');
     const paymentsAsyncApi = asyncApiDoc('payments-api', 'payment:take', 'Payment');
 
@@ -977,8 +977,8 @@ describe('MeshAggregator', () => {
 
   it('RunOnceAsync_SecondRun_ReservedTopicChurnIsNeverFlagged', async () => {
     const store = new FileSystemMeshArtifactStore(rootDirectory);
-    await catalogDiffAggregator('{"requests":[{"topic":"spec","reserved":true}]}', store).runOnceAsync(singleServiceRegistry());
-    await catalogDiffAggregator('{"requests":[{"topic":"spec","reserved":true},{"topic":"healthcheck","reserved":true}]}', store).runOnceAsync(
+    await catalogDiffAggregator('{"requests":[{"topic":"benzene:spec","reserved":true}]}', store).runOnceAsync(singleServiceRegistry());
+    await catalogDiffAggregator('{"requests":[{"topic":"benzene:spec","reserved":true},{"topic":"benzene:healthcheck","reserved":true}]}', store).runOnceAsync(
       singleServiceRegistry(),
     );
 
@@ -1087,7 +1087,7 @@ function asyncApiDoc(title: string, topic: string, schema: string): string {
     info: { title, version: '1.0' },
     channels: {
       [ch]: { address: topic, messages: { [schema]: { payload: { $ref: `#/components/schemas/${schema}` } } } },
-      spec: { address: 'spec', messages: {} },
+      spec: { address: 'benzene:spec', messages: {} },
     },
     operations: {
       [ch]: { action: 'receive', channel: { $ref: `#/channels/${ch}` }, messages: [{ $ref: `#/channels/${ch}/messages/${schema}` }] },

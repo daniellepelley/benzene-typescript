@@ -1,7 +1,7 @@
 /**
  * The order service's message handlers. Each is decorated with `@message` (its topic) and `@httpEndpoint`
  * (its HTTP verb + route), exactly as a real Benzene service declares them - the registry is the single
- * source of truth the mesh `spec` descriptor is derived from ("derived from running code, never declared").
+ * source of truth the mesh `benzene:spec` descriptor is derived from ("derived from running code, never declared").
  *
  * They register with a LOCAL `MessageHandlersRegistry` (not the global one), so importing this example
  * never pollutes another module's handler discovery.

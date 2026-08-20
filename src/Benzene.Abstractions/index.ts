@@ -16,6 +16,7 @@ export * from './Results/IBase64JsonMessage';
 export * from './Results/Void';
 export * from './Serialization/ISerializer';
 export * from './Serialization/IPayloadSerializer';
+export * from './BenzeneTopic';
 export * from './ICorrelationId';
 export * from './IDependencyWrapper';
 export * from './IMessageBuilder';

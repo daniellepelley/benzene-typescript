@@ -12,7 +12,7 @@ import { IServiceBusClientFactory } from './IServiceBusClientFactory';
  * subscription) it consumes — the sender has neither.
  *
  * Auto-registers a {@link ServiceBusHealthCheck} for the consumed entity on the **dependency** category
- * (deep `healthcheck` layer only — never a Kubernetes probe; see `IDependencyHealthCheck`), deduped by
+ * (deep `benzene:healthcheck` layer only — never a Kubernetes probe; see `IDependencyHealthCheck`), deduped by
  * the entity. Called by `useServiceBus(..., healthCheck = true)`. One `ServiceBusClient` is created from
  * the factory and reused across probes (the check opens a short-lived receiver per probe).
  *

@@ -5,14 +5,14 @@ import { IHealthCheckResult } from './IHealthCheckResult';
 
 /**
  * Adapts a plain `IHealthCheck` into the dependency registration category (`IDependencyHealthCheck`)
- * so the general (`healthcheck`) probe harvests it while liveness/readiness/contracts ignore it (see
+ * so the general (`benzene:healthcheck`) probe harvests it while liveness/readiness/contracts ignore it (see
  * `IDependencyHealthCheck` for why a dependency check must stay off the Kubernetes probes). Concrete
  * client checks (`SqsHealthCheck`, …) stay plain `IHealthCheck` implementations; the auto-wiring
  * registers `addScopedFactory(IDependencyHealthCheck, r => new DependencyHealthCheck(build(r), dedupKey))`.
  * The check's `tags`/`ttl`/`timeout` overrides are delegated through unchanged.
  *
  * **The category is non-critical by default** (`isNonCritical` is forced `true`): an unreachable
- * dependency *degrades* the deep `healthcheck` report to a warning rather than flipping the aggregate
+ * dependency *degrades* the deep `benzene:healthcheck` report to a warning rather than flipping the aggregate
  * unhealthy. That layer is a monitoring surface, not a probe, so a downstream blip must not turn the
  * endpoint into a 503 — the per-dependency warning is still visible to monitoring / the mesh. A caller
  * who wants a dependency to be fatal registers an explicit critical check instead.
@@ -42,7 +42,7 @@ export class DependencyHealthCheck implements IDependencyHealthCheck {
 
   /**
    * Always `true`: a dependency-category check is non-critical, so a failure degrades the deep
-   * `healthcheck` report to a warning rather than flipping the aggregate unhealthy. This overrides the
+   * `benzene:healthcheck` report to a warning rather than flipping the aggregate unhealthy. This overrides the
    * inner check's value — the category, not the individual check, decides.
    */
   get isNonCritical(): boolean {

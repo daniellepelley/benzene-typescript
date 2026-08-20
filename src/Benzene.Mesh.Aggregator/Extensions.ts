@@ -74,7 +74,7 @@ export function addMeshAggregator(
 
   registerHandler(
     services,
-    'mesh:aggregate',
+    'benzene:mesh:aggregate',
     'POST',
     '/mesh/aggregate',
     VoidResult,
@@ -84,7 +84,7 @@ export function addMeshAggregator(
   );
   registerHandler(
     services,
-    'mesh:report',
+    'benzene:mesh:report',
     'POST',
     '/mesh/report',
     MeshServiceReport,
@@ -94,7 +94,7 @@ export function addMeshAggregator(
   );
   registerHandler(
     services,
-    'mesh:annotations:add',
+    'benzene:mesh:annotations:add',
     'POST',
     '/mesh/annotations',
     MeshAnnotationRequest,

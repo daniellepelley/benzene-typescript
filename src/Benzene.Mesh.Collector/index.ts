@@ -1,7 +1,7 @@
 /**
  * Port of Benzene.Mesh.Collector - the spec collector (docs/specification/mesh.md §4-§6): an ordinary
  * Benzene service (dogfooded message handlers) that ingests the mesh wire topics and answers the
- * `mesh:query:*` read models over an in-memory store.
+ * `benzene:mesh:query:*` read models over an in-memory store.
  *
  * `MeshCollectorStore` is the in-memory push-collector plane (cumulative per-service/per-topic stats, latest
  * heartbeat per instance, registered descriptors, and a bounded ring of recent trace events);

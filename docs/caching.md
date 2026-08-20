@@ -187,7 +187,7 @@ hit is wrapped with `BenzeneResult.ok(value)`.
 ```ts
 import { addCacheHealthCheck } from '@benzenejs/cache-core';
 
-useHealthCheck(app, 'healthcheck', (checks) => addCacheHealthCheck(checks));
+useHealthCheck(app, 'benzene:healthcheck', (checks) => addCacheHealthCheck(checks));
 ```
 
 `addCacheHealthCheck` registers a check (`type: 'Cache'`) that resolves the registered `ICacheService`

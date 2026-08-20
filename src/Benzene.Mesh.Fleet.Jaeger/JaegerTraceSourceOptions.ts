@@ -30,7 +30,7 @@ export class JaegerTraceSourceOptions {
    */
   services?: readonly string[];
 
-  /** How far back a `mesh:query:correlation` search scans Jaeger (ms). Default 24 hours. */
+  /** How far back a `benzene:mesh:query:correlation` search scans Jaeger (ms). Default 24 hours. */
   correlationLookbackMs = DefaultCorrelationLookbackMs;
 
   /** How far back the fleet view's recent-flows search scans Jaeger (ms). Default 1 hour. */

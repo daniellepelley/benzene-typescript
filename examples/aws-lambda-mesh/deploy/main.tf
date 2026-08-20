@@ -385,7 +385,7 @@ resource "aws_cloudwatch_event_target" "aggregate" {
   rule      = aws_cloudwatch_event_rule.aggregate.name
   target_id = "mesh"
   arn       = aws_lambda_function.mesh.arn
-  input     = jsonencode({ "detail-type" = "mesh:aggregate", "source" = "benzene.mesh", "detail" = "{}" })
+  input     = jsonencode({ "detail-type" = "benzene:mesh:aggregate", "source" = "benzene.mesh", "detail" = "{}" })
 }
 
 resource "aws_lambda_permission" "mesh_events" {

@@ -283,7 +283,7 @@ import { addCacheHealthCheck } from '@benzenejs/cache-core';
 
 .configure((app) =>
   useApiGateway(app, (api) => {
-    useHealthCheck(api, 'healthcheck', (checks) => addCacheHealthCheck(checks));
+    useHealthCheck(api, 'benzene:healthcheck', (checks) => addCacheHealthCheck(checks));
     useMessageHandlers(api, GetProductHandler, UpdateProductHandler, DeleteProductHandler);
   }),
 )

@@ -20,7 +20,7 @@ export class CloudServiceRequirement {
  * The wiring-time self-assessment of a service against the Cloud Service Profile
  * (docs/specification/cloud-service-profile.md). Produced by `useBenzeneCloudService` from what was
  * actually wired — defaults kept, surfaces declined, paths relocated — and carried on the service's
- * descriptor (mesh.md §2's `profile` field) so any tool that can reach the reserved `mesh` topic can ask
+ * descriptor (mesh.md §2's `profile` field) so any tool that can reach the reserved `benzene:mesh` topic can ask
  * a running service whether it claims the profile.
  *
  * This is a self-assessment of provisioning, not a runtime probe: it reflects what the builder wired, and

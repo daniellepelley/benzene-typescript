@@ -15,7 +15,7 @@ import { MeshTopics } from './MeshTopics';
 import { MeshTraceEvent } from './MeshTraceEvent';
 
 /**
- * Intercepts the reserved `mesh` topic (plus any `aliases`) and short-circuits with `descriptor`,
+ * Intercepts the reserved `benzene:mesh` topic (plus any `aliases`) and short-circuits with `descriptor`,
  * exactly as health-check interception works - by topic id alone, ignoring version. Not wiring this
  * in is the "descriptor endpoint withheld" deployment: every other mesh feed keeps working
  * (docs/specification/mesh.md §6). C# extension method -> free function.

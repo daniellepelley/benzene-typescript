@@ -110,7 +110,7 @@ describe('AsyncApiCompositor', () => {
       "info": { "title": "orders-api", "version": "1.0" },
       "channels": {
         "order_create": { "address": "order:create", "messages": { "Order": { "payload": { "$ref": "#/components/schemas/Order" } } } },
-        "spec": { "address": "spec", "messages": { "SpecRequest": { "payload": { "$ref": "#/components/schemas/SpecRequest" } } } }
+        "spec": { "address": "benzene:spec", "messages": { "SpecRequest": { "payload": { "$ref": "#/components/schemas/SpecRequest" } } } }
       },
       "operations": {
         "order_create": { "action": "receive", "channel": { "$ref": "#/channels/order_create" }, "messages": [ { "$ref": "#/channels/order_create/messages/Order" } ] },
@@ -123,7 +123,7 @@ describe('AsyncApiCompositor', () => {
       } }
     }`;
 
-    const merged = AsyncApiCompositor.merge([service('orders-api', doc, 'spec')], At);
+    const merged = AsyncApiCompositor.merge([service('orders-api', doc, 'benzene:spec')], At);
     const schemas = (JSON.parse(merged) as Json).components.schemas as Json;
 
     expect(schemas).toHaveProperty('OrdersApi_Order');
@@ -151,7 +151,7 @@ describe('AsyncApiCompositor', () => {
       "info": { "title": "orders-api", "version": "1.0" },
       "channels": {
         "order_create": { "address": "order:create", "messages": {} },
-        "spec": { "address": "spec", "messages": {} },
+        "spec": { "address": "benzene:spec", "messages": {} },
         "spec_response": { "address": "spec:response", "messages": {} }
       },
       "operations": {
@@ -161,7 +161,7 @@ describe('AsyncApiCompositor', () => {
       "components": { "schemas": {} }
     }`;
 
-    const merged = AsyncApiCompositor.merge([service('orders-api', doc, 'spec')], At);
+    const merged = AsyncApiCompositor.merge([service('orders-api', doc, 'benzene:spec')], At);
     const parsed = JSON.parse(merged) as Json;
     const channelKeys = Object.keys(parsed.channels as Json);
     const operationKeys = Object.keys(parsed.operations as Json);

@@ -26,7 +26,7 @@ import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
  * PORT DIVERGENCE — the auto-wired reachability `healthCheck`. C# builds the admin client from
  * `config.ConsumerConfig`; the TypeScript config carries no broker settings and `consumerFactory` yields a
  * `Consumer` (no route to an `Admin`), so the health check needs a separate {@link IKafkaAdminClientFactory}.
- * Pass one to enable the check (auto-registered on the deep `healthcheck` layer via
+ * Pass one to enable the check (auto-registered on the deep `benzene:healthcheck` layer via
  * `@benzenejs/health-checks-core`); with no admin factory it is a no-op regardless of `healthCheck`. Set
  * `healthCheck = false` to opt out even when a factory is supplied.
  *

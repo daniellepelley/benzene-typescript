@@ -3,7 +3,7 @@ import { SpecRequest } from './SpecRequest';
 
 /**
  * Memoizes the generated spec per `(type, format)` — the document is deterministic for the process lifetime,
- * so repeated polling (e.g. the mesh aggregator interrogating the `spec` topic) doesn't re-run the full
+ * so repeated polling (e.g. the mesh aggregator interrogating the `benzene:spec` topic) doesn't re-run the full
  * schema-generation build each time. Registered as a singleton by `useSpec`.
  */
 export class SpecCache {

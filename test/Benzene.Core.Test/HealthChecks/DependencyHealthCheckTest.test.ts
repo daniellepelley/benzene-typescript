@@ -16,7 +16,7 @@ import { getHealthCheckerBuilder, HealthCheckProcessor, IHealthCheckFinder } fro
 /**
  * Ports the dependency-category behaviour: an auto-wired external-dependency check is registered under
  * `IDependencyHealthCheck`, is non-critical by default, is de-duplicated by `dedupKey`, and is
- * harvested only by the general `healthcheck` probe (`includeDependencyChecks`) — never by
+ * harvested only by the general `benzene:healthcheck` probe (`includeDependencyChecks`) — never by
  * liveness/readiness.
  */
 
@@ -84,7 +84,7 @@ describe('DependencyHealthCheck', () => {
       executeAsync: () => Promise.resolve(HealthCheckResult.createInstance(false, 'SqsQueue')),
     };
 
-    const result = (await HealthCheckProcessor.performHealthChecksAsync('healthcheck', [
+    const result = (await HealthCheckProcessor.performHealthChecksAsync('benzene:healthcheck', [
       new DependencyHealthCheck(failingDep, 'SqsQueue:orders'),
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 

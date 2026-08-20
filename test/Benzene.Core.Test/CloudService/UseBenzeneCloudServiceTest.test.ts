@@ -120,7 +120,7 @@ describe('useBenzeneCloudService', () => {
   it('intercepts the health-check topic on the envelope pipeline', async () => {
     const host = createHost();
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'healthcheck');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:healthcheck');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('isHealthy');
@@ -129,7 +129,7 @@ describe('useBenzeneCloudService', () => {
   it('serves the descriptor on the mesh topic, with the profile self-assessment', async () => {
     const host = createHost();
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('orders');
@@ -141,7 +141,7 @@ describe('useBenzeneCloudService', () => {
   it('declares produces via withProduces (mesh.md §2.3 outbound registration)', async () => {
     const host = createHost((cloud) => cloud.withProduces('payments:capture'));
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('produces');
@@ -155,7 +155,7 @@ describe('useBenzeneCloudService', () => {
     // producing the same descriptor.
     const host = createHost((cloud) => cloud.withConsumes('payments:capture'));
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('produces');
@@ -166,7 +166,7 @@ describe('useBenzeneCloudService', () => {
   it('degrades produces (not an empty array) when no outbound registration was declared', async () => {
     const host = createHost();
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('outbound-registry');
@@ -177,7 +177,7 @@ describe('useBenzeneCloudService', () => {
     // behaviour: an unreachable collector never affects the service.
     const host = createHost((cloud) => cloud.withCollector('http://localhost:9/benzene/invoke'));
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain(CloudServiceProfileReport.profileName);
@@ -189,7 +189,7 @@ describe('useBenzeneCloudService', () => {
   it('does not intercept the mesh topic when mesh is declined', async () => {
     const host = createHost((cloud) => cloud.withoutMesh());
 
-    const response = await postEnvelope(host, CloudServicePaths.invoke, 'mesh');
+    const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
     expect(response.statusCode).not.toBe(200);
   });
@@ -197,7 +197,7 @@ describe('useBenzeneCloudService', () => {
   it('keeps a relocated surface working and flags it in the profile self-assessment', async () => {
     const host = createHost((cloud) => cloud.withInvokePath('/custom-invoke'));
 
-    const response = await postEnvelope(host, '/custom-invoke', 'mesh');
+    const response = await postEnvelope(host, '/custom-invoke', 'benzene:mesh');
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('R7');
@@ -241,7 +241,7 @@ describe('useBenzeneCloudService', () => {
         registerBody,
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timed out')), 10000)),
       ]);
-      expect(received).toContain('mesh:register');
+      expect(received).toContain('benzene:mesh:register');
     } finally {
       server.close();
     }

@@ -267,7 +267,7 @@ function servicesFromFlows(flows: readonly TraceSummary[]): ServiceSummary[] {
     const summary = new ServiceSummary();
     summary.service = name;
     summary.health = MeshHealth.unknown;
-    // "issues" is honest, not derived (spec §4.1 / drains-up 3.2): the composite plane has no mesh:issues
+    // "issues" is honest, not derived (spec §4.1 / drains-up 3.2): the composite plane has no benzene:mesh:issues
     // ingest at all (its vessel is a named follow-up), so the pipeline-native issue feed is genuinely absent
     // here - the UI keeps its client-derived issue rows.
     summary.missingFeeds = ['descriptor', 'health', 'stats', 'issues'];

@@ -40,13 +40,13 @@ export class MeshTraceEvent {
   correlationId?: string;
 }
 
-/** The body of a `mesh:traces` message (spec §4): one exporter flush. */
+/** The body of a `benzene:mesh:traces` message (spec §4): one exporter flush. */
 export class MeshTraceBatch {
   events: MeshTraceEvent[] = [];
 }
 
 /**
- * The body of a `mesh:heartbeat` message (spec §5): the standard aggregate health response reused
+ * The body of a `benzene:mesh:heartbeat` message (spec §5): the standard aggregate health response reused
  * as-is, wrapped with identity and the contract hash. `DateTimeOffset SentAt` -> epoch-ms `number`.
  */
 export class MeshHeartbeat {

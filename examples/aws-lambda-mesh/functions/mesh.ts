@@ -5,7 +5,7 @@
  * On each invocation (an EventBridge schedule, or an on-demand invoke) it:
  *   1. **discovers** the benzene-tagged service Lambdas via a real `LambdaClient` (ListFunctions + ListTags);
  *   2. **persists** the discovered registry to S3 (`registry.json`) — the "discovery creates the config" seam;
- *   3. **interrogates** each discovered Lambda by real synchronous invoke on the reserved `spec`/`healthcheck`
+ *   3. **interrogates** each discovered Lambda by real synchronous invoke on the reserved `benzene:spec`/`benzene:healthcheck`
  *      topics and **aggregates** the answers into the catalog artifacts, written to the same S3 bucket.
  *
  * Mirrors .NET's `Mesh/MeshAggregateHandler` (discover → write registry + run aggregator concurrently). The

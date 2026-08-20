@@ -10,11 +10,11 @@ import { IHealthCheck } from './IHealthCheck';
  * `IHealthCheck` implementations; the auto-wiring registers them *as* `IDependencyHealthCheck`
  * (typically wrapped by `DependencyHealthCheck`).
  *
- * **These belong on the deep `healthcheck` layer, not on a Kubernetes probe.** A dependency check is
+ * **These belong on the deep `benzene:healthcheck` layer, not on a Kubernetes probe.** A dependency check is
  * *shared-fate*: every replica runs the same check against the same downstream, so a transient blip
  * fails all of them at once. Wiring that into liveness would restart-storm the fleet; wiring it into
  * readiness would pull every pod from the Service's endpoints at once — the classic cascading-failure
- * anti-pattern. So the general (`healthcheck`) probe harvests these for monitoring / the mesh
+ * anti-pattern. So the general (`benzene:healthcheck`) probe harvests these for monitoring / the mesh
  * inventory / humans, while liveness, readiness and contracts do not. A developer who has reasoned
  * that a specific dependency is genuinely safe to gate traffic on can still add it to readiness
  * explicitly; auto-wiring never does it for them.

@@ -34,7 +34,7 @@ export interface IHealthCheckResult {
    * Whether a `HealthCheckStatus.failed` result represents a **persistent**, deterministic fault
    * (e.g. an authorization/permission denial or bad credentials) rather than a transient blip. A
    * persistent failure is **not** softened by the non-critical downgrade: it won't self-heal, so it
-   * surfaces as unhealthy on the deep `healthcheck` layer even for an auto-wired dependency-category
+   * surfaces as unhealthy on the deep `benzene:healthcheck` layer even for an auto-wired dependency-category
    * check. C# default interface member; required here (the concrete `HealthCheckResult` supplies the
    * `false` default). Only meaningful on a `failed` result.
    */

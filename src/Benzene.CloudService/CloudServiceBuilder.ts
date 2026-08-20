@@ -29,14 +29,14 @@ export interface ICloudServiceBuilder {
   withPlacement(cloud: string, region?: string): ICloudServiceBuilder;
 
   /**
-   * Sets the collector's envelope URL, enabling the outbound mesh feeds (profile R6): `mesh:register` on
-   * startup, `mesh:heartbeat`, and the `mesh:traces` feed. Without a collector the service still serves its
-   * descriptor on the reserved `mesh` topic, but the outbound feeds have nowhere to go and R6 is reported as
+   * Sets the collector's envelope URL, enabling the outbound mesh feeds (profile R6): `benzene:mesh:register` on
+   * startup, `benzene:mesh:heartbeat`, and the `benzene:mesh:traces` feed. Without a collector the service still serves its
+   * descriptor on the reserved `benzene:mesh` topic, but the outbound feeds have nowhere to go and R6 is reported as
    * missing.
    */
   withCollector(collectorEnvelopeUrl: string): ICloudServiceBuilder;
 
-  /** Adds health checks run for the reserved `healthcheck` topic and included in heartbeats (profile R3). */
+  /** Adds health checks run for the reserved `benzene:healthcheck` topic and included in heartbeats (profile R3). */
   withHealthChecks(...healthChecks: IHealthCheck[]): ICloudServiceBuilder;
 
   /**
@@ -108,7 +108,7 @@ export interface ICloudServiceBuilder {
   withProfileReport(callback: (report: CloudServiceProfileReport) => void): ICloudServiceBuilder;
 
   /**
-   * Declines the mesh feeds entirely: no reserved `mesh` topic, no trace middleware, no registration or
+   * Declines the mesh feeds entirely: no reserved `benzene:mesh` topic, no trace middleware, no registration or
    * heartbeats. The service remains a working Benzene Core service and the profile report marks R6 and R8 as
    * missing — use this for a deliberate opt-out, not as a substitute for simply not configuring a collector.
    */

@@ -2,8 +2,8 @@
  * The shared "make this Lambda a mesh-discoverable Cloud Service" wiring, mirroring the .NET AwsMesh
  * `Shared/MeshServiceWiring`. Each service is a single Lambda (a composite entry point) that:
  *
- *  - answers a **direct Lambda invoke** carrying the reserved `spec`/`healthcheck` topics — the surface the
- *    mesh interrogates (via `@benzenejs/aws-lambda-core`'s `useBenzeneMessage`). The `spec` topic is served by
+ *  - answers a **direct Lambda invoke** carrying the reserved `benzene:spec`/`benzene:healthcheck` topics — the surface the
+ *    mesh interrogates (via `@benzenejs/aws-lambda-core`'s `useBenzeneMessage`). The `benzene:spec` topic is served by
  *    the **library `useSpec`** (`@benzenejs/schema-openapi`) — the standard, dogfooded self-description path —
  *    which builds the benzene spec document (`{ requests, events, transports, components.schemas }`) from the
  *    service's own DI-registered feeds. There is deliberately no hand-built spec: `useSpec` IS the single
@@ -22,7 +22,7 @@
  *  - `transports[]` ← a declared `TransportsInfo` (the composite is multi-container, so the transports the
  *    service listens on are declared here rather than auto-aggregated across routes).
  */
-import { Constructor, IBenzeneResultOf } from '@benzenejs/abstractions';
+import { BenzeneTopic, Constructor, IBenzeneResultOf } from '@benzenejs/abstractions';
 import { IMessageHandler, ITransportsInfo } from '@benzenejs/abstractions-message-handlers';
 import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import { IHealthCheck } from '@benzenejs/health-checks-core';
@@ -98,7 +98,7 @@ export interface MeshServiceDefinition {
   readonly eventPayloadType?: Constructor<unknown>;
   /**
    * The service's health checks, run by `@benzenejs/health-checks`' `useHealthCheck` middleware on the
-   * reserved `healthcheck` topic (mirrors .NET's `.UseHealthCheck("benzene:healthcheck", healthChecks)`).
+   * reserved `benzene:healthcheck` topic (mirrors .NET's `.UseHealthCheck("benzene:healthcheck", healthChecks)`).
    * Their aggregated `HealthCheckResponse` is what the mesh writes into `services/{name}.json` and the
    * Mesh UI renders per check (status + declared dependencies). Optional; omit for a service with none.
    */
@@ -128,8 +128,8 @@ function serviceTransports(definition: MeshServiceDefinition): Set<Transport> {
 
 
 /**
- * Builds a service's Lambda `handler`: a composite entry point that answers direct-invoke `spec` (via the
- * library `useSpec`) and `healthcheck` plus its domain handlers on every transport it listens on.
+ * Builds a service's Lambda `handler`: a composite entry point that answers direct-invoke `benzene:spec` (via the
+ * library `useSpec`) and `benzene:healthcheck` plus its domain handlers on every transport it listens on.
  */
 export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbound?: OutboundWiring): Handler {
   const { name, domainHandlers, produces, eventPayloadType, sends } = definition;
@@ -173,15 +173,15 @@ export function buildMeshServiceLambda(definition: MeshServiceDefinition, outbou
       }
     });
 
-    // The direct-invoke surface the mesh interrogates: reserved `spec` (via the library `useSpec`,
-    // DI-dispatched), reserved `healthcheck` (via the library `useHealthCheck` middleware, which runs the
+    // The direct-invoke surface the mesh interrogates: reserved `benzene:spec` (via the library `useSpec`,
+    // DI-dispatched), reserved `benzene:healthcheck` (via the library `useHealthCheck` middleware, which runs the
     // service's checks and aggregates a `HealthCheckResponse`, then falls through for any other topic), plus
-    // the domain handlers. `useSpec(bm)` owns the `spec` topic, so it must NOT also appear in the
+    // the domain handlers. `useSpec(bm)` owns the `benzene:spec` topic, so it must NOT also appear in the
     // `useMessageHandlers` list or the two finders would collide; `useHealthCheck` is registered before the
-    // handler router so it claims `healthcheck` first.
+    // handler router so it claims `benzene:healthcheck` first.
     c.route(isBenzeneMessageEvent, (app) =>
       useBenzeneMessage(app, (bm) => {
-        useHealthCheck(bm, 'healthcheck', healthChecks);
+        useHealthCheck(bm, BenzeneTopic.healthCheck, healthChecks);
         useMessageHandlers(useSpec(bm), ...domainHandlers);
       }),
     );

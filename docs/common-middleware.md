@@ -224,12 +224,12 @@ export function useHealthCheck<TContext>(
 import { useHealthCheck } from '@benzenejs/health-checks';
 
 // configure a builder (checks resolved from the container, or supplied as a factory):
-useHealthCheck(app, 'healthcheck', (checks) => checks
+useHealthCheck(app, 'benzene:healthcheck', (checks) => checks
   .addHealthCheck(MyDatabaseHealthCheck)
   .addHealthCheckFn((resolver) => resolver.getService(MyQueueHealthCheck)));
 
 // or pass already-constructed instances directly:
-useHealthCheck(app, 'healthcheck', [new MyDatabaseHealthCheck(), new MyQueueHealthCheck()]);
+useHealthCheck(app, 'benzene:healthcheck', [new MyDatabaseHealthCheck(), new MyQueueHealthCheck()]);
 ```
 
 A health check implements `IHealthCheck` (`@benzenejs/health-checks-core`):
@@ -664,7 +664,7 @@ A few transport-agnostic .NET middleware have no TypeScript port today:
 - **`UseJsonSchema`** (`Benzene.JsonSchema`) — superseded by the [validation](#validation) adapters.
 
 The spec endpoint **is** ported: **`useSpec`** (`@benzenejs/schema-openapi`) serves the service's spec
-document (topics + payload JSON Schemas) on the reserved `spec` topic in three formats — the default
+document (topics + payload JSON Schemas) on the reserved `benzene:spec` topic in three formats — the default
 `benzene` event-service document, real `openapi` (OpenAPI 3.0), and real `asyncapi` (AsyncAPI 3.0),
 selected by the spec request's `type` — and **`useSpecUi`** (`@benzenejs/spec-ui`) renders it in-browser,
 Swagger-UI style. Every format is emitted as JSON (the C# YAML output is not ported; see that package's

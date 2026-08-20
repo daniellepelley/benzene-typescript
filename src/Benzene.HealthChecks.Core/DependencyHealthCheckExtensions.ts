@@ -8,7 +8,7 @@ import { IHealthCheck } from './IHealthCheck';
  * The config-time registration seam that auto-wired client extensions call to contribute an
  * external-dependency reachability check to the **dependency** category. Registering under
  * `IDependencyHealthCheck` (rather than plain `IHealthCheck`) is what keeps the check on the deep
- * `healthcheck` layer and off the liveness/readiness/contracts probes (see `IDependencyHealthCheck`
+ * `benzene:healthcheck` layer and off the liveness/readiness/contracts probes (see `IDependencyHealthCheck`
  * for the cascading-failure reasoning).
  *
  * Lives in `@benzenejs/health-checks-core` — not the middleware package — so a client package can

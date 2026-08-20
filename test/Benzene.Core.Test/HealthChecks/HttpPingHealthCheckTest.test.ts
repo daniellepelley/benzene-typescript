@@ -56,7 +56,7 @@ describe('HttpPingHealthCheck', () => {
 
     const scope = container.createServiceResolverFactory().createScope();
     const result = (await HealthCheckProcessor.performHealthChecksAsync(
-      'healthcheck',
+      'benzene:healthcheck',
       builder.getHealthChecks(scope),
     )) as IBenzeneResultOf<HealthCheckResponse>;
     scope.dispose();

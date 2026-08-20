@@ -57,7 +57,7 @@ export const isEventBridgeEvent: AwsEventPredicate = (event) => {
 /**
  * A direct BenzeneMessage invocation — a transport-neutral `{ topic, headers?, body? }` envelope invoked
  * straight on the function (the Lambda-to-Lambda path the mesh uses to interrogate a service with the
- * reserved `spec`/`healthcheck` topics). Discriminated by a non-empty top-level `topic` (.NET checks
+ * reserved `benzene:spec`/`benzene:healthcheck` topics). Discriminated by a non-empty top-level `topic` (.NET checks
  * `request?.Topic != null`); no proxy/record/detail-type event carries a top-level `topic`, so it is
  * unambiguous against every other predicate.
  */

@@ -10,7 +10,7 @@ import { IHealthCheckResult } from './IHealthCheckResult';
  * - A permission/authorization error is a **persistent** `failed` (`IHealthCheckResult.isPersistent`).
  *   It is a deterministic misconfiguration (a missing permission or bad credentials) that will not
  *   self-heal, so it must **not** be softened by the non-critical downgrade: it surfaces as unhealthy
- *   on the deep `healthcheck` layer even for an auto-wired dependency check. Detected by *meaning*
+ *   on the deep `benzene:healthcheck` layer even for an auto-wired dependency check. Detected by *meaning*
  *   (HTTP 401/403 **or** a known authorization error code), so the same denial classifies identically
  *   whether the SDK returns 403 or — like AWS EventBridge's `AccessDeniedException` — HTTP 400.
  * - Any other failure (not-found, outage, timeout, bad connectivity, throttling) is a transient

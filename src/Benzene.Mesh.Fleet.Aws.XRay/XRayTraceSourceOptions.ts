@@ -22,7 +22,7 @@ export const DefaultRecentFlowsServiceEnrichmentMax = 20;
  */
 export class XRayTraceSourceOptions {
   /**
-   * How far back a `mesh:query:correlation` search scans X-Ray for matching traces (ms). Default 24 hours -
+   * How far back a `benzene:mesh:query:correlation` search scans X-Ray for matching traces (ms). Default 24 hours -
    * a business correlation id (a ticket/log id) is typically chased soon after the event, and X-Ray retains
    * traces for 30 days so a longer window is available if you widen it.
    */

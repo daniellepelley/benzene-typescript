@@ -25,7 +25,7 @@ import { addServiceBusDependencyHealthCheck } from './ServiceBusHealthCheckExten
  * @param action Configures the inner Service Bus message pipeline.
  * @param healthCheck When `true` (the default) a non-destructive Service Bus reachability check (a peek
  * of the consumed entity, using the `Listen` claim the consumer holds) is auto-registered on the deep
- * `healthcheck` layer via `@benzenejs/health-checks-azure-service-bus` — never a Kubernetes probe (a
+ * `benzene:healthcheck` layer via `@benzenejs/health-checks-azure-service-bus` — never a Kubernetes probe (a
  * broker being unreachable is shared-fate; see `IDependencyHealthCheck`). Pass `false` to opt out.
  * @returns The worker startup, for chaining.
  */

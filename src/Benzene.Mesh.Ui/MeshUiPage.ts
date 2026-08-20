@@ -38,7 +38,7 @@ export const MeshUiPage = {
    * The viewer HTML, optionally with a manifest URL and a live fleet-envelope endpoint injected onto the document
    * root. When `manifestUrl` is non-blank it is injected as `data-manifest-url` so the page fetches and renders
    * that manifest on load; when `envelopeUrl` is non-blank it is injected as `data-fleet-url` so the page's Fleet
-   * plane enriches the catalog with live `mesh:query:*` data polled from that wire-envelope endpoint. Blank
+   * plane enriches the catalog with live `benzene:mesh:query:*` data polled from that wire-envelope endpoint. Blank
    * (null/undefined/whitespace) values inject nothing; when both are blank the page is returned unchanged (it then
    * relies on a `?url=`/relative fetch). Mirrors the C# `GetHtml`/`GetHtml(manifestUrl)`/`GetHtml(manifestUrl,
    * envelopeUrl)` overloads.

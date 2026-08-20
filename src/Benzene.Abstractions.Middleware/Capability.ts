@@ -4,7 +4,7 @@ import { IMiddlewarePipelineBuilder } from './IMiddlewarePipelineBuilder';
  * A composable pipeline capability — the TypeScript-idiomatic answer to .NET's `app.UseXml()` /
  * `app.UseHealthCheck()` extension methods. Because TypeScript has no cross-package extension methods,
  * a capability is an *imported factory value* you drop into `builder.use(...)`: `builder.use(xml())`,
- * `builder.use(healthCheck('healthcheck', checks))`. This reads as the same top-to-bottom capability
+ * `builder.use(healthCheck(BenzeneTopic.healthCheck, checks))`. This reads as the same top-to-bottom capability
  * checklist as .NET, stays fully tree-shakeable (you import only the verbs you use), and needs no
  * prototype augmentation.
  *

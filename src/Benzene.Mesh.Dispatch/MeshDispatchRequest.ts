@@ -1,7 +1,7 @@
 /** Port of Benzene.Mesh.Dispatch.MeshDispatchRequest. */
 
 /**
- * A request to dispatch a test message to one registered service (the `mesh:dispatch` body). Plain
+ * A request to dispatch a test message to one registered service (the `benzene:mesh:dispatch` body). Plain
  * settable fields (wire-deserialized input); `string?`/`Dictionary?` -> `| undefined`.
  */
 export class MeshDispatchRequest {

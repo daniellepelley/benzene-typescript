@@ -374,11 +374,13 @@ header. Three deliberate divergences from the C# reference, each recorded where 
   right there and compile-time narrowable - `OpenApiPayloadBuilder.ts` emits `export type D = E | F;`
   instead of C#'s single base-class type. Not a conformance concern (contract-document.md §5.5: type
   emission shape is idiom, not pinned).
-- **A dedicated, prefix-based `ContractReservedTopics.ts`, not `@benzenejs/schema-openapi`'s
-  `ReservedTopics`.** That module matches a name-list of short, unprefixed ids (`"spec"`,
-  `"healthcheck"`, …) — the TS mesh spec surface's own convention. contract-document.md §5.1 pins a
-  `benzene:`-prefix rule instead (matching .NET's `BenzeneTopic.IsReserved`), and the conformance
-  fixtures use prefixed ids (`benzene:spec`) — reusing the other module would misclassify every one.
+- **A dedicated `ContractReservedTopics.ts`, not `@benzenejs/schema-openapi`'s `ReservedTopics`.**
+  Both now apply the same rule — `BenzeneTopic.isReserved`'s `benzene:` prefix test
+  (contract-document.md §5.1, matching .NET's `BenzeneTopic.IsReserved`) — but they answer different
+  questions: `ReservedTopics` classifies a *registry* definition while a document is being derived,
+  `ContractReservedTopics` classifies a *document* entry that may also carry an explicit `reserved`
+  flag from an older producer build. Keeping them separate keeps `@benzenejs/codegen-client` off the
+  schema package.
 - **No `Benzene.CodeGen.Core` package.** That C# project holds the portable `ContractHash` (and
   reflection plumbing this port never needed). Since no TS package maps to it, `ContractHash.ts` lives
   directly in `Benzene.CodeGen.Client` instead - its only consumer here.
@@ -970,15 +972,31 @@ The point of the port is that a TypeScript Benzene service and a .NET Benzene se
 mesh** and call each other — the runtime language is invisible on the wire. Everything that crosses a
 process boundary is a language-neutral contract (`docs/specification/wire-contracts.md` and `mesh.md` in the
 .NET repo): the message envelope (`{ topic, headers, body }`), the response envelope + error payload, the
-**status vocabulary**, the health document, and the mesh `spec` descriptor. The port holds these
+**status vocabulary**, the health document, and the mesh `benzene:spec` descriptor. The port holds these
 byte-identical to .NET so the two interoperate:
 
+- **Reserved topic ids.** `BenzeneTopic` (`@benzenejs/abstractions`) is the port's single source of truth
+  for the framework-owned topic namespace, and every reserved id carries its `benzene:` marker:
+  `benzene:healthcheck` (Cloud Service Profile R3), `benzene:spec` (R5), and `benzene:mesh` +
+  `benzene:mesh:register`/`:heartbeat`/`:traces`/`:issues` (R6, `mesh.md` §§1/4), plus the mesh host's own
+  `benzene:mesh:query:*`, `benzene:mesh:aggregate`, `benzene:mesh:dispatch` and friends. The ids are the
+  wire contract, not decoration: a service binding the bare forms cannot register with, heartbeat to, or be
+  health-probed by a collector written in any other language.
+
+  **There is no bare-id compatibility shim, deliberately.** Nothing in the port accepts `healthcheck` or
+  `mesh` as an alias for the prefixed id. A shim would only make the TypeScript port *look* interoperable
+  while leaving the caller broken against .NET, Go and Python — the exact asymmetry the prefix exists to
+  remove — and it costs nothing to do without: every reserved topic is already an explicit argument
+  (`useHealthCheck(app, topic, checks)`, `useMeshDescriptor(app, descriptor, ...aliases)`), so a deployment
+  that genuinely must answer a legacy bare id can pass it as an alias at its own composition root.
+  `test/Benzene.Core.Test/Core/BenzeneTopicTest.test.ts` pins the ids and asserts the bare forms are
+  ordinary application topics.
 - **Status vocabulary.** `BenzeneResultStatus`'s string values are the normative lowercase-kebab wire
   statuses (`ok`, `not-found`, `validation-error`), case-sensitive, identical to the .NET constants — so a
   status a TypeScript service writes as the response `statusCode` classifies identically in a .NET peer (and
   vice versa), and a metrics-derived mesh usage feed itemizes failures the same across languages. (Everything
   in the port refers to these via the `BenzeneResultStatus` constants, so the wire values are defined once.)
-- **Mesh aggregation across languages.** The ported `MeshAggregator` interrogates any service's `spec`/`health`
+- **Mesh aggregation across languages.** The ported `MeshAggregator` interrogates any service's `benzene:spec`/`benzene:healthcheck`
   endpoints over HTTP regardless of the implementing language, builds the cross-service topic catalog and
   structural topology from what each service self-describes, and so links a producer in one language to a
   consumer in another. `test/Benzene.Core.Test/MultiLanguage/CrossLanguageMeshTest.test.ts` demonstrates this
@@ -993,7 +1011,7 @@ byte-identical to .NET so the two interoperate:
   `Benzene.Mesh.Aggregator` at it; both catalog it with no knowledge that it's TypeScript.
   `test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` starts this very service and drives
   the real aggregator against it in CI.
-- **The normative descriptor path.** The reserved `mesh` topic → `ServiceDescriptor` contract
+- **The normative descriptor path.** The reserved `benzene:mesh` topic → `ServiceDescriptor` contract
   (`mesh.md` §2, the shape `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` use for the live .NET↔Go
   cross-language fleets) is ported as `@benzenejs/mesh-wire`: `MeshServiceDescriptor` and friends,
   `MeshDescriptorFactory.create` (topic list derived from the running `IMessageHandlerDefinitionLookUp`,
@@ -1631,7 +1649,7 @@ Ported (with tests):
   raw-string payload) as "no downcast", matching the C# `payload == null` guard.
 - Cloud Service conformance probe (`@benzenejs/cloud-service-probe`): a self-contained (no Benzene package
   deps) external, black-box HTTP probe of the Cloud Service Profile — `CloudServiceProbe.runAsync` hits a
-  live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and reserved `mesh` topic and returns
+  live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and reserved `benzene:mesh` topic and returns
   a tri-state (`Satisfied`/`NotSatisfied`/`Inconclusive`) assessment of R1–R8 built only from what it
   observed, never trusting the service's own claims. `HttpClient` + `BaseAddress` → an injectable `fetch`
   (`@benzenejs/health-checks-http`'s adaptation) + `baseUrl`; `System.Text.Json.Nodes` shape checks →
@@ -1656,8 +1674,8 @@ Ported (with tests):
   `ITerminalMiddleware` marker → none (the port's short-circuit is "don't call `next` on a match").
 - Cloud Service bundle (`@benzenejs/cloud-service`): port of `Benzene.CloudService` — the batteries-included
   `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R8) in one
-  call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `healthcheck`
-  topic, the reserved `mesh` descriptor topic, and outbound mesh register/heartbeat/trace — over the same
+  call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `benzene:healthcheck`
+  topic, the reserved `benzene:mesh` descriptor topic, and outbound mesh register/heartbeat/trace — over the same
   `use*` builders, with a wiring-time `CloudServiceProfileReport` (R1–R8 self-assessment) stamped on the
   descriptor's `profile` field and honestly reflecting any override (`withoutMesh()`, relocated paths).
   **Divergences:** `MeshAnnouncer` uses the global `fetch` (Node 22) instead of `HttpClient.PostAsync` (no
@@ -1710,7 +1728,7 @@ Ported (with tests):
   const-string classes → frozen objects. Two Mesh.Contracts-scoped test files ported (discovery runner +
   registry JSON round-trip + filter matching, and the hashing test — its cross-check against the unported
   `Benzene.CodeGen.Core` replaced by pinned known-answer HMAC digests).
-- Mesh dispatch (`@benzenejs/mesh-dispatch`): the opt-in, environment-gated `mesh:dispatch` handler that
+- Mesh dispatch (`@benzenejs/mesh-dispatch`): the opt-in, environment-gated `benzene:mesh:dispatch` handler that
   invokes ONE registered service's real handler with a caller-supplied payload (the direct-to-consumer test
   path) — `MeshDispatchMessageHandler` + `MeshDispatchGate` (refused in Production unless
   `MeshDispatchOptions.allowInProduction`), the `IMeshServiceDispatcher` transport seam with a shipped
@@ -1760,9 +1778,9 @@ Ported (with tests):
   snapshot-report drift, annotations, and the two message handlers) — the usage-attribution topology tests
   feed the framework wire statuses (`BenzeneResultStatus.notFound` = `not-found`, matching .NET).
 - Mesh collector (`@benzenejs/mesh-collector`): the **push** side of the mesh (spec §4) — an ordinary Benzene
-  service whose handlers ingest `mesh:register` / `mesh:heartbeat` / `mesh:traces` into an in-memory
+  service whose handlers ingest `benzene:mesh:register` / `benzene:mesh:heartbeat` / `benzene:mesh:traces` into an in-memory
   `MeshCollectorStore` (bounded trace ring, per-instance heartbeat state, wholesale provider-edge replacement
-  on re-register) and answer the `mesh:query:*` read models (`fleet`/`service`/`topic`/`trace`/`correlation`,
+  on re-register) and answer the `benzene:mesh:query:*` read models (`fleet`/`service`/`topic`/`trace`/`correlation`,
   windowed by a Grafana/ISO `MeshTimeRangeResolver`). `IMeshFleetReadModel` makes the query data source
   swappable: the in-memory store, or `CompositeMeshFleetReadModel` (traces from an `IMeshTraceSource`, stats
   from an `IMeshUsageSource`) for a backend-composed plane; `CollectorUsageSource` bridges the collector's
@@ -1771,12 +1789,12 @@ Ported (with tests):
   analog). Adaptations: `DateTimeOffset` → epoch-ms `number` (matching `@benzenejs/mesh-wire`); `Task<T?>` →
   `Promise<T | undefined>` (`null` → `undefined`); C#'s `lock` dropped (single-threaded JS can't tear a
   batch/read); a default-interface-member overload collapses to one optional-param method; `StringComparer.
-  Ordinal` → the shared `ordinalCompare` helper. The `mesh:issues` feed is fully ported: its wire types
+  Ordinal` → the shared `ordinalCompare` helper. The `benzene:mesh:issues` feed is fully ported: its wire types
   (`MeshIssue` / `MeshIssueBatch` / `MeshIssueClassification` / `MeshIssueFingerprint` + `MeshTopics.issues`
-  = `'mesh:issues'`) land in `@benzenejs/mesh-wire` — the fingerprint is `node:crypto` SHA-256, first 16 bytes
+  = `'benzene:mesh:issues'`) land in `@benzenejs/mesh-wire` — the fingerprint is `node:crypto` SHA-256, first 16 bytes
   lowercase-hex over `service|topic|version|classification|discriminator`, identical to the C# recipe so
   issue dedup is cross-language stable — and in the collector `MeshCollectorHandlers.all` carries all **9**
-  handlers (register/heartbeat/traces/**issues** + the five `mesh:query:*` reads), with `store.addIssues` /
+  handlers (register/heartbeat/traces/**issues** + the five `benzene:mesh:query:*` reads), with `store.addIssues` /
   `FleetView.issues` / the per-service `issues` missing-feed marker wired. **One deferral remains**
   (reported, not faked): threading a usage *window* to the usage sources — it needs `MeshUsageWindow` + an
   `IMeshUsageSource.fetchUsageAsync` param (a breaking change to an already-published interface), so the
@@ -1791,7 +1809,7 @@ Ported (with tests):
 - Mesh Explorer UI (`@benzenejs/mesh-ui`): the fleet UI — transport-agnostic HTTP middleware serving two
   self-contained product pages on any Benzene HTTP pipeline. `useMeshUi` serves the catalog/fleet viewer
   (`mesh-ui.html`) over a mesh's `manifest.json`/`services/*.json` artifacts, optionally enriched with live
-  `mesh:query:*` data when an `envelopeUrl` (e.g. `/benzene/invoke`, a co-hosted `@benzenejs/mesh-collector`)
+  `benzene:mesh:query:*` data when an `envelopeUrl` (e.g. `/benzene/invoke`, a co-hosted `@benzenejs/mesh-collector`)
   is passed; `useMeshSpecUi` serves the per-service spec viewer (`mesh-spec-ui.html`) that page links to.
   Both drive the transport-neutral `IBenzeneResponseAdapter` directly (GET/HEAD on the configured path →
   `text/html`, short-circuit; else `next`), mirroring `@benzenejs/spec-ui`'s `SpecUiMiddleware`. The one
@@ -1858,7 +1876,7 @@ Ported (with tests):
   metrics-generator service-graph metrics via a Prometheus-compatible instant-query endpoint
   (`PrometheusQueryClient`) — request rate, failure rate, and p50/p95/p99 latency PromQL queries — and joins
   them into a `MeshTopology` of `TopologyEdgeSource.tempo` edges, published as `topology.json` by
-  `TempoTopologyMessageHandler` (`POST /mesh/topology`, topic `mesh:topology`) into the same
+  `TempoTopologyMessageHandler` (`POST /mesh/topology`, topic `benzene:mesh:topology`) into the same
   `IMeshArtifactStore` `addMeshAggregator` registered. Adaptations: `HttpClient` → injectable `fetch` (body
   read regardless of status, like `GetAsync`, so a Prometheus `"status":"error"`/non-2xx/malformed body
   swallows to an empty result while a connection-level failure still throws); `System.Text.Json` →
@@ -1939,7 +1957,7 @@ Ported (with tests):
     `HealthCheckMode`/`HealthCheckError`/persistent-failure health-check infra).
   - AWS Lambda mesh integration (`@benzenejs/mesh-aws-lambda`, now unblocked): `LambdaMeshServiceSource`
     interrogates a Lambda-hosted service's spec/health via a synchronous invoke (for services with no HTTP
-    surface), and `AwsLambdaMeshServiceDispatcher` dispatches `mesh:dispatch` messages to one — both over
+    surface), and `AwsLambdaMeshServiceDispatcher` dispatches `benzene:mesh:dispatch` messages to one — both over
     `@benzenejs/clients-aws-lambda`'s `IAwsLambdaClient` (taken lazily so a pure-HTTP mesh never builds a Lambda
     client), wired via `addMeshLambdaSource`/`addMeshLambdaDispatcher`. Adaptations: C#'s `Activity.Current`
     W3C trace propagation → the active OpenTelemetry span context (`@opentelemetry/api`), emitted as a

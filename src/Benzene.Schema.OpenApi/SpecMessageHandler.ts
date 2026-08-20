@@ -8,7 +8,7 @@ import { SpecCache } from './SpecCache';
 import { SpecRequest } from './SpecRequest';
 
 /**
- * Serves the spec document on the `spec` topic as a `RawStringMessage` (pre-serialized JSON delivered
+ * Serves the spec document on the `benzene:spec` topic as a `RawStringMessage` (pre-serialized JSON delivered
  * as-is). Memoizes via the registered `SpecCache` — only the first request for each `(type, format)` pays
  * the build cost — falling back to a direct build when no cache is registered.
  */

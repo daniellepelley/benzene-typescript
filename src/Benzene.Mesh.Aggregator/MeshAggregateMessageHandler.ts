@@ -9,7 +9,7 @@ import { MeshAggregator } from './MeshAggregator';
  * Exposes `MeshAggregator.runOnceAsync` as a Benzene message handler - reachable on whatever transport the
  * host already runs (HTTP, a scheduled invocation, a queue message) with no bespoke hosting code.
  *
- * The C# `[HttpEndpoint("POST", "/mesh/aggregate")]` + `[Message("mesh:aggregate")]` attributes are declared
+ * The C# `[HttpEndpoint("POST", "/mesh/aggregate")]` + `[Message("benzene:mesh:aggregate")]` attributes are declared
  * in `addMeshAggregator` (as registered `IHttpEndpointDefinition`/`IMessageHandlerDefinition`s) rather than
  * class decorators - the port's Extensions-registration convention, since JS has no assembly scan.
  * `Void` request -> `VoidResult`.

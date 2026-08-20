@@ -30,7 +30,7 @@ export function addKafkaHealthCheck(
 
 /**
  * Auto-registers a {@link KafkaHealthCheck} for `config`'s topics on the **dependency** category (deep
- * `healthcheck` layer only — never a Kubernetes probe; see `IDependencyHealthCheck`), deduped by the
+ * `benzene:healthcheck` layer only — never a Kubernetes probe; see `IDependencyHealthCheck`), deduped by the
  * bootstrap servers. Called by `useKafka(..., adminClientFactory, healthCheck = true)`.
  *
  * The `config`-then-`adminClientFactory` order matches the sibling `addRabbitMqDependencyHealthCheck` /

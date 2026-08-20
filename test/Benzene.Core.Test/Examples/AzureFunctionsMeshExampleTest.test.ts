@@ -244,7 +244,7 @@ describe('Azure Functions mesh — interrogation + aggregation (real local HTTP,
     const invokeRes = await fetch(`${hosts['orders']!.url}/benzene/invoke`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ topic: 'healthcheck', headers: {}, body: '' }),
+      body: JSON.stringify({ topic: 'benzene:healthcheck', headers: {}, body: '' }),
     });
     expect(invokeRes.status).toBe(200);
     expect(await invokeRes.text()).toContain('isHealthy');

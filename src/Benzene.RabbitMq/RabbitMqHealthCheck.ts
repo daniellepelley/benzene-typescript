@@ -13,7 +13,7 @@ import { IRabbitMqConnectionProvider } from './RabbitMqConnectionProvider';
  * queue declare (amqplib `channel.checkQueue`) — the RabbitMQ analogue of the other reachability checks,
  * non-destructive: a passive declare neither creates nor mutates the queue (it returns the queue's
  * message/consumer counts, or a channel-level `404` if the queue is gone). Reported on the **dependency**
- * category (deep `healthcheck` layer only — a broker being unreachable is shared-fate; see
+ * category (deep `benzene:healthcheck` layer only — a broker being unreachable is shared-fate; see
  * `IDependencyHealthCheck`). A permission failure (AMQP `403 access-refused`) is a **persistent** failure
  * — it surfaces as unhealthy even for the auto-wired dependency check rather than being softened to a
  * Warning, since a missing permission is a deterministic misconfiguration that won't self-heal; the

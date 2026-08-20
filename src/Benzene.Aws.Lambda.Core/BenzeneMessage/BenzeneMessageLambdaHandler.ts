@@ -12,7 +12,7 @@ import { isBenzeneMessageEvent } from '../AwsEventPredicates';
  * Routes AWS Lambda invocations whose payload is a `BenzeneMessageRequest` (a transport-neutral
  * `{ topic, headers, body }` envelope) to the shared BenzeneMessage pipeline — the **direct-invoke**
  * surface. This is the Lambda-to-Lambda path the mesh aggregator uses to interrogate a service: a
- * synchronous `Invoke` carrying the reserved `spec`/`healthcheck` topic reaches the service's message
+ * synchronous `Invoke` carrying the reserved `benzene:spec`/`benzene:healthcheck` topic reaches the service's message
  * handlers with no HTTP surface required.
  *
  * Added to the outer `AwsEventStreamContext` pipeline by `useBenzeneMessage`. It handles the invocation

@@ -3,16 +3,17 @@
  *
  * The collector's message handlers (docs/specification/mesh.md §4) - the collector is an ordinary Benzene
  * service, dogfooded like the aggregator's own handlers. The ingest handlers depend on
- * {@link MeshCollectorStore}; the five `mesh:query:*` handlers depend only on {@link IMeshFleetReadModel}, so
+ * {@link MeshCollectorStore}; the five `benzene:mesh:query:*` handlers depend only on {@link IMeshFleetReadModel}, so
  * the fleet's data source is swappable (in-memory collector, or a backend-composed reader).
  *
  * Divergences from the C# original:
  * - The C# `[Message(topic)]` attribute has no TypeScript equivalent (there is no reflection/assembly-scan);
  *   the reserved topic each handler answers is published as {@link MeshCollectorTopics} for the host's
  *   container wiring, mirroring how `@benzenejs/mesh-aggregator` supplies topics at registration time.
- * - The `mesh:query:*` topic constants live here rather than in `@benzenejs/mesh-wire`'s `MeshTopics` (which
- *   predates the query surface in this snapshot); the ingest topics (`register`/`heartbeat`/`traces`/`issues`)
- *   are re-used from `MeshTopics`. Their string VALUES follow the wire-port's existing `mesh:` prefix.
+ * - The `benzene:mesh:query:*` topic constants live here rather than in `@benzenejs/mesh-wire`'s `MeshTopics`
+ *   (which predates the query surface in this snapshot); the ingest topics
+ *   (`register`/`heartbeat`/`traces`/`issues`) are re-used from `MeshTopics`. Their string VALUES carry the
+ *   same `benzene:` reserved marker (`BenzeneTopic.prefix`) as every other framework-owned topic.
  * - `IBenzeneResult<T>` -> `IBenzeneResultOf<T>`; `Task<...>` -> `Promise<...>`; the C# `Type[]` handler
  *   lists -> arrays of handler constructors.
  */
@@ -44,7 +45,7 @@ import {
 
 /**
  * The reserved wire topics the collector's handlers answer (docs/specification/mesh.md §4). The ingest
- * topics come from `@benzenejs/mesh-wire`'s {@link MeshTopics}; the `mesh:query:*` read-model topics are
+ * topics come from `@benzenejs/mesh-wire`'s {@link MeshTopics}; the `benzene:mesh:query:*` read-model topics are
  * defined here because the wire-port snapshot predates them. A host binds each {@link MeshCollectorHandlers}
  * entry to its topic here (the TS analog of the C# `[Message]` attribute).
  */
@@ -55,19 +56,19 @@ export const MeshCollectorTopics = {
   issues: MeshTopics.issues,
 
   /** Reads the whole known fleet (services, topics, recent flows). */
-  queryFleet: 'mesh:query:fleet',
+  queryFleet: 'benzene:mesh:query:fleet',
 
   /** Reads one service's detail. */
-  queryService: 'mesh:query:service',
+  queryService: 'benzene:mesh:query:service',
 
   /** Reads one topic's summary. */
-  queryTopic: 'mesh:query:topic',
+  queryTopic: 'benzene:mesh:query:topic',
 
   /** Reads one flow's traced waterfall by trace id. */
-  queryTrace: 'mesh:query:trace',
+  queryTrace: 'benzene:mesh:query:trace',
 
   /** Reads every flow carrying a business correlation id. */
-  queryCorrelation: 'mesh:query:correlation',
+  queryCorrelation: 'benzene:mesh:query:correlation',
 } as const;
 
 /** Ingests a service's descriptor (spec §4): re-registration replaces provider edges wholesale. */
@@ -180,7 +181,7 @@ export class TraceQueryMessageHandler implements IMessageHandler<TraceQuery, Tra
 }
 
 /**
- * Every flow that carried a business correlation id, grouped by trace. Complements `mesh:query:trace` for
+ * Every flow that carried a business correlation id, grouped by trace. Complements `benzene:mesh:query:trace` for
  * cross-service failure triage from a business identifier (a ticket/log correlation id) rather than a trace id.
  */
 export class CorrelationQueryMessageHandler implements IMessageHandler<CorrelationQuery, CorrelationView> {
@@ -199,7 +200,7 @@ export class CorrelationQueryMessageHandler implements IMessageHandler<Correlati
 
 /**
  * The nine handlers to wire (the ingest quartet - register/heartbeat/traces/issues - + the five
- * `mesh:query:*` reads). The C# `[Message]` attribute has no TS equivalent, so a host binds each to its
+ * `benzene:mesh:query:*` reads). The C# `[Message]` attribute has no TS equivalent, so a host binds each to its
  * {@link MeshCollectorTopics} topic during registration.
  */
 export const MeshCollectorHandlers = {
@@ -216,7 +217,7 @@ export const MeshCollectorHandlers = {
   ],
 
   /**
-   * The read-side `mesh:query:*` handlers only - no ingest (`register`/`heartbeat`/`traces`). Register these
+   * The read-side `benzene:mesh:query:*` handlers only - no ingest (`register`/`heartbeat`/`traces`). Register these
    * when the fleet read model is composed from an external backend (a `Benzene.Mesh.Fleet.*` adapter) rather
    * than the in-memory push collector: there is no ring to ingest into, only an {@link IMeshFleetReadModel}
    * to query. These depend solely on {@link IMeshFleetReadModel}, not {@link MeshCollectorStore}.

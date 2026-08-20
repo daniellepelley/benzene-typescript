@@ -207,7 +207,7 @@ useKafka(
 );
 ```
 
-The check registers on the **dependency** category (the deep `healthcheck` layer only — never a
+The check registers on the **dependency** category (the deep `benzene:healthcheck` layer only — never a
 Kubernetes liveness probe), deduped by the bootstrap servers. It is a **no-op unless an admin factory
 is supplied**; a sixth `healthCheck` argument (default `true`) lets you opt out even when a factory is
 given. An authorization failure is reported as a persistent failure, since a bad credential or ACL

@@ -15,7 +15,7 @@ import {
 /**
  * Ports Benzene.Test.Azure.ServiceBusWorker.ServiceBusAutoWireHealthCheckTest: the consumer-side
  * `addServiceBusDependencyHealthCheck` (called by `useServiceBus(..., healthCheck = true)`) auto-registers
- * the peek-based reachability check on the DEPENDENCY category (deep `healthcheck` layer only), deduped by
+ * the peek-based reachability check on the DEPENDENCY category (deep `benzene:healthcheck` layer only), deduped by
  * the consumed entity. The client is never executed here — just registered — so a bare stub factory is
  * fine.
  */

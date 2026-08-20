@@ -59,7 +59,7 @@ export class MeshIssue {
 }
 
 /**
- * The body of a `mesh:issues` message (spec §4.1): one emitter flush. The batch-level {@link service} is
+ * The body of a `benzene:mesh:issues` message (spec §4.1): one emitter flush. The batch-level {@link service} is
  * REQUIRED even though each issue carries its own - an EMPTY batch is the feed's liveness assertion ("feed
  * alive, nothing failing") and must be attributable.
  */

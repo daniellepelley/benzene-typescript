@@ -1,7 +1,7 @@
 /**
  * The mesh Lambda, mirroring the .NET AwsMesh `Mesh/` project: on each run it **discovers** the
  * benzene-tagged service Lambdas, **interrogates** each by a synchronous Lambda invoke on the reserved
- * `spec`/`healthcheck` topics, and **aggregates** the answers into the catalog artifacts (`manifest.json`,
+ * `benzene:spec`/`benzene:healthcheck` topics, and **aggregates** the answers into the catalog artifacts (`manifest.json`,
  * `services/*.json`, `topics.json`, `topology.json`, …) written to an artifact store.
  *
  * Here the store is a `FileSystemMeshArtifactStore` (the .NET example writes to S3 via
@@ -39,7 +39,7 @@ export async function runMeshAggregation(
   const runner = new MeshDiscoveryRunner([discovery]);
   const registry = await runner.discoverAsync(new MeshDiscoveryFilter());
 
-  // 2. Interrogate each discovered Lambda by synchronous invoke (spec/healthcheck) and aggregate the catalog.
+  // 2. Interrogate each discovered Lambda by synchronous invoke (benzene:spec/benzene:healthcheck) and aggregate the catalog.
   const store = new FileSystemMeshArtifactStore(rootDirectory);
   const source = new LambdaMeshServiceSource(() => inMemoryLambdaClient(services));
   const aggregator = new MeshAggregator([source], store);

@@ -41,7 +41,7 @@ provider's contract has moved.
 
 `addSchemaHealthCheck` (`@benzenejs/health-checks-schema`) registers a check that hashes every registered
 handler's topic + request/response schema and publishes it under the `schema` health check. Register it on
-the general `healthcheck` topic via `useHealthCheck`:
+the general `benzene:healthcheck` topic via `useHealthCheck`:
 
 ```bash
 npm install @benzenejs/health-checks @benzenejs/health-checks-schema
@@ -68,7 +68,7 @@ export class OrderServiceStartUp implements BenzeneStartUp {
     useAwsLambda(app, (aws) =>
       useApiGateway(aws, (api) => {
         useMessageHandlers(api, CreateOrderHandler);
-        useHealthCheck(api, 'healthcheck', (health) => {
+        useHealthCheck(api, 'benzene:healthcheck', (health) => {
           addSchemaHealthCheck(health); // publishes the live contract hash under "schema"
         });
       }),
@@ -114,7 +114,7 @@ export class OrderServiceClient implements IHasHealthCheck {
 
   async healthCheckAsync(): Promise<IBenzeneResultOf<HealthCheckResponse>> {
     // Call the provider's healthcheck topic (over whatever transport the client is bound to).
-    const result = await this.sender.sendAsync<unknown, HealthCheckResponse>('healthcheck', {});
+    const result = await this.sender.sendAsync<unknown, HealthCheckResponse>('benzene:healthcheck', {});
     if (!result.isSuccessful || result.payload === undefined) {
       return result;
     }
@@ -225,7 +225,7 @@ To browse that contract interactively while developing, mount the Spec UI with `
 
 `ClientHealthCheckProcessor` can only compare when the provider actually publishes a `schema` health check —
 confirm the provider registered `addSchemaHealthCheck` and that the consumer is reading the same
-`healthcheck` response. If the provider has no `schema` check, there is no hash to compare and the check
+`benzene:healthcheck` response. If the provider has no `schema` check, there is no hash to compare and the check
 stays `ok` (it never invents drift).
 
 ### The probe reports lots of `inconclusive` ids

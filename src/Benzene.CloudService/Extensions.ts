@@ -42,7 +42,7 @@ import { MeshAnnouncer } from './MeshAnnouncer';
  * - the wire-envelope endpoint at `/benzene/invoke` (R4)
  * - the derived spec at `/benzene/spec` (R5)
  * - health checks on the reserved topic and at `/benzene/health` (R3)
- * - the reserved `mesh` descriptor topic, trace feed, registration, and heartbeats (R6, R8)
+ * - the reserved `benzene:mesh` descriptor topic, trace feed, registration, and heartbeats (R6, R8)
  * - message handlers via the registry, routed on both the HTTP and envelope pipelines (R1, R2)
  *
  * This is syntactic sugar over the same pipeline builders Benzene Core setup uses — nothing here is a new
@@ -187,7 +187,7 @@ function useHandlers<TContext>(
 }
 
 /**
- * Reserved `mesh` topic interception (mesh.md §1), like `useMeshDescriptor` but against the shared
+ * Reserved `benzene:mesh` topic interception (mesh.md §1), like `useMeshDescriptor` but against the shared
  * descriptor source so the lazy path can derive the descriptor from the invocation's registry on first use.
  * C# `TerminalFuncWrapperMiddleware` → `useFn` (the port's short-circuit idiom).
  */

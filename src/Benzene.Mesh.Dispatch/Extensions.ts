@@ -14,10 +14,10 @@ import { MeshDispatchOptions } from './MeshDispatchOptions';
 import { MeshDispatchRequest } from './MeshDispatchRequest';
 
 /** The reserved-style topic the dispatch handler is served on. */
-export const DispatchTopic = 'mesh:dispatch';
+export const DispatchTopic = 'benzene:mesh:dispatch';
 
 /**
- * Registers the opt-in `mesh:dispatch` handler, which invokes ONE registered service's real handler with a
+ * Registers the opt-in `benzene:mesh:dispatch` handler, which invokes ONE registered service's real handler with a
  * caller-supplied payload. Opt-in by construction AND gated at runtime (refused in Production unless
  * `MeshDispatchOptions.allowInProduction` is set). C# extension method -> free function taking the builder.
  *

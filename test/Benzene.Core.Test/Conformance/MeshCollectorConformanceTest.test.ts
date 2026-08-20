@@ -11,7 +11,7 @@
  * already the proven "bind `MeshCollectorHandlers` with no `@message` decorators" wiring), asserted
  * like an envelope case (statusCode exact, body parsed-JSON subset). This is this port's collector
  * conformance runner - `Benzene.Mesh.Collector` was investigated and found to be a full collector
- * implementation (ingest, declared graph, heartbeat health, issues feed, five `mesh:query:*` read
+ * implementation (ingest, declared graph, heartbeat health, issues feed, five `benzene:mesh:query:*` read
  * models) with no existing conformance runner, so this vendors the fixture and adds one.
  *
  * Both fixtures share one step/assertion model, so both run through the same driver here - the same
@@ -69,19 +69,15 @@ function newCollector() {
 }
 
 /**
- * The canonical fixture's reserved topic ids carry the spec's `benzene:` namespace prefix
- * (`benzene:mesh:register`, `benzene:mesh:query:fleet`, ..., mesh.md §§1/4). This port's own reserved
- * topic constants (`@benzenejs/mesh-wire`'s `MeshTopics`, `@benzenejs/mesh-collector`'s
- * `MeshCollectorTopics`) - and every existing test/example that addresses them - use the same ids
- * WITHOUT that prefix (`mesh:register`, `mesh:query:fleet`, ...; see e.g. `MeshWireExtensionsTest`'s
- * use of `MeshTopics.descriptor` for the bare `mesh` topic). That is a pre-existing, whole-port naming
- * divergence predating this fixture - out of scope for this collector-conformance addition to fix - so
- * this strips the prefix before dispatch, exactly the adaptation this port's transport bindings would
- * need to make for real cross-language interop.
+ * The fixture's reserved topic ids are dispatched verbatim - this port binds the same `benzene:`-prefixed
+ * ids the spec declares (mesh.md §§1/4, `BenzeneTopic`/`MeshTopics`/`MeshCollectorTopics`), so no
+ * adaptation is needed or wanted here. An earlier revision of this test stripped the prefix before
+ * dispatch, which kept the suite green while the port was in fact unreachable from any other language's
+ * mesh participant; the strip is gone and the port carries the prefix instead.
  */
 function toRequest(step: CollectorStep): BenzeneMessageRequest {
   const request = new BenzeneMessageRequest();
-  request.topic = step.request.topic.startsWith('benzene:') ? step.request.topic.slice('benzene:'.length) : step.request.topic;
+  request.topic = step.request.topic;
   request.headers = step.request.headers;
   request.body = step.request.body;
   return request;

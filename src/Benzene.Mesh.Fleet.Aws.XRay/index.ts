@@ -1,7 +1,7 @@
 /**
  * Port of Benzene.Mesh.Fleet.Aws.XRay - the AWS realisation of the trace-backed fleet reader (alongside
- * `@benzenejs/mesh-fleet-tempo` and `@benzenejs/mesh-fleet-jaeger`): it answers the mesh's `mesh:query:trace`,
- * `mesh:query:correlation`, and the fleet view's recent-flows from **AWS X-Ray**, reusing the same
+ * `@benzenejs/mesh-fleet-tempo` and `@benzenejs/mesh-fleet-jaeger`): it answers the mesh's `benzene:mesh:query:trace`,
+ * `benzene:mesh:query:correlation`, and the fleet view's recent-flows from **AWS X-Ray**, reusing the same
  * `CompositeMeshFleetReadModel`, query handlers, and mesh UI - a backend on the `IMeshTraceSource` seam with
  * zero upstream change.
  *

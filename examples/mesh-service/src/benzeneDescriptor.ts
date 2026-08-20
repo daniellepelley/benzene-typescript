@@ -1,6 +1,6 @@
 /**
  * Builds this service's normative mesh **ServiceDescriptor** (docs/specification/mesh.md §2) - the
- * cross-language self-description a collector reads over the reserved `mesh` topic. Unlike the
+ * cross-language self-description a collector reads over the reserved `benzene:mesh` topic. Unlike the
  * `/benzene/spec` HTTP descriptor (which an aggregator *polls*), the ServiceDescriptor is the shape a
  * .NET, Go, or TypeScript service emits identically, carries a per-port `descriptorHash` (§2.2), and
  * is derived here from the same running `registry` (what it **provides**, `topics`) plus an explicit

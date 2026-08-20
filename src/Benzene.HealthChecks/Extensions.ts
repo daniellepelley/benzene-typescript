@@ -65,7 +65,7 @@ export function useHealthCheck<TContext>(
 }
 
 /**
- * Health-check middleware as a {@link Capability}: `builder.use(healthCheck('healthcheck', checks))`
+ * Health-check middleware as a {@link Capability}: `builder.use(healthCheck(BenzeneTopic.healthCheck, checks))`
  * (the .NET `UseHealthCheck(topic, checks)` shape).
  */
 export function healthCheck<TContext>(topic: string, config: HealthCheckConfig): Capability<TContext> {

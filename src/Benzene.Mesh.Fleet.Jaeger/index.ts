@@ -1,7 +1,7 @@
 /**
  * Port of Benzene.Mesh.Fleet.Jaeger - a second non-AWS reference realisation of the trace-backed fleet
- * reader (alongside `@benzenejs/mesh-tracing-tempo`): it answers the mesh's `mesh:query:trace`,
- * `mesh:query:correlation`, and the fleet view's recent-flows from a **Jaeger query service**, reusing the
+ * reader (alongside `@benzenejs/mesh-tracing-tempo`): it answers the mesh's `benzene:mesh:query:trace`,
+ * `benzene:mesh:query:correlation`, and the fleet view's recent-flows from a **Jaeger query service**, reusing the
  * same `CompositeMeshFleetReadModel`, query handlers, and mesh UI as the X-Ray/Tempo adapters - a third
  * backend on the `IMeshTraceSource` seam with zero upstream change.
  *

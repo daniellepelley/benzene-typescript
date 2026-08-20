@@ -3,7 +3,7 @@
  * counterpart of docs/specification/cloud-service-profile.md). One call, `useBenzeneCloudService("name", …)`,
  * on a hosted HTTP pipeline wires every operational surface the profile requires (R1–R8) at the default
  * service standard paths: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` +
- * reserved `healthcheck` topic, the reserved `mesh` descriptor topic, the trace feed, and collector
+ * reserved `benzene:healthcheck` topic, the reserved `benzene:mesh` descriptor topic, the trace feed, and collector
  * registration + heartbeats. Syntactic sugar over the same pipeline builders Benzene Core setup uses.
  *
  * Key TypeScript-port divergences (see the individual files): the outbound `MeshAnnouncer` posts the wire

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { IBenzeneResultOf, IBenzeneServiceContainer, IServiceResolver, serviceToken } from '@benzenejs/abstractions';
+import { BenzeneTopic, IBenzeneResultOf, IBenzeneServiceContainer, IServiceResolver, serviceToken } from '@benzenejs/abstractions';
 import { IMessageHandler, IMessageHandlerContext } from '@benzenejs/abstractions-message-handlers';
 import { IBenzeneApplicationBuilder, IMiddleware } from '@benzenejs/abstractions-middleware';
 import { BenzeneResult } from '@benzenejs/results';
@@ -65,7 +65,7 @@ class OrdersStartUp implements BenzeneStartUp {
   configure(app: IBenzeneApplicationBuilder): void {
     useAwsLambda(app, (aws) =>
       useBenzeneMessage(aws, (bm) => {
-        bm.use(healthCheck('healthcheck', [new SelfCheck()]));
+        bm.use(healthCheck(BenzeneTopic.healthCheck, [new SelfCheck()]));
         useMessageHandlers(bm, CreateOrderMessageHandler);
       }),
     );
@@ -109,7 +109,7 @@ describe('Unified DX (test-host unification)', () => {
     expect(order.reference).toBe('ref-7');
 
     // The `bm.use(healthCheck(...))` capability answers the reserved healthcheck topic.
-    const health = await host.sendBenzeneMessageAsync<{ isHealthy: boolean }>('healthcheck');
+    const health = await host.sendBenzeneMessageAsync<{ isHealthy: boolean }>(BenzeneTopic.healthCheck);
     expect(health.isHealthy).toBe(true);
   });
 

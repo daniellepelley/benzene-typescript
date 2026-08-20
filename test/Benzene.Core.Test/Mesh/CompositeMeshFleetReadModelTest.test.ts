@@ -126,7 +126,7 @@ describe('CompositeMeshFleetReadModel', () => {
     expect(orders.length).toBe(1);
     expect(orders[0].health).toBe(MeshHealth.unknown);
     // Known only from traffic: no descriptor, no health feed, no per-service counts, and (the composite
-    // plane has no mesh:issues ingest at all) no issue feed.
+    // plane has no benzene:mesh:issues ingest at all) no issue feed.
     expect(orders[0].missingFeeds).toContain('descriptor');
     expect(orders[0].missingFeeds).toContain('health');
     expect(orders[0].missingFeeds).toContain('stats');

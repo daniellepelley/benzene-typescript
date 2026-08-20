@@ -20,7 +20,7 @@ export class TempoTraceSourceOptions {
   readonly tempoUrl: string;
 
   /**
-   * How far back a `mesh:query:correlation` search scans Tempo (ms). Default 24 hours - a business
+   * How far back a `benzene:mesh:query:correlation` search scans Tempo (ms). Default 24 hours - a business
    * correlation id (a ticket/log id) is typically chased soon after the event.
    */
   correlationLookbackMs = DefaultCorrelationLookbackMs;
