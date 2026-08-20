@@ -33,9 +33,9 @@ Kubernetes' guidance is specific about what belongs in each, and Benzene doesn't
 > When in doubt, use the deep `healthcheck` layer instead (below).
 
 For a dependency you *have* reasoned is safe to gate on, register it explicitly under readiness — e.g.
-`@benzenejs/health-checks-http`'s [`addHttpPing`](health-checks.md#httppinghealthcheck--addhttpping-benzenehealth-checks-http),
+`@benzenejs/health-checks-http`'s [`addHttpPing`](health-checks.md#httppinghealthcheck--addhttpping-benzenejshealth-checks-http),
 `@benzenejs/health-checks-tcp`'s
-[`addTcpPing`](health-checks.md#tcphealthcheck--addtcpping-benzenehealth-checks-tcp), or your own
+[`addTcpPing`](health-checks.md#tcphealthcheck--addtcpping-benzenejshealth-checks-tcp), or your own
 check via `useReadinessCheck(...)`.
 
 ### The deep `healthcheck` layer, not a probe

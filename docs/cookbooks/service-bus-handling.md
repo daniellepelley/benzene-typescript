@@ -36,7 +36,7 @@ and `src/Benzene.Azure.ServiceBus/`.
   [Azure Functions Setup](../azure-functions.md), steps 1–7 (the `StartUp` composition root, `host.json`,
   `local.settings.json`).
 - For the worker: a host process you own (a container, an AKS pod, a plain Node process) — see
-  [Unified Hosting Model](../hosting.md#self-hosted-worker--inlineselfhostedstartup).
+  [Unified Hosting Model](../hosting.md#self-hosted-worker--benzenehost).
 - A Service Bus namespace with a queue (or topic/subscription), and a connection string.
 - Familiarity with `@message`/handler registration — see [Message Handlers](../message-handlers.md).
 

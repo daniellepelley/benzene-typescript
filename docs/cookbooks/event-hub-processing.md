@@ -36,7 +36,7 @@ This cookbook works through both, citing the actual source in `src/Benzene.Azure
 - [Node.js 22+](https://nodejs.org/) and npm.
 - For the Functions trigger: an Azure Functions v4 project wired up per
   [Azure Functions Setup](../azure-functions.md).
-- For the worker: a host process you own — see [Unified Hosting Model](../hosting.md#self-hosted-worker--inlineselfhostedstartup).
+- For the worker: a host process you own — see [Unified Hosting Model](../hosting.md#self-hosted-worker--benzenehost).
 - An Event Hubs namespace and event hub, with a connection string.
 - Familiarity with the direct-message envelope Benzene uses internally (topic + JSON payload) — see
   [Message Handlers](../message-handlers.md).

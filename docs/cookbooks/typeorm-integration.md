@@ -205,7 +205,7 @@ import {
   connects **and** `targetMigration` is the **last** applied migration (TypeORM migration class name, e.g.
   `Initial1700000000000`). A database that connects fine but is behind on migrations reports unhealthy.
 
-See [Health Checks: TypeORM](../health-checks.md#databaseconnectionhealthcheck--databasehealthcheck-benzenehealth-checks-typeorm).
+See [Health Checks: TypeORM](../health-checks.md#databaseconnectionhealthcheck--databasehealthcheck-benzenejshealth-checks-typeorm).
 
 ## Testing
 

@@ -67,7 +67,7 @@ invokes you, and no separate host is already listening. This is the one mode whe
 > on the self-hosted side, both the platform-neutral worker *scaffolding* (`@benzenejs/self-host`) **and**
 > the ready-made broker/stream consumers — SQS, Service Bus, Event Hub, RabbitMQ, Kafka, and the Cosmos DB
 > change feed — are ported, each added with a `use*` call on the worker startup. See
-> [Self-hosted worker](#self-hosted-worker--inlineselfhostedstartup) below.
+> [Self-hosted worker](#self-hosted-worker--benzenehost) below.
 
 ## The shared handler
 

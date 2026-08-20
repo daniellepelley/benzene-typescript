@@ -471,7 +471,7 @@ in step 6), and each is tested the same way through `@benzenejs/azure-function-t
 The Cosmos DB Change Feed row above is the Azure Functions `CosmosDBTrigger` adapter. For a long-running
 worker that consumes the change feed *outside* Functions — with manual per-batch checkpoint control — use
 the standalone `@benzenejs/azure-cosmos-db` consumer instead; see
-[Self-hosted worker](hosting.md#self-hosted-worker--inlineselfhostedstartup).
+[Self-hosted worker](hosting.md#ready-made-self-hosted-consumers).
 
 See the [README package table](../README.md) for the full list and each package's own README for the
 trigger-specific binding.
