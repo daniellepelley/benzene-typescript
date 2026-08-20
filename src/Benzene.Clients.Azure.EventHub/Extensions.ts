@@ -10,9 +10,9 @@ import { OutboundEventHubContextConverter } from './OutboundEventHubContextConve
  * taking the builder first).
  *
  * PORT SCOPE: like the `@benzenejs/clients-aws-*` / `@benzenejs/clients-azure-service-bus` siblings, this
- * ports the `OutboundContext` send path; the generic `IBenzeneClientContext<T,Void>` overloads, the
- * standalone `EventHubBenzeneMessageClient`, and the native `EventHubBatchMessageClient` are deferred
- * (see the README structure table). The C# `.UseEventHub(action, …)` custom-middleware overload is also
+ * ports the `OutboundContext` send path; the generic `IBenzeneClientContext<T,Void>` overloads and the
+ * standalone `EventHubBenzeneMessageClient` are deferred (see the README structure table), while the
+ * native `EventHubBatchMessageClient` IS ported. The C# `.UseEventHub(action, …)` custom-middleware overload is also
  * omitted (TypeScript can't overload a free function on `producer`-vs-`action`).
  */
 

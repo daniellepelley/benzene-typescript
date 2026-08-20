@@ -33,8 +33,8 @@ published to npm yet; that guide explains how to work from the cloned workspace 
     self-hosted worker
   - [Message Handlers](message-handlers.md) — the components that process a message, and how they're
     discovered and routed
-  - [Message Results](message-result.md) — `IBenzeneResultOf<T>`, the `BenzeneResult` factory, and how
-    statuses map onto each transport
+  - [Message Results](message-result.md) — `IBenzeneResultOf<T>`, the `BenzeneResult` factory, RFC 9457
+    problem documents, and how statuses map onto each transport
   - [Middleware](middleware.md) — the pipeline mechanism every request flows through
   - [Common Middleware](common-middleware.md) — the ready-made middleware Benzene ships
   - [Correlation IDs](correlation-ids.md) — trace a request end-to-end across services

@@ -2,10 +2,10 @@
 import { HealthCheckResult, IHealthCheck, IHealthCheckResult } from '@benzenejs/health-checks-core';
 
 /**
- * Decorates an `IHealthCheck` with a fixed 10-second timeout: if the wrapped check has not completed
- * within that time, `executeAsync` returns a failed result (with an `Error`/`Timed Out` data entry)
- * instead of continuing to wait. The timeout is not currently configurable. Used internally by
- * `HealthCheckProcessor` to wrap every check.
+ * Decorates an `IHealthCheck` with a timeout - 10 seconds by default, or the check's own
+ * `IHealthCheck.timeout` override when it declares one: if the wrapped check has not completed within
+ * that time, `executeAsync` returns a failed result (with an `Error`/`Timed Out` data entry) instead
+ * of continuing to wait. Used internally by `HealthCheckProcessor` to wrap every check.
  *
  * This only stops *waiting* on the inner check - the inner promise is not cancelled and keeps running
  * to completion in the background even after a timeout is reported. C# uses `Task.WhenAny(delay, task)`;

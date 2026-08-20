@@ -19,8 +19,10 @@ import { IAzureFunctionApp } from './IAzureFunctionApp';
  * BOOTSTRAP-SHAPE ADAPTATION: identical to the AWS runner — the .NET generic-host bootstrap runs against
  * `Microsoft.Extensions.DependencyInjection`; Node has no MEL, so this uses the first-party
  * `DefaultBenzeneServiceContainer`, which is BOTH the registration target and the source of the resolver
- * factory. The `.WarmUp()` / `.RunStartUpChecks()` post-build steps the .NET host runs are not ported yet;
- * they are additive and can be inserted here in one place for both hosts when they land.
+ * factory. The `.RunStartUpChecks()` post-build step the .NET host runs IS ported — `withStartUpChecks(...)`
+ * wraps the factory below, in one place for both the production host and the test host. (`.WarmUp()`
+ * remains unported — that framework service does not exist in the TS port yet; it is additive and can be
+ * inserted here when it lands.)
  */
 export class AzureFunctionStartUpRunner {
   /**

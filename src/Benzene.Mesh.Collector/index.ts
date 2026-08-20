@@ -10,8 +10,12 @@
  * five query handlers depend on. `CollectorUsageSource` bridges the store's cumulative stats into the
  * aggregator's `usage.json`. `MeshTimeRangeResolver` resolves the optional Grafana/ISO query time range.
  *
- * Not ported from the .NET original (missing `@benzenejs/mesh-contracts` prerequisite in this snapshot):
- * threading a `MeshUsageWindow` to the usage sources. See each file header for the exact boundary.
+ * Not ported from the .NET original: threading a `MeshUsageWindow` to the usage sources. The
+ * `@benzenejs/mesh-contracts` package itself is here; the type is not - `MeshUsageWindow` is one of the
+ * five mesh-contracts types this port has yet to define (with `MeshServiceVersion`,
+ * `MeshCompatibilityVerdict`, `MeshSchemaChange`, and `MeshTopicCompatibility`), and
+ * `IMeshUsageSource.fetchUsageAsync` correspondingly takes no window parameter. See each file header for
+ * the exact boundary.
  */
 export * from './Views';
 export * from './MeshTimeRangeResolver';

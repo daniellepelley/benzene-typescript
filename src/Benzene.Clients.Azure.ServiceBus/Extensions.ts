@@ -10,9 +10,9 @@ import { ServiceBusSendMessageContext } from './ServiceBusSendMessageContext';
  * taking the builder first).
  *
  * PORT SCOPE: like the AWS `@benzenejs/clients-aws-*` siblings, this ports the `OutboundContext` send
- * path; the generic `IBenzeneClientContext<T,Void>` overloads, the standalone
- * `ServiceBusBenzeneMessageClient`, and the native `ServiceBusBatchMessageClient` are deferred (see the
- * README structure table). The C# `.UseServiceBus(action, …)` (custom-middleware) overload is also
+ * path; the generic `IBenzeneClientContext<T,Void>` overloads and the standalone
+ * `ServiceBusBenzeneMessageClient` are deferred (see the README structure table), while the native
+ * `ServiceBusBatchMessageClient` IS ported. The C# `.UseServiceBus(action, …)` (custom-middleware) overload is also
  * omitted for now — TypeScript can't overload a free function on `sender`-vs-`action`, and the AWS
  * sibling settled on the sender form; compose a custom pipeline via `useServiceBusClient` if needed.
  */

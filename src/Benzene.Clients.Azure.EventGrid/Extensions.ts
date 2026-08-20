@@ -11,9 +11,9 @@ import { OutboundEventGridEventSchemaContextConverter } from './OutboundEventGri
  * taking the builder first).
  *
  * PORT SCOPE: like the `@benzenejs/clients-*` siblings, this ports the `OutboundContext` send path; the
- * generic `IBenzeneClientContext<T,Void>` overloads, the standalone `EventGridBenzeneMessageClient`, and
- * the native `EventGridBatchMessageClient` are deferred (see the README structure table). Two converters
- * are exposed, matching .NET: CloudEvents (`useEventGrid`, the preferred schema) and the classic Event
+ * generic `IBenzeneClientContext<T,Void>` overloads and the standalone `EventGridBenzeneMessageClient`
+ * are deferred (see the README structure table); the native `EventGridBatchMessageClient` IS ported.
+ * Two converters are exposed, matching .NET: CloudEvents (`useEventGrid`, the preferred schema) and the classic Event
  * Grid schema (`useEventGridEventSchema`). The publisher client must be configured for the matching
  * schema (`@azure/eventgrid` types the client by schema at construction) — the same responsibility the
  * .NET caller has.

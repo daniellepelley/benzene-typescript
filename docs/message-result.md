@@ -134,6 +134,51 @@ the constants here are the TypeScript surface of it. The `isTransient` helper is
 deciding whether a failure is worth retrying (a `503`/`429`/timeout) versus a permanent business
 failure (a `404`/`422`).
 
+## RFC 9457 problem documents
+
+Every failed result leaves the service as an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem
+document, on every transport. Three pieces in `@benzenejs/results` make up the surface:
+
+**`ProblemDetails`** — the document itself: `type`, `title`, `status`, `detail`, `instance`,
+`benzeneStatus`, `errors`. Unset members are omitted from the wire rather than serialized as `null`.
+Two of them repay a close read:
+
+- `benzeneStatus` is the transport-neutral discriminator — the Benzene status string, present on every
+  transport, mirroring the envelope's `statusCode`.
+- `status` is the **integer HTTP** status, and only ever appears where a real HTTP response exists. It
+  is filled in by `useHttpProblemDetailsStatus` (`@benzenejs/http`), which every HTTP binding registers,
+  from the same `IHttpStatusCodeMapper` instance that writes the response status line — so the body and
+  the status line cannot disagree. An envelope over a queue carries no `status` at all, because there is
+  no HTTP response for it to agree with.
+
+**`ProblemTypes`** — the problem-type registry, keyed by the existing status vocabulary rather than a
+new taxonomy: `ProblemTypes.typeFor(status)` / `titleFor(status)` / `httpStatusFor(status)`, plus a
+constant per framework status (`ProblemTypes.notFound`, ...). An application-defined status has no
+registry row: `typeFor` returns `undefined` (the framework never invents a URI under `benzene.app` on
+your behalf) and `httpStatusFor` falls to `500`. `ProblemTypes.from(result)` builds the document the
+response mapper emits.
+
+**`BenzeneResult.problem(document)`** — for a handler that wants to fail with a *richer* document than
+the status-derived one: an application-owned `type`, an `instance`, or extension members of your own.
+The document's `benzeneStatus` is required (it is what classifies the failure downstream) and the
+result is always unsuccessful. The authored document is emitted verbatim, so your `type` survives
+instead of being overwritten by the registry URI:
+
+```ts
+import { BenzeneResult, BenzeneResultStatus, ProblemDetails } from '@benzenejs/results';
+
+const problem = new ProblemDetails();
+problem.type = 'https://orders.example.com/problems/credit-limit-exceeded';
+problem.title = 'Credit limit exceeded';
+problem.detail = 'Order total 1200.00 exceeds the remaining limit of 300.00.';
+problem.benzeneStatus = BenzeneResultStatus.conflict;   // required
+
+return BenzeneResult.problem<OrderDto>(problem);        // HTTP 409 + application/problem+json
+```
+
+`detail` is the compatibility member: every reader of the pre-RFC-9457 `ErrorPayload` shape used only
+that one, and keeps working unchanged.
+
 ## Transport mapping
 
 <a id="transport-mapping"></a>
@@ -170,10 +215,12 @@ response renderer (see [Message Handlers](message-handlers.md#response-handling)
 `payload`; on failure, `DefaultResponsePayloadMapper<TContext>` serializes an
 [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem document instead — `{ type, title,
 benzeneStatus, detail, errors }`, where `detail` is the result's `errors` joined with `", "` and `errors`
-carries them individually. (The Benzene status travels as `benzeneStatus`: RFC 9457 defines `status` as
-the integer HTTP code, which is added only on HTTP transports.) So a
-`BenzeneResult.notFound<OrderDto>('Order 123 not found')` becomes an HTTP `404` with a JSON body
-describing the error, not the (empty) `OrderDto` payload.
+carries them individually. The Benzene status travels as `benzeneStatus`, because RFC 9457 defines
+`status` as the integer HTTP code — and that member **is** filled in here, by
+`useHttpProblemDetailsStatus` (see [problem documents](#rfc-9457-problem-documents) below). A
+JSON-negotiated failure is served as `application/problem+json` (XML: `application/problem+xml`). So a
+`BenzeneResult.notFound<OrderDto>('Order 123 not found')` becomes an HTTP `404`, `content-type:
+application/problem+json`, and a body whose `status` is `404` too — not the (empty) `OrderDto` payload.
 
 ### Async/event transports — settlement (ack/nack/retry)
 
