@@ -4,23 +4,19 @@ Benzene lets you write one message handler and run it, unchanged, on Express, AW
 Functions, Google Cloud Functions, or a self-hosted worker process. Only the small piece of code that wires a transport to
 your handler changes between hosts — the handler itself never moves.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
-> The .NET original centres this model on a single `BenzeneStartUp` class run through per-platform
-> **production host adapters**. **Those `*Host<TStartUp>` production hosts ARE now ported for the three
-> serverless clouds** — `AwsLambdaHost<TStartUp>` (`@benzenejs/aws-lambda-core`),
-> `AzureFunctionHost<TStartUp>` (`@benzenejs/azure-function-core`), and `GoogleCloudFunctionHost<TStartUp>` /
-> `GooglePubSubFunctionHost<TStartUp>` (`@benzenejs/google-cloud-functions-*`). You write one `StartUp`
-> implementing the canonical `BenzeneStartUp` contract (from `@benzenejs/abstractions-middleware`) and boot
-> it with a **one-liner** — `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
-> `new AzureFunctionHost(StartUp).httpFunction`, `new GoogleCloudFunctionHost(StartUp).httpFunction` — the
-> SAME composition root a component test boots (`benzeneTestHost(StartUp)`), so what you test is what
-> deploys. This is the **recommended entry** for all three clouds.
+> **TypeScript port.** Like the .NET original, the recommended entry on each serverless cloud is one
+> `StartUp` class (the `BenzeneStartUp` contract from `@benzenejs/abstractions-middleware`) booted by a
+> per-platform production host in a one-liner:
 >
-> The terse fluent **inline builders** (`InlineAwsLambdaStartUp`, `InlineAzureFunctionStartUp`,
-> `InlineSelfHostedStartUp`) remain for inline tests and small standalone hosts — the advanced/terse
-> alternative, built over the same platform-neutral `IBenzeneApplicationBuilder` model described below.
-> Express is a middleware factory (`benzene(...)`); the self-hosted worker keeps its inline builder (no
-> `*Host` production adapter — it owns its own process lifecycle). Where a shape differs, the README's
+> - AWS — `export const handler = new AwsLambdaHost(StartUp).lambdaHandler` (`@benzenejs/aws-lambda-core`)
+> - Azure — `new AzureFunctionHost(StartUp).httpFunction` (`@benzenejs/azure-function-core`)
+> - Google — `new GoogleCloudFunctionHost(StartUp).httpFunction` / `new GooglePubSubFunctionHost(StartUp).cloudEventFunction` (`@benzenejs/google-cloud-functions-*`)
+>
+> A component test boots the same `StartUp` via `benzeneTestHost(StartUp)`, so what you test is what
+> deploys. Two hosts differ deliberately: Express is a middleware factory (`benzene(...)`), and the
+> self-hosted worker owns its own process lifecycle (`BenzeneHost`). The terse fluent inline builders
+> (`InlineAwsLambdaStartUp`, `InlineAzureFunctionStartUp`, `InlineSelfHostedStartUp`) remain for inline
+> tests and small standalone hosts. Where a shape differs from .NET, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why.
 
 ## The through-line: one handler, many hosts

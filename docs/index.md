@@ -6,11 +6,15 @@ message-based architectures. This is the **TypeScript port** of
 [Benzene](https://github.com/daniellepelley/benzene) — you write a message handler once and host it
 unchanged on Express, AWS Lambda, or Azure Functions.
 
-> **Documentation in progress.** This is the growing TypeScript documentation set, ported from the .NET
-> docs. The guides below and the full [cookbook collection](cookbooks/README.md) are complete; a few areas
+**New to Benzene?** Start with [Getting Started](getting-started.md) — a small HTTP service running
+locally in about five minutes, no cloud account needed. Note that the `@benzenejs/*` packages aren't
+published to npm yet; that guide explains how to work from the cloned workspace in the meantime.
+
+> **Documentation in progress.** This TypeScript documentation set is being ported from the .NET docs.
+> The guides below and the full [cookbook collection](cookbooks/README.md) are complete; a few areas
 > (the service mesh UI and usage feed) are still being ported — for the mesh today, the
 > [`mesh-service`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples/mesh-service) example
-> is runnable. For the complete API surface today, see the
+> is runnable. For the complete API surface, see the
 > [repository README](https://github.com/daniellepelley/benzene-typescript#readme), and for runnable
 > projects covering every transport, the
 > [`examples/`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples) folder.
@@ -93,7 +97,13 @@ FluentValidation/DataAnnotations — the reasons are recorded in the README's
 here uses the real, current TypeScript API; when in doubt, the `src/` in the repository is the source of
 truth.
 
+The language-neutral parts of Benzene — the core concepts, wire contracts, status vocabulary, mesh
+shapes, and the Cloud Service Profile — are defined once, for every language, in the cross-language
+[Benzene specification](https://github.com/daniellepelley/Benzene/tree/main/docs/specification). The
+docs here cover the TypeScript surface of those contracts and link to the spec for the normative detail.
+
 ### Maintaining
 
-- **[Publishing](publishing.md)** — how the 129 packages are released to npm under the `@benzenejs`
-  scope (trusted publishing, beta dist-tag).
+- **[Publishing](publishing.md)** — how the packages are released to npm under the `@benzenejs` scope
+  (trusted publishing, beta dist-tag). Benzene ships as many small packages — one per capability, so a
+  service depends only on the transports and integrations it actually uses.

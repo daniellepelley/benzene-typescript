@@ -19,6 +19,11 @@ unchanged on Azure Functions; only the entry point differs, and that's what this
 > [`examples/azure-functions`](../examples/azure-functions) uses. (The .NET isolated-worker `IHostBuilder`
 > registration — `UseBenzene<TStartUp>` — has no direct port; `AzureFunctionHost` fills that role.)
 
+## What you'll build
+
+A Function App that answers `POST /orders` over an HTTP trigger, then Service Bus and Event Hub
+consumers of the same order domain — all from one set of transport-agnostic handlers.
+
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and npm
@@ -55,6 +60,10 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 shape the `@azure/functions` v4 model expects.
 
 ## 2. Install the packages
+
+> The `@benzenejs/*` packages aren't published to npm yet — see the
+> [pre-release note](getting-started.md) for how to work from the cloned workspace or `file:`
+> dependencies in the meantime.
 
 ```bash
 npm install @benzenejs/azure-function-core @benzenejs/azure-function-http \

@@ -9,18 +9,15 @@ If you're brand new to Benzene, read [Getting Started](getting-started.md) first
 kind of service locally on Express in about five minutes. The message handler you write there runs
 unchanged on Cloud Functions; only the entry point differs, and that's what this guide covers.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
-> It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
-> [Porting conventions](../README.md#porting-conventions) explain why. Two adaptations matter here. First,
-> the .NET **production host** `GoogleCloudFunctionHost<TStartUp>` (and its Pub/Sub sibling) **is ported**, and
-> it now boots the SAME canonical `BenzeneStartUp` (from `@benzenejs/abstractions-middleware`) that
-> `AwsLambdaHost` / `AzureFunctionHost` boot — you write one `StartUp` and select Google inside `configure`
-> with `useGoogleCloud(app, g => …)`, exactly where AWS writes `useAwsLambda` and Azure writes
-> `useAzureFunctions`. (The legacy per-cloud `GoogleCloudFunctionStartUp` / `GooglePubSubFunctionStartUp`
-> contracts still work and are accepted by the hosts, but are deprecated in favour of the unified shape.)
-> Second, the .NET host *is* the Functions Framework entry point; Node's Functions Framework invokes a
-> **registered named handler**, so the TS host instead **exposes** a bound closure (`host.httpFunction` /
-> `host.cloudEventFunction`) you register with the framework.
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene);
+> where its shape differs from .NET, the README's [Porting conventions](../README.md#porting-conventions)
+> explain why. The pattern here matches the other clouds: write one `StartUp` (the same `BenzeneStartUp`
+> contract `AwsLambdaHost` / `AzureFunctionHost` boot) and select Google inside `configure` with
+> `useGoogleCloud(app, g => …)`. One Node-specific adaptation: .NET's host *is* the Functions Framework
+> entry point, but Node's Functions Framework invokes a registered named handler — so the TS host instead
+> exposes a bound closure (`host.httpFunction` / `host.cloudEventFunction`) that you register with the
+> framework. (The legacy `GoogleCloudFunctionStartUp` / `GooglePubSubFunctionStartUp` contracts still
+> work but are deprecated in favour of the unified shape.)
 
 ## What you'll build
 
@@ -62,6 +59,10 @@ npm pkg set type=module
 Setting `type=module` makes this an ES-module project, which Benzene's packages require.
 
 ## 2. Install the packages
+
+> The `@benzenejs/*` packages aren't published to npm yet — see the
+> [pre-release note](getting-started.md) for how to work from the cloned workspace or `file:`
+> dependencies in the meantime.
 
 ```bash
 npm install @benzenejs/google-cloud-functions-core @benzenejs/google-cloud-functions-http \

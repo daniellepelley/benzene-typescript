@@ -9,15 +9,19 @@ If you're brand new to Benzene, read [Getting Started](getting-started.md) first
 kind of service locally on Express in about five minutes. The message handler you write there runs
 unchanged on Lambda; only the entry point differs, and that's what this guide covers.
 
-> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
-> It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
-> [Porting conventions](../README.md#porting-conventions) explain why. The .NET **production host adapter**
-> `AwsLambdaHost<TStartUp>` (running a canonical `BenzeneStartUp`) **is ported** — you write one `StartUp`
-> class and boot it with the one-liner `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`,
-> the same composition root the `benzeneTestHost(...)` test harness boots (see
-> [Testing Benzene](testing-benzene.md)), so what you test is what deploys. The terse fluent
-> `InlineAwsLambdaStartUp` builder remains as an advanced/terse alternative for inline tests and small
-> standalone hosts.
+> **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene);
+> where its shape differs from .NET, the README's [Porting conventions](../README.md#porting-conventions)
+> explain why. The pattern you'll use here matches .NET's: write one `StartUp` class and boot it with
+> `export const handler = new AwsLambdaHost(StartUp).lambdaHandler`. The same `StartUp` is what the
+> `benzeneTestHost(...)` harness boots in your tests (see [Testing Benzene](testing-benzene.md)), so what
+> you test is what deploys. (A terse fluent alternative, `InlineAwsLambdaStartUp`, remains for inline
+> tests and small standalone hosts.)
+
+## What you'll build
+
+A Lambda function that answers `POST /orders` through API Gateway, then a second, SQS-triggered
+consumer of the same order domain — both from one set of transport-agnostic handlers, tested in-memory
+before anything is deployed.
 
 ## Prerequisites
 
@@ -55,6 +59,10 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 shape you want for a modern Lambda bundle.
 
 ## 2. Install the packages
+
+> The `@benzenejs/*` packages aren't published to npm yet — see the
+> [pre-release note](getting-started.md) for how to work from the cloned workspace or `file:`
+> dependencies in the meantime.
 
 ```bash
 npm install @benzenejs/aws-lambda @benzenejs/http

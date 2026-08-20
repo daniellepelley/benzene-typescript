@@ -11,6 +11,12 @@ If you already know you're deploying to a specific platform, you can jump straig
 [Kafka](getting-started-kafka.md) — but starting here first is the quickest way to see how Benzene fits
 together.
 
+> **Pre-release: the packages aren't on npm yet.** The `@benzenejs/*` packages haven't been published
+> to the public registry, so `npm install @benzenejs/...` won't resolve today. To follow this guide now,
+> clone [benzene-typescript](https://github.com/daniellepelley/benzene-typescript) and build your service
+> inside its npm workspace (every `@benzenejs/*` package resolves locally there), or add the packages as
+> `file:` dependencies pointing at your checkout. Everything else in this guide is unchanged either way.
+
 > **TypeScript port.** This is the TypeScript port of [Benzene](https://github.com/daniellepelley/benzene).
 > It mirrors the .NET library's shape as closely as the language allows; where the two differ, the README's
 > [Porting conventions](../README.md#porting-conventions) explain why.
@@ -57,12 +63,9 @@ Setting `type=module` makes this an ES-module project, which Benzene's packages 
 
 ## 2. Install the packages
 
-> **Pre-release.** The `@benzenejs/*` packages aren't published to npm yet, so the `npm install` below
-> won't resolve them from the public registry today. Until they're published, clone
-> [benzene-typescript](https://github.com/daniellepelley/benzene-typescript) and build your service
-> inside its npm workspace (every `@benzenejs/*` package resolves locally there), or add them as
-> `file:` dependencies pointing at your checkout. The command below is the package set you'll depend
-> on once they ship — the rest of this guide is unchanged either way.
+> **Reminder:** the `@benzenejs/*` packages aren't on npm yet (see the note at the top of this page) —
+> run this inside the cloned workspace, or use `file:` dependencies. The command below is the package
+> set you'll depend on once they ship.
 
 ```bash
 npm install @benzenejs/express @benzenejs/core-message-handlers @benzenejs/http @benzenejs/results \

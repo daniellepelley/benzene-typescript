@@ -22,6 +22,11 @@ unchanged over gRPC; only the entry point differs, and that's what this guide co
 > **client** — non-unary streaming calls. See each package's `index.ts` "SCOPE" note for the full
 > rationale.
 
+## What you'll build
+
+A gRPC service whose `PlaceOrder` RPC is implemented by an ordinary Benzene message handler, plus —
+optionally — an outbound gRPC client that calls another Benzene service by topic.
+
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and npm
@@ -41,6 +46,10 @@ npm pkg set type=module
 Setting `type=module` makes this an ES-module project, which Benzene's packages require.
 
 ## 2. Install the packages
+
+> The `@benzenejs/*` packages aren't published to npm yet — see the
+> [pre-release note](getting-started.md) for how to work from the cloned workspace or `file:`
+> dependencies in the meantime.
 
 ```bash
 npm install @benzenejs/grpc @benzenejs/core-message-handlers @benzenejs/results @grpc/grpc-js
@@ -212,7 +221,10 @@ One pipeline invocation happens per RPC call, not per stream item. For the respo
 ## Status mapping
 
 Every handler result's `BenzeneResult` status is mapped to a gRPC `StatusCode` and also written verbatim
-onto a `benzene-status` response trailer. The `DefaultGrpcStatusCodeMapper` table:
+onto a `benzene-status` response trailer. The `DefaultGrpcStatusCodeMapper` table below is the normative
+Benzene↔gRPC mapping from the cross-language
+[spec (wire contracts §4.2)](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/wire-contracts.md),
+pinned by its `grpc-status-mapping.json` conformance fixture:
 
 | `BenzeneResultStatus` | gRPC `status` |
 |---|---|
@@ -226,7 +238,10 @@ onto a `benzene-status` response trailer. The `DefaultGrpcStatusCodeMapper` tabl
 | `serviceUnavailable` | `UNAVAILABLE` |
 | `tooManyRequests` | `RESOURCE_EXHAUSTED` |
 | `timeout` | `DEADLINE_EXCEEDED` |
-| `unexpectedError` / anything unrecognized | `INTERNAL` |
+| `unexpectedError` | `INTERNAL` |
+
+A status outside the table maps by the result's own success flag: an application-defined *successful*
+status becomes `OK`; anything else falls to `INTERNAL`.
 
 A non-OK status fails the call with that code; the `details` carry the joined result errors. Because the
 `benzene-status` trailer is always added, a Benzene *client* can recover the original, more specific

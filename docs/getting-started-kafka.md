@@ -24,6 +24,12 @@ concern (validation, retries, structured logging) is code you'd otherwise write 
 `eachMessage` callback. `useKafka` + the middleware pipeline is that missing layer, for Kafka
 specifically — the same reasoning applies to `@benzenejs/aws-sqs`, this port's self-hosted SQS poller.
 
+## What you'll build
+
+A long-running worker process that joins a Kafka consumer group, consumes a `hello_world` topic, and
+routes each record to an ordinary Benzene message handler — plus a reachability health check and an
+outbound producer once the basics run.
+
 ## Prerequisites
 
 - [Node.js 22+](https://nodejs.org/) and npm
@@ -59,6 +65,10 @@ npm pkg set type=module
 Setting `type=module` makes this an ES-module project, which Benzene's packages require.
 
 ## 2. Install the packages
+
+> The `@benzenejs/*` packages aren't published to npm yet — see the
+> [pre-release note](getting-started.md) for how to work from the cloned workspace or `file:`
+> dependencies in the meantime.
 
 ```bash
 npm install @benzenejs/kafka-core @benzenejs/self-host @benzenejs/core-message-handlers kafkajs
