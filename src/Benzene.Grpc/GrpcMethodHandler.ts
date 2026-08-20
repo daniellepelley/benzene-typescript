@@ -10,6 +10,7 @@ import {
 import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
 import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { GrpcBenzeneError } from './GrpcBenzeneError';
+import { encodeRichStatus, GRPC_STATUS_DETAILS_TRAILER } from './RichErrorDetails';
 import { GrpcContext, GrpcServerCall } from './GrpcContext';
 import { GrpcServerCallAccessor } from './GrpcServerCallAccessor';
 import { IGrpcMethodDefinition } from './IGrpcMethodDefinition';
@@ -28,8 +29,9 @@ const BENZENE_STATUS_TRAILER = 'benzene-status';
  * {@link runPipelineAsync}), then translates the outcome:
  * - a cancelled call → a {@link GrpcBenzeneError} with `CANCELLED` (or `DEADLINE_EXCEEDED` past the
  *   deadline), matching .NET's `OperationCanceledException` → `RpcException` translation;
- * - a non-OK Benzene status → a {@link GrpcBenzeneError} with the mapped grpc code + a `benzene-status`
- *   trailer;
+ * - a non-OK Benzene status → a {@link GrpcBenzeneError} with the mapped grpc code, a `benzene-status`
+ *   trailer, and a `grpc-status-details-bin` trailer carrying the result's structured `errors` as
+ *   `google.rpc.BadRequest` field violations (wire-contracts.md §4.2, see {@link encodeRichStatus});
  * - OK → the wire response(s) (via {@link IGrpcMessageAdapter} / `GrpcStreamAdapter`) plus the
  *   `benzene-status` trailer.
  *
@@ -40,8 +42,7 @@ const BENZENE_STATUS_TRAILER = 'benzene-status';
  * pump the handler's response `AsyncIterable` back over the call. One pipeline invocation per call, of any
  * shape — per-item middleware is out of scope by design (per-item concerns belong in the handler).
  *
- * DEFERRED (documented): the rich `google.rpc.Status`/`grpc-status-details-bin` error details (protobuf-
- * only, see README); flushing buffered `responseHeaders` mid-call (grpc-js sends response metadata via
+ * DEFERRED (documented): flushing buffered `responseHeaders` mid-call (grpc-js sends response metadata via
  * `call.sendMetadata`, left to the host wiring).
  */
 export class GrpcMethodHandler implements IGrpcMethodHandler {
@@ -183,6 +184,12 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
         errors !== undefined && errors.length > 0
           ? errors.map((error) => error.message).join('; ')
           : (rawStatus ?? 'Error');
+      // §4.2: there is no problem document over gRPC - the structured `errors` ride in
+      // `grpc-status-details-bin` as one `BadRequest.FieldViolation` each, beside the flat
+      // `benzene-status` trailer. The `google.rpc.Status` itself is attached on every non-OK outcome
+      // (as .NET's `AddRichErrorDetails` does), so a client always has one place to look; the
+      // `BadRequest` detail rides inside it whenever there are errors to carry.
+      trailer.set(GRPC_STATUS_DETAILS_TRAILER, encodeRichStatus(statusCode, detail, errors));
       throw new GrpcBenzeneError(statusCode, detail, trailer);
     }
 

@@ -29,13 +29,15 @@
  *    per-item adapter conversion), the full `DefaultGrpcStatusCodeMapper` table, `IGrpcServerCallAccessor`,
  *    a JSON/structural message adapter, `addGrpcMessageHandlers`, and the `useGrpc` host bridge (with a
  *    `to*Handler` per shape).
+ *  - **Rich `google.rpc.Status` error details** (wire-contracts.md §4.2): a failed result's structured
+ *    `errors` ride in the `grpc-status-details-bin` trailer as `google.rpc.BadRequest` field violations,
+ *    beside the flat `benzene-status` trailer. `@grpc/grpc-js` ships no `google.rpc` types, so the four
+ *    messages are encoded/decoded directly - see `RichErrorDetails.ts`.
  *
  * DEFERRED (deliberately NOT built — do not assume these exist):
  *  - **The outbound client** (`Benzene.Grpc.Client`) — a separate package/concern.
  *  - **The ASP.NET Core hosting glue** (`Benzene.Grpc.AspNet`) and the `BenzeneInterceptor` — no JS analog;
  *    the grpc-js `Server` is the host, so `GrpcBenzeneBridge`/`useGrpc` replace both.
- *  - **Rich `google.rpc.Status` error details** (`grpc-status-details-bin`, `google.rpc.BadRequest`
- *    field violations) — protobuf-only; the flat `benzene-status` trailer IS ported.
  *  - **Protobuf codec specifics** (`ProtobufJsonGrpcMessageAdapter`'s descriptor-driven parse) — grpc-js
  *    ships no framework message type; the adapter is a JSON/structural pass-through (see
  *    `JsonGrpcMessageAdapter`). Any gRPC health-check type is intentionally out of scope.
@@ -65,6 +67,7 @@ export * from './DefaultGrpcStatusCodeMapper';
 export * from './IGrpcServerCallAccessor';
 export * from './GrpcServerCallAccessor';
 export * from './GrpcBenzeneError';
+export * from './RichErrorDetails';
 export * from './Serialization/IGrpcMessageAdapter';
 export * from './Serialization/JsonGrpcMessageAdapter';
 export * from './Streaming/GrpcStreamAdapter';

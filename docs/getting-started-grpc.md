@@ -17,8 +17,7 @@ unchanged over gRPC; only the entry point differs, and that's what this guide co
 > Because Node has no ASP.NET Core, the .NET package's `BenzeneInterceptor` and `Benzene.Grpc.AspNet`
 > hosting glue have no analog here: the `@grpc/grpc-js` `Server` *is* the host, and a single
 > `useGrpc(...)` bridge replaces both — you register the bridge's handlers on the server directly. A few
-> pieces are deliberately **not** ported: the gRPC health check / reflection services, rich
-> `google.rpc.Status` error details (the flat `benzene-status` trailer *is* ported), and — on the
+> pieces are deliberately **not** ported: the gRPC health check / reflection services, and — on the
 > **client** — non-unary streaming calls. See each package's `index.ts` "SCOPE" note for the full
 > rationale.
 
@@ -247,6 +246,25 @@ A non-OK status fails the call with that code; the `details` carry the joined re
 `benzene-status` trailer is always added, a Benzene *client* can recover the original, more specific
 status even where several statuses collapse onto the same code (e.g. `created`/`accepted`/`updated` all
 map to `OK`) — that's what the client's reverse mapper prefers (see the next step).
+
+### Structured errors over gRPC
+
+There is no JSON problem document over gRPC. A failed result's structured `errors` — the `message` and
+`field` a validation adapter produces — travel in the standard `grpc-status-details-bin` trailer instead,
+as a `google.rpc.Status` carrying a `google.rpc.BadRequest` with **one `FieldViolation` per error**
+(`message` → `description`, `field` → `field`). This is the ordinary gRPC error-details mechanism, so any
+gRPC client in any language reads it: `status.FromCallContext` in .NET, `status.FromError` in Go,
+`rpc_status` in Python. A Benzene TypeScript client reads it back into `result.errors` automatically,
+falling back to the flat status detail string when a server attaches no details:
+
+```ts
+const result = await sendMessageAsync(client, 'order:place', { customerId: '' });
+// result.status  === 'validation-error'
+// result.errors  === [{ message: 'customerId must not be empty', field: '/customerId' }]
+```
+
+`BenzeneError.code` is deliberately not carried: the wire contract doesn't yet say where it belongs, and
+guessing would make the three language ports disagree.
 
 ## 7. Calling other gRPC services
 

@@ -8,7 +8,7 @@ import {
 import { BenzeneClientContext, IBenzeneClientRequest } from '@benzenejs/abstractions-messages';
 import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { IBenzeneMessageClient } from '@benzenejs/clients';
-import { IGrpcMessageAdapter, JsonGrpcMessageAdapter } from '@benzenejs/grpc';
+import { IGrpcMessageAdapter, JsonGrpcMessageAdapter, readFieldViolations } from '@benzenejs/grpc';
 import {
   MiddlewarePipelineBuilder,
   NullBenzeneServiceContainer,
@@ -31,7 +31,9 @@ import { useGrpcClient } from './Extensions';
  * pipeline, so business logic depends only on the transport-agnostic client surface. `sendMessageAsync`
  * converts the outbound payload, runs the pipeline, converts the raw wire response back to `TResponse`
  * via {@link IGrpcMessageAdapter}, and wraps it in an `IBenzeneResult<TResponse>` via the reverse status
- * mapper (preferring a `benzene-status` trailer). Mirrors {@link KafkaBenzeneMessageClient} /
+ * mapper (preferring a `benzene-status` trailer). On a failed call it recovers the result's structured
+ * `errors` from the `grpc-status-details-bin` trailer (wire-contracts.md §4.2), falling back to the flat
+ * status detail when the server attached none. Mirrors {@link KafkaBenzeneMessageClient} /
  * {@link RabbitMqBenzeneMessageClient}.
  *
  * The two C# constructors (`GrpcChannel` / prebuilt pipeline) collapse into one that accepts either a
@@ -101,6 +103,16 @@ export class GrpcBenzeneMessageClient implements IBenzeneMessageClient {
       const mappedStatus = this.statusReverseMapper.map(context.status.code, context.responseTrailers);
 
       if (context.status.code !== status.OK) {
+        // wire-contracts.md §4.2: the structured `errors` arrive in the `grpc-status-details-bin`
+        // trailer as `google.rpc.BadRequest` field violations, so a `field`-bearing validation failure
+        // is recovered whole rather than flattened into one joined string. A server that attaches no
+        // details - an older Benzene build, or any non-Benzene gRPC server - leaves the trailer absent,
+        // and the call's flat status detail remains the fallback.
+        const violations = readFieldViolations(context.responseTrailers);
+        if (violations.length > 0) {
+          return BenzeneResult.setErrors<TResponse>(mappedStatus, ...violations);
+        }
+
         return context.status.details
           ? BenzeneResult.setErrors<TResponse>(mappedStatus, context.status.details)
           : BenzeneResult.set<TResponse>(mappedStatus);

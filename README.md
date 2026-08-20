@@ -810,11 +810,19 @@ next to its C# counterpart:
   `IMessageGetter<TContext>` closed generics collapse to one — and route every call to `<missing>` or
   read the body off the wrong context shape), exactly as the standalone SQS / Service Bus / Event Hub
   consumer workers wire themselves (`useSqs`/`useServiceBus`/`useEventHub` each register `addBenzene` +
-  their own consumer getters, not `addBenzeneMessage`). **Deferred** (documented in `index.ts` and not
-  half-built): the **ASP.NET hosting** package (`Benzene.Grpc.AspNet`, no JS analog); the **rich
-  `google.rpc.Status`** error details (`grpc-status-details-bin` / `BadRequest` field violations —
-  protobuf-only; the flat `benzene-status` trailer *is* ported); and any gRPC **health-check** type (another
-  package's concern). The outbound **client** is now ported as `@benzenejs/grpc-client` (next bullet).
+  their own consumer getters, not `addBenzeneMessage`). (5) **rich error details** — wire-contracts.md §4.2's
+  `grpc-status-details-bin` trailer IS ported (`RichErrorDetails.ts`): a failed result's structured `errors`
+  cross the wire as a `google.rpc.Status` carrying a `google.rpc.BadRequest`, one `FieldViolation` per error
+  (`message` → `description`, `field` → `field`), and `@benzenejs/grpc-client` reads them back into the
+  result's `errors`. Where `Grpc.Core` hands .NET generated `Google.Rpc` types, `@grpc/grpc-js` ships none
+  (it has no notion of the trailer at all), so the four small, frozen messages are encoded and decoded
+  directly rather than by taking a protobuf-runtime dependency plus vendored descriptors. Two deliberate
+  calls: the `BadRequest` rides on **any** errored result, not only `validation-error` (§4.2's sentence is
+  unconditional; .NET narrows it), and `BenzeneError.code` is carried **nowhere** — §4.2 does not say where
+  it goes, and `FieldViolation.reason` is only a candidate home until it does. **Deferred** (documented in
+  `index.ts` and not half-built): the **ASP.NET hosting** package (`Benzene.Grpc.AspNet`, no JS analog) and
+  any gRPC **health-check** type (another package's concern). The outbound **client** is now ported as
+  `@benzenejs/grpc-client` (next bullet).
 - **gRPC outbound client: the unary send side, on `@grpc/grpc-js`.** `@benzenejs/grpc-client` ports
   `Benzene.Grpc.Client` — a `GrpcBenzeneMessageClient` (an `IBenzeneMessageClient`) that sends **unary**
   calls through a `GrpcSendMessageContext` middleware pipeline, mirroring the Kafka/RabbitMQ send sides.
