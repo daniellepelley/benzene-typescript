@@ -641,7 +641,8 @@ fails start-up when a `useInProcess(name)` route names a pipeline nothing regist
 One switch governs all of them:
 
 ```ts
-import { addBenzeneStartUpChecks, BenzeneStartUpCheckMode } from '@benzenejs/core-message-handlers';
+import { BenzeneStartUpCheckMode } from '@benzenejs/abstractions';
+import { addBenzeneStartUpChecks } from '@benzenejs/core-message-handlers';
 
 // Log check failures instead of failing start-up…
 addBenzeneStartUpChecks(container, BenzeneStartUpCheckMode.Advisory);

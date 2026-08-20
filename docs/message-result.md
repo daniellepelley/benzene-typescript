@@ -141,8 +141,11 @@ failure (a `404`/`422`).
 ### HTTP
 
 `@benzenejs/http`'s `DefaultHttpStatusCodeMapper` (`IHttpStatusCodeMapper`) maps every
-`BenzeneResultStatus` value onto an HTTP status code; unrecognized or `undefined` statuses default to
-`500`:
+`BenzeneResultStatus` value onto an HTTP status code — the normative mapping from
+[wire-contracts.md §4.1](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/wire-contracts.md),
+pinned by the spec's `http-status-mapping.json` conformance fixture. A status outside the table maps by
+the result's own success flag: an application-defined *successful* status becomes `200`, anything else
+(including `undefined`) falls to `500`:
 
 | Status | HTTP code |
 |---|---|
@@ -157,7 +160,7 @@ failure (a `404`/`422`).
 | `conflict` | 409 |
 | `validation-error` | 422 |
 | `too-many-requests` | 429 |
-| `unexpected-error` (or anything unmapped) | 500 |
+| `unexpected-error` | 500 |
 | `not-implemented` | 501 |
 | `service-unavailable` | 503 |
 | `timeout` | 504 |

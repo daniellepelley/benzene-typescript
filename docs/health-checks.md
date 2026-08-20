@@ -54,12 +54,12 @@ own dependency reachability check** for the resource they talk to — see
 [Dependency reachability checks](#dependency-reachability-checks) below.
 
 > **Porting note.** The .NET library also ships a `MemoryHealthCheck`, a `ShutdownReadinessHealthCheck`,
-> a per-check `Timeout`/`IsNonCritical` override, and a grpc.health.v1 bridge. Those have no TypeScript
-> port yet — this doc only covers what exists in `src/`. (`Benzene.HealthChecks.EntityFramework` **is**
-> ported now, as `@benzenejs/health-checks-typeorm` — see the [built-in checks](#built-in-health-checks)
+> and a grpc.health.v1 bridge. Those have no TypeScript port yet — this doc only covers what exists in
+> `src/`. (`Benzene.HealthChecks.EntityFramework` **is** ported now, as
+> `@benzenejs/health-checks-typeorm` — see the [built-in checks](#built-in-health-checks)
 > below; so are the AWS/Azure/Kafka/RabbitMq reachability probes — see
-> [Dependency reachability checks](#dependency-reachability-checks).) See
-> [Not yet ported](#not-yet-ported).
+> [Dependency reachability checks](#dependency-reachability-checks) — and the per-check
+> `timeout`/`isNonCritical` overrides.) See [Not yet ported](#not-yet-ported).
 
 ## Basic usage
 
@@ -105,6 +105,12 @@ same aggregate maps to a `200`/`503` status code — see [Exposing a health endp
 export interface IHealthCheck {
   readonly type: string;                        // its key in the aggregated response
   executeAsync(): Promise<IHealthCheckResult>;  // report failures via the result, don't throw
+
+  // Optional per-check overrides (C# default interface members — optional here, read via `?? default`):
+  readonly tags?: string[];        // open labels for routing/filtering; default none
+  readonly isNonCritical?: boolean; // true: a failure is downgraded to a warning; default false (critical)
+  readonly ttl?: number;           // per-check cache lifetime hint (ms); reserved for a caching processor
+  readonly timeout?: number;       // per-check timeout (ms), overriding the processor-wide 10s
 }
 ```
 
@@ -114,6 +120,13 @@ minimal: no context object is passed in, so a check gets whatever it needs (a cl
 constructor injection instead. Don't throw for an *expected* failure (a refused connection, a
 non-200 response) — report it as a failed `IHealthCheckResult`. An error that *does* escape is caught
 for you (see [the internal safety net](#the-internal-safety-net)).
+
+The optional members let a single check describe its own budget and criticality: `timeout` gives a
+known-slow check a longer (or a must-be-fast check a shorter) budget than the 10-second default, and
+`isNonCritical: true` means the check's failure degrades the report (a `warning`) instead of flipping
+the whole service unhealthy — unless the failure is *persistent* (see
+[`IHealthCheckResult`](#ihealthcheckresult--healthcheckresult) below), which always stays `failed`.
+The polarity is deliberate (`isNonCritical`, not `isCritical`): an unset value fails safe, as critical.
 
 `IHealthCheck` declares a merged `ServiceToken` constant, so DI-resolved checks are registered and
 discovered by that token (`resolver.getServices(IHealthCheck)`) — TypeScript erases the type C#
@@ -127,12 +140,17 @@ export interface IHealthCheckResult {
   readonly type: string;
   readonly data: Record<string, unknown>;           // free-form diagnostic metadata
   readonly dependencies: HealthCheckDependency[];   // the external dependencies this check verifies
+  readonly duration: number;                        // run time in ms, filled in by the processor
+  readonly isPersistent: boolean;                   // a failed result that won't self-heal (e.g. auth denial)
 }
 ```
 
 `data` is a free-form metadata bag — put whatever's useful for diagnosing a failure in there (e.g.
-`Url`, `StatusCode`, `FreeBytes`). `HealthCheckResult` implements the interface and exposes static
-factory helpers instead of a public-facing constructor for the common cases:
+`Url`, `StatusCode`, `FreeBytes`). `duration` is measured and filled in by the aggregating processor,
+so an individual check need not set it. `isPersistent` marks a `failed` result as a deterministic
+fault — an authorization or permission denial that retrying won't fix — which escapes the
+non-critical downgrade and always surfaces as `failed`. `HealthCheckResult` implements the interface
+and exposes static factory helpers for the common cases:
 
 ```ts
 HealthCheckResult.createInstance(success: boolean);                                     // type "Unknown", empty data
@@ -140,10 +158,12 @@ HealthCheckResult.createInstance(success: boolean, type: string);
 HealthCheckResult.createInstance(success: boolean, type: string, data, dependencies?);
 HealthCheckResult.createInstanceAsync(success: Promise<boolean>, type: string);         // async overload
 HealthCheckResult.createWarning(type: string, data?, dependencies?);
+HealthCheckResult.createPersistentFailure(type: string, data, dependencies?);           // failed + isPersistent
 ```
 
 `createInstance` maps `success` to `HealthCheckStatus.ok` or `HealthCheckStatus.failed`;
-`createWarning` always produces `HealthCheckStatus.warning`.
+`createWarning` always produces `HealthCheckStatus.warning`; `createPersistentFailure` produces a
+`failed` result flagged persistent.
 
 > **Port note.** C#'s `CreateInstance(bool)`/`(bool, type)`/`(bool, type, data)` overloads collapse
 > into one `createInstance` with optional parameters. The `Task<bool>` overload can't share that
@@ -409,16 +429,19 @@ worth knowing they're there:
 - **`ExceptionHandlingHealthCheck`** — catches any error thrown out of `executeAsync()` and turns it
   into a `failed` result with the error's **class name** (not its message) in `data.Exception`,
   instead of letting it propagate and abort the whole run.
-- **`TimeOutHealthCheck`** — a fixed **10-second** timeout (`TimeOutHealthCheck.timeoutMs`). If the
-  wrapped check hasn't completed by then, it returns a `failed` result with `data.Error = 'Timed Out'`
-  instead of waiting indefinitely. This only stops *waiting* — the inner promise isn't cancelled and
-  runs to completion in the background.
+- **`TimeOutHealthCheck`** — a **10-second** default timeout (`TimeOutHealthCheck.timeoutMs`),
+  overridden per check by the check's own optional `timeout` member. If the wrapped check hasn't
+  completed by then, it returns a `failed` result with `data.Error = 'Timed Out'` instead of waiting
+  indefinitely. This only stops *waiting* — the inner promise isn't cancelled and runs to completion
+  in the background.
 
-> **Port note.** In the .NET library the timeout is configurable (a processor-wide default plus a
-> per-check `IHealthCheck.Timeout` override), and a check can opt out of criticality with
-> `IsNonCritical`. Neither is ported yet — the TypeScript `TimeOutHealthCheck` timeout is a fixed
-> 10 seconds and the `IHealthCheck` interface carries no `timeout`/`isNonCritical`. Make a slow
-> check's own internal timeout (an `AbortSignal`, a client timeout) comfortably shorter than 10s so
+The processor also applies the **non-critical downgrade** here: a `failed` result from a check with
+`isNonCritical: true` is softened to `warning` (so it degrades the report without flipping
+`isHealthy`) — unless the result is flagged `isPersistent`, which stays `failed`. Each result's
+measured `duration` (ms) is recorded at the same point.
+
+> **Tip.** Even with a per-check `timeout` override available, prefer giving a slow check its own
+> internal timeout (an `AbortSignal`, a client timeout) comfortably shorter than the budget — that way
 > you get a meaningful `data.Error` from the check itself rather than the generic `'Timed Out'`.
 
 ## Exposing a health endpoint in the pipeline
@@ -683,10 +706,10 @@ To register a dependency check yourself (a resource with no auto-wiring, or a be
 ## Troubleshooting
 
 - **A check never seems to finish, it just reports `failed` after ~10 seconds.** That's
-  `TimeOutHealthCheck` — every check gets a fixed 10-second budget. Make a slow-by-design check's own
-  internal timeout comfortably shorter so you get a meaningful `data.Error` from the check itself
-  rather than the generic `'Timed Out'`. (Unlike .NET, this budget isn't configurable in the port
-  today.)
+  `TimeOutHealthCheck` — every check gets a 10-second budget by default. A slow-by-design check can
+  raise it with its own `timeout` member; either way, make the check's internal timeout comfortably
+  shorter than the budget so you get a meaningful `data.Error` from the check itself rather than the
+  generic `'Timed Out'`.
 - **Two checks with the same `type` and I can't tell them apart.** See
   [naming](#result-naming-and-deduplication) — look for the `-2`/`-3` suffix, or give each check a
   distinct `type`.
@@ -706,9 +729,10 @@ rather than fabricated:
 
 - **`MemoryHealthCheck`** and **`ShutdownReadinessHealthCheck`** — the host-self-check and
   graceful-drain checks.
-- **Per-check configurable `timeout` / `isNonCritical`** — the port's timeout is a fixed 10s and the
-  interface carries neither flag.
 - **The grpc.health.v1 bridge** (`Benzene.Grpc.AspNet`).
+
+(The per-check `timeout` / `isNonCritical` overrides — previously listed here — **are** now ported, as
+optional members on `IHealthCheck`; see [`IHealthCheck`](#ihealthcheck).)
 
 The transport/resource **reachability probes** (DynamoDB, Azure Service Bus, Kafka, Rabbit MQ, and the
 send-side AWS clients) and their read-only IAM/claim requirements **are** ported — see
