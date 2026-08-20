@@ -1,3 +1,12 @@
+> ARCHIVED 2026-08-20: actioned (Option A, the in-process cut) — verified against source, not this
+> doc's claim: `src/Benzene.Clients/BenzeneMessageClientResponse.ts`, `asBenzeneResult` in
+> `src/Benzene.Clients/Common/ClientResultExtensions.ts`, the envelope branch in
+> `src/Benzene.Clients/DefaultBenzeneMessageSender.ts`, the envelope mapping in
+> `src/Benzene.Clients.InProcess/InProcessContextConverter.ts`, and the "useInProcess (typed
+> responses)" round-trip suite in `test/Benzene.Core.Test/Clients/InProcess/InProcessNamedPipelinesTest.test.ts`.
+> The two open questions (§8.1 standalone-client wiring, §8.2 error-payload bodies) live on in
+> `work/remaining-items.md`.
+
 # Design note: typed outbound responses (the `TResponse` question)
 
 Status: **implemented (in-process cut, Option A)** · Scope: `@benzenejs/clients` + `@benzenejs/clients-in-process`
