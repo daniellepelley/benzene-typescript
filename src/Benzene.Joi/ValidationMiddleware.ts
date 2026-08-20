@@ -3,6 +3,7 @@ import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { IValidationStatusMapper } from '@benzenejs/abstractions-validation';
 import { BenzeneResult } from '@benzenejs/results';
 import type { Schema } from 'joi';
+import { joiValidationErrors } from './JoiValidationErrors';
 
 /**
  * Handler middleware that validates the request against a Joi schema before the handler runs.
@@ -51,8 +52,7 @@ export class ValidationMiddleware<TRequest, TResponse>
     const result = this.schema.validate(context.request, { abortEarly: false });
     if (result.error !== undefined) {
       const status = this.validationStatusMapper.getStatus(context.handlerType, undefined, result.error);
-      const messages = result.error.details.map((detail) => detail.message);
-      context.response = BenzeneResult.setErrors<TResponse>(status, ...messages);
+      context.response = BenzeneResult.setErrors<TResponse>(status, ...joiValidationErrors(result.error));
       return;
     }
 

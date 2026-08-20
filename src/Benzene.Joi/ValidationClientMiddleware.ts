@@ -3,6 +3,7 @@ import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
 import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { BenzeneResult } from '@benzenejs/results';
 import { getJoiSchema } from './JoiSchemaRegistry';
+import { joiValidationErrors } from './JoiValidationErrors';
 
 /**
  * Outbound/client-side middleware that validates the message being sent against its Joi schema
@@ -53,8 +54,7 @@ export class ValidationClientMiddleware<TRequest, TResponse>
 
     const result = schema.validate(message, { abortEarly: false });
     if (result.error !== undefined) {
-      const messages = result.error.details.map((detail) => detail.message);
-      context.response = BenzeneResult.validationError<TResponse>(...messages);
+      context.response = BenzeneResult.validationError<TResponse>(...joiValidationErrors(result.error));
       return;
     }
 

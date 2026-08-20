@@ -6,3 +6,4 @@ export * from './ValidationMiddlewareBuilder';
 export * from './ValidationClientMiddleware';
 export * from './ValidationClientMiddlewareBuilder';
 export * from './DependencyExtensions';
+export * from './ZodValidationErrors';

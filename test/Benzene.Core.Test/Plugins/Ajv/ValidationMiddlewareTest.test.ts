@@ -94,6 +94,8 @@ describe('ValidationMiddleware (handler-level)', () => {
 
     expect(nextCalled).toBe(false);
     expect(context.response.status).toBe(BenzeneResultStatus.validationError);
-    expect(context.response.errors.some((e) => e.message.startsWith('/name'))).toBe(true);
+    // The failing field is named in `field`, not prefixed into the message text.
+    expect(context.response.errors.some((e) => e.field === '/name')).toBe(true);
+    expect(context.response.errors.every((e) => !e.message.startsWith('/name'))).toBe(true);
   });
 });

@@ -4,6 +4,7 @@ import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
 import {
   AjvSchemaRegistry,
   formatValidationErrors,
+  formatValidationMessages,
   registerJsonSchema,
   ValidationClientMiddleware,
 } from '@benzenejs/ajv';
@@ -53,18 +54,49 @@ describe('AjvSchemaRegistry', () => {
 });
 
 describe('formatValidationErrors', () => {
-  it('prefixes each message with the failing value JSON Pointer and de-duplicates', () => {
+  it('carries the failing value JSON Pointer as field and the keyword as code', () => {
     const validate = AjvSchemaRegistry.global.getValidator(ClientRequest)!;
     validate({ name: 'way-too-long-a-name' });
 
-    const messages = formatValidationErrors(validate.errors);
-    expect(messages).toHaveLength(1);
-    expect(messages[0]).toMatch(/^\/name: /);
+    const errors = formatValidationErrors(validate.errors);
+    expect(errors).toHaveLength(1);
+    // The pointer is already in wire form, so it travels as `field` rather than being glued into
+    // the message - the same shape .NET's JsonSchemaValidationErrors.Format produces.
+    expect(errors[0].field).toBe('/name');
+    expect(errors[0].code).toBe('maxLength');
+    expect(errors[0].message).not.toContain('/name');
+  });
+
+  it('leaves field unset for a root-level failure', () => {
+    const validate = AjvSchemaRegistry.global.getValidator(ClientRequest)!;
+    validate('not-an-object');
+
+    const errors = formatValidationErrors(validate.errors);
+    expect(errors[0].field).toBeUndefined();
+    expect(errors[0].code).toBe('type');
+  });
+
+  it('de-duplicates identical failures', () => {
+    const duplicated = [
+      { instancePath: '/name', keyword: 'maxLength', message: 'too long' },
+      { instancePath: '/name', keyword: 'maxLength', message: 'too long' },
+    ] as unknown as Parameters<typeof formatValidationErrors>[0];
+
+    expect(formatValidationErrors(duplicated)).toHaveLength(1);
   });
 
   it('falls back to a generic message when there is no detail', () => {
-    expect(formatValidationErrors(null)).toEqual(['Request does not match the schema']);
-    expect(formatValidationErrors([])).toEqual(['Request does not match the schema']);
+    expect(formatValidationErrors(null)).toEqual([{ message: 'Request does not match the schema' }]);
+    expect(formatValidationErrors([])).toEqual([{ message: 'Request does not match the schema' }]);
+  });
+});
+
+describe('formatValidationMessages', () => {
+  it('still renders the flat prose for a caller that wants one line per failure', () => {
+    const validate = AjvSchemaRegistry.global.getValidator(ClientRequest)!;
+    validate({ name: 'way-too-long-a-name' });
+
+    expect(formatValidationMessages(validate.errors)[0]).toMatch(/^\/name: /);
   });
 });
 

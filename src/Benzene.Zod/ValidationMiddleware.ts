@@ -3,6 +3,7 @@ import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { IValidationStatusMapper } from '@benzenejs/abstractions-validation';
 import { BenzeneResult } from '@benzenejs/results';
 import type { ZodType } from 'zod';
+import { zodValidationErrors } from './ZodValidationErrors';
 
 /**
  * Handler middleware that validates the request against a Zod schema before the handler runs.
@@ -50,8 +51,7 @@ export class ValidationMiddleware<TRequest, TResponse>
     const result = this.schema.safeParse(context.request);
     if (!result.success) {
       const status = this.validationStatusMapper.getStatus(context.handlerType, undefined, result.error);
-      const messages = result.error.issues.map((issue) => issue.message);
-      context.response = BenzeneResult.setErrors<TResponse>(status, ...messages);
+      context.response = BenzeneResult.setErrors<TResponse>(status, ...zodValidationErrors(result.error));
       return;
     }
 

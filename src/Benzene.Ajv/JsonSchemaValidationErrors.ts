@@ -1,4 +1,5 @@
 /** Port of Benzene.JsonSchema.JsonSchemaValidationErrors (the ajv-error formatting half). */
+import type { BenzeneError } from '@benzenejs/abstractions';
 import type { ErrorObject } from 'ajv';
 
 /** The message used when a schema is registered but the request instance is null/undefined. */
@@ -7,23 +8,50 @@ export const RequestIsNull = 'Request is null';
 const Fallback = 'Request does not match the schema';
 
 /**
- * Flattens ajv's `ErrorObject[]` into one message per failed keyword, prefixed with the JSON Pointer of
- * the failing value (e.g. `"/name: must NOT have fewer than 5 characters"`; root-level failures carry no
- * prefix) — the shape the other validation adapters produce, served as the `ValidationError` result's
- * payload. Port of `JsonSchemaValidationErrors.Format(EvaluationResults)`: `instanceLocation` →
- * ajv's `instancePath` (both JSON Pointer), de-duplicated and ordered, with the same generic fallback
- * when the evaluation carries no detail.
+ * Turns ajv's `ErrorObject[]` into one {@link BenzeneError} per failed keyword.
+ *
+ * Unlike the other validation integrations, the JSON Pointer of the failing value is already in wire
+ * form here, so it travels as `field` rather than being prefixed into the message text (a root-level
+ * failure carries no `field`); the failed keyword - `required`, `maxLength`, `type` - travels as
+ * `code`. That is exactly what wire-contracts.md section 1.3 asks a schema-based validator for, and
+ * it is what .NET's `JsonSchemaValidationErrors.Format(EvaluationResults)` has always produced. This
+ * function ported the shape that predated structured errors and glued the pointer into the message,
+ * throwing away what ajv had already worked out.
+ *
+ * De-duplicated and ordered, with the same generic fallback when the evaluation carries no detail.
  */
-export function formatValidationErrors(errors: ErrorObject[] | null | undefined): string[] {
+export function formatValidationErrors(errors: ErrorObject[] | null | undefined): BenzeneError[] {
   if (errors === null || errors === undefined || errors.length === 0) {
-    return [Fallback];
+    return [{ message: Fallback }];
   }
-  const messages = Array.from(
-    new Set(errors.map((error) => format(error.instancePath, error.message ?? 'is invalid'))),
-  );
-  return messages.length > 0 ? messages : [Fallback];
+
+  const seen = new Set<string>();
+  const formatted: BenzeneError[] = [];
+  for (const error of errors) {
+    const benzeneError: BenzeneError = {
+      message: error.message ?? 'is invalid',
+      ...(error.instancePath === '' ? {} : { field: error.instancePath }),
+      ...(error.keyword === undefined || error.keyword === '' ? {} : { code: error.keyword }),
+    };
+    // Distinct(), as in .NET: ajv can report the same keyword failure twice through a composed
+    // schema, and a caller should see one error per real problem.
+    const key = `${benzeneError.field ?? ''} ${benzeneError.code ?? ''} ${benzeneError.message}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    formatted.push(benzeneError);
+  }
+
+  return formatted.length > 0 ? formatted : [{ message: Fallback }];
 }
 
-function format(instancePath: string, message: string): string {
-  return instancePath === '' ? message : `${instancePath}: ${message}`;
+/**
+ * The same errors as flat `"/field: message"` strings, for a caller that wants the prose rather than
+ * the structure (the shape this module returned before structured errors).
+ */
+export function formatValidationMessages(errors: ErrorObject[] | null | undefined): string[] {
+  return formatValidationErrors(errors).map((error) =>
+    error.field === undefined ? error.message : `${error.field}: ${error.message}`,
+  );
 }

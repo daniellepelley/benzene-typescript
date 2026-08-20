@@ -3,6 +3,7 @@ import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
 import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { BenzeneResult } from '@benzenejs/results';
 import { ValidationError } from 'yup';
+import { yupValidationErrors } from './YupValidationErrors';
 import { getYupSchema } from './YupSchemaRegistry';
 
 /**
@@ -56,7 +57,7 @@ export class ValidationClientMiddleware<TRequest, TResponse>
       await schema.validate(message, { abortEarly: false });
     } catch (error) {
       if (error instanceof ValidationError) {
-        context.response = BenzeneResult.validationError<TResponse>(...error.errors);
+        context.response = BenzeneResult.validationError<TResponse>(...yupValidationErrors(error));
         return;
       }
       throw error;

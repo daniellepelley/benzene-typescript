@@ -3,6 +3,7 @@ import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
 import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { BenzeneResult } from '@benzenejs/results';
 import { getZodSchema } from './ZodSchemaRegistry';
+import { zodValidationErrors } from './ZodValidationErrors';
 
 /**
  * Outbound/client-side middleware that validates the message being sent against its Zod schema
@@ -52,8 +53,7 @@ export class ValidationClientMiddleware<TRequest, TResponse>
 
     const result = schema.safeParse(message);
     if (!result.success) {
-      const messages = result.error.issues.map((issue) => issue.message);
-      context.response = BenzeneResult.validationError<TResponse>(...messages);
+      context.response = BenzeneResult.validationError<TResponse>(...zodValidationErrors(result.error));
       return;
     }
 

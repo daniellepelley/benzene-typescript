@@ -3,6 +3,7 @@ import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { IValidationStatusMapper } from '@benzenejs/abstractions-validation';
 import { BenzeneResult } from '@benzenejs/results';
 import { ValidationError, type Schema } from 'yup';
+import { yupValidationErrors } from './YupValidationErrors';
 
 /**
  * Handler middleware that validates the request against a Yup schema before the handler runs.
@@ -57,7 +58,7 @@ export class ValidationMiddleware<TRequest, TResponse>
     } catch (error) {
       if (error instanceof ValidationError) {
         const status = this.validationStatusMapper.getStatus(context.handlerType, undefined, error);
-        context.response = BenzeneResult.setErrors<TResponse>(status, ...error.errors);
+        context.response = BenzeneResult.setErrors<TResponse>(status, ...yupValidationErrors(error));
         return;
       }
       throw error;
