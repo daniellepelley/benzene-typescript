@@ -278,8 +278,12 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     this.ensureService(batch.service).issueFeedSeen = true;
 
     let accepted = 0;
-    for (const incoming of batch.issues) {
-      if (incoming.fingerprint.length === 0 || incoming.topic.length === 0) {
+    for (const incoming of batch.issues ?? []) {
+      // A deserialized batch is a plain JSON object, so `MeshIssue`'s field defaults never ran: a
+      // member the emitter omitted is `undefined` here, not `''`/`[]`. Read every one defensively -
+      // a malformed entry must be SKIPPED, never throw, or one bad entry rejects the whole batch
+      // (§6: no feed fails ingestion).
+      if ((incoming.fingerprint ?? '').length === 0 || (incoming.topic ?? '').length === 0) {
         continue; // skipped, never rejected (§6: no feed fails ingestion)
       }
       this.mergeIssue(incoming);
@@ -294,7 +298,9 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
    * collector-synthesized `contract-drift` issues §4.2 produces from trace ingestion - both are "one
    * occurrence, merge by fingerprint," so both funnel through the identical merge/eviction logic. Assumes
    * `incoming.fingerprint`/`incoming.topic` are already non-empty (the caller validates wire-fed entries;
-   * synthesized drift issues are always well-formed by construction).
+   * synthesized drift issues are always well-formed by construction), but every OTHER member is read
+   * defensively: a wire-fed entry is a plain deserialized object, so an omitted member is `undefined`
+   * rather than the class's declared default.
    */
   private mergeIssue(incoming: MeshIssue): void {
     let issue = this.issues.get(incoming.fingerprint);
@@ -313,28 +319,30 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       }
       issue = new MeshIssue();
       issue.fingerprint = incoming.fingerprint;
-      issue.classification = incoming.classification;
-      issue.service = incoming.service;
+      issue.classification = incoming.classification ?? '';
+      issue.service = incoming.service ?? '';
       issue.topic = incoming.topic;
       issue.version = incoming.version;
-      issue.firstSeen = incoming.firstSeen;
-      issue.lastSeen = incoming.lastSeen;
+      issue.firstSeen = incoming.firstSeen ?? 0;
+      issue.lastSeen = incoming.lastSeen ?? 0;
       this.issues.set(incoming.fingerprint, issue);
     }
 
-    issue.count += incoming.count; // deltas merge by summation - restart-proof, no instance keying
+    issue.count += incoming.count ?? 0; // deltas merge by summation - restart-proof, no instance keying
     if (incoming.firstSeen < issue.firstSeen) {
       issue.firstSeen = incoming.firstSeen;
     }
     if (incoming.lastSeen > issue.lastSeen) {
       issue.lastSeen = incoming.lastSeen;
     }
-    issue.classification = incoming.classification.length === 0 ? issue.classification : incoming.classification;
+    issue.classification =
+      (incoming.classification ?? '').length === 0 ? issue.classification : incoming.classification;
     issue.transport = incoming.transport ?? issue.transport;
-    issue.status = incoming.status.length === 0 ? issue.status : incoming.status;
+    issue.status = (incoming.status ?? '').length === 0 ? issue.status : incoming.status;
     issue.exceptionType = incoming.exceptionType ?? issue.exceptionType;
     issue.resolutionHint = incoming.resolutionHint ?? issue.resolutionHint;
-    for (const exemplar of incoming.exemplarTraceIds) {
+    // Wire-optional: an emitter with no exemplar to offer omits the member entirely.
+    for (const exemplar of incoming.exemplarTraceIds ?? []) {
       if (exemplar.length === 0 || issue.exemplarTraceIds.includes(exemplar)) {
         continue;
       }

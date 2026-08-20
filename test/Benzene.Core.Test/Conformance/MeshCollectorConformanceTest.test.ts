@@ -1,6 +1,6 @@
 /**
- * Runs docs/specification/conformance/mesh-collector-cases.json against the TypeScript port's spec
- * collector (`@benzenejs/mesh-collector`) - ingest/validation, the declared producer/consumer graph
+ * Runs docs/specification/conformance/mesh-collector-cases.json AND mesh-issue-cases.json against
+ * the TypeScript port's spec collector (`@benzenejs/mesh-collector`) - ingest/validation, the declared producer/consumer graph
  * (mesh.md §4, the 2026-08 revision: "the graph MUST be built from the latest registered
  * ServiceDescriptor alone"), heartbeat-driven health/hash-mismatch, and re-registration replacing both
  * provider and consumer edges wholesale.
@@ -13,6 +13,12 @@
  * conformance runner - `Benzene.Mesh.Collector` was investigated and found to be a full collector
  * implementation (ingest, declared graph, heartbeat health, issues feed, five `mesh:query:*` read
  * models) with no existing conformance runner, so this vendors the fixture and adds one.
+ *
+ * Both fixtures share one step/assertion model, so both run through the same driver here - the same
+ * pairing the Python port makes (`run_mesh_collector` runs `mesh-collector-cases.json` +
+ * `mesh-issue-cases.json` through one `run_collector_fixture`). The issue feed this port claims is
+ * real: `MeshCollectorHandlers.issues` (`src/Benzene.Mesh.Collector/Handlers.ts`) ingests the batch
+ * and `MeshCollectorStore.recordIssues` does the fingerprint delta-merge the fixture asserts.
  */
 import { describe, expect, it } from 'vitest';
 import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
@@ -41,7 +47,11 @@ interface CollectorFixture {
   cases: CollectorCase[];
 }
 
-const fixture = load<CollectorFixture>('mesh-collector-cases.json');
+// Each entry names a fixture that speaks the collector step model; both are vendored, and both run.
+const fixtures: ReadonlyArray<[string, CollectorFixture]> = [
+  ['mesh-collector-cases.json', load<CollectorFixture>('mesh-collector-cases.json')],
+  ['mesh-issue-cases.json', load<CollectorFixture>('mesh-issue-cases.json')],
+];
 
 /** One fresh collector - a real pipeline wired exactly as `examples/k8s-mesh` wires its live collector. */
 function newCollector() {
@@ -78,22 +88,26 @@ function toRequest(step: CollectorStep): BenzeneMessageRequest {
 }
 
 describe('MeshCollectorConformanceTest', () => {
-  for (const testCase of fixture.cases) {
-    it(testCase.name, async () => {
-      const { application, resolverFactory } = newCollector();
+  for (const [fixtureName, fixture] of fixtures) {
+    describe(fixtureName, () => {
+      for (const testCase of fixture.cases) {
+        it(testCase.name, async () => {
+          const { application, resolverFactory } = newCollector();
 
-      for (const [index, step] of testCase.steps.entries()) {
-        const response = await application.handleAsync(toRequest(step), resolverFactory);
-        const stepLabel = `${testCase.name}[${index}] ${step.request.topic}`;
+          for (const [index, step] of testCase.steps.entries()) {
+            const response = await application.handleAsync(toRequest(step), resolverFactory);
+            const stepLabel = `${fixtureName}/${testCase.name}[${index}] ${step.request.topic}`;
 
-        expect(response.statusCode, stepLabel).toBe(step.expected.statusCode);
+            expect(response.statusCode, stepLabel).toBe(step.expected.statusCode);
 
-        if (step.expected.body !== undefined) {
-          expect(response.body, `${stepLabel}: expected a response body but none was written`).toBeTruthy();
-          const actualBody = JSON.parse(response.body) as unknown;
-          const mismatch = findSubsetMismatch(step.expected.body, actualBody);
-          expect(mismatch, mismatch ? `${stepLabel}: ${mismatch}` : undefined).toBeNull();
-        }
+            if (step.expected.body !== undefined) {
+              expect(response.body, `${stepLabel}: expected a response body but none was written`).toBeTruthy();
+              const actualBody = JSON.parse(response.body) as unknown;
+              const mismatch = findSubsetMismatch(step.expected.body, actualBody);
+              expect(mismatch, mismatch ? `${stepLabel}: ${mismatch}` : undefined).toBeNull();
+            }
+          }
+        });
       }
     });
   }
