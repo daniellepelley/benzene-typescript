@@ -50,14 +50,32 @@ interface DescriptorFixture {
     placement: { cloud: string; region?: string };
   };
   expectedDescriptor: unknown;
+  // Optional on purpose, so a key the fixture does not carry is distinguishable from a key set to
+  // false. See `asserted` below for why that distinction is load-bearing.
   hash: {
     prefix: string;
     hexLength: number;
-    invariantToInstanceId: boolean;
-    sensitiveToServiceVersion: boolean;
-    sensitiveToTopics: boolean;
-    sensitiveToConsumes: boolean;
+    invariantToInstanceId?: boolean;
+    sensitiveToServiceVersion?: boolean;
+    sensitiveToTopics?: boolean;
+    sensitiveToProduces?: boolean;
   };
+}
+
+/**
+ * Whether the fixture asks for a hash property - throwing if the fixture does not mention it at all.
+ *
+ * This test spent the whole producer/consumer role inversion reading `sensitiveToConsumes` after the
+ * fixture had renamed the key to `sensitiveToProduces`. Read as a plain boolean that was simply
+ * `undefined`, the `if (!...) return;` guard turned the test into an empty function that passed, so
+ * a green suite said nothing about whether the hash covered produced topics at all. A key the
+ * fixture does not carry is drift between test and fixture - never permission to stop checking.
+ */
+function asserted(flag: boolean | undefined, key: string): boolean {
+  if (flag === undefined) {
+    throw new Error(`fixture hash section has no "${key}" - the test and the fixture have drifted`);
+  }
+  return flag;
 }
 
 const fixture = load<DescriptorFixture>('mesh-descriptor-cases.json');
@@ -183,7 +201,7 @@ describe('MeshDescriptorConformanceTest', () => {
   });
 
   it('produces a descriptorHash invariant to instanceId', () => {
-    if (!fixture.hash.invariantToInstanceId) return;
+    if (!asserted(fixture.hash.invariantToInstanceId, 'invariantToInstanceId')) return;
 
     const first = MeshDescriptorFactory.create(
       canonicalLookUp(),
@@ -202,7 +220,7 @@ describe('MeshDescriptorConformanceTest', () => {
   });
 
   it('produces a descriptorHash sensitive to serviceVersion', () => {
-    if (!fixture.hash.sensitiveToServiceVersion) return;
+    if (!asserted(fixture.hash.sensitiveToServiceVersion, 'sensitiveToServiceVersion')) return;
 
     const baseline = MeshDescriptorFactory.create(
       canonicalLookUp(),
@@ -221,7 +239,7 @@ describe('MeshDescriptorConformanceTest', () => {
   });
 
   it('produces a descriptorHash sensitive to the topic set', () => {
-    if (!fixture.hash.sensitiveToTopics) return;
+    if (!asserted(fixture.hash.sensitiveToTopics, 'sensitiveToTopics')) return;
 
     const baseline = MeshDescriptorFactory.create(
       canonicalLookUp(),
@@ -239,8 +257,8 @@ describe('MeshDescriptorConformanceTest', () => {
     expect(baseline.descriptorHash).not.toBe(grown.descriptorHash);
   });
 
-  it('produces a descriptorHash sensitive to the consumed-topic set', () => {
-    if (!fixture.hash.sensitiveToConsumes) return;
+  it('produces a descriptorHash sensitive to the produced-topic set', () => {
+    if (!asserted(fixture.hash.sensitiveToProduces, 'sensitiveToProduces')) return;
 
     const baseline = MeshDescriptorFactory.create(
       canonicalLookUp(),
