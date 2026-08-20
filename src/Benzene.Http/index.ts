@@ -7,6 +7,7 @@ export * from './HttpHeaderMappings';
 export * from './IHttpStatusCodeMapper';
 export * from './DefaultHttpStatusCodeMapper';
 export * from './HttpStatusCodeResponseHandler';
+export * from './HttpProblemDetailsResponsePayloadMapper';
 export * from './HttpEndpointAttribute';
 export * from './Extensions';
 export * from './Routing/IHttpEndpointDefinition';

@@ -145,7 +145,9 @@ describe('ResponseRenderingTest', () => {
     expect(errorBody.detail).toBe('order missing');
     expect(errorBody.errors).toEqual([{ message: 'order missing' }]);
     expect('status' in errorBody).toBe(false);
-    expect(adapter.contentType).toBe('application/json');
+    // §4.1: a failure body is a problem document, so the negotiated JSON media type is written out
+    // as its RFC 9457 counterpart. See SerializerResponseRendererContentTypeTest for the full matrix.
+    expect(adapter.contentType).toBe('application/problem+json');
   });
 
   it('ResponseHandlerContainer_RunsHandlersThenFinalizes', async () => {

@@ -31,6 +31,7 @@ import {
   IHttpRequestAdapter,
   IHttpStatusCodeMapper,
   IRouteFinder,
+  useHttpProblemDetailsStatus,
 } from '@benzenejs/http';
 import { ApiGatewayContext } from './ApiGatewayContext';
 import { ApiGatewayHttpRequestAdapter } from './ApiGatewayHttpRequestAdapter';
@@ -164,6 +165,9 @@ export function addApiGateway(services: IBenzeneServiceContainer): IBenzeneServi
 
   services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.ApiGateway));
   addHttpMessageHandlers(services);
+  // A failed result's problem document carries the numeric HTTP `status` member, filled in from the
+  // same IHttpStatusCodeMapper the response status line uses (wire-contracts.md §1.3, §4.1).
+  useHttpProblemDetailsStatus<ApiGatewayContext>(services);
 
   return services;
 }
@@ -269,6 +273,9 @@ export function addApiGatewayV2(services: IBenzeneServiceContainer): IBenzeneSer
 
   services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.ApiGateway));
   addHttpMessageHandlers(services);
+  // A failed result's problem document carries the numeric HTTP `status` member, filled in from the
+  // same IHttpStatusCodeMapper the response status line uses (wire-contracts.md §1.3, §4.1).
+  useHttpProblemDetailsStatus<ApiGatewayV2Context>(services);
 
   return services;
 }

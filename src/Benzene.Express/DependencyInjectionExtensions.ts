@@ -31,6 +31,7 @@ import {
   IHttpRequestAdapter,
   IHttpStatusCodeMapper,
   IRouteFinder,
+  useHttpProblemDetailsStatus,
 } from '@benzenejs/http';
 import { ExpressContext } from './ExpressContext';
 import { ExpressHttpRequestAdapter } from './ExpressHttpRequestAdapter';
@@ -137,6 +138,9 @@ export function addExpress(services: IBenzeneServiceContainer): IBenzeneServiceC
 
   services.addSingletonFactory(ITransportInfo, () => new TransportInfo(TransportNames.Express));
   addHttpMessageHandlers(services);
+  // A failed result's problem document carries the numeric HTTP `status` member, filled in from the
+  // same IHttpStatusCodeMapper the response status line uses (wire-contracts.md §1.3, §4.1).
+  useHttpProblemDetailsStatus<ExpressContext>(services);
 
   return services;
 }

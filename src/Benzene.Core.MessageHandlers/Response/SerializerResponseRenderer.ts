@@ -1,6 +1,7 @@
 import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   IBenzeneResponseAdapter,
+  IMediaFormat,
   IMediaFormatNegotiator,
   IMessageHandlerResult,
   IResponsePayloadMapper,
@@ -42,12 +43,38 @@ export class SerializerResponseRenderer<TContext> implements IResponseRenderer<T
     const body = this.responsePayloadMapper.map(context, result, serializer);
     response.setBody(context, body as string);
 
-    const payload = result.benzeneResult.payloadAsObject;
-    response.setContentType(
-      context,
-      isRawContentMessage(payload) ? payload.contentType : format.contentType,
-    );
+    response.setContentType(context, this.resolveContentType(result, format));
 
     return Promise.resolve();
+  }
+
+  /**
+   * The response content type: a raw content payload's own type verbatim; otherwise, on a failed
+   * result, the negotiated format's media type rewritten to its RFC 9457 "problem" counterpart
+   * (`application/json` -> `application/problem+json`, `application/xml` ->
+   * `application/problem+xml`, per RFC 9457 §11.2; any other negotiated format is left as-is — the
+   * framework only defines a problem media type for the two it ships signalling for); otherwise the
+   * negotiated format's ordinary media type.
+   */
+  private resolveContentType(result: IMessageHandlerResult, format: IMediaFormat<TContext>): string {
+    const payload = result.benzeneResult.payloadAsObject;
+    if (isRawContentMessage(payload)) {
+      return payload.contentType;
+    }
+
+    return result.benzeneResult.isSuccessful
+      ? format.contentType
+      : problemContentType(format.contentType);
+  }
+}
+
+function problemContentType(contentType: string): string {
+  switch (contentType) {
+    case 'application/json':
+      return 'application/problem+json';
+    case 'application/xml':
+      return 'application/problem+xml';
+    default:
+      return contentType;
   }
 }

@@ -24,6 +24,7 @@ import {
   IHttpRequestAdapter,
   IHttpStatusCodeMapper,
   IRouteFinder,
+  useHttpProblemDetailsStatus,
 } from '@benzenejs/http';
 import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { AzureHttpApplication } from './AzureHttpApplication';
@@ -128,6 +129,9 @@ export function addAzureHttp(services: IBenzeneServiceContainer): IBenzeneServic
     (r) => new AzureHttpContextRequestEnricher(r.getService(IRouteFinder)) as IRequestEnricher<unknown>,
   );
   addHttpMessageHandlers(services);
+  // A failed result's problem document carries the numeric HTTP `status` member, filled in from the
+  // same IHttpStatusCodeMapper the response status line uses (wire-contracts.md §1.3, §4.1).
+  useHttpProblemDetailsStatus<AzureHttpContext>(services);
 
   return services;
 }
