@@ -14,7 +14,8 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "publish:workspaces": "node scripts/publish-workspaces.mjs"
   },
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "^2.10.0",

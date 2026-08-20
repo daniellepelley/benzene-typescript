@@ -1,27 +1,26 @@
 name: Release
 
-# Builds all 129 Benzene TypeScript packages to CommonJS and publishes them to npm via **trusted
-# publishing** (OpenID Connect — no npm tokens stored in the repo). Fires on a version tag (e.g.
-# `v0.1.0-beta.1`) and is also runnable on demand via the Actions tab. Publishes under the `beta`
-# npm dist-tag, so a plain `npm install @benzenejs/<pkg>` (no tag) never resolves to it.
+# Builds all 129 Benzene TypeScript packages to CommonJS and publishes them to npm. Fires on a
+# version tag (e.g. `v0.1.0-beta.1`) and is also runnable on demand via the Actions tab. Publishes
+# under the `beta` npm dist-tag, so a plain `npm install @benzenejs/<pkg>` (no tag) never resolves
+# to it.
 #
-# One-time maintainer setup (see docs/publishing.md):
-#   1. Unlike PyPI, npm cannot pre-register a "pending" trusted publisher for a package that doesn't
-#      exist yet — the package must be created by a real publish first. Once, locally:
-#        npm login
-#        npm run build
-#        npm publish --workspaces --access public --tag beta
-#      This creates all 129 @benzenejs/* packages on the registry (private workspaces under test/
-#      and examples/ are skipped automatically) at whatever version is currently in src/*/package.json.
-#   2. For EACH package, on npmjs.com -> Package -> Settings -> Trusted Publisher -> GitHub Actions:
-#        Organization or user = daniellepelley
-#        Repository           = benzene-typescript
-#        Workflow filename    = release.yml
-#        Allowed actions      = npm publish
-#      (Environment name is optional — only set one here if you also add a matching `environment:`
-#      to the publish job below, e.g. for required-reviewer approval gating.)
-# From then on, this workflow handles every release: it uploads all 129 packages in one command;
-# npm routes each to its own project and verifies the OIDC identity per package.
+# Authentication (see docs/publishing.md):
+#   * The `NPM_TOKEN` repository secret — a granular access token with read AND write access to the
+#     `@benzenejs` scope — is what actually authorises the publish. It is required, because npm has
+#     no "pending publisher" concept: a package that does not exist on the registry yet CANNOT be
+#     created by trusted publishing, only by a token.
+#   * `id-token: write` is still granted, so for any package that HAS a Trusted Publisher registered
+#     for this repository and this workflow file, npm uses OIDC and the token is never exercised.
+#     Registering trusted publishers (npmjs.com -> package -> Settings -> Trusted Publisher:
+#     organization `daniellepelley`, repository `benzene-typescript`, workflow `release.yml`) is
+#     therefore an optional hardening step, done per package, once the package exists.
+#
+# The publish step is RESUMABLE: it skips every package already on the registry at the current
+# version and publishes the rest. A run that dies partway (npm rate-limits bulk publishing of new
+# packages) is finished simply by re-running this workflow — which is the failure mode a plain
+# `npm publish --workspaces` could not recover from, since it aborts on the first already-published
+# package and leaves the remainder unpublished.
 
 on:
   push:
@@ -50,21 +49,17 @@ jobs:
       - name: Dry-run pack every package
         run: npm publish --workspaces --dry-run --access public
 
-      # Refuse a publish that cannot succeed, and say why. npm never overwrites a published
-      # version: re-running the release without bumping fails with a bare 404 on the first package
-      # it reaches, which reads like a missing scope or a broken trusted-publisher setup rather
-      # than "this version is already out". This also catches a PARTIALLY published release, which
-      # is how the 0.1.0-beta.1 publish ended - 25 packages on the registry, 104 not, invisible
-      # because the failure looked like a permissions problem.
-      - name: Preflight — nothing here is already published
+      # Names what this release would put on the registry, and fails only when the answer is
+      # "nothing" — i.e. this version is already fully published and re-running can only 404.
+      - name: Preflight — what is left to publish
         run: node scripts/check-not-already-published.mjs
 
   publish:
-    name: Publish to npm (trusted publishing)
+    name: Publish to npm
     needs: build-and-verify
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # mint the OIDC token trusted publishing uses; no stored secret
+      id-token: write # lets trusted publishing take over for packages that have it registered
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -72,11 +67,27 @@ jobs:
         with:
           node-version: 22.x
           registry-url: "https://registry.npmjs.org"
+
+      # Without this, setup-node leaves NODE_AUTH_TOKEN at its literal placeholder
+      # (XXXXX-XXXXX-XXXXX-XXXXX) and every publish fails with a 404 that reads like a missing
+      # scope rather than a missing credential. Fail here instead, where the cause is legible.
+      - name: Check the publish credential is present
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::The NPM_TOKEN repository secret is not set. Create a granular access token on npmjs.com with read and write access to the @benzenejs scope, add it as the NPM_TOKEN secret, and re-run. See docs/publishing.md."
+            exit 1
+          fi
+
       - name: Install
         run: npm ci
       - name: Ensure npm CLI supports trusted publishing
         run: npm install -g npm@latest
       - name: Build (CommonJS dist/ for every package)
         run: npm run build
-      - name: Publish to npm
-        run: npm publish --workspaces --access public --tag beta
+
+      - name: Publish everything not already on the registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/publish-workspaces.mjs

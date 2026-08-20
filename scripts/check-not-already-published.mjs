@@ -1,76 +1,54 @@
 #!/usr/bin/env node
 /**
- * Preflight for the release workflow: refuse to start a publish that cannot succeed, and say why.
+ * Preflight for the release workflow: say, before anything is built or published, exactly which
+ * packages this release would put on the registry — and refuse a release that has nothing to do.
  *
- * npm will not overwrite a published version. Re-running the release without bumping produces a
- * bare `npm error 404 ... could not be found or you do not have permission to access it` on the
- * FIRST package it reaches - which reads like a missing scope or a broken trusted-publisher
- * configuration, and sent a real investigation down that path. It actually means "this exact
- * version is already on the registry".
- *
- * This checks every workspace package's name@version against the registry before anything is
- * published, and fails with a message that names the version and the fix. It also reports the
- * mirror-image mistake - a partially published release, where some packages went out and others
- * did not - rather than leaving it to be discovered one 404 at a time.
+ * npm will not overwrite a published version, so the interesting states are "all new" (a normal
+ * release), "partly out" (a previous run stopped midway — the publisher resumes and finishes it),
+ * and "all out" (this version is fully released; publishing again can only fail). Only the last
+ * is an error. Printing the split up front is what turns a half-finished release from a mystery
+ * 404 on package #1 into a line that names the count.
  *
  * Read-only: a plain GET per package, no auth, no side effects.
  */
-import { execFileSync } from 'node:child_process';
+import { publishablePackages, isPublished } from './workspace-packages.mjs';
 
-const workspaces = JSON.parse(
-  execFileSync('npm', ['query', '.workspace'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }),
-);
-
+const packages = publishablePackages();
 const published = [];
 const unpublished = [];
 
-for (const pkg of workspaces) {
-  if (pkg.private === true) continue;
-
-  const url = `https://registry.npmjs.org/${pkg.name.replace('/', '%2F')}`;
-  const response = await fetch(url);
-
-  if (response.status === 404) {
-    unpublished.push(`${pkg.name}@${pkg.version} (package not on the registry yet)`);
-    continue;
-  }
-  if (!response.ok) {
-    console.error(`Could not read ${url}: HTTP ${response.status}. Skipping the preflight check.`);
-    process.exit(0); // a registry blip must not block a release that would otherwise succeed
-  }
-
-  const metadata = await response.json();
-  if (Object.keys(metadata.versions ?? {}).includes(pkg.version)) {
-    published.push(`${pkg.name}@${pkg.version}`);
-  } else {
-    unpublished.push(`${pkg.name}@${pkg.version}`);
+for (const pkg of packages) {
+  try {
+    (await isPublished(pkg.name, pkg.version) ? published : unpublished).push(`${pkg.name}@${pkg.version}`);
+  } catch (error) {
+    // A registry blip must not block a release that would otherwise succeed; the publisher checks
+    // again per package, and npm itself is the final authority on what may be published.
+    console.error(`${error.message} — skipping the preflight check.`);
+    process.exit(0);
   }
 }
 
 if (published.length === 0) {
-  console.log(`Nothing is published yet at these versions; ${unpublished.length} package(s) to publish.`);
+  console.log(`Nothing is published yet at this version; ${unpublished.length} package(s) to publish.`);
   process.exit(0);
 }
 
 if (unpublished.length === 0) {
   console.error(
-    `Every package is ALREADY published at this version — there is nothing to release.\n\n` +
-      published.map((p) => `  ${p}`).join('\n') +
-      `\n\nBump the version (npm version <new> --workspaces, or edit the version field) and ` +
-      `re-run. npm never overwrites a published version; attempting it fails with a 404 that ` +
-      `reads like a permissions or scope problem, which is why this check exists.`,
+    `All ${published.length} package(s) are ALREADY published at this version — there is nothing ` +
+      `to release.\n\nBump the version across every workspace and re-run. npm never overwrites a ` +
+      `published version; attempting it fails with a 404 that reads like a permissions or scope ` +
+      `problem, which is why this check exists.`,
   );
   process.exit(1);
 }
 
-console.error(
+console.log(
   `This release is PARTIALLY published: ${published.length} package(s) are already on the ` +
-    `registry at this version and ${unpublished.length} are not. Publishing now would fail on ` +
-    `the first already-published package and leave the rest out.\n\n` +
+    `registry at this version, ${unpublished.length} are not. The publish step skips the ` +
+    `former and publishes the latter, completing the set.\n\n` +
     `Already published:\n` +
     published.map((p) => `  ${p}`).join('\n') +
-    `\n\nNot yet published:\n` +
-    unpublished.map((p) => `  ${p}`).join('\n') +
-    `\n\nBump the version across all workspaces so the release is one consistent set.`,
+    `\n\nTo publish:\n` +
+    unpublished.map((p) => `  ${p}`).join('\n'),
 );
-process.exit(1);
