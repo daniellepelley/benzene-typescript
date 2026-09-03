@@ -14,7 +14,7 @@
  * via the process entry point below) by this package's CLI tests.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
 import { AtomicClientSdkOptions, buildAtomicClientSdk } from './AtomicClientSdkBuilder';
 import { ContractDocumentParseError, parseContractDocument } from './ContractDocumentParser';
 import { GeneratedClient, MessageClientSdkOptions, buildMessageClientSdk } from './MessageClientSdkBuilder';
@@ -104,6 +104,7 @@ export async function run(argv: readonly string[]): Promise<void> {
   if (args.namespace === undefined) {
     throw new CliError("'--namespace' is required");
   }
+  assertSafeNamespace(args.namespace);
   const output = requireOutput(args.output);
 
   let json: string;
@@ -157,15 +158,57 @@ export async function run(argv: readonly string[]): Promise<void> {
     throw error;
   }
 
-  const outDir = args.out ?? process.cwd();
-  for (const file of files) {
-    const target = join(outDir, file.fileName);
-    await mkdir(dirname(target), { recursive: true });
-    await writeFile(target, file.source, 'utf8');
-  }
+  await writeGeneratedFiles(args.out ?? process.cwd(), files);
 
   console.log(`${files.length} code file(s) created`);
   console.log('Completed');
+}
+
+/**
+ * Rejects a `--namespace` that is absolute or whose normalized form escapes the output directory
+ * (`..`-leading), BEFORE any generation happens — the namespace is spliced into every generated file
+ * name (`namespacedFileName`), so a traversal here is a traversal in every write. A benign internal
+ * `a/../b` (normalizing inside) is allowed. Port of the .NET R18 #292 WP-A ruling's containment,
+ * applied to the one raw path component the CLI splices in itself.
+ */
+function assertSafeNamespace(namespace: string): void {
+  if (isAbsolute(namespace)) {
+    throw new CliError(`--namespace '${namespace}' must be a relative path inside the output directory`);
+  }
+  const normalized = normalize(namespace);
+  if (normalized === '..' || normalized.startsWith(`..${sep}`)) {
+    throw new CliError(`--namespace '${namespace}' escapes the output directory`);
+  }
+}
+
+/**
+ * Writes the generated files under `outDir`, containing every write to it: an absolute `fileName` is
+ * rejected outright, and each target is fully resolved and required to sit strictly inside the
+ * resolved `outDir` (prefix check with a trailing path separator, so `/out` does not "contain"
+ * `/outside`). Nothing is written if any file fails the check. Nested file names (topic-client mode's
+ * per-client folders) remain supported. Port of the .NET R18 #292 WP-A ruling (`CodeFileWriter`
+ * containment); the document-derived stems are already sanitized by the builders
+ * (`toIdentifierSegment`) — this is the belt to that braces, so a hostile fetched `.spec.json`
+ * cannot write outside `--out` even if stem sanitization regresses.
+ */
+export async function writeGeneratedFiles(outDir: string, files: readonly GeneratedClient[]): Promise<void> {
+  const root = resolve(outDir);
+  const targets = files.map((file) => {
+    if (isAbsolute(file.fileName)) {
+      throw new CliError(`Generated file name '${file.fileName}' must be relative to the output directory`);
+    }
+    const target = resolve(root, file.fileName);
+    if (!target.startsWith(root + sep)) {
+      throw new CliError(`Generated file name '${file.fileName}' escapes the output directory`);
+    }
+    return target;
+  });
+
+  for (let i = 0; i < files.length; i++) {
+    const target = targets[i]!;
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, files[i]!.source, 'utf8');
+  }
 }
 
 // Only run the process entry point when this file is the one `node` was invoked on directly - not
