@@ -1,27 +1,35 @@
 /** Port of Benzene.Aws.Lambda.Kinesis.KinesisLambdaHandler. */
 import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
-import { IMiddlewareApplication } from '@benzenejs/abstractions-middleware';
+import { IMiddlewareApplicationWithResult } from '@benzenejs/abstractions-middleware';
 import { AwsEventStreamContext, AwsLambdaMiddlewareRouter, isKinesisEvent } from '@benzenejs/aws-lambda-core';
-import { KinesisStreamEvent } from 'aws-lambda';
+import { KinesisStreamBatchResponse, KinesisStreamEvent } from 'aws-lambda';
 
 /**
  * Routes AWS Lambda invocations whose event is a `KinesisStreamEvent` to the Kinesis pipeline. Added to
  * the outer `AwsEventStreamContext` pipeline by `useKinesis`; it only handles the invocation when the
- * first record's source is `aws:kinesis`, otherwise it defers to the next middleware. Kinesis targets are
- * invoked asynchronously — fire-and-forget, no response.
+ * first record's source is `aws:kinesis`, otherwise it defers to the next middleware.
+ *
+ * Writes back the `KinesisStreamBatchResponse` the application computes — for a trigger with
+ * `ReportBatchItemFailures` configured, the invocation is synchronous from Lambda's own perspective
+ * and AWS reads the single reported resume point to redeliver the unfinished tail of the batch (see
+ * `KinesisApplication`). Without `ReportBatchItemFailures` the response body is ignored by AWS, so
+ * the batch settles whole-batch-on-success exactly as before.
  *
  * STREAM -> PARSED-EVENT ADAPTATION: `tryExtractRequest` (inherited from `AwsLambdaMiddlewareRouter`)
  * returns the already-parsed `context.event` as `KinesisStreamEvent`; `canHandle` does the real
  * discrimination on `eventSource`. PascalCase mapping: `event.Records` (stays PascalCase in
  * `@types/aws-lambda`), `records[0].eventSource` (record envelope is camelCase).
  *
- * FIRE-AND-FORGET / RESPONSE SENTINEL: as with SNS, this port's `AwsEventStreamContext.response` starts
- * `undefined` (the entry point's "event not recognized" signal), so a handling fire-and-forget router
- * writes the `null` "handled, no body" sentinel — see `SnsLambdaHandler` for the full explanation.
+ * C# `StreamMiddlewareApplication<..., KinesisBatchResponse>` maps to
+ * `IMiddlewareApplicationWithResult<KinesisStreamEvent, KinesisStreamBatchResponse>` (the
+ * `WithResult` rule) — the same shape as `DynamoDbLambdaHandler`.
  */
 export class KinesisLambdaHandler extends AwsLambdaMiddlewareRouter<KinesisStreamEvent> {
   constructor(
-    private readonly application: IMiddlewareApplication<KinesisStreamEvent>,
+    private readonly application: IMiddlewareApplicationWithResult<
+      KinesisStreamEvent,
+      KinesisStreamBatchResponse
+    >,
     serviceResolver: IServiceResolver,
   ) {
     super(serviceResolver);
@@ -32,13 +40,13 @@ export class KinesisLambdaHandler extends AwsLambdaMiddlewareRouter<KinesisStrea
     return isKinesisEvent(request);
   }
 
-  /** Runs the Kinesis application (no response) and marks the event as handled via the null sentinel. */
+  /** Runs the Kinesis application and writes the batch response onto the outer context. */
   protected async handleFunction(
     request: KinesisStreamEvent,
     context: AwsEventStreamContext,
     serviceResolverFactory: IServiceResolverFactory,
   ): Promise<void> {
-    await this.application.handleAsync(request, serviceResolverFactory);
-    this.mapResponse(context, null);
+    const response = await this.application.handleAsync(request, serviceResolverFactory);
+    this.mapResponse(context, response);
   }
 }

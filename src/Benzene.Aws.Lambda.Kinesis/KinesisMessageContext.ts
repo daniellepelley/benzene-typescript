@@ -4,13 +4,15 @@ import { KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
 /**
  * The middleware pipeline context for a single record within a Kinesis Data Streams batch.
  *
- * STREAMING -> PER-RECORD FAN-OUT ADAPTATION: the C# `Benzene.Aws.Lambda.Kinesis` is built on the
+ * STREAMING -> PER-RECORD ADAPTATION: the C# `Benzene.Aws.Lambda.Kinesis` is built on the
  * streaming engine (`StreamMiddlewareApplication` / `StreamContext<KinesisEventRecord>` / `UseStream`),
  * exposing the whole batch as one `IAsyncEnumerable` (fan-in). That streaming engine is NOT yet ported to
- * this repo (see the README roadmap — streaming is a later phase), so this adapter instead mirrors the
- * SQS/SNS PER-RECORD fan-out shape already established here: one `KinesisMessageContext` per record routed
- * to a `@message` handler by topic. This is a deliberate, documented divergence from the C# streaming
- * model; when the streaming engine is ported, this package can be revisited to match `KinesisStreamApplication`.
+ * this repo (see the README roadmap — streaming is a later phase), so this adapter instead routes one
+ * `KinesisMessageContext` per record to a `@message` handler by topic — while `KinesisApplication`
+ * carries the C# CHECKPOINT ENGINE's semantics (sequential per partition key, stop-at-first-failure,
+ * contiguous-prefix-watermark `batchItemFailures`; see its doc comment). This is a deliberate,
+ * documented divergence from the C# streaming model; when the streaming engine is ported, this package
+ * can be revisited to match `KinesisStreamApplication`.
  *
  * Field mapping (`@types/aws-lambda`, `KinesisStreamRecord`): `record.eventSource`, `record.eventID`,
  * `record.kinesis.data` (base64), `record.kinesis.partitionKey`, `record.kinesis.sequenceNumber`.

@@ -10,11 +10,14 @@ import { KinesisMessageContext } from './KinesisMessageContext';
 /**
  * Adds Kinesis handling to an AWS Lambda (`AwsEventStreamContext`) pipeline: registers the Kinesis
  * services, builds the inner per-record `KinesisMessageContext` pipeline from `action`, and appends a
- * `KinesisLambdaHandler` (which runs a `KinesisApplication` over that pipeline).
+ * `KinesisLambdaHandler` (which runs a `KinesisApplication` — sequential per partition key,
+ * stop-at-first-failure, contiguous-prefix-watermark `batchItemFailures` — over that pipeline).
+ * Configure `ReportBatchItemFailures` on the event source mapping so AWS reads the reported resume
+ * point (see the package README).
  *
  * NAME + MODEL ADAPTATION: the C# extension is `UseKinesisStream` (streaming fan-in over
  * `StreamContext<KinesisEventRecord>`). Because the streaming engine is not yet ported, this port adapts
- * to the per-record fan-out shape and names the helper `useKinesis` (matching the task's `addKinesis` /
+ * to the per-record routing shape and names the helper `useKinesis` (matching the task's `addKinesis` /
  * `useKinesis` surface). Kinesis records carry no topic, so route them with `usePresetTopic('<topic>')`
  * before `useMessageHandlers`. See `KinesisMessageContext` for the full rationale.
  */

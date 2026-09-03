@@ -104,6 +104,7 @@ at-least-once):
 | AWS Lambda SQS (`src/Benzene.Aws.Lambda.Sqs`) | `SqsOptions.batchFailureMode` defaults `PartialBatchFailure` — failed messages reported via `ReportBatchItemFailures`; a null/unrouted outcome is reported too (`isSuccessful !== true`) |
 | AWS SQS self-hosted consumer (`src/Benzene.Aws.Sqs`) | Deletes only explicit successes (`isSuccessful !== true` retains); a failed or null/unrouted outcome is left for the redrive policy/DLQ |
 | AWS DynamoDB Streams (`src/Benzene.Aws.Lambda.DynamoDb`) | Sequential processing stops at the first record without a successful outcome (failure or null/unrouted outcome alike) and reports it as a batch item failure |
+| AWS Kinesis (`src/Benzene.Aws.Lambda.Kinesis`) | Checkpoint engine: partition-key groups run sequentially in shard order and stop at the first record without a successful outcome (failure or null/unrouted outcome alike); the response reports the contiguous-prefix watermark — the first UNconfirmed record's sequence number, never past the confirmed prefix — via `ReportBatchItemFailures`, so AWS redelivers from there (safe over-retry, never a silent skip; configure the event source mapping with `FunctionResponseTypes: [ReportBatchItemFailures]`) |
 | AWS SNS (`src/Benzene.Aws.Lambda.Sns`) | `SnsOptions.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so the subscription retry/redrive policy applies |
 | AWS S3 (`src/Benzene.Aws.Lambda.S3`) | `S3Options.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so the async-invoke retry/on-failure destination applies |
 | AWS EventBridge (`src/Benzene.Aws.Lambda.EventBridge`) | `EventBridgeOptions.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so the rule target retry/DLQ applies |
@@ -126,12 +127,11 @@ every poison record):
 | Kafka self-hosted worker (`src/Benzene.Kafka.Core`) | `commitOnlyOnSuccess` defaults `false`: offsets auto-commit regardless of outcome, so a failed record is skipped (a returned failure result is at least logged — `raiseOnFailureStatus` defaults `true`). Opt into at-least-once with `commitOnlyOnSuccess: true` (requires `catchHandlerExceptions: false`); a returned failure result then settles like a throw (no commit, worker stops, record redelivers). A null/unrouted outcome is always committed (carve-out — no per-record DLQ) |
 | Azure Event Hubs self-hosted worker (`src/Benzene.Azure.EventHub`) | `catchHandlerExceptions` defaults `true` (skip-and-continue), so a failed event — or an escalated failure result, `raiseOnFailureStatus` also defaults `true` — is logged and skipped once a later event checkpoints past it. Opt into at-least-once with `catchHandlerExceptions: false` and accept that a poison record halts the worker. A null/unrouted outcome checkpoints normally (carve-out — no per-record DLQ) |
 
-**Fan-in transports** (Kinesis per-record adaptation aside, no per-record result is inspected, so
-there is no failure-vs-null axis to have a policy about):
+**Fan-in transports** (no per-record result is inspected, so there is no failure-vs-null axis to
+have a policy about):
 
 | Transport | State |
 |---|---|
-| AWS Kinesis (`src/Benzene.Aws.Lambda.Kinesis`) | Per-record fan-out **adaptation** — the C# streaming/checkpoint engine is not ported (stated in the package's own ADAPTATION note), so there is no per-record checkpoint semantics; a null/unrouted outcome has no settlement effect. Have the handler **throw** for anything that must retry |
 | Azure Cosmos DB change feed (`src/Benzene.Azure.CosmosDb`, `src/Benzene.Azure.Function.CosmosDb`) | Fan-in: the whole batch is one invocation and failure is signalled by throwing or withholding the checkpoint; a null/unrouted outcome has no per-record settlement axis |
 
 ## Why "we don't do that" is a feature

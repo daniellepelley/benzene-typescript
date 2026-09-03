@@ -25,10 +25,11 @@ import { benzeneTestHost, messageBuilder, type BenzeneStartUp } from '@benzenejs
 import { asKinesis } from '@benzenejs/aws-lambda-testing';
 
 /**
- * End-to-end port of the C# Kinesis tests, adapted to this port's PER-RECORD FAN-OUT model (the C#
- * streaming engine is not yet ported — see `KinesisMessageContext`). A Kinesis record carries no topic,
- * so the pipeline routes records to a fixed topic via `usePresetTopic`. The body is base64-decoded from
- * `record.kinesis.data`. Kinesis is fire-and-forget, so the router writes the `null` "handled" sentinel.
+ * End-to-end port of the C# Kinesis tests, adapted to this port's PER-RECORD model (the C# streaming
+ * engine is not yet ported — see `KinesisMessageContext`). A Kinesis record carries no topic, so the
+ * pipeline routes records to a fixed topic via `usePresetTopic`. The body is base64-decoded from
+ * `record.kinesis.data`. Since W3.3 the router writes back a real `KinesisStreamBatchResponse`
+ * (checkpoint engine — see KinesisStreamCheckpointTest for the resume-point semantics).
  */
 
 class Order {
@@ -108,8 +109,9 @@ describe('KinesisPipeline (via the benzeneTestHost harness)', () => {
 
     // The handler ran with the base64-decoded body...
     expect(handled).toEqual(['42']);
-    // ...and Kinesis is fire-and-forget: the router marks the event handled with the null sentinel.
-    expect(response).toBeNull();
+    // ...and the router writes back the checkpoint engine's batch response — a fully-processed batch
+    // reports no failures (its resume point advanced to the end).
+    expect(response).toEqual({ batchItemFailures: [] });
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {
@@ -129,6 +131,7 @@ describe('KinesisApplication (direct)', () => {
     const pipeline = new MiddlewarePipelineBuilder<KinesisMessageContext>(container);
     pipeline.useFn(async (context, next) => {
       seenBodies.push(Buffer.from(context.record.kinesis.data, 'base64').toString('utf8'));
+      context.isSuccessful = true;
       await next();
     });
 
@@ -138,10 +141,10 @@ describe('KinesisApplication (direct)', () => {
       { sequenceNumber: '2', body: { orderId: '2' } },
     ]);
 
-    await application.handleAsync(event, container.createServiceResolverFactory());
+    const response = await application.handleAsync(event, container.createServiceResolverFactory());
 
-    expect(seenBodies.sort()).toEqual(
-      [JSON.stringify({ orderId: '1' }), JSON.stringify({ orderId: '2' })].sort(),
-    );
+    // Same partition key -> sequential in shard order (the checkpoint engine's ordering guarantee).
+    expect(seenBodies).toEqual([JSON.stringify({ orderId: '1' }), JSON.stringify({ orderId: '2' })]);
+    expect(response).toEqual({ batchItemFailures: [] });
   });
 });

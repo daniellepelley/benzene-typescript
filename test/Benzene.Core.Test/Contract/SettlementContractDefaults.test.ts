@@ -132,6 +132,9 @@ describe('SettlementContractDefaults', () => {
     'src/Benzene.Aws.Lambda.Sqs',
     'src/Benzene.Aws.Sqs',
     'src/Benzene.Aws.Lambda.DynamoDb',
+    // Since W3.3 (checkpoint engine ported), Kinesis reports a contiguous-prefix-watermark resume
+    // point via ReportBatchItemFailures — safe by default, like its DynamoDB stream sibling.
+    'src/Benzene.Aws.Lambda.Kinesis',
     'src/Benzene.Aws.Lambda.Sns',
     'src/Benzene.Aws.Lambda.S3',
     'src/Benzene.Aws.Lambda.EventBridge',
@@ -242,6 +245,12 @@ describe('SettlementContractDefaults', () => {
       "isSuccessful !== true",
     );
     expect(readRepoFile('src/Benzene.Aws.Lambda.DynamoDb/DynamoDbApplication.ts')).toContain(
+      'context.isSuccessful !== true',
+    );
+    // Kinesis (W3.3 checkpoint engine — no row in the .NET §1 table, which predates the TS port's
+    // engine): the same RETAIN rule as DynamoDb — a null/unrouted outcome stops the partition's
+    // group and is reported via the watermark, never checkpointed past.
+    expect(readRepoFile('src/Benzene.Aws.Lambda.Kinesis/KinesisApplication.ts')).toContain(
       'context.isSuccessful !== true',
     );
     expect(readRepoFile('src/Benzene.Azure.ServiceBus/BenzeneServiceBusWorker.ts')).toContain(
