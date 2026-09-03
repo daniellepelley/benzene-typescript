@@ -9,6 +9,9 @@ Convention: when a plan's work ships, the doc does not stay here — it moves to
 
 Current contents:
 
+- `dotnet-parity-plan-2026-09.md` — the prioritized plan (4 waves + do-not-port + blocked-upstream
+  watch list) for catching this port up to benzene-dotnet's post-2026-08-20 fix rounds and the
+  spec/conformance changes, with per-item TS-source evidence and .NET `R<round> #<n>` citations.
 - `npm-release-state.md` — the npm release of `0.1.0-beta.1` is half-published (verified
   2026-08-20: `@benzenejs/abstractions` resolves, `@benzenejs/core` is 404); one maintainer action
   (the `NPM_TOKEN` secret) plus a workflow re-run remain.
