@@ -19,6 +19,15 @@ export default defineConfig({
     alias: workspaceAliases,
   },
   test: {
-    exclude: [...configDefaults.exclude, 'templates/**', 'create-benzene/**', '**/.verify/**'],
+    // `.claude/worktrees/**` holds other agents' git worktrees (full checkouts of other branches);
+    // their test files would otherwise be collected here and run against THIS tree's src (the
+    // `@benzenejs/*` aliases above resolve relative to this config), failing on cross-branch drift.
+    exclude: [
+      ...configDefaults.exclude,
+      'templates/**',
+      'create-benzene/**',
+      '**/.verify/**',
+      '**/.claude/**',
+    ],
   },
 });
