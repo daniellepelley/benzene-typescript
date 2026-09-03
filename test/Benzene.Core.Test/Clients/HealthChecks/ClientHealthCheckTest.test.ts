@@ -128,14 +128,56 @@ describe('ClientHealthCheck', () => {
     expect(result.data.errors).toEqual(['down']);
   });
 
-  it('execute_ClientThrows_ReturnsFailed', async () => {
-    const client = new FakeClient('v1', () => Promise.reject(new Error('connection refused')));
+  // --- W3.11 (R18 #298's ruling, the Go port's long-documented stance): a client-facing health
+  // check reports the error's TYPE/category, never its message — a message can carry infra detail
+  // (hostnames, connection strings) an unauthenticated health caller must never see. The raw error
+  // reaches only the server-side onError log hook. -------------------------------------------------
+
+  it('execute_ClientThrows_ReturnsFailed_ReportingTheErrorCategoryNeverTheMessage', async () => {
+    const secret = 'connection refused to internal-db.prod.local:5432 as user admin';
+    const client = new FakeClient('v1', () => Promise.reject(new Error(secret)));
 
     const result = await new ClientHealthCheck('orders', client).executeAsync();
 
     expect(result.status).toBe(HealthCheckStatus.failed);
     expect(result.data.reachable).toBe(false);
-    expect(result.data.error).toBe('connection refused');
+    expect(result.data.error).toBe('Error');
+    // The whole health Data bag must be free of the exception's message text.
+    expect(JSON.stringify(result.data)).not.toContain(secret);
+    expect(JSON.stringify(result.data)).not.toContain('internal-db.prod.local');
+  });
+
+  it('execute_ClientThrowsACustomErrorClass_ReportsItsConstructorName', async () => {
+    class UpstreamTimeoutError extends Error {}
+    const client = new FakeClient('v1', () =>
+      Promise.reject(new UpstreamTimeoutError('timed out after 30s talking to 10.0.0.5')),
+    );
+
+    const result = await new ClientHealthCheck('orders', client).executeAsync();
+
+    expect(result.data.error).toBe('UpstreamTimeoutError');
+    expect(JSON.stringify(result.data)).not.toContain('10.0.0.5');
+  });
+
+  it('execute_ClientThrowsANonError_ReportsItsTypeofNeverItsContent', async () => {
+    // A thrown string's content is as leak-prone as a message — `String(ex)` must not be reported.
+    const client = new FakeClient('v1', () => Promise.reject('creds=admin:hunter2'));
+
+    const result = await new ClientHealthCheck('orders', client).executeAsync();
+
+    expect(result.data.error).toBe('string');
+    expect(JSON.stringify(result.data)).not.toContain('hunter2');
+  });
+
+  it('execute_ClientThrows_RawErrorReachesOnlyTheServerSideLogHook', async () => {
+    const raw = new Error('connection refused to internal-db.prod.local:5432');
+    const seen: unknown[] = [];
+    const client = new FakeClient('v1', () => Promise.reject(raw));
+
+    const result = await new ClientHealthCheck('orders', client, (error) => seen.push(error)).executeAsync();
+
+    expect(seen).toEqual([raw]);
+    expect(result.data.error).toBe('Error');
   });
 });
 
