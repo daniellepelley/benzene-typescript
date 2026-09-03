@@ -70,6 +70,8 @@ export interface RetryOptions<TContext> {
   numberOfRetries?: number;                             // default 3
   initialDelayMs?: number;                              // default 200
   backoffFactor?: number;                               // default 2.0
+  maxDelayMs?: number;                                  // default: undefined (uncapped)
+  jitter?: (delayMs: number) => number;                 // default: identity (no jitter)
   shouldRetry?: (error: unknown) => boolean;            // default: retry all except OperationCanceledException
   shouldRetryContext?: (context: TContext) => boolean;  // default: () => false (never)
   delay?: DelayFunc;                                    // default: a setTimeout-backed delay
@@ -81,6 +83,8 @@ export interface RetryOptions<TContext> {
 | `numberOfRetries` | `3` | Number of *additional* attempts after the first. Total possible invocations of `next()` is `numberOfRetries + 1`. |
 | `initialDelayMs` | `200` | Delay in milliseconds before the *first* retry. |
 | `backoffFactor` | `2.0` | Multiplier applied to the delay after each retry (exponential backoff). `1.0` gives a constant delay. |
+| `maxDelayMs` | `undefined` (uncapped) | Caps the actual **sleep** each attempt. The underlying exponential growth is left uncapped, so later attempts still compound off the true curve — the AWS "full jitter" shape: `sleep = random(0, min(cap, base × factor^attempt))`. |
+| `jitter` | identity (no jitter) | `(delayMs: number) => number` — transforms the capped delay into the actual sleep. `RetryMiddleware.fullJitter(random?)` is a ready-made full-jitter implementation (`random(0, delay)`); pass your own `random` source to make tests deterministic. |
 | `shouldRetry` | retry everything except `OperationCanceledException` | `(error: unknown) => boolean` — called when `next()` throws, while attempts remain. Return `false` to let a specific error propagate immediately without retrying. |
 | `shouldRetryContext` | `() => false` (never) | `(context: TContext) => boolean` — called after `next()` **completes without throwing**, while attempts remain. Return `true` to retry anyway based on state in `TContext` (e.g. a result object indicating a soft failure). |
 | `delay` | `setTimeout`-backed wait | `DelayFunc` = `(delayMs: number) => Promise<void>` — the actual wait between attempts. Overriding it (e.g. to a no-op) is how the package's own tests run retry scenarios instantly. |
@@ -90,11 +94,13 @@ up — whether from thrown errors, an unsatisfied `shouldRetryContext`, or a mix
 stops. An exhausted exception-based retry **rethrows the last error**; an exhausted context-based
 retry simply returns (there was no error to throw).
 
-> **Port note — no `maxDelay` / jitter.** The .NET `RetryMiddleware` also accepts `maxDelay` and a
-> `jitter` transform (with a ready-made `FullJitter()` for thundering-herd protection). Those knobs
-> are **not** in the TypeScript port today — `RetryOptions` exposes only the fields above. If you
-> need capped, jittered backoff, layer it into your own `delay` function, or reach for a dedicated
-> library (see [Beyond retry](#beyond-retry)).
+> **Port note — `maxDelayMs` / `jitter` parity.** These are the .NET `RetryMiddleware`'s `maxDelay`
+> and `jitter` knobs (`TimeSpan` → millisecond `number`, `Func<TimeSpan, TimeSpan>` → a number
+> transform), and `RetryMiddleware.fullJitter()` is the C# non-generic companion's `FullJitter()` —
+> spread out retries from many callers that backed off at the same moment instead of them all
+> retrying in lockstep. Cap and jitter apply **only to the sleep**; the growth curve stays uncapped,
+> matching .NET and the Go port. With no `maxDelayMs`, the sleep is still clamped to `setTimeout`'s
+> 2³¹−1 ms ceiling (above it Node fires timers after 1 ms — a hot loop, not a long wait).
 
 ## Advanced Usage
 
