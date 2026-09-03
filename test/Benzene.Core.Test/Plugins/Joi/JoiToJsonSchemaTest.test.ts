@@ -23,6 +23,16 @@ describe('joiToJsonSchema', () => {
     expect(json['required']).toEqual(['orderId']);
   });
 
+  it('sorts required ordinally regardless of key declaration order (deterministic descriptors)', () => {
+    // Matches .NET's MeshSchemaGenerator (StringComparer.Ordinal): `required` is a set, so two Joi schemas
+    // listing the same keys in different orders must convert to the same JSON Schema.
+    const first = Joi.object({ zebra: Joi.string().required(), apple: Joi.string().required() });
+    const second = Joi.object({ apple: Joi.string().required(), zebra: Joi.string().required() });
+
+    expect(joiToJsonSchema(first)['required']).toEqual(['apple', 'zebra']);
+    expect(joiToJsonSchema(second)['required']).toEqual(['apple', 'zebra']);
+  });
+
   it('maps enums (.valid), formats (email/uuid), pattern, nested objects and arrays', () => {
     const schema = Joi.object({
       email: Joi.string().email(),

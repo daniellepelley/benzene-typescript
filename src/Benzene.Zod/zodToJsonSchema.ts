@@ -12,7 +12,7 @@ import { toJSONSchema, type ZodType } from 'zod';
  * `enum`, `format`, `pattern`, nested objects and arrays — the same enrichment `.NET`'s
  * `OpenApiValidationSchemaBuilder` folds in from FluentValidation, but in a single pass.
  *
- * Zod 4 exposes this natively via `z.toJSONSchema`, so no third-party converter is pulled in. Two
+ * Zod 4 exposes this natively via `z.toJSONSchema`, so no third-party converter is pulled in. Three
  * deliberate choices:
  * - `unrepresentable: 'any'` — a field Zod cannot express in JSON Schema (e.g. `z.date()`, `z.bigint()`)
  *   becomes an unconstrained `{}` rather than throwing. A single exotic field must never fail a whole
@@ -20,9 +20,39 @@ import { toJSONSchema, type ZodType } from 'zod';
  * - the root `$schema` dialect marker is stripped: these schemas are embedded as fragments inside a larger
  *   spec/descriptor document, not served as standalone documents, so the marker is redundant noise (and
  *   `.NET`'s embedded `OpenApiSchema` carries none).
+ * - every `required` array is sorted ordinally, matching .NET's `MeshSchemaGenerator` (which sorts with
+ *   `StringComparer.Ordinal`): `z.toJSONSchema` emits `required` in property-declaration order, so two
+ *   schemas declaring the same properties in different orders would otherwise produce different descriptors
+ *   (and a flapping `descriptorHash`) for the same contract. `required` is a set, so the order carries no
+ *   semantics; other arrays (`enum`, `oneOf`, …) keep their order — it is meaningful there.
  */
 export function zodToJsonSchema(schema: ZodType): Record<string, unknown> {
   const json = toJSONSchema(schema, { unrepresentable: 'any' }) as Record<string, unknown>;
   const { $schema: _dialect, ...fragment } = json;
+  sortRequired(fragment);
   return fragment;
+}
+
+/**
+ * Recursively sorts every `required` member's string array in place (a fresh object graph from
+ * `z.toJSONSchema`, so mutation is safe). Only `required`, and only when it holds nothing but strings —
+ * every other array keeps its semantic order. The default `Array.prototype.sort` compares strings by UTF-16
+ * code units, which is exactly the ordinal order .NET's `StringComparer.Ordinal` produces.
+ */
+function sortRequired(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      sortRequired(item);
+    }
+    return;
+  }
+  if (node !== null && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'required' && Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+        value.sort();
+      } else {
+        sortRequired(value);
+      }
+    }
+  }
 }

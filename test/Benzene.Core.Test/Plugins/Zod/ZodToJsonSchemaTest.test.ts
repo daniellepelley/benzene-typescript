@@ -47,6 +47,34 @@ describe('zodToJsonSchema', () => {
     expect(json['$schema']).toBeUndefined();
   });
 
+  it('sorts required ordinally regardless of property declaration order (deterministic descriptors)', () => {
+    // .NET's MeshSchemaGenerator sorts `required` with StringComparer.Ordinal so the mesh descriptor (and
+    // its contract hash) is deterministic; z.toJSONSchema emits it in declaration order, so the adapter
+    // must normalize. Nested objects included; `enum` keeps its declared (semantic) order.
+    const first = z.object({
+      zebra: z.string(),
+      apple: z.string(),
+      nested: z.object({ delta: z.string(), bravo: z.string() }),
+      status: z.enum(['new', 'paid']),
+    });
+    const second = z.object({
+      status: z.enum(['new', 'paid']),
+      nested: z.object({ bravo: z.string(), delta: z.string() }),
+      apple: z.string(),
+      zebra: z.string(),
+    });
+
+    const firstJson = zodToJsonSchema(first);
+    const secondJson = zodToJsonSchema(second);
+
+    expect(firstJson['required']).toEqual(['apple', 'nested', 'status', 'zebra']);
+    const nested = (firstJson['properties'] as Record<string, Record<string, unknown>>)['nested']!;
+    expect(nested['required']).toEqual(['bravo', 'delta']);
+    expect(secondJson['required']).toEqual(['apple', 'nested', 'status', 'zebra']);
+    const status = (firstJson['properties'] as Record<string, Record<string, unknown>>)['status']!;
+    expect(status['enum']).toEqual(['new', 'paid']);
+  });
+
   it('renders an unrepresentable field as unconstrained rather than throwing', () => {
     const schema = z.object({ id: z.string(), when: z.date().optional() });
 

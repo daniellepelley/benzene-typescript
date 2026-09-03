@@ -169,7 +169,13 @@ function canonicalTopic(topic: MeshTopicDescriptor): Record<string, unknown> {
   return canonical;
 }
 
-/** Recursively sorts object keys lexicographically (the §2.2 canonical order for schema maps); arrays keep order. */
+/**
+ * Recursively sorts object keys lexicographically (the §2.2 canonical order for schema maps). Arrays keep
+ * their semantic order, with one exception: a `required` member's string array is sorted ordinally, matching
+ * .NET's `MeshSchemaGenerator` (`StringComparer.Ordinal`). `required` is a set — its order carries no
+ * meaning — so a provider that emits it in property-declaration order must not change the contract hash;
+ * every other array (`enum`, `oneOf`, a `type` union, …) is order-significant and left alone.
+ */
 function canonicalSchema(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(canonicalSchema);
@@ -178,7 +184,11 @@ function canonicalSchema(value: unknown): unknown {
     const source = value as Record<string, unknown>;
     const sorted: Record<string, unknown> = {};
     for (const key of Object.keys(source).sort()) {
-      sorted[key] = canonicalSchema(source[key]);
+      const member = source[key];
+      sorted[key] =
+        key === 'required' && Array.isArray(member) && member.every((item) => typeof item === 'string')
+          ? [...member].sort()
+          : canonicalSchema(member);
     }
     return sorted;
   }

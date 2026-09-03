@@ -59,7 +59,10 @@ function convert(desc: YupDescription): Record<string, unknown> {
         schema['properties'] = properties;
       }
       if (required.length > 0) {
-        schema['required'] = required;
+        // Ordinal sort (UTF-16 code units), matching .NET's MeshSchemaGenerator: `required` is a set, and
+        // emitting it in field-declaration order would make the mesh descriptor (and its hash) depend on how
+        // the Yup schema happened to list its fields.
+        schema['required'] = required.sort();
       }
       break;
     }
