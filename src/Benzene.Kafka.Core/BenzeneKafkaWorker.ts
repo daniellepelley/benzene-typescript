@@ -26,8 +26,9 @@ import { KafkaApplication } from './KafkaMessage/KafkaApplication';
  *   worker by disconnecting the consumer (kafkajs would otherwise *retry* a record whose `eachMessage`
  *   throws, so the worker swallows-then-disconnects instead of rethrowing).
  * - `CommitOnlyOnSuccess` → `autoCommit: false` plus an explicit `consumer.commitOffsets(...)` after a
- *   record is handled without throwing. kafkajs commits the *next* offset to read, so the worker commits
- *   `message.offset + 1`.
+ *   record is handled without throwing AND without a returned failure result (`raiseOnFailureStatus`,
+ *   default `true`, settles a returned failure like a throw — see `BenzeneKafkaConfig`). kafkajs commits
+ *   the *next* offset to read, so the worker commits `message.offset + 1`.
  *
  * `startAsync` connects, subscribes, and calls `run` (which resolves once the consumer is running,
  * processing in the background) — it does not block until shutdown. `stopAsync` disconnects, which waits
@@ -44,7 +45,11 @@ export class BenzeneKafkaWorker implements IBenzeneWorker {
     Required<
       Pick<
         BenzeneKafkaConfig,
-        'concurrentRequests' | 'preserveOrderPerPartition' | 'catchHandlerExceptions' | 'commitOnlyOnSuccess'
+        | 'concurrentRequests'
+        | 'preserveOrderPerPartition'
+        | 'catchHandlerExceptions'
+        | 'commitOnlyOnSuccess'
+        | 'raiseOnFailureStatus'
       >
     >;
   private consumer: Consumer | undefined;
@@ -103,8 +108,9 @@ export class BenzeneKafkaWorker implements IBenzeneWorker {
   }
 
   private async onEachMessage(payload: EachMessagePayload): Promise<void> {
+    let messageResult;
     try {
-      await this.application.handleAsync(payload, this.serviceResolverFactory);
+      messageResult = await this.application.handleAsync(payload, this.serviceResolverFactory);
     } catch (error) {
       this.logError(
         error,
@@ -122,6 +128,39 @@ export class BenzeneKafkaWorker implements IBenzeneWorker {
 
       // catchHandlerExceptions (default): skip this record and keep consuming. Under auto-commit kafkajs
       // advances past it (matching the C# "log and keep that lane consuming" behaviour).
+      return;
+    }
+
+    // A handler that RETURNS a failure result (without throwing) settles like a throw when
+    // raiseOnFailureStatus (default true) is on — otherwise a returned failure is indistinguishable
+    // from a success and the record is committed as if it had succeeded (the silent-loss default .NET
+    // closed in its e967122 fix). CARVE-OUT on the null axis — do not "fix" `=== false` to `!== true`
+    // without reading benzene-dotnet's work/settlement-consistency-fix-plan.md (row 16): a null result
+    // (most commonly an unrouted record) is deliberately not escalated, because Kafka has no
+    // per-record dead-letter backstop and retaining one would replay the partition forever.
+    if (this.config.raiseOnFailureStatus && messageResult?.isSuccessful === false) {
+      if (this.config.commitOnlyOnSuccess) {
+        // Same settlement as a thrown handler exception in this configuration (catchHandlerExceptions
+        // is necessarily false here — enforced at startup): log, do NOT commit the offset, and stop
+        // the worker so a restart resumes from the last committed offset and redelivers the record.
+        this.logError(
+          undefined,
+          `Handler reported an unsuccessful result for record ` +
+            `${payload.topic}-${payload.partition}-${payload.message.offset}; not committing — the ` +
+            `record will be redelivered`,
+        );
+        this.initiateStop();
+        return;
+      }
+
+      // Default auto-commit configuration: kafkajs's periodic auto-commit advances regardless, so
+      // nothing can hold the record back. Surface the loss rather than escalating a failure nothing
+      // can act on — enable commitOnlyOnSuccess to retain a failed record.
+      this.logWarning(
+        `Handler reported an unsuccessful result for record ` +
+          `${payload.topic}-${payload.partition}-${payload.message.offset}, but offsets auto-commit ` +
+          `so the record cannot be redelivered. Enable commitOnlyOnSuccess to retain a failed record.`,
+      );
       return;
     }
 
@@ -155,6 +194,18 @@ export class BenzeneKafkaWorker implements IBenzeneWorker {
         loggingScope.tryGetService(ILoggerFactory)?.createLogger('BenzeneKafkaWorker') ??
         NullLogger.instance;
       logger.logError(error, message);
+    } finally {
+      loggingScope.dispose();
+    }
+  }
+
+  private logWarning(message: string): void {
+    const loggingScope = this.serviceResolverFactory.createScope();
+    try {
+      const logger =
+        loggingScope.tryGetService(ILoggerFactory)?.createLogger('BenzeneKafkaWorker') ??
+        NullLogger.instance;
+      logger.logWarning(message);
     } finally {
       loggingScope.dispose();
     }

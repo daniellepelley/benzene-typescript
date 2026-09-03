@@ -119,6 +119,8 @@ describe('withKafkaConfigDefaults', () => {
     expect(config.preserveOrderPerPartition).toBe(true);
     expect(config.catchHandlerExceptions).toBe(true);
     expect(config.commitOnlyOnSuccess).toBe(false);
+    // Safe default matching every other transport: a returned failure result settles like a throw.
+    expect(config.raiseOnFailureStatus).toBe(true);
   });
 });
 
@@ -341,5 +343,83 @@ describe('BenzeneKafkaWorker consume behaviour', () => {
     await worker.startAsync();
     await worker.stopAsync();
     expect(consumer.disconnected).toBe(true);
+  });
+});
+
+// Ports the .NET e967122 fix: a handler that RETURNS a failure result (without throwing) settles like
+// a throw under raiseOnFailureStatus (default true) — under commitOnlyOnSuccess its offset is withheld
+// and the worker stops (redelivery on restart); under the default auto-commit config nothing can hold
+// the record back, so it is logged and consumption continues. A NULL result stays acked (carve-out —
+// benzene-dotnet's work/settlement-consistency-fix-plan.md row 16).
+describe('BenzeneKafkaWorker returned-failure settlement', () => {
+  const failureResultPipeline: IMiddlewarePipeline<KafkaRecordContext> = {
+    handleAsync: (ctx) => {
+      ctx.messageResult = BenzeneResult.unexpectedError();
+      return Promise.resolve();
+    },
+  };
+
+  const nullResultPipeline: IMiddlewarePipeline<KafkaRecordContext> = {
+    handleAsync: () => Promise.resolve(),
+  };
+
+  it('does not commit a returned failure result under commitOnlyOnSuccess, and stops the worker', async () => {
+    const { worker, consumer } = workerFor(
+      { topics: ['t'], commitOnlyOnSuccess: true, catchHandlerExceptions: false },
+      failureResultPipeline,
+    );
+    await worker.startAsync();
+    await consumer.runConfig!.eachMessage!(payload({ topic: 't', partition: 0, offset: '5', value: 'hi' }));
+
+    // Same settlement as a thrown handler exception: no commit, worker stops, record redelivers.
+    expect(consumer.committed).toHaveLength(0);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect(consumer.disconnected).toBe(true);
+  });
+
+  it('commits a returned failure result when raiseOnFailureStatus is off (opt-out)', async () => {
+    const { worker, consumer } = workerFor(
+      {
+        topics: ['t'],
+        commitOnlyOnSuccess: true,
+        catchHandlerExceptions: false,
+        raiseOnFailureStatus: false,
+      },
+      failureResultPipeline,
+    );
+    await worker.startAsync();
+    await consumer.runConfig!.eachMessage!(payload({ topic: 't', partition: 0, offset: '5', value: 'hi' }));
+
+    expect(consumer.committed).toEqual([{ topic: 't', partition: 0, offset: '6' }]);
+    expect(consumer.disconnected).toBe(false);
+  });
+
+  it('commits a NULL result under commitOnlyOnSuccess (ack-on-null carve-out)', async () => {
+    // CARVE-OUT — an unrouted record (no result recorded) is committed, not retained: Kafka has no
+    // per-record dead-letter backstop, so retaining it would replay the partition forever. Pinned
+    // positively so it can't be "fixed" by accident.
+    const { worker, consumer } = workerFor(
+      { topics: ['t'], commitOnlyOnSuccess: true, catchHandlerExceptions: false },
+      nullResultPipeline,
+    );
+    await worker.startAsync();
+    await consumer.runConfig!.eachMessage!(payload({ topic: 't', partition: 1, offset: '9', value: 'hi' }));
+
+    expect(consumer.committed).toEqual([{ topic: 't', partition: 1, offset: '10' }]);
+    expect(consumer.disconnected).toBe(false);
+  });
+
+  it('logs and keeps consuming on a returned failure under the default auto-commit config', async () => {
+    // Auto-commit advances regardless, so nothing can hold the record back — the loss is surfaced
+    // as a warning rather than escalated into something no one can act on.
+    const { worker, consumer } = workerFor({ topics: ['t'] }, failureResultPipeline);
+    await worker.startAsync();
+    await expect(
+      consumer.runConfig!.eachMessage!(payload({ topic: 't', partition: 0, offset: '5', value: 'hi' })),
+    ).resolves.toBeUndefined();
+
+    expect(consumer.committed).toHaveLength(0);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect(consumer.disconnected).toBe(false);
   });
 });

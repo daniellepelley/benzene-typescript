@@ -67,6 +67,27 @@ export interface BenzeneKafkaConfig {
    * offset to read, so the worker commits `record.offset + 1`.)
    */
   commitOnlyOnSuccess?: boolean;
+
+  /**
+   * Whether a handler that reports an unsuccessful result WITHOUT throwing is settled the same way as
+   * one that threw. Defaults to `true` — the same safe default every other Benzene transport uses; with
+   * it off, a returned failure result is indistinguishable from a success and the record is committed
+   * regardless. What "the same way as a throw" means depends on how this worker settles offsets:
+   *
+   * - `commitOnlyOnSuccess` on: the offset is NOT committed, so the record is redelivered on
+   *   restart/rebalance; as with a throw, the worker stops (`catchHandlerExceptions` must be `false`
+   *   in this configuration) rather than letting a later record on the same partition advance the
+   *   commit watermark past it.
+   * - The default auto-commit configuration: kafkajs's periodic auto-commit advances regardless, so
+   *   nothing can hold the record back — the failure is logged as a warning so it is at least visible.
+   *   This is the same inherent at-most-once limitation a throw has here; use `commitOnlyOnSuccess`
+   *   if a failed record must survive.
+   *
+   * A null result (nothing established an outcome — most commonly an unrouted record) is deliberately
+   * NOT escalated: Kafka has no per-record dead-letter backstop, so retaining an unrouted record would
+   * replay the partition forever. See the carve-out comment in `BenzeneKafkaWorker`.
+   */
+  raiseOnFailureStatus?: boolean;
 }
 
 /** Fills in the C# property-initializer defaults for the fields the worker reads. */
@@ -76,7 +97,11 @@ export function withKafkaConfigDefaults(
   Required<
     Pick<
       BenzeneKafkaConfig,
-      'concurrentRequests' | 'preserveOrderPerPartition' | 'catchHandlerExceptions' | 'commitOnlyOnSuccess'
+      | 'concurrentRequests'
+      | 'preserveOrderPerPartition'
+      | 'catchHandlerExceptions'
+      | 'commitOnlyOnSuccess'
+      | 'raiseOnFailureStatus'
     >
   > {
   return {
@@ -85,5 +110,6 @@ export function withKafkaConfigDefaults(
     preserveOrderPerPartition: config.preserveOrderPerPartition ?? true,
     catchHandlerExceptions: config.catchHandlerExceptions ?? true,
     commitOnlyOnSuccess: config.commitOnlyOnSuccess ?? false,
+    raiseOnFailureStatus: config.raiseOnFailureStatus ?? true,
   };
 }
