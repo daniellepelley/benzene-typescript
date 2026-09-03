@@ -23,6 +23,7 @@ export * from './MeshServiceRegistryEntry';
 export * from './MeshServiceSnapshot';
 export * from './MeshServiceReport';
 export * from './MeshTopicCatalog';
+export * from './MeshDeclaredSchema';
 export * from './MeshTopicEntry';
 export * from './MeshTopicService';
 export * from './MeshTopicChange';

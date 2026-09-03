@@ -51,6 +51,27 @@ function singleServiceRegistry(): MeshServiceRegistry {
   return new MeshServiceRegistry([new MeshServiceRegistryEntry('orders-api', SpecUrl, HealthUrl)]);
 }
 
+/** Port of the C# `Canonicalise`: key-order-insensitive comparison, mirroring the aggregator's own `canonical`. */
+function canonicalise(schema: Json): string {
+  if (schema === undefined || schema === null) {
+    return 'null';
+  }
+  if (Array.isArray(schema)) {
+    return '[' + schema.map(canonicalise).join(',') + ']';
+  }
+  if (typeof schema === 'object') {
+    return (
+      '{' +
+      Object.keys(schema)
+        .sort()
+        .map((key) => JSON.stringify(key) + ':' + canonicalise(schema[key]))
+        .join(',') +
+      '}'
+    );
+  }
+  return JSON.stringify(schema);
+}
+
 /** Port of the C# `RoutingHttpMessageHandler`: a stub `fetch` that answers configured URLs. */
 function routingFetch(): {
   mapGet(url: string, status: number, content: string | undefined): ReturnType<typeof routingFetch>;
@@ -120,6 +141,31 @@ describe('MeshAggregator', () => {
     usageSources?: IMeshUsageSource[],
   ): MeshAggregator {
     return new MeshAggregator([new HttpMeshServiceSource(handler.fetchFn)], store, clock, usageSources);
+  }
+
+  /** Port of the C# `AggregateTwoServices`: two services with the given specs, aggregated once. */
+  async function aggregateTwoServices(
+    firstSpec: string,
+    secondSpec: string,
+    store: IMeshArtifactStore = new FileSystemMeshArtifactStore(rootDirectory),
+  ): Promise<Json> {
+    const secondSpecUrl = 'https://second-api.example/spec?type=benzene';
+    const secondHealthUrl = 'https://second-api.example/healthcheck';
+    const handler = routingFetch()
+      .mapGet(SpecUrl, 200, firstSpec)
+      .mapGet(HealthUrl, 200, serializeHealth(true))
+      .mapGet(secondSpecUrl, 200, secondSpec)
+      .mapGet(secondHealthUrl, 200, serializeHealth(true));
+    const aggregator = httpAggregator(handler, store);
+
+    await aggregator.runOnceAsync(
+      new MeshServiceRegistry([
+        new MeshServiceRegistryEntry('orders-api', SpecUrl, HealthUrl),
+        new MeshServiceRegistryEntry('second-api', secondSpecUrl, secondHealthUrl),
+      ]),
+    );
+
+    return JSON.parse((await store.tryReadAsync('topics.json'))!) as Json;
   }
 
   it('RunOnceAsync_HealthyService_FirstRun_ReportsHealthyNoDrift', async () => {
@@ -373,6 +419,101 @@ describe('MeshAggregator', () => {
     expect(submitted.consumers).toHaveLength(2);
     expect(submitted.schemaMismatch).toBe(true);
     expect(submitted.requestSchema).not.toBeUndefined();
+
+    // THE SUBSTANCE BEHIND THE FLAG. Saying two services disagree and declining to say how left a reader
+    // opening each service's spec by hand - a detection with no finding under it.
+    expect(submitted.declaredSchemas).not.toBeUndefined();
+    const declared = submitted.declaredSchemas as Json[];
+    expect(declared).toHaveLength(2);
+    const orders = declared.filter((d: Json) => d.service === 'orders-api');
+    const fulfilment = declared.filter((d: Json) => d.service === 'fulfilment-api');
+    expect(orders).toHaveLength(1);
+    expect(fulfilment).toHaveLength(1);
+    expect(orders[0].role).toBe('consumer');
+    // Each service's OWN declaration, verbatim and attributed - not a diff against a chosen reference,
+    // because choosing one would say that service is the correct one.
+    expect(orders[0].requestSchema.properties.warehouse).toBeUndefined();
+    expect(fulfilment[0].requestSchema.properties.warehouse).not.toBeUndefined();
+    // The representative schema the entry publishes is one of the declarations, not a synthesis.
+    expect(declared.some((d: Json) => canonicalise(d.requestSchema) === canonicalise(submitted.requestSchema))).toBe(true);
+  });
+
+  it('RunOnceAsync_ConsumersAgree_PublishesNoDeclaredSchemas', async () => {
+    // On a topic whose services agree there is nothing to attribute, and the representative schemas are the
+    // whole story. Publishing declarations anyway would be noise on every topic in the catalogue.
+    const spec = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"id":{"type":"string"}}}}]}';
+    const catalog = await aggregateTwoServices(spec, spec);
+
+    const submitted = catalog.topics.find((t: Json) => t.topic === 'order:submitted');
+    expect(submitted.schemaMismatch).toBe(false);
+    expect(submitted.declaredSchemas).toBeUndefined();
+  });
+
+  it('RunOnceAsync_ResponseOnlyMismatch_StillAttributesEveryDeclaration', async () => {
+    // Request and response are flagged independently, and the attribution must cover both sides: a reader
+    // looking at a response-side disagreement still needs to see what each service declares it ACCEPTS, or
+    // they cannot tell whether the two sides are related.
+    const a = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"id":{"type":"string"}}},"response":{"type":"object","properties":{"ok":{"type":"boolean"}}}}]}';
+    const b = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"id":{"type":"string"}}},"response":{"type":"object","properties":{"accepted":{"type":"boolean"}}}}]}';
+    const catalog = await aggregateTwoServices(a, b);
+
+    const submitted = catalog.topics.find((t: Json) => t.topic === 'order:submitted');
+    expect(submitted.schemaMismatch).toBe(true);
+    expect(submitted.declaredSchemas).not.toBeUndefined();
+    const declared = submitted.declaredSchemas as Json[];
+    expect(declared).toHaveLength(2);
+    for (const d of declared) {
+      expect(d.requestSchema).not.toBeUndefined();
+      expect(d.responseSchema).not.toBeUndefined();
+    }
+  });
+
+  it('RunOnceAsync_MismatchOutsideTheClassifiableKeywords_StillAttributesIt', async () => {
+    // A difference in a keyword no comparer classifies (`maxLength`) would publish as an empty diff -
+    // "they differ, we cannot say where". Raw declarations carry it, which is the argument for publishing
+    // declarations over diffs.
+    const a = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"ref":{"type":"string","maxLength":12}}}}]}';
+    const b = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"ref":{"type":"string","maxLength":64}}}}]}';
+    const catalog = await aggregateTwoServices(a, b);
+
+    const submitted = catalog.topics.find((t: Json) => t.topic === 'order:submitted');
+    expect(submitted.schemaMismatch).toBe(true);
+    expect(submitted.declaredSchemas).not.toBeUndefined();
+    const lengths = (submitted.declaredSchemas as Json[])
+      .map((d: Json) => d.requestSchema.properties.ref.maxLength as number)
+      .sort((x: number, y: number) => x - y);
+    expect(lengths).toEqual([12, 64]);
+  });
+
+  it('RunOnceAsync_ReservedTopic_NeverPublishesDeclaredSchemas', async () => {
+    const a = '{"requests":[{"topic":"benzene:spec","reserved":true,"request":{"type":"object","properties":{"a":{"type":"string"}}}}]}';
+    const b = '{"requests":[{"topic":"benzene:spec","reserved":true,"request":{"type":"object","properties":{"b":{"type":"string"}}}}]}';
+    const catalog = await aggregateTwoServices(a, b);
+
+    const spec = catalog.topics.find((t: Json) => t.topic === 'benzene:spec');
+    expect(spec.schemaMismatch).toBe(false);
+    expect(spec.declaredSchemas).toBeUndefined();
+  });
+
+  it('RunOnceAsync_MismatchWithRunOverRunChanges_KeepsDeclaredSchemasThroughTheRebuild', async () => {
+    // The diff pass re-stamps changed entries via a full reconstruction; a rebuild that quietly dropped
+    // `declaredSchemas` would lose the attribution from precisely the topics that just changed. First run:
+    // one consumer, no mismatch. Second run: a second, disagreeing consumer joins -> consumers-changed AND
+    // mismatch, on the same rebuilt entry.
+    const a = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"id":{"type":"string"}}}}]}';
+    const b = '{"requests":[{"topic":"order:submitted","request":{"type":"object","properties":{"id":{"type":"string"},"warehouse":{"type":"string"}}}}]}';
+
+    const store = new FileSystemMeshArtifactStore(rootDirectory);
+    const firstHandler = routingFetch().mapGet(SpecUrl, 200, a).mapGet(HealthUrl, 200, serializeHealth(true));
+    await httpAggregator(firstHandler, store).runOnceAsync(singleServiceRegistry());
+
+    const catalog = await aggregateTwoServices(a, b, store);
+    const submitted = catalog.topics.find((t: Json) => t.topic === 'order:submitted');
+
+    expect(submitted.changes.length).toBeGreaterThan(0); // the entry went through the rebuild path
+    expect(submitted.schemaMismatch).toBe(true);
+    expect(submitted.declaredSchemas).not.toBeUndefined();
+    expect(submitted.declaredSchemas).toHaveLength(2);
   });
 
   it('RunOnceAsync_TwoConsumersSameTopicVersion_IdenticalPayloads_NoMismatch', async () => {
