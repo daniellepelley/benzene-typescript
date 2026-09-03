@@ -5,6 +5,7 @@ import {
   MeshCollectorStore,
 } from '@benzenejs/mesh-collector';
 import {
+  MeshHeartbeat,
   MeshIssue,
   MeshIssueBatch,
   MeshServiceDescriptor,
@@ -44,11 +45,19 @@ function event(
  * inversion: `handles` becomes `topics`, which makes the service those topics' CONSUMER, and `sends`
  * becomes `produces`, which makes it their PROVIDER.
  */
-function descriptor(service: string, handles: string[], sends: string[]): MeshServiceDescriptor {
+function descriptor(
+  service: string,
+  handles: string[],
+  sends: string[],
+  serviceVersion?: string,
+  descriptorHash?: string,
+): MeshServiceDescriptor {
   const value = new MeshServiceDescriptor();
   value.service = service;
   value.topics = handles.map(topicDescriptor);
   value.produces = sends.map(topicDescriptor);
+  value.serviceVersion = serviceVersion;
+  value.descriptorHash = descriptorHash;
   return value;
 }
 
@@ -289,6 +298,129 @@ describe('MeshCollectorStore', () => {
     expect(issues[0].count).toBe(2); // one occurrence per event, merged by the shared fingerprint
     expect(issues[0].firstSeen).toBe(1_000);
     expect(issues[0].lastSeen).toBe(2_000);
+  });
+
+  // ---- serviceVersion (mesh.md §2.4): retained on ingest, exposed on both query results ----
+
+  it('Register_WithServiceVersion_IsRetainedAndExposedOnFleetAndServiceQueries', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['order:create'], [], '2.3.1'));
+
+    const summary = store.fleet().services.find((s) => s.service === 'orders')!;
+    const view = store.service('orders');
+
+    expect(summary.serviceVersion).toBe('2.3.1');
+    expect(view).toBeDefined();
+    expect(view!.serviceVersion).toBe('2.3.1');
+    expect(view!.descriptor?.serviceVersion).toBe('2.3.1'); // still on the full descriptor too
+  });
+
+  it('Register_WithNoServiceVersion_LeavesItUndefined_NotDefaultedOrDropped', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['order:create'], [])); // no serviceVersion
+
+    const summary = store.fleet().services.find((s) => s.service === 'orders')!;
+
+    expect(summary.serviceVersion).toBeUndefined();
+  });
+
+  it('Reregistration_UnderANewVersion_KeepsBothCatalogEntries_AndTheHeadlineViewReportsTheLatest', () => {
+    // The catalog is keyed by (service, serviceVersion) (spec §2.4): a second version registers
+    // ALONGSIDE the first, never over it. The fleet carries one row per live version (pinned by
+    // mesh-service-version-cases.json - a documented divergence from the C# fleet's one-row-per-name
+    // headline shape); the by-name service view reports the most recently registered version.
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['order:create'], [], '1.0.0'));
+    store.register(descriptor('orders', ['order:create'], [], '2.0.0'));
+
+    const rows = store.fleet().services.filter((s) => s.service === 'orders');
+    expect(rows.map((s) => s.serviceVersion)).toEqual(['1.0.0', '2.0.0']);
+    expect(store.service('orders')!.serviceVersion).toBe('2.0.0'); // the headline is the latest registered
+  });
+
+  // ---- #283 (ported): the §4.2 drift check must be version-aware like hashMatches - a topic
+  // declared by ANY currently live version of a service is "declared", not just the most-recently-
+  // registered ("headline") version's own list. Without this, the moment a second version registers,
+  // every message an older-but-still-live version legitimately handles is misfiled as contract-drift
+  // - the same false-positive class #251 fixed for hashMatches.
+
+  it('OlderLiveVersion_HandlingItsOwnDeclaredTopic_IsNotFlaggedAsDrift_OnceANewerVersionRegisters', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['topic-a'], [], '1.0.0'));
+    store.register(descriptor('orders', ['topic-b'], [], '2.0.0')); // v2 becomes the headline row
+
+    // A v1 instance handles topic-a - exactly what v1's OWN live, registered descriptor declares.
+    store.addEvents([event('trace-1', 'span-1', 'orders', 'topic-a', Date.now())]);
+
+    expect(store.fleet().issues).toHaveLength(0);
+  });
+
+  it('TopicNoLiveVersionDeclares_IsStillFlaggedAsDrift_EvenWithMultipleLiveVersions', () => {
+    const store = new MeshCollectorStore();
+    store.register(descriptor('orders', ['topic-a'], [], '1.0.0'));
+    store.register(descriptor('orders', ['topic-b'], [], '2.0.0'));
+
+    // Neither live version declares "topic-c" - a genuine drift must still be caught.
+    store.addEvents([event('trace-1', 'span-1', 'orders', 'topic-c', Date.now())]);
+
+    const issues = store.fleet().issues;
+    expect(issues).toHaveLength(1);
+    expect(issues[0].classification).toBe('contract-drift');
+    expect(issues[0].topic).toBe('topic-c');
+  });
+
+  // ---- #290 (ported): without an eviction policy, a service that legitimately re-registers under a
+  // new serviceVersion on every deploy accumulates one permanent catalog entry per historical deploy,
+  // forever. A max-versions-per-service cap (default 8) bounds it, evicting the least-recently-
+  // registered non-current version (preferring one with no live instance) and retracting its topic
+  // edges so nothing dangles. The C# test counts descriptors via reflection; here the per-version
+  // fleet rows make the live set directly observable.
+
+  it('Register_ManyDistinctVersions_DescriptorsAreCappedAtTheConfiguredMax', () => {
+    const store = new MeshCollectorStore(4096, 1024, 8);
+    const deployCount = 5000; // simulates 5,000 CI/CD deploys of one logical service
+    for (let i = 0; i < deployCount; i++) {
+      store.register(descriptor('orders-api', [`topic-${i}`], [], `deploy-${i}`));
+    }
+
+    expect(store.fleet().services.filter((s) => s.service === 'orders-api')).toHaveLength(8);
+  });
+
+  it('Register_OverCap_EvictsTheLeastRecentlyRegisteredVersionWithNoLiveInstance_NotACurrentOrLiveOne', () => {
+    const store = new MeshCollectorStore(4096, 1024, 2);
+    store.register(descriptor('orders', ['topic-old'], [], 'v1', 'hash-v1'));
+    // v1 has a live instance reporting ITS hash - it must survive eviction in favor of a dead version.
+    const beat = new MeshHeartbeat();
+    beat.service = 'orders';
+    beat.instanceId = 'i1';
+    beat.descriptorHash = 'hash-v1';
+    store.heartbeat(beat);
+    store.register(descriptor('orders', ['topic-mid'], [], 'v2', 'hash-v2')); // no instance ever reports hash-v2
+
+    // Registering v3 exceeds the cap of 2: v2 (no live instance) must be evicted over v1 (live instance).
+    store.register(descriptor('orders', ['topic-new'], [], 'v3', 'hash-v3'));
+
+    expect(store.fleet().services.filter((s) => s.service === 'orders')).toHaveLength(2);
+    // v1's edge survives...
+    expect(store.topic('topic-old', undefined)!.consumers).toEqual(['orders']);
+    // ...v2's edge was retracted (evicted), not left dangling in the topic catalog...
+    expect(store.topic('topic-mid', undefined)!.consumers).toEqual([]);
+    // ...and v3 (the newly registered, current version) is present.
+    expect(store.topic('topic-new', undefined)!.consumers).toEqual(['orders']);
+  });
+
+  it('Register_OverCap_NeverEvictsTheCurrentVersion', () => {
+    const store = new MeshCollectorStore(4096, 1024, 1);
+    store.register(descriptor('orders', ['topic-a'], [], 'v1'));
+
+    // Registering v2 exceeds the cap of 1 - v1 (the only other version) is evicted, never v2 itself
+    // (the version just registered, which becomes current).
+    store.register(descriptor('orders', ['topic-b'], [], 'v2'));
+
+    const rows = store.fleet().services.filter((s) => s.service === 'orders');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].serviceVersion).toBe('v2');
+    expect(store.topic('topic-a', undefined)!.consumers).toEqual([]); // v1's edge retracted on eviction
   });
 
   // ---- correlation lookup (benzene:mesh:query:correlation) ----

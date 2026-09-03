@@ -47,10 +47,15 @@ interface CollectorFixture {
   cases: CollectorCase[];
 }
 
-// Each entry names a fixture that speaks the collector step model; both are vendored, and both run.
+// Each entry names a fixture that speaks the collector step model; all three are vendored, and all
+// three run. `mesh-service-version-cases.json` (mesh.md §2.4) pins the versioned catalog this port
+// claims: the catalog keyed by (service, serviceVersion), so side-by-side releases are two entries,
+// re-registering one version never disturbs another, and an omitted serviceVersion keys exactly as
+// it always did.
 const fixtures: ReadonlyArray<[string, CollectorFixture]> = [
   ['mesh-collector-cases.json', load<CollectorFixture>('mesh-collector-cases.json')],
   ['mesh-issue-cases.json', load<CollectorFixture>('mesh-issue-cases.json')],
+  ['mesh-service-version-cases.json', load<CollectorFixture>('mesh-service-version-cases.json')],
 ];
 
 /** One fresh collector - a real pipeline wired exactly as `examples/k8s-mesh` wires its live collector. */

@@ -21,8 +21,29 @@
  * names a topic it never declared providing/consuming - the "Undeclared" signal. An anonymous/never-registered
  * service is never flagged (no descriptor, no contract to diverge from).
  *
+ * **Versioned catalog (mesh.md §2.4/§2.5):** the catalog is keyed by `(service, serviceVersion)` -
+ * `ServiceState.descriptors`, keyed by `serviceVersion ?? ''` - so two releases deployed side by side
+ * are two entries, re-registering one version never disturbs another, per-instance `hashMatches`
+ * resolves against every live version's hash (two versions with differing hashes = healthy; the same
+ * version re-registered with a different hash = drift), the §4.2 drift check accepts a topic any live
+ * version declares, and a `maxVersionsPerService` cap (default 8) bounds retention with the evicted
+ * version's edges retracted. The identity is extrinsic - exactly the declared `serviceVersion`, never
+ * synthesized from per-boot values or derived from `descriptorHash` - and the producer/consumer graph
+ * still collapses versions to one node per service (§4: graph membership is by `service`).
+ * Pinned by `mesh-service-version-cases.json`; version ORDERING (§2.5) lives in
+ * `@benzenejs/mesh-contracts`' `MeshVersionOrder`, deliberately not consulted here (a catalog must
+ * hold unordered and mixed-scheme version sets too).
+ *
  * Divergences from the C# original:
  * - `DateTimeOffset` -> epoch-millisecond `number`; `DateTimeOffset.UtcNow` -> `Date.now()`.
+ * - The fleet's `services` list carries one row per live `(service, serviceVersion)` entry, where the
+ *   C# original keeps one headline row per name: the canonical `mesh-service-version-cases.json`
+ *   (which the .NET repo vendors but does not yet run) asserts the per-version rows, and the fixture
+ *   wins. The `benzene:mesh:query:service` view stays one-per-name (headline version), matching C#.
+ * - Declared edges are rebuilt as the union over all live versions (`rebuildDeclaredEdges`) rather
+ *   than retracted pointwise per version (C# `RetractEdges`): a pointwise retraction drops a shared
+ *   service-name edge a still-live sibling version also declares - the fixture's
+ *   `re-registering-one-version-does-not-disturb-the-other` case pins the union behavior.
  * - The C# `lock (_lock)` around every mutation/read is dropped: JS is single-threaded, so no batch can be
  *   torn by a concurrent one (the §6 "snapshot copy" concern the lock guarded does not arise).
  * - The collector-local `BenzeneResultStatusExtensions.IsSuccess` (a duplicate of the six-status success
@@ -66,7 +87,36 @@ interface InstanceState {
 }
 
 class ServiceState {
-  descriptor?: MeshServiceDescriptor;
+  /**
+   * Every currently live `(service, serviceVersion)` descriptor, keyed by `serviceVersion ?? ''` -
+   * the catalog key spec §2.4 requires: two releases deployed side by side (a canary/blue-green) are
+   * two independent entries here, neither evicting the other. A re-registration of the SAME key
+   * replaces that key's entry wholesale (the pre-§2.4 behavior, unchanged for the versionless '' key);
+   * a DIFFERENT key is added alongside, never removing a sibling. Identity is extrinsic (§2.4): the
+   * key is exactly what the descriptor declared - never synthesized from a per-boot value, an
+   * instanceId, or the descriptorHash (which fingerprints the contract, precisely what §2.4 says a
+   * version is NOT defined by).
+   */
+  readonly descriptors = new Map<string, MeshServiceDescriptor>();
+
+  /**
+   * Monotonic registration-order stamp per version key, set every time {@link descriptors} gains or
+   * refreshes that key - what makes "least-recently-registered" well-defined for the
+   * `maxVersionsPerService` eviction ordering. Deliberately a sequence counter, NOT a wall-clock
+   * `createdAtUtc`: §2.5 rules build time out as an ordering substitute or tiebreak, and eviction
+   * bookkeeping must not smuggle one back in.
+   */
+  readonly descriptorRegisteredAt = new Map<string, number>();
+
+  /**
+   * The most recently registered version's key. The service-NAME-level `benzene:mesh:query:service` view
+   * (its scalar runtime/binding/placement/topics/serviceVersion/descriptor fields) reports THIS
+   * version, preserving the one-view-per-name shape for callers that query by name alone. Older
+   * still-live versions remain fully present in {@link descriptors} (and in the topic catalog's
+   * providers/consumers, and per-version on the fleet list) for hash comparison and the declared graph.
+   */
+  currentVersionKey?: string;
+
   readonly instances = new Map<string, InstanceState>();
   lastSeen = 0;
   invocations = 0;
@@ -74,6 +124,11 @@ class ServiceState {
   // True once ANY benzene:mesh:issues batch (including an empty liveness batch) named this service - what lets "quiet
   // wired feed" be distinguished from "feed not wired" (spec §4.1).
   issueFeedSeen = false;
+
+  /** The "headline" (most recently registered) version's descriptor, or `undefined` before any registration. */
+  get descriptor(): MeshServiceDescriptor | undefined {
+    return this.currentVersionKey === undefined ? undefined : this.descriptors.get(this.currentVersionKey);
+  }
 }
 
 class TopicState {
@@ -100,6 +155,8 @@ const MaxFleetTraces = 20;
 export class MeshCollectorStore implements IMeshFleetReadModel {
   private readonly capacity: number;
   private readonly maxIssues: number;
+  private readonly maxVersionsPerService: number;
+  private versionSequence = 0;
   private readonly services = new Map<string, ServiceState>();
   private readonly topics = new Map<string, TopicState>();
   private readonly issues = new Map<string, MeshIssue>();
@@ -121,37 +178,117 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
    */
   readonly startedAtUtc: number = Date.now();
 
-  constructor(maxTraceEvents = 4096, maxIssues = 1024) {
+  /**
+   * @param maxVersionsPerService The retention cap on how many distinct `(service, serviceVersion)`
+   * descriptors a single service name may hold at once - side-by-side deployments realistically hold
+   * 2-3 live versions; 8 gives generous headroom without accumulating one permanent entry per
+   * historical deploy for the life of a long-running collector process. See {@link evictOneVersion}.
+   */
+  constructor(maxTraceEvents = 4096, maxIssues = 1024, maxVersionsPerService = 8) {
     this.capacity = maxTraceEvents;
     this.maxIssues = maxIssues;
+    this.maxVersionsPerService = maxVersionsPerService;
   }
 
   /**
-   * Stores the descriptor as the service's current contract, replacing any previous registration wholesale
-   * - a redeploy that drops a topic from `topics` drops the provider edge with it, and a redeploy that drops
-   * a topic from `produces` drops the provider edge with it, the same rule applied symmetrically to both
-   * declared lists (spec §4). This is the ONLY thing that ever changes the declared graph.
+   * Stores the descriptor as the current contract of its `(service, serviceVersion)` catalog key
+   * (spec §2.4/§4): a re-registration of the SAME key replaces that key's entry - and its share of
+   * the declared graph - wholesale, so a redeploy that drops a topic from `topics` drops the consumer
+   * edge with it and one that drops a topic from `produces` drops the provider edge with it,
+   * symmetrically (spec §4). A DIFFERENT key registers alongside, never disturbing a still-live
+   * sibling version: two releases deployed side by side is the expected canary/blue-green state.
+   * This is the ONLY thing that ever changes the declared graph.
    */
   register(descriptor: MeshServiceDescriptor): void {
-    for (const topic of this.topics.values()) {
-      topic.providers.delete(descriptor.service);
-      topic.consumers.delete(descriptor.service);
+    const state = this.ensureService(descriptor.service);
+    const versionKey = descriptor.serviceVersion ?? '';
+
+    if (!state.descriptors.has(versionKey) && state.descriptors.size >= this.maxVersionsPerService) {
+      // versionKey is a brand-new key, not yet in descriptors, and is about to become
+      // currentVersionKey below - so it is never itself an eviction candidate here, and the OLD
+      // current version's protection lapses the instant its successor registers (it stops being
+      // this service's headline the moment this call completes).
+      this.evictOneVersion(state);
     }
 
-    const state = this.ensureService(descriptor.service);
-    state.descriptor = descriptor;
+    state.descriptors.set(versionKey, descriptor);
+    state.descriptorRegisteredAt.set(versionKey, ++this.versionSequence);
+    state.currentVersionKey = versionKey;
     state.lastSeen = Date.now();
 
-    // A wire body is deserialized straight off parsed JSON (no class construction), so an omitted
-    // `topics`/`produces` - legal on the wire, e.g. a service that declares no outbound registration -
-    // is genuinely `undefined` here, not the class field's `[]` default. Coalesce rather than assume,
-    // against the §6 "no feed fails ingestion" rule.
-    for (const topic of descriptor.topics ?? []) {
-      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).consumers.add(descriptor.service);
+    this.rebuildDeclaredEdges(descriptor.service, state);
+  }
+
+  /**
+   * Recomputes the service's declared provider/consumer edges as the union over EVERY currently live
+   * version's `topics`/`produces` (spec §4: graph membership is by `service`, not by
+   * `(service, serviceVersion)` - two live versions both declaring a topic contribute ONE edge, and
+   * the graph still collapses to one node per service). Rebuilding from the live set - rather than
+   * retracting one version's edges pointwise, as the C# original's `RetractEdges` does - is what
+   * keeps an edge a still-live sibling version also declares when one version re-registers without
+   * it or is evicted: the fixture's `re-registering-one-version-does-not-disturb-the-other` case
+   * (`mesh-service-version-cases.json`) pins exactly that, and a pointwise retraction of the shared
+   * service-name edge would drop it. Never touches any other service's edges.
+   */
+  private rebuildDeclaredEdges(service: string, state: ServiceState): void {
+    for (const topic of this.topics.values()) {
+      topic.providers.delete(service);
+      topic.consumers.delete(service);
     }
-    for (const topic of descriptor.produces ?? []) {
-      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).providers.add(descriptor.service);
+
+    for (const live of state.descriptors.values()) {
+      // A wire body is deserialized straight off parsed JSON (no class construction), so an omitted
+      // `topics`/`produces` - legal on the wire, e.g. a service that declares no outbound registration -
+      // is genuinely `undefined` here, not the class field's `[]` default. Coalesce rather than assume,
+      // against the §6 "no feed fails ingestion" rule.
+      for (const topic of live.topics ?? []) {
+        this.ensureTopic(topicKey(topic.id, topic.version ?? '')).consumers.add(service);
+      }
+      for (const topic of live.produces ?? []) {
+        this.ensureTopic(topicKey(topic.id, topic.version ?? '')).providers.add(service);
+      }
     }
+  }
+
+  /**
+   * Evicts one version from `state.descriptors` when a brand-new version registration would otherwise
+   * push the service over `maxVersionsPerService` - without a cap, a service that legitimately
+   * re-registers under a new `serviceVersion` on every deploy accumulates one permanent entry per
+   * historical deploy for the life of a long-running collector process. Preference order: the
+   * least-recently-registered version (by {@link ServiceState.descriptorRegisteredAt}) that has NO
+   * live instance currently reporting its `descriptorHash` ({@link hasLiveInstance}); if every
+   * retained version has one, the cap still wins and the least-recently-registered version is evicted
+   * regardless - this is a bounded in-memory diagnostic store, not a health signal. The evicted
+   * version's provider/consumer edges are retracted by the caller's {@link rebuildDeclaredEdges}
+   * pass, so nothing is left dangling in the topic catalog. This is deliberately a registration-order
+   * cap, not a TTL (and never a §2.5 version-order judgement - eviction must work for unordered and
+   * mixed-scheme version sets too).
+   */
+  private evictOneVersion(state: ServiceState): void {
+    let deadVictim: string | undefined;
+    let deadVictimOrder = Number.MAX_SAFE_INTEGER;
+    let anyVictim: string | undefined;
+    let anyVictimOrder = Number.MAX_SAFE_INTEGER;
+
+    for (const [key, live] of state.descriptors) {
+      const order = state.descriptorRegisteredAt.get(key) ?? 0;
+      if (order < anyVictimOrder) {
+        anyVictim = key;
+        anyVictimOrder = order;
+      }
+      if (!hasLiveInstance(state, live.descriptorHash) && order < deadVictimOrder) {
+        deadVictim = key;
+        deadVictimOrder = order;
+      }
+    }
+
+    const evictKey = deadVictim ?? anyVictim;
+    if (evictKey === undefined) {
+      return; // nothing to evict (descriptors is empty)
+    }
+
+    state.descriptors.delete(evictKey);
+    state.descriptorRegisteredAt.delete(evictKey);
   }
 
   /** Records the latest health report for one instance. */
@@ -236,10 +373,17 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   /**
    * §4.2 "Undeclared": a REGISTERED service's own traffic naming a topic it never declared. Consumer side -
-   * the handling service's descriptor doesn't list this topic in `topics`; provider side - the calling
-   * service's descriptor doesn't list it in `produces`. An anonymous/never-registered service (no descriptor)
-   * is never flagged - it has no contract to diverge from. Filed as a `contract-drift` issue, merged by the
-   * same fingerprint scheme as a wire-fed `benzene:mesh:issues` entry (§4.1).
+   * no live version's descriptor lists this topic in `topics`; provider side - no live version's descriptor
+   * lists it in `produces`. Checked across EVERY currently live `(service, serviceVersion)` descriptor, not
+   * just the most-recently-registered ("headline") one - otherwise the moment a second version registers,
+   * every message an older-but-still-live version legitimately handles would be misfiled as drift (the
+   * side-by-side false positive §2.4 exists to prevent, the same any-live-version rule {@link hashMatches}
+   * applies). Accepted trade-off, documented rather than a silent false positive: `MeshTraceEvent` carries
+   * no per-event `serviceVersion` (a cross-language wire-shape question owned by the spec repo), so a
+   * genuine single-version drift on an edge another live version happens to also declare goes undetected
+   * until that other version retires. An anonymous/never-registered service (no descriptor) is never
+   * flagged - it has no contract to diverge from. Filed as a `contract-drift` issue, merged by the same
+   * fingerprint scheme as a wire-fed `benzene:mesh:issues` entry (§4.1).
    */
   private detectContractDrift(
     traceEvent: MeshTraceEvent,
@@ -252,16 +396,18 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
     if (
       traceEvent.service !== undefined &&
-      providerService?.descriptor !== undefined &&
-      !declaresTopic(providerService.descriptor.topics, topicId, version)
+      providerService !== undefined &&
+      providerService.descriptors.size > 0 &&
+      !declaresTopicInAnyLiveVersion(providerService, 'topics', topicId, version)
     ) {
       this.mergeIssue(driftIssue(traceEvent.service, topicId, version, traceEvent));
     }
 
     if (
       callerService !== undefined &&
-      callerState?.descriptor !== undefined &&
-      !declaresTopic(callerState.descriptor.produces, topicId, version)
+      callerState !== undefined &&
+      callerState.descriptors.size > 0 &&
+      !declaresTopicInAnyLiveVersion(callerState, 'produces', topicId, version)
     ) {
       this.mergeIssue(driftIssue(callerService, topicId, version, traceEvent));
     }
@@ -357,9 +503,17 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     const window = MeshTimeRangeResolver.resolve(range, Date.now());
     const view = new FleetView();
     view.generatedAt = Date.now();
+    // One row per live (service, serviceVersion) catalog entry (spec §2.4; pinned by
+    // mesh-service-version-cases.json) - two releases deployed side by side are two rows, never one
+    // silently overwriting the other. A service with no descriptor yet (anonymous but live) is one
+    // row; a versionless descriptor keys as '' and stays one row, exactly as before §2.4 existed.
+    // NOTE this deliberately diverges from the C# original, whose fleet keeps one headline row per
+    // NAME: the canonical fixture asserts the per-version rows, and the spec wins over the port.
+    // Version keys sort ordinally for a stable listing - a display order, NOT a §2.5 version-order
+    // claim (which would require a declared scheme and must never be guessed).
     view.services = [...this.services.keys()]
       .sort(ordinalCompare)
-      .map((name) => this.serviceSummary(name));
+      .flatMap((name) => this.serviceSummaries(name));
     view.topics = [...this.topics.keys()]
       .sort(compareTopicKeys)
       .map((key) => this.topicSummary(key));
@@ -385,13 +539,16 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       return undefined;
     }
 
-    const summary = this.serviceSummary(name);
+    // One view per service NAME, describing the "headline" (most recently registered) version's
+    // scalar fields - the per-version breakdown lives on the fleet list. Matches the C# original.
+    const summary = this.serviceSummary(name, state, state.descriptor);
     const view = new ServiceView();
     view.service = summary.service;
     view.runtime = summary.runtime;
     view.binding = summary.binding;
     view.placement = summary.placement;
     view.topics = summary.topics;
+    view.serviceVersion = summary.serviceVersion;
     view.health = summary.health;
     view.lastSeen = summary.lastSeen;
     view.invocations = summary.invocations;
@@ -406,10 +563,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
         instanceView.healthy = instance.healthy;
         instanceView.lastHeartbeat = instance.lastHeartbeat;
         instanceView.descriptorHash = instance.descriptorHash;
-        instanceView.hashMatches =
-          state.descriptor?.descriptorHash !== undefined && instance.descriptorHash !== undefined
-            ? instance.descriptorHash === state.descriptor.descriptorHash
-            : undefined;
+        instanceView.hashMatches = hashMatches(state, instance.descriptorHash);
         return instanceView;
       });
     // The service's counts are cumulative-since-start; a requested window is reported (with
@@ -559,8 +713,27 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     return state;
   }
 
-  private serviceSummary(name: string): ServiceSummary {
+  /**
+   * The fleet rows for one service name: one {@link ServiceSummary} per live `(service, serviceVersion)`
+   * catalog entry (spec §2.4), or a single descriptor-less row for a service known only from traffic.
+   * The name-level signals (instances/health/stats/missing feeds) repeat on every version's row -
+   * heartbeats and traces carry no `serviceVersion`, so they cannot be attributed per version.
+   */
+  private serviceSummaries(name: string): ServiceSummary[] {
     const state = this.services.get(name)!;
+    if (state.descriptors.size === 0) {
+      return [this.serviceSummary(name, state, undefined)];
+    }
+    return [...state.descriptors.keys()]
+      .sort(ordinalCompare)
+      .map((versionKey) => this.serviceSummary(name, state, state.descriptors.get(versionKey)));
+  }
+
+  private serviceSummary(
+    name: string,
+    state: ServiceState,
+    descriptor: MeshServiceDescriptor | undefined,
+  ): ServiceSummary {
     const summary = new ServiceSummary();
     summary.service = name;
     summary.health = MeshHealth.unknown;
@@ -569,11 +742,12 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     summary.invocations = state.invocations;
     summary.errors = state.errors;
 
-    if (state.descriptor !== undefined) {
-      summary.runtime = state.descriptor.runtime;
-      summary.binding = state.descriptor.binding;
-      summary.placement = state.descriptor.placement;
-      summary.topics = (state.descriptor.topics ?? []).length;
+    if (descriptor !== undefined) {
+      summary.runtime = descriptor.runtime;
+      summary.binding = descriptor.binding;
+      summary.placement = descriptor.placement;
+      summary.topics = (descriptor.topics ?? []).length;
+      summary.serviceVersion = descriptor.serviceVersion;
     } else {
       summary.missingFeeds.push('descriptor'); // known only from traffic: anonymous but live
     }
@@ -708,6 +882,65 @@ function declaresTopic(
   version: string | undefined,
 ): boolean {
   return (declared ?? []).some((topic) => topic.id === id && (topic.version ?? '') === (version ?? ''));
+}
+
+/**
+ * Whether ANY currently live version of the service declares `(id, version)` on the relevant side
+ * (consumer/`topics` or provider/`produces`). The §4.2 drift check must reason about live versions
+ * the same way `hashMatches` does - checking only the headline version would misfile every message
+ * an older-but-still-live version legitimately handles as contract drift the moment a newer sibling
+ * registers (a healthy side-by-side canary/blue-green deployment read as drift).
+ */
+function declaresTopicInAnyLiveVersion(
+  state: ServiceState,
+  side: 'topics' | 'produces',
+  id: string,
+  version: string | undefined,
+): boolean {
+  for (const descriptor of state.descriptors.values()) {
+    if (declaresTopic(side === 'topics' ? descriptor.topics : descriptor.produces, id, version)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether any currently reporting instance's last heartbeat hash matches this specific version's
+ * descriptor hash (a §2.4-shaped liveness signal, reused for the eviction preference) - a version
+ * with no descriptor hash can never be "live" by this check (nothing to match), matching
+ * {@link hashMatches}'s undefined-is-unknown treatment.
+ */
+function hasLiveInstance(state: ServiceState, descriptorHash: string | undefined): boolean {
+  if (descriptorHash === undefined) {
+    return false;
+  }
+  for (const instance of state.instances.values()) {
+    if (instance.descriptorHash === descriptorHash) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether an instance's reported hash matches the descriptor of ITS OWN live version (spec §2.4).
+ * Compared against EVERY currently registered `(service, serviceVersion)` pair's hash for this
+ * service, not just the name-level "headline" row - so two different, live versions each reporting
+ * their own correct-but-different hash both read as matching (the expected side-by-side deployment
+ * state, explicitly NOT drift per §2.4), and only a hash that matches none of the service's live
+ * descriptors reads as drift (the same-version-different-hash case). `undefined` when either side has
+ * nothing to compare - no hash reported by the instance, or no live descriptor for the service
+ * carries a hash at all - unknown, never treated as drift.
+ */
+function hashMatches(state: ServiceState, reportedHash: string | undefined): boolean | undefined {
+  if (reportedHash === undefined) {
+    return undefined;
+  }
+  const knownHashes = [...state.descriptors.values()]
+    .map((descriptor) => descriptor.descriptorHash)
+    .filter((hash): hash is string => hash !== undefined);
+  return knownHashes.length === 0 ? undefined : knownHashes.includes(reportedHash);
 }
 
 /** Builds the one-occurrence `contract-drift` issue §4.2 synthesizes for an undeclared edge, ready to merge. */

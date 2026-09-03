@@ -12,8 +12,9 @@
  *
  * Not ported from the .NET original: threading a `MeshUsageWindow` to the usage sources. The
  * `@benzenejs/mesh-contracts` package itself is here; the type is not - `MeshUsageWindow` is one of the
- * five mesh-contracts types this port has yet to define (with `MeshServiceVersion`,
- * `MeshCompatibilityVerdict`, `MeshSchemaChange`, and `MeshTopicCompatibility`), and
+ * four mesh-contracts types this port has yet to define (with `MeshCompatibilityVerdict`,
+ * `MeshSchemaChange`, and `MeshTopicCompatibility` - `MeshServiceVersion`/`MeshVersionOrder` are now
+ * ported, backing the §2.4/§2.5 versioned catalog this store implements), and
  * `IMeshUsageSource.fetchUsageAsync` correspondingly takes no window parameter. See each file header for
  * the exact boundary.
  */

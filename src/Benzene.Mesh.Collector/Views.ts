@@ -53,8 +53,9 @@ export class FleetView {
 }
 
 /**
- * One service's fleet row. `missingFeeds` names the feeds the collector has not received for it
- * ("descriptor", "health", "traces") - reduced is visible, never mistaken for empty.
+ * One service's fleet row - one row per live `(service, serviceVersion)` catalog entry (mesh.md §2.4),
+ * so two releases deployed side by side are two rows. `missingFeeds` names the feeds the collector has
+ * not received for it ("descriptor", "health", "traces") - reduced is visible, never mistaken for empty.
  */
 export class ServiceSummary {
   service = '';
@@ -66,6 +67,15 @@ export class ServiceSummary {
   placement: MeshPlacement = new MeshPlacement();
 
   topics = 0;
+
+  /**
+   * The declared release identity this row describes (mesh.md §2.4) - extrinsic, exactly what the
+   * descriptor declared; `undefined` when the descriptor omitted it (the service then has exactly one
+   * service version, §2.4 case 3 - not an error) or when no descriptor has registered yet. On the
+   * fleet list each live version is its own row carrying its own value; instance/health/stat fields
+   * are name-level (heartbeats and traces carry no version to attribute them by).
+   */
+  serviceVersion?: string;
 
   instances = 0;
 
@@ -186,6 +196,13 @@ export class ServiceView {
   placement: MeshPlacement = new MeshPlacement();
 
   topics = 0;
+
+  /**
+   * The "headline" (most recently registered) version's declared identity - see
+   * {@link ServiceSummary.serviceVersion}. Older still-live versions stay in the catalog (and on the
+   * fleet list as their own rows); this view stays one-per-name, so it reports the headline's.
+   */
+  serviceVersion?: string;
 
   health: MeshHealthValue = MeshHealth.unknown;
 
