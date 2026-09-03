@@ -48,7 +48,9 @@ export class OutboundServiceBusContextConverter
       body: this.serializer.serialize(contextIn.request),
       applicationProperties,
     };
-    return Promise.resolve(new ServiceBusSendMessageContext(message));
+    const contextOut = new ServiceBusSendMessageContext(message);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, _contextOut: ServiceBusSendMessageContext): Promise<void> {

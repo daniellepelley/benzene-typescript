@@ -53,7 +53,9 @@ export class OutboundSqsContextConverter implements IContextConverter<OutboundCo
       MessageBody: this.serializer.serialize(contextIn.request),
       MessageAttributes: messageAttributes,
     };
-    return Promise.resolve(new SqsSendMessageContext(request));
+    const contextOut = new SqsSendMessageContext(request);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, contextOut: SqsSendMessageContext): Promise<void> {

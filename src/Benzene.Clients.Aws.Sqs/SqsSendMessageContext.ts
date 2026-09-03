@@ -11,5 +11,12 @@ export class SqsSendMessageContext {
   /** The SQS send response, set by `SqsClientMiddleware`. */
   response?: SendMessageCommandOutput;
 
+  /**
+   * The caller's abort signal for this send, if any — copied from `OutboundContext.signal` by the
+   * converter and passed to the SDK call as `abortSignal` (the TS-idiomatic port of the ambient
+   * `ICancellationTokenAccessor` token the .NET middleware threads into `SendMessageAsync`).
+   */
+  signal?: AbortSignal;
+
   constructor(readonly request: SendMessageCommandInput) {}
 }

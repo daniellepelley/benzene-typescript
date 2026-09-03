@@ -19,13 +19,20 @@ export class AwsLambdaClient {
     this.serializer = new JsonSerializer();
   }
 
-  async sendMessageAsync<TRequest, TResponse>(request: TRequest, functionName: string, invocationType: InvocationType): Promise<TResponse> {
+  async sendMessageAsync<TRequest, TResponse>(
+    request: TRequest,
+    functionName: string,
+    invocationType: InvocationType,
+    signal?: AbortSignal,
+  ): Promise<TResponse> {
     const lambdaResponse = await this.amazonLambda.send(
       new InvokeCommand({
         FunctionName: functionName,
         InvocationType: invocationType,
         Payload: new TextEncoder().encode(this.serializer.serialize(request)),
       }),
+      // Aborting the signal aborts the in-flight invoke rather than running it to completion.
+      { abortSignal: signal },
     );
 
     if (invocationType === InvocationType.Event) {

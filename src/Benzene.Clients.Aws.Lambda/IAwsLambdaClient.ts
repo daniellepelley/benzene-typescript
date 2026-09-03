@@ -11,7 +11,15 @@ export interface IAwsLambdaClient {
    * @param request The request to serialize as the invocation payload.
    * @param functionName The name of the function to invoke.
    * @param invocationType Whether to invoke fire-and-forget (`Event`) or request/response.
+   * @param signal Optional abort signal — aborting it aborts the in-flight SDK call instead of
+   *   running the invoke to completion (the TS-idiomatic port of the ambient cancellation token the
+   *   .NET client threads into `InvokeAsync`).
    * @returns The deserialized response (`undefined` for an `Event` invocation, which returns nothing).
    */
-  sendMessageAsync<TRequest, TResponse>(request: TRequest, functionName: string, invocationType: InvocationType): Promise<TResponse>;
+  sendMessageAsync<TRequest, TResponse>(
+    request: TRequest,
+    functionName: string,
+    invocationType: InvocationType,
+    signal?: AbortSignal,
+  ): Promise<TResponse>;
 }

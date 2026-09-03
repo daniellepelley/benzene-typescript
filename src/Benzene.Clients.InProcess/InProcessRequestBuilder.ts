@@ -19,5 +19,9 @@ export function buildInProcessRequest(
   request.topic = topic;
   request.headers = context.headers;
   request.body = serializer.serialize(context.request);
+  // Thread the caller's abort signal onto the dispatched envelope request (structurally - the wire
+  // shape has no signal member), the same convention the BenzeneMessage-over-HTTP endpoint uses, so
+  // the in-process handler pipeline can observe it via `context.benzeneMessageRequest.signal`.
+  (request as IBenzeneMessageRequest & { signal?: AbortSignal }).signal = context.signal;
   return request;
 }

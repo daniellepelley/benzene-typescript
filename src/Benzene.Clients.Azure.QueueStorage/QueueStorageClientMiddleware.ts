@@ -13,7 +13,8 @@ export class QueueStorageClientMiddleware implements IMiddleware<QueueStorageSen
   constructor(private readonly queueClient: QueueClient) {}
 
   async handleAsync(context: QueueStorageSendMessageContext, _next: NextFunc): Promise<void> {
-    await this.queueClient.sendMessage(context.messageText);
+    // The context's abort signal (if set) aborts the in-flight send rather than running it to completion.
+    await this.queueClient.sendMessage(context.messageText, { abortSignal: context.signal });
     context.isSent = true;
   }
 }

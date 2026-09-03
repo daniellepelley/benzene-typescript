@@ -54,7 +54,9 @@ export class OutboundEventHubContextConverter
     const partitionKey =
       this.partitionKeyHeader !== undefined ? contextIn.headers[this.partitionKeyHeader] : undefined;
 
-    return Promise.resolve(new EventHubSendMessageContext(eventData, partitionKey));
+    const contextOut = new EventHubSendMessageContext(eventData, partitionKey);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, _contextOut: EventHubSendMessageContext): Promise<void> {

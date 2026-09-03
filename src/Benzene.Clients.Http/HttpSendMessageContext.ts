@@ -32,7 +32,15 @@ export class HttpSendMessageContext {
   /** Port of C# `HttpResponseMessage Response { get; set; }` — the fetch `Response`. */
   response!: Response;
 
-  constructor(request: HttpRequestMessage) {
+  /**
+   * The caller's abort signal for this send, if any — forwarded by `HttpClientMiddleware` to the
+   * fetch call so an aborted caller aborts the in-flight HTTP request. The TS-idiomatic port of the
+   * `CancellationToken` .NET's `HttpClient.SendAsync` receives.
+   */
+  signal?: AbortSignal;
+
+  constructor(request: HttpRequestMessage, signal?: AbortSignal) {
     this.request = request;
+    this.signal = signal;
   }
 }

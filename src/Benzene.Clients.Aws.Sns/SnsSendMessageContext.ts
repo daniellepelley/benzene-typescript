@@ -9,5 +9,12 @@ export class SnsSendMessageContext {
   /** The SNS publish response, set by `SnsClientMiddleware`. */
   response?: PublishCommandOutput;
 
+  /**
+   * The caller's abort signal for this send, if any — copied from `OutboundContext.signal` by the
+   * converter and passed to the SDK call as `abortSignal` (the TS-idiomatic port of the ambient
+   * `ICancellationTokenAccessor` token the .NET middleware threads into `PublishAsync`).
+   */
+  signal?: AbortSignal;
+
   constructor(readonly request: PublishCommandInput) {}
 }

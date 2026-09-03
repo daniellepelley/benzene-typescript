@@ -20,6 +20,19 @@ export class OutboundContext {
    */
   response: unknown;
 
+  /**
+   * The caller's abort signal for this send, if any. Transport context converters copy it onto their
+   * transport send context and the terminal client middleware hands it to the underlying SDK call
+   * where the SDK accepts one — so an aborted inbound request (or any caller-imposed bound) stops the
+   * outbound call instead of running it to completion.
+   *
+   * PORTING NOTE: .NET threads the ambient `ICancellationTokenAccessor` into each client middleware's
+   * constructor; this port has no ambient token accessor, so the signal rides the outbound context
+   * instead — set it from a route middleware, or wherever the send is initiated, before the terminal
+   * converter runs.
+   */
+  signal?: AbortSignal;
+
   constructor(topic: string, request: unknown, headers?: Record<string, string>) {
     this.topic = topic;
     this.request = request;

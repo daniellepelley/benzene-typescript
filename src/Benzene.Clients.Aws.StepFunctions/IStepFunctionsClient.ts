@@ -17,12 +17,15 @@ export interface IStepFunctionsClient {
    *   a repeated name for the same state machine and input as idempotent, so a retry after a lost
    *   response won't start a duplicate — the repeat is reported as success. Sanitized to Step Functions'
    *   allowed name charset/length; omitted/empty lets AWS generate a UUID name.
+   * @param signal Optional abort signal — aborting it aborts the in-flight SDK call instead of
+   *   running the start to completion.
    * @returns An accepted result if the execution started (or was an idempotent repeat), or a
    *   service-unavailable result if starting it threw.
    */
   startExecutionAsync<TMessage, TResponse>(
     message: TMessage,
     executionName?: string,
+    signal?: AbortSignal,
   ): Promise<IBenzeneResultOf<TResponse>>;
 }
 

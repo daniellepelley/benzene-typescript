@@ -20,10 +20,12 @@ export class EventGridClientMiddleware implements IMiddleware<EventGridSendMessa
   constructor(private readonly publisherClient: EventGridPublisherClient<InputSchema>) {}
 
   async handleAsync(context: EventGridSendMessageContext, _next: NextFunc): Promise<void> {
+    // The context's abort signal (if set) aborts the in-flight send rather than running it to completion.
+    const options = { abortSignal: context.signal };
     if (context.cloudEvent !== undefined) {
-      await this.publisherClient.send([context.cloudEvent]);
+      await this.publisherClient.send([context.cloudEvent], options);
     } else {
-      await this.publisherClient.send([context.eventGridEvent!]);
+      await this.publisherClient.send([context.eventGridEvent!], options);
     }
     context.isSent = true;
   }
