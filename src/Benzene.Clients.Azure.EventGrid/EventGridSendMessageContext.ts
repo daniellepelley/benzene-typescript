@@ -14,6 +14,13 @@ export class EventGridSendMessageContext {
   /** Whether the event was sent. Set by `EventGridClientMiddleware` once the send completes without throwing. */
   isSent = false;
 
+  /**
+   * The caller's abort signal for this send, if any — copied from `OutboundContext.signal` by the
+   * converter and passed to `send` as `abortSignal`, so an aborted caller aborts the outbound send
+   * instead of running it to completion.
+   */
+  signal?: AbortSignal;
+
   private constructor(
     /** The CloudEvent to send, or `undefined` if this context carries a classic {@link eventGridEvent}. */
     readonly cloudEvent: SendCloudEventInput<unknown> | undefined,

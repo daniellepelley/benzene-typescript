@@ -25,7 +25,9 @@ export class OutboundEventGridEventSchemaContextConverter
       dataVersion: '1.0',
       data: contextIn.request,
     };
-    return Promise.resolve(EventGridSendMessageContext.forEventGridEvent(eventGridEvent));
+    const contextOut = EventGridSendMessageContext.forEventGridEvent(eventGridEvent);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, _contextOut: EventGridSendMessageContext): Promise<void> {

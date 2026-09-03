@@ -42,7 +42,9 @@ export class OutboundEventBridgeContextConverter
     }
 
     const request: PutEventsCommandInput = { Entries: [entry] };
-    return Promise.resolve(new EventBridgeSendMessageContext(request));
+    const contextOut = new EventBridgeSendMessageContext(request);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, contextOut: EventBridgeSendMessageContext): Promise<void> {

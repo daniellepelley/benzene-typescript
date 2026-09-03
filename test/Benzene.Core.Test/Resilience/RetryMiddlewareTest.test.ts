@@ -34,18 +34,104 @@ describe('RetryMiddlewareTest', () => {
     expect(attempts).toBe(3);
   });
 
-  it('HandleAsync_OperationCanceledException_NotRetriedByDefault', async () => {
+  // The .NET R16 #252/#256 rule, ported: "is this OUR cancellation?" is decided by the caller's own
+  // signal, never by the error's type. A cancellation-shaped error thrown WITHOUT the caller's signal
+  // being aborted is a foreign, transient failure (e.g. a per-request HTTP timeout) and IS retried.
+  it('HandleAsync_ForeignCancellationShapedError_IsRetriedByDefault', async () => {
     let attempts = 0;
     const middleware = new RetryMiddleware<object>({ numberOfRetries: 3, delay: noDelay });
+
+    await middleware.handleAsync({}, () => {
+      attempts++;
+      if (attempts < 3) {
+        // The shape a per-request timeout throws — the caller's own signal is NOT aborted.
+        throw new OperationCanceledException();
+      }
+      return Promise.resolve();
+    });
+
+    expect(attempts).toBe(3);
+  });
+
+  it('HandleAsync_OwnSignalAborted_StopsRetrying', async () => {
+    let attempts = 0;
+    const controller = new AbortController();
+    const middleware = new RetryMiddleware<object>({
+      numberOfRetries: 5,
+      delay: noDelay,
+      signal: controller.signal,
+    });
 
     await expect(
       middleware.handleAsync({}, () => {
         attempts++;
-        throw new OperationCanceledException();
+        if (attempts === 2) {
+          // The caller aborts while the second attempt is failing.
+          controller.abort();
+        }
+        throw new Error('transient-looking');
       }),
-    ).rejects.toBeInstanceOf(OperationCanceledException);
+    ).rejects.toThrow('transient-looking');
+
+    // Attempt 1 fails and retries; attempt 2 fails with the signal now aborted — no third attempt.
+    expect(attempts).toBe(2);
+  });
+
+  it('HandleAsync_OwnSignalAlreadyAborted_DoesNotRetryAnyErrorType', async () => {
+    let attempts = 0;
+    const controller = new AbortController();
+    controller.abort();
+    const middleware = new RetryMiddleware<object>({
+      numberOfRetries: 3,
+      delay: noDelay,
+      signal: controller.signal,
+    });
+
+    await expect(
+      middleware.handleAsync({}, () => {
+        attempts++;
+        throw new Error('would otherwise be retried');
+      }),
+    ).rejects.toThrow('would otherwise be retried');
 
     expect(attempts).toBe(1);
+  });
+
+  it('HandleAsync_SignalReadOffTheContext_WhenNoneConfigured', async () => {
+    let attempts = 0;
+    const controller = new AbortController();
+    controller.abort();
+    const middleware = new RetryMiddleware<{ signal: AbortSignal }>({ numberOfRetries: 3, delay: noDelay });
+
+    await expect(
+      middleware.handleAsync({ signal: controller.signal }, () => {
+        attempts++;
+        throw new Error('boom');
+      }),
+    ).rejects.toThrow('boom');
+
+    expect(attempts).toBe(1);
+  });
+
+  it('HandleAsync_OwnSignalAborted_StopsContextPredicateRetries', async () => {
+    let attempts = 0;
+    const controller = new AbortController();
+    const middleware = new RetryMiddleware<object>({
+      numberOfRetries: 5,
+      delay: noDelay,
+      signal: controller.signal,
+      shouldRetryContext: () => true,
+    });
+
+    await middleware.handleAsync({}, () => {
+      attempts++;
+      if (attempts === 2) {
+        controller.abort();
+      }
+      return Promise.resolve();
+    });
+
+    expect(attempts).toBe(2);
   });
 
   it('HandleAsync_CustomShouldRetry_NarrowsDefaultBehavior', async () => {

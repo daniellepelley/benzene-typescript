@@ -28,6 +28,7 @@ export class StepFunctionsClient implements IStepFunctionsClient {
   async startExecutionAsync<TMessage, TResponse>(
     message: TMessage,
     executionName?: string,
+    signal?: AbortSignal,
   ): Promise<IBenzeneResultOf<TResponse>> {
     const name = StepFunctionsClient.sanitizeExecutionName(executionName);
 
@@ -40,6 +41,8 @@ export class StepFunctionsClient implements IStepFunctionsClient {
           // start idempotent for the same (state machine, name, input).
           name,
         }),
+        // Aborting the signal aborts the in-flight start rather than running it to completion.
+        { abortSignal: signal },
       );
 
       return BenzeneResult.accepted<TResponse>();

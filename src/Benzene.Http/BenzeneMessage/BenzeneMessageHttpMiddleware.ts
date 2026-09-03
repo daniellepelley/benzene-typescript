@@ -72,6 +72,16 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
   /**
    * Dispatches a matching POSTed envelope into the BenzeneMessage pipeline and short-circuits; any
    * other request is passed to the next middleware.
+   *
+   * CANCELLATION (the .NET R17 #285 fix, ported): the HTTP context's abort signal — the request's
+   * client-gone signal, when the transport context exposes one as a structural `signal` member
+   * (see `IHttpContext`'s doc comment; e.g. `ExpressContext.signal`) — is (a) threaded
+   * onto the dispatched envelope request as a structural `signal` member, so inner-pipeline handlers
+   * and their outbound sends can observe it via `context.benzeneMessageRequest.signal`, and (b) raced
+   * against the dispatch: once the caller is gone the in-flight dispatch is abandoned and this
+   * middleware rejects with the signal's abort reason instead of writing a response nobody will read.
+   * (JS cancellation is cooperative — the abandoned dispatch keeps running until its handler next
+   * observes the signal; its eventual settlement is swallowed.)
    */
   async handleAsync(context: TContext, next: NextFunc): Promise<void> {
     const request = this.httpRequestAdapter.map(context);
@@ -81,7 +91,7 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
       return;
     }
 
-    const response = await this.dispatchAsync(context);
+    const response = await raceWithAbort(this.dispatchAsync(context), signalOf(context));
 
     this.responseAdapter.setStatusCode(
       context,
@@ -121,8 +131,55 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
       );
     }
 
+    // Thread the HTTP request's abort signal onto the dispatched envelope request (structurally — the
+    // wire shape has no signal member), so inner-pipeline handlers and outbound sends can observe it.
+    (request as BenzeneMessageRequest & { signal?: AbortSignal }).signal = signalOf(context);
+
     return this.application.handleAsync(request, this.serviceResolverFactory);
   }
+}
+
+/** Reads an `AbortSignal` structurally off an HTTP context that carries one as a `signal` member. */
+function signalOf(context: unknown): AbortSignal | undefined {
+  const candidate = (context as { signal?: unknown } | null | undefined)?.signal;
+  return candidate instanceof AbortSignal ? candidate : undefined;
+}
+
+/**
+ * Awaits `work`, but once `signal` aborts, rejects with the signal's abort reason instead — the
+ * abandoned `work` promise's eventual settlement is swallowed (JS cannot forcibly stop it). An
+ * already-aborted signal rejects without awaiting at all.
+ */
+async function raceWithAbort<T>(work: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  if (signal === undefined) {
+    return work;
+  }
+  if (signal.aborted) {
+    work.catch(() => {});
+    throw abortReason(signal);
+  }
+
+  let onAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => {
+      work.catch(() => {});
+      reject(abortReason(signal));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+
+  try {
+    return await Promise.race([work, aborted]);
+  } finally {
+    if (onAbort !== undefined) {
+      signal.removeEventListener('abort', onAbort);
+    }
+  }
+}
+
+/** The signal's abort reason, or a generic error for an environment that supplies none. */
+function abortReason(signal: AbortSignal): unknown {
+  return signal.reason ?? new Error('The inbound HTTP request was aborted.');
 }
 
 function errorResponse(statusCode: string, message: string): IBenzeneMessageResponse {

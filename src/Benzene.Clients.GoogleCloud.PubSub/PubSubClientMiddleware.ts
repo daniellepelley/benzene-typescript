@@ -11,6 +11,11 @@ import { PubSubSendMessageContext } from './PubSubSendMessageContext';
  * PORTING NOTE: .NET's low-level `PublisherServiceApiClient.PublishAsync(topicName, messages)` (returning
  * a `PublishResponse` with `MessageIds`) maps to `@google-cloud/pubsub`'s high-level
  * `pubSub.topic(name).publishMessage(message)`, which publishes one message and returns its id directly.
+ *
+ * ABORT-SIGNAL NOTE: unlike the AWS/Azure siblings this middleware does NOT thread
+ * `OutboundContext.signal` into the SDK call — `Topic.publishMessage` accepts no `AbortSignal` (its
+ * gax `CallOptions` carry only timeout/retry settings), so there is nothing to hand the signal to.
+ * A deliberate, documented gap rather than a missed transport; revisit if the SDK grows one.
  */
 export class PubSubClientMiddleware implements IMiddleware<PubSubSendMessageContext> {
   readonly name = 'PubSubClientMiddleware';

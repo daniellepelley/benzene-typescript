@@ -20,17 +20,19 @@ export class EventHubClientMiddleware implements IMiddleware<EventHubSendMessage
   async handleAsync(context: EventHubSendMessageContext, _next: NextFunc): Promise<void> {
     // A partition key co-locates related events on one partition (preserving their order); without it
     // Event Hubs round-robins across partitions. The batch's key must be set at creation time.
+    // The context's abort signal (if set) aborts the in-flight batch creation/send rather than
+    // running it to completion.
     const batchOptions: CreateBatchOptions =
       context.partitionKey === undefined || context.partitionKey === ''
-        ? {}
-        : { partitionKey: context.partitionKey };
+        ? { abortSignal: context.signal }
+        : { partitionKey: context.partitionKey, abortSignal: context.signal };
 
     const batch = await this.producerClient.createBatch(batchOptions);
     if (!batch.tryAdd(context.eventData)) {
       throw new Error('The event is too large to fit in a single Event Hubs batch.');
     }
 
-    await this.producerClient.sendBatch(batch);
+    await this.producerClient.sendBatch(batch, { abortSignal: context.signal });
     context.isSent = true;
   }
 }

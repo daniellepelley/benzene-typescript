@@ -48,7 +48,9 @@ export class OutboundSnsContextConverter implements IContextConverter<OutboundCo
       Message: this.serializer.serialize(contextIn.request),
       MessageAttributes: messageAttributes,
     };
-    return Promise.resolve(new SnsSendMessageContext(request));
+    const contextOut = new SnsSendMessageContext(request);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, contextOut: SnsSendMessageContext): Promise<void> {

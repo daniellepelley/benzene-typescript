@@ -33,7 +33,9 @@ export class OutboundQueueStorageContextConverter
     envelope.headers = contextIn.headers;
     envelope.body = this.serializer.serialize(contextIn.request);
 
-    return Promise.resolve(new QueueStorageSendMessageContext(this.serializer.serialize(envelope)));
+    const contextOut = new QueueStorageSendMessageContext(this.serializer.serialize(envelope));
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, _contextOut: QueueStorageSendMessageContext): Promise<void> {

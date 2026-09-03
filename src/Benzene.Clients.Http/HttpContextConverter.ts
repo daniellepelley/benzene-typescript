@@ -51,7 +51,11 @@ export class HttpContextConverter<TRequest, TResponse>
       body: this.serializer.serialize(contextIn.request.message),
     };
 
-    return Promise.resolve(new HttpSendMessageContext(request));
+    // Propagate the caller's abort signal when the outer client context carries one. The client context
+    // interface itself has no `signal` member (matching the C# shape), so the read is structural — an
+    // `OutboundContext`-style context that declares `signal?: AbortSignal`, or any caller that set one,
+    // gets it forwarded to the fetch call.
+    return Promise.resolve(new HttpSendMessageContext(request, signalOf(contextIn)));
   }
 
   async mapResponseAsync(
@@ -63,4 +67,10 @@ export class HttpContextConverter<TRequest, TResponse>
     const response = this.serializer.deserialize<TResponse>(body) as TResponse;
     contextIn.response = convertStatusCode<TResponse>(contextOut.response.status, response);
   }
+}
+
+/** Reads an `AbortSignal` structurally off a context that carries one as a `signal` member. */
+function signalOf(context: unknown): AbortSignal | undefined {
+  const candidate = (context as { signal?: unknown }).signal;
+  return candidate instanceof AbortSignal ? candidate : undefined;
 }

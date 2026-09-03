@@ -39,7 +39,9 @@ export class OutboundEventGridContextConverter
       datacontenttype: 'application/json',
       extensionAttributes,
     };
-    return Promise.resolve(EventGridSendMessageContext.forCloudEvent(cloudEvent));
+    const contextOut = EventGridSendMessageContext.forCloudEvent(cloudEvent);
+    contextOut.signal = contextIn.signal;
+    return Promise.resolve(contextOut);
   }
 
   mapResponseAsync(contextIn: OutboundContext, _contextOut: EventGridSendMessageContext): Promise<void> {

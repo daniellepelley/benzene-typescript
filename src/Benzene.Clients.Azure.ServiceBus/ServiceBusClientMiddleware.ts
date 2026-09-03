@@ -14,7 +14,8 @@ export class ServiceBusClientMiddleware implements IMiddleware<ServiceBusSendMes
   constructor(private readonly sender: ServiceBusSender) {}
 
   async handleAsync(context: ServiceBusSendMessageContext, _next: NextFunc): Promise<void> {
-    await this.sender.sendMessages(context.message);
+    // The context's abort signal (if set) aborts the in-flight send rather than running it to completion.
+    await this.sender.sendMessages(context.message, { abortSignal: context.signal });
     context.isSent = true;
   }
 }

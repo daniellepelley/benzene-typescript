@@ -722,7 +722,13 @@ next to its C# counterpart:
   for concrete loggers can implement.
 - **Ambient state & concurrency primitives.** `AsyncLocal<T>` → Node's `AsyncLocalStorage` (a C#
   settable `Current` with a `finally` restore becomes `als.run(value, () => next())`, whose scope
-  reverts automatically). `CancellationToken` → an optional `AbortSignal`. `SemaphoreSlim` → a
+  reverts automatically). `CancellationToken` → an optional `AbortSignal`; .NET's *ambient*
+  `ICancellationTokenAccessor` (resolved from DI) has no port — instead the signal rides the context
+  structurally as an optional `signal` member (`OutboundContext.signal`, `ExpressContext.signal`, a
+  `signal` attached to a dispatched envelope request) and cancellation-sensitive components
+  (`RetryMiddleware`, the BenzeneMessage-over-HTTP endpoint, the outbound client middlewares) read it
+  from there; "is this OUR cancellation?" is decided by that signal's `aborted`, never by an error's
+  type (the .NET R16 #252/#256 rule). `SemaphoreSlim` → a
   promise-chain mutex, and `Task.WhenAll` → `Promise.all` (bounded fan-out via `@benzenejs/core-middleware`'s
   `BoundedFanOut`). `System.Threading.Channels` has no Node built-in: the used subset is re-created
   in-package — a capacity-bounded buffer drained by a single re-entrancy-guarded loop (kicked by size and

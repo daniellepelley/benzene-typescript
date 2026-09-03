@@ -13,5 +13,12 @@ export class QueueStorageSendMessageContext {
    */
   isSent = false;
 
+  /**
+   * The caller's abort signal for this send, if any — copied from `OutboundContext.signal` by the
+   * converter and passed to `sendMessage` as `abortSignal`, so an aborted caller aborts the outbound
+   * send instead of running it to completion.
+   */
+  signal?: AbortSignal;
+
   constructor(readonly messageText: string) {}
 }
