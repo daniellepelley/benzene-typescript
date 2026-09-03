@@ -16,4 +16,14 @@ export class MeshDispatchRequest {
 
   /** The serialized message body (optional). */
   body: string | undefined;
+
+  /**
+   * The caller's abort signal for this dispatch, if any — NOT part of the wire shape (JSON cannot
+   * carry one, and the handler ignores anything that is not a real `AbortSignal`). Wave 1's
+   * signal-rides-the-request convention, the port of .NET #185's ambient cancellation token: a
+   * transport threads its client-gone signal onto the deserialized request (e.g. via a request
+   * enricher copying `context.benzeneMessageRequest.signal`), or a direct caller sets it; the
+   * handler passes it into `IMeshServiceDispatcher.dispatchAsync`.
+   */
+  signal?: AbortSignal;
 }
