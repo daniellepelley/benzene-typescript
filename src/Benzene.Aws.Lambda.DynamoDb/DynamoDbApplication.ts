@@ -19,7 +19,8 @@ import { DynamoDbRecordContext } from './DynamoDbRecordContext';
  * response model). Per-record SCOPE + TRANSPORT, faithful to .NET: each record runs in ITS OWN scope
  * (`createScope()` / try-finally `dispose()`, the port of C# `using`), and inside each scope
  * `ISetCurrentTransport.setTransport('dynamodb')` is called before running the pipeline. A record fails if
- * its handler reported an unsuccessful result (`isSuccessful === false`) or processing it threw; on the
+ * its handler did not report a successful result (`isSuccessful !== true` — an unrouted/unestablished
+ * outcome is retained for redelivery too) or processing it threw; on the
  * first failure it returns that record's `SequenceNumber` (or `eventID` fallback) and leaves the rest
  * unprocessed. `ILogger<DynamoDbApplication>` maps to an `ILoggerFactory`-created logger, falling back to
  * `NullLogger`.
@@ -69,7 +70,12 @@ export class DynamoDbApplication
         context.isSuccessful = false;
       }
 
-      if (context.isSuccessful === false) {
+      // A null/unestablished outcome (isSuccessful never set — typically an unrouted record: no
+      // handler matched the topic) stops the batch and is reported for redelivery, not checkpointed
+      // past. The stream's retention + `ReportBatchItemFailures` redrive is the backstop — matching
+      // .NET's `context.MessageResult?.IsSuccessful != true` (work/settlement-consistency-fix-plan.md
+      // row 11 in benzene-dotnet).
+      if (context.isSuccessful !== true) {
         return {
           batchItemFailures: [
             { itemIdentifier: record.dynamodb?.SequenceNumber ?? record.eventID ?? '' },

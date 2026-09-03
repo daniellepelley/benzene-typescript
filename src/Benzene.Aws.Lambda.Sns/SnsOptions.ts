@@ -1,10 +1,10 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsOptions. */
 
 /**
- * Configures how `SnsApplication` handles a message handler's exceptions and failure results. Both flags
- * default to `false` (purely additive/opt-in), preserving the original behavior: a handler exception
- * cascades out of the invocation (SNS's own subscription retry policy applies) and a non-exception failure
- * result is silently accepted (no retry).
+ * Configures how `SnsApplication` handles a message handler's exceptions and failure results.
+ * Safe-by-default, matching the .NET 1.0 settlement contract: `catchExceptions` off (a handler
+ * exception cascades so SNS's own subscription retry policy applies) and `raiseOnFailureStatus` on (a
+ * returned failure result — or a null/unestablished outcome — is escalated so SNS redelivers it).
  */
 export class SnsOptions {
   /**
@@ -18,9 +18,12 @@ export class SnsOptions {
 
   /**
    * Whether a message handler returning a non-exception failure result (e.g. a validation error) is
-   * escalated into a thrown `SnsMessageProcessingException`, so SNS retries the notification the same way
-   * it would for an unhandled exception. Defaults to `false` — a failure result usually reflects a
-   * permanent/business-logic failure that retrying won't fix.
+   * escalated into a thrown `SnsMessageProcessingException`, so SNS retries the notification the same
+   * way it would for an unhandled exception. Defaults to `true` — a returned failure is not silently
+   * settled, so the message is redelivered (and eventually dead-lettered via the subscription's redrive
+   * policy) rather than lost: at-least-once out of the box. Because a retried delivery re-runs the
+   * handler with the same message (SNS provides no dedup), the handler must be idempotent. Set to
+   * `false` for at-most-once, where a failure result is accepted and the notification is not retried.
    */
-  raiseOnFailureStatus = false;
+  raiseOnFailureStatus = true;
 }

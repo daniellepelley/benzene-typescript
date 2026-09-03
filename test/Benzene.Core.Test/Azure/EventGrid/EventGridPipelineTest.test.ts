@@ -194,6 +194,9 @@ describe('EventGridBatchApplication (direct)', () => {
     pipeline.useFn(async (context, next, resolver) => {
       seenIds.push(context.event.id);
       seenTransports.push(resolver.getService(ICurrentTransport).name);
+      // Record a success so the safe-by-default escalation (a null outcome is retained for
+      // redelivery, like a failure) doesn't fire for this observation-only pipeline.
+      context.messageResult = { isSuccessful: true };
       await next();
     });
 
@@ -225,6 +228,26 @@ describe('EventGridBatchApplication (direct)', () => {
     await expect(
       application.handleAsync(createEvent(), container.createServiceResolverFactory()),
     ).rejects.toThrow('boom');
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded escalates to EventGridMessageProcessingException', async () => {
+    // Nothing sets a messageResult — typically an unrouted event. Per benzene-dotnet's
+    // work/settlement-consistency-fix-plan.md row 5, a null outcome escalates like a failure: Event
+    // Grid's retry-with-backoff + dead-lettering is the backstop that makes retaining it safe.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventGrid(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventGridContext>(container);
+    pipeline.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new EventGridBatchApplication(pipeline.build());
+
+    await expect(
+      application.handleAsync(createEvent(), container.createServiceResolverFactory()),
+    ).rejects.toThrow(EventGridMessageProcessingException);
   });
 
   it('raiseOnFailureStatus (default true): a handler failure result throws EventGridMessageProcessingException', async () => {

@@ -113,6 +113,9 @@ describe('ServiceBusBatchApplication (direct)', () => {
     const pipeline = new MiddlewarePipelineBuilder<ServiceBusContext>(container);
     pipeline.useFn(async (context, next) => {
       seenBodies.push(context.message.body as string);
+      // Record a success so the safe-by-default escalation (a null outcome is retained for
+      // redelivery, like a failure) doesn't fire for this observation-only pipeline.
+      context.messageResult = { isSuccessful: true };
       await next();
     });
 
@@ -128,6 +131,29 @@ describe('ServiceBusBatchApplication (direct)', () => {
     expect(seenBodies.sort()).toEqual(
       [JSON.stringify({ orderId: '1' }), JSON.stringify({ orderId: '2' })].sort(),
     );
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded escalates to ServiceBusMessageProcessingException', async () => {
+    // Nothing sets a messageResult — typically an unrouted message. Per benzene-dotnet's
+    // work/settlement-consistency-fix-plan.md row 8, a null outcome escalates like a failure: the
+    // delivery count + dead-letter queue is the backstop that makes retaining it safe.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addServiceBus(container);
+
+    const builder = new MiddlewarePipelineBuilder<ServiceBusContext>(container);
+    builder.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new ServiceBusBatchApplication(builder.build());
+
+    await expect(
+      application.handleAsync(
+        [createMessage('null-outcome', 'create-order', { orderId: '9' })],
+        container.createServiceResolverFactory(),
+      ),
+    ).rejects.toThrow(ServiceBusMessageProcessingException);
   });
 
   it('raiseOnFailureStatus throws ServiceBusMessageProcessingException on an unsuccessful result', async () => {
@@ -151,9 +177,10 @@ describe('ServiceBusBatchApplication (direct)', () => {
     ).rejects.toThrow(ServiceBusMessageProcessingException);
   });
 
-  it('ServiceBusOptions defaults to not catching exceptions or raising on failure', () => {
+  it('ServiceBusOptions defaults: does not catch exceptions, escalates failure results', () => {
+    // Safe-by-default (the .NET 1.0 settlement contract): raiseOnFailureStatus on, catchExceptions off.
     const options = new ServiceBusOptions();
     expect(options.catchExceptions).toBe(false);
-    expect(options.raiseOnFailureStatus).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
   });
 });

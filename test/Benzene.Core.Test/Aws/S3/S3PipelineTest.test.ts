@@ -13,7 +13,14 @@ import {
 } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { useAwsLambda } from '@benzenejs/aws-lambda-core';
-import { addS3, S3Application, S3RecordContext, useS3 } from '@benzenejs/aws-lambda-s3';
+import {
+  addS3,
+  S3Application,
+  S3MessageProcessingException,
+  S3Options,
+  S3RecordContext,
+  useS3,
+} from '@benzenejs/aws-lambda-s3';
 import { benzeneTestHost, type BenzeneStartUp } from '@benzenejs/testing';
 import { asS3 } from '@benzenejs/aws-lambda-testing';
 
@@ -101,5 +108,104 @@ describe('S3Application (direct)', () => {
     await application.handleAsync(event, container.createServiceResolverFactory());
 
     expect(seenEventNames).toEqual(['ObjectCreated:Put']);
+  });
+
+  it('S3Options defaults: does not catch exceptions, escalates failure results', () => {
+    // Safe-by-default (the .NET 1.0 settlement contract): raiseOnFailureStatus on, catchExceptions
+    // off.
+    const options = new S3Options();
+    expect(options.catchExceptions).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+  });
+
+  it('raiseOnFailureStatus (default): a returned failure result throws S3MessageProcessingException', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addS3(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<S3RecordContext>(container);
+    pipeline.useFn(async (context, next) => {
+      context.messageResult = { isSuccessful: false };
+      await next();
+    });
+
+    const application = new S3Application(pipeline.build());
+
+    await expect(
+      application.handleAsync(asS3('b', 'k'), container.createServiceResolverFactory()),
+    ).rejects.toThrow(S3MessageProcessingException);
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded escalates too (null is not success)', async () => {
+    // Nothing sets a messageResult — typically an unrouted record. Per benzene-dotnet's
+    // work/settlement-consistency-fix-plan.md row 2 a null outcome escalates like a failure: S3's
+    // async-invoke retry + on-failure destination is the backstop that makes retaining it safe.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addS3(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<S3RecordContext>(container);
+    pipeline.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new S3Application(pipeline.build());
+
+    await expect(
+      application.handleAsync(asS3('b', 'k'), container.createServiceResolverFactory()),
+    ).rejects.toThrow(S3MessageProcessingException);
+  });
+
+  it('default options: a handler exception cascades', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addS3(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<S3RecordContext>(container);
+    pipeline.useFn(() => {
+      throw new Error('boom');
+    });
+
+    const application = new S3Application(pipeline.build());
+
+    await expect(
+      application.handleAsync(asS3('b', 'k'), container.createServiceResolverFactory()),
+    ).rejects.toThrow('boom');
+  });
+
+  it('catchExceptions: a handler exception (and an escalated failure) is swallowed and logged', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addS3(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<S3RecordContext>(container);
+    pipeline.useFn(() => {
+      throw new Error('boom');
+    });
+
+    const options = new S3Options();
+    options.catchExceptions = true;
+    const application = new S3Application(pipeline.build(), options);
+
+    // Reaching the end without throwing proves the exception was caught, not cascaded.
+    await application.handleAsync(asS3('b', 'k'), container.createServiceResolverFactory());
+  });
+
+  it('raiseOnFailureStatus off: a failure result is accepted (at-most-once opt-out)', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addS3(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<S3RecordContext>(container);
+    pipeline.useFn(async (context, next) => {
+      context.messageResult = { isSuccessful: false };
+      await next();
+    });
+
+    const options = new S3Options();
+    options.raiseOnFailureStatus = false;
+    const application = new S3Application(pipeline.build(), options);
+
+    await application.handleAsync(asS3('b', 'k'), container.createServiceResolverFactory());
   });
 });

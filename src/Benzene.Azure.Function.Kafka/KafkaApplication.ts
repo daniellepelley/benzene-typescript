@@ -22,7 +22,8 @@ export class KafkaApplication extends EntryPointMiddlewareApplication<KafkaRecor
    * @param pipeline The built Kafka middleware pipeline to run each event through.
    * @param serviceResolverFactory The service resolver factory used to process each batch.
    * @param options Configures how a handler's exceptions and failure results are handled. Defaults to a
-   *   new `KafkaOptions` (both flags off).
+   *   new `KafkaOptions` (safe-by-default on the failure-result axis: `raiseOnFailureStatus` on,
+   *   `catchExceptions` off).
    */
   constructor(
     pipeline: IMiddlewarePipeline<KafkaContext>,
@@ -80,6 +81,14 @@ export class KafkaBatchApplication implements IMiddlewareApplication<KafkaRecord
             }
           }
 
+          // CARVE-OUT — do not "fix" to `!== true` without reading benzene-dotnet's
+          // work/settlement-consistency-fix-plan.md (row 15). Kafka has no per-record dead-letter path:
+          // the trigger checkpoints (or replays) per partition, there is no per-record redrive.
+          // Escalating an unrouted record (null/unestablished outcome) the way the queue-shaped
+          // transports do would replay the partition from that offset forever — a worse failure mode
+          // than the silent-settle this policy exists to fix. So only an explicit failure result
+          // escalates; a null outcome stays acked, matching the AWS MSK trigger, the self-hosted
+          // Kafka worker, and the Event Hub trigger/worker.
           if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
             throw new KafkaMessageProcessingException(context.kafkaEvent.topic);
           }

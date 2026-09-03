@@ -23,8 +23,9 @@ import { SqsOptions } from './SqsOptions';
  *     `Task.WhenAll`);
  *   - inside each scope resolves `ISetCurrentTransport` and calls `setTransport('sqs')` before
  *     running the pipeline, so downstream middleware knows the active transport;
- *   - collects failures into `batchItemFailures` keyed by `messageId` — a record fails if its handler
- *     reported an unsuccessful result (`isSuccessful === false`) or processing it threw;
+ *   - collects failures into `batchItemFailures` keyed by `messageId` — a record fails unless its
+ *     handler reported a successful result (`isSuccessful !== true`, so an unrouted/unestablished
+ *     outcome is retained for redelivery too) or processing it threw;
  *   - honors `SqsBatchFailureMode`: in `FailWholeBatch` a non-empty failure list throws
  *     `SqsBatchProcessingException` (failing the whole invocation) instead of returning.
  * `ILogger<SqsApplication>` maps to an `ILoggerFactory`-created logger, falling back to `NullLogger`.
@@ -61,7 +62,12 @@ export class SqsApplication implements IMiddlewareApplicationWithResult<SQSEvent
             }
           }
 
-          if (context.isSuccessful === false) {
+          // A null/unestablished outcome (isSuccessful never set — typically an unrouted message: no
+          // handler matched the topic) is reported as a failure, not silently deleted with the batch.
+          // SQS's redrive policy/DLQ is the backstop that makes retaining it safe — matching .NET's
+          // `context.MessageResult?.IsSuccessful != true` (work/settlement-consistency-fix-plan.md
+          // row 9 in benzene-dotnet).
+          if (context.isSuccessful !== true) {
             batchItemFailures.push({ itemIdentifier: context.sqsMessage.messageId });
           }
         } catch (ex) {

@@ -135,9 +135,51 @@ describe('SnsApplication (direct)', () => {
     ).rejects.toThrow(SnsMessageProcessingException);
   });
 
-  it('SnsOptions defaults both flags to false', () => {
+  it('SnsOptions defaults: does not catch exceptions, escalates failure results', () => {
+    // Safe-by-default (the .NET 1.0 settlement contract): a handler exception cascades
+    // (catchExceptions off) and a returned failure result is escalated to a thrown exception so SNS
+    // redelivers it (raiseOnFailureStatus on).
     const options = new SnsOptions();
     expect(options.catchExceptions).toBe(false);
-    expect(options.raiseOnFailureStatus).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded escalates to SnsMessageProcessingException', async () => {
+    // Nothing sets a messageResult — typically an unrouted record (no handler matched the topic).
+    // Per benzene-dotnet's work/settlement-consistency-fix-plan.md row 1, a null outcome is escalated
+    // the same as an explicit failure, not accepted as success — SNS's own subscription retry/redrive
+    // is the backstop that makes retaining it safe.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addSns(container);
+
+    const builder = new MiddlewarePipelineBuilder<SnsRecordContext>(container);
+    builder.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new SnsApplication(builder.build());
+    const event = asSns(messageBuilder('create-order', { orderId: '9' }));
+
+    await expect(
+      application.handleAsync(event, container.createServiceResolverFactory()),
+    ).rejects.toThrow(SnsMessageProcessingException);
+  });
+
+  it('raiseOnFailureStatus off: a failure result is accepted (at-most-once opt-out)', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addSns(container);
+
+    const builder = new MiddlewarePipelineBuilder<SnsRecordContext>(container);
+    useMessageHandlers(builder, CreateOrderHandler);
+
+    const options = new SnsOptions();
+    options.raiseOnFailureStatus = false;
+    const application = new SnsApplication(builder.build(), options);
+
+    // Unroutable topic records a failure result, but the opt-out accepts it without throwing.
+    const event = asSns(messageBuilder('no-such-topic', { orderId: '9' }));
+    await application.handleAsync(event, container.createServiceResolverFactory());
   });
 });

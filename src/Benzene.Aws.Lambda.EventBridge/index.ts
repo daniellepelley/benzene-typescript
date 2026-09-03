@@ -5,6 +5,8 @@ export * from './EventBridgeMessageTopicGetter';
 export * from './EventBridgeMessageHeadersGetter';
 export * from './EventBridgeMessageMessageHandlerResultSetter';
 export * from './EventBridgeApplication';
+export * from './EventBridgeOptions';
+export * from './EventBridgeMessageProcessingException';
 export * from './EventBridgeLambdaHandler';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';

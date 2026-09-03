@@ -2,9 +2,10 @@
 
 /**
  * Configures how `ServiceBusApplication` / `ServiceBusBatchApplication` handle a message handler's
- * exceptions and failure results. Both flags default to `false` (purely additive/opt-in), preserving
- * the original behavior: a handler exception cascades and fails the whole trigger invocation, and a
- * non-exception failure result is silently accepted.
+ * exceptions and failure results. Safe-by-default, matching the .NET 1.0 settlement contract:
+ * `catchExceptions` off (a handler exception cascades and fails the trigger invocation, so Service
+ * Bus's delivery-count/dead-letter machinery applies) and `raiseOnFailureStatus` on (a returned
+ * failure result — or a null/unestablished outcome — is escalated the same way).
  */
 export class ServiceBusOptions {
   /**
@@ -17,7 +18,9 @@ export class ServiceBusOptions {
   /**
    * Whether a message handler returning a non-exception failure result is escalated into a thrown
    * `ServiceBusMessageProcessingException`, so a failure is treated the same as an unhandled exception
-   * for retry purposes. Defaults to `false`.
+   * for retry purposes. Defaults to `true` — a returned failure is escalated and redelivered
+   * (at-least-once), eventually dead-lettering via the queue's max-delivery-count; the handler must be
+   * idempotent. Set `false` for at-most-once, where a failure result is accepted as settled.
    */
-  raiseOnFailureStatus = false;
+  raiseOnFailureStatus = true;
 }

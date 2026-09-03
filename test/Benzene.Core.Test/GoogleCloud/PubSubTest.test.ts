@@ -157,6 +157,16 @@ describe('PubSubOptions + PubSubMiddlewareApplication failure handling', () => {
     ).rejects.toBeInstanceOf(PubSubMessageProcessingException);
   });
 
+  it('raiseOnFailureStatus + no result recorded → escalates too (null is not success)', async () => {
+    // Nothing sets a messageResult — typically an unrouted message. Per benzene-dotnet's
+    // work/settlement-consistency-fix-plan.md row 6, a null outcome escalates like a failure:
+    // Pub/Sub's ack-deadline redelivery + dead-letter topics are the backstop.
+    const application = new PubSubMiddlewareApplication(fakePipeline(() => {}));
+    await expect(
+      application.handleAsync(createData({ messageId: 'msg-3' }), resolverFactory()),
+    ).rejects.toBeInstanceOf(PubSubMessageProcessingException);
+  });
+
   it('raiseOnFailureStatus + handler succeeds → does not throw', async () => {
     const application = new PubSubMiddlewareApplication(
       fakePipeline((context) => {

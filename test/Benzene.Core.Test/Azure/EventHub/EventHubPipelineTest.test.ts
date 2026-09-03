@@ -15,6 +15,8 @@ import { InlineAzureFunctionStartUp } from '@benzenejs/azure-function-core';
 import {
   EventHubApplication,
   EventHubContext,
+  EventHubMessageProcessingException,
+  EventHubOptions,
   handleEventHub,
   useBenzeneMessage,
   useEventHub,
@@ -156,5 +158,116 @@ describe('EventHubApplication (direct)', () => {
     const event = createRawEvent('payload');
     const context = EventHubContext.createInstance(event);
     expect(context.eventData).toBe(event);
+  });
+
+  it('EventHubOptions defaults: does not catch exceptions, escalates failure results', () => {
+    // Safe-by-default on the failure-result axis (the .NET 1.0 settlement contract):
+    // raiseOnFailureStatus on, catchExceptions off.
+    const options = new EventHubOptions();
+    expect(options.catchExceptions).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+  });
+
+  it('raiseOnFailureStatus (default): a returned failure result throws EventHubMessageProcessingException', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventHubContext>(container);
+    pipeline.useFn(async (context, next) => {
+      context.messageResult = { isSuccessful: false };
+      await next();
+    });
+
+    const application = new EventHubApplication(
+      pipeline.build(),
+      container.createServiceResolverFactory(),
+    );
+
+    await expect(application.sendAsync([createRawEvent('one')])).rejects.toThrow(
+      EventHubMessageProcessingException,
+    );
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded does NOT throw (carve-out)', async () => {
+    // CARVE-OUT — unlike the queue-shaped transports, a null outcome here (typically an unrouted
+    // event) is NOT escalated: Event Hubs has no per-record dead-letter path, so retaining it would
+    // replay the whole batch forever. See benzene-dotnet's work/settlement-consistency-fix-plan.md
+    // row 17 — this test pins the carve-out so it can't be "fixed" by accident.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventHubContext>(container);
+    pipeline.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new EventHubApplication(
+      pipeline.build(),
+      container.createServiceResolverFactory(),
+    );
+
+    // Reaching the end without throwing proves the null outcome settled as if it had succeeded.
+    await application.sendAsync([createRawEvent('one')]);
+  });
+
+  it('raiseOnFailureStatus off: a failure result is accepted (at-most-once opt-out)', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventHubContext>(container);
+    pipeline.useFn(async (context, next) => {
+      context.messageResult = { isSuccessful: false };
+      await next();
+    });
+
+    const options = new EventHubOptions();
+    options.raiseOnFailureStatus = false;
+    const application = new EventHubApplication(
+      pipeline.build(),
+      container.createServiceResolverFactory(),
+      options,
+    );
+
+    await application.sendAsync([createRawEvent('one')]);
+  });
+
+  it('catchExceptions: a handler exception (and an escalated failure) is swallowed and logged', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventHubContext>(container);
+    pipeline.useFn(() => {
+      throw new Error('boom');
+    });
+
+    const options = new EventHubOptions();
+    options.catchExceptions = true;
+    const application = new EventHubApplication(
+      pipeline.build(),
+      container.createServiceResolverFactory(),
+      options,
+    );
+
+    // Reaching the end without throwing proves the exception was caught, not cascaded.
+    await application.sendAsync([createRawEvent('one')]);
+  });
+
+  it('envelope path: an unroutable Benzene message escalates via the surfaced inner result', async () => {
+    // BenzeneMessageEventHubHandler surfaces the inner (response-suppressed) envelope pipeline's
+    // result onto EventHubContext.messageResult — an unroutable topic records an explicit failure,
+    // which raiseOnFailureStatus (default true) escalates. A NON-envelope body still defers with a
+    // null outcome and is acked (the carve-out above).
+    const app = new InlineAzureFunctionStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure((builder) =>
+        useEventHub(builder, (eh) =>
+          useBenzeneMessage(eh, (msg) => useMessageHandlers(msg, CreateOrderHandler)),
+        ),
+      )
+      .build();
+
+    await expect(
+      handleEventHub(app, createBenzeneMessageEvent('no-such-topic', { orderId: '9' })),
+    ).rejects.toThrow(EventHubMessageProcessingException);
   });
 });

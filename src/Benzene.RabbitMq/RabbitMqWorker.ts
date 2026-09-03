@@ -150,7 +150,13 @@ export class RabbitMqWorker implements IBenzeneWorker {
     try {
       const messageResult = await this.application.handleAsync(delivery, this.serviceResolverFactory);
 
-      if (messageResult?.isSuccessful === false) {
+      // A null/unestablished outcome (no result recorded — typically an unrouted delivery: no handler
+      // matched the topic) settles like a failure (nack), not like a success. RabbitMQ has a backstop
+      // for the resulting redelivery — the bounded single requeue below, then the DLX (or drop) — so
+      // retaining an unrouted delivery cannot hot-loop. This deliberately overturns the earlier
+      // documented ack-on-null behaviour, per benzene-dotnet's
+      // work/settlement-consistency-fix-plan.md (row 7 and its decision register).
+      if (messageResult?.isSuccessful !== true) {
         this.nack(delivery);
       } else {
         this.ack(delivery);

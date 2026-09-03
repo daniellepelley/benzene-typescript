@@ -3,6 +3,7 @@ import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { EventHubApplication } from './EventHubApplication';
 import { EventHubContext } from './EventHubContext';
+import { EventHubOptions } from './EventHubOptions';
 
 /**
  * Adds an Event Hub entry point application to the Azure Function app builder, configuring its inner
@@ -20,15 +21,22 @@ import { EventHubContext } from './EventHubContext';
  *
  * @param app The Azure Function app builder to add Event Hub handling to.
  * @param action Configures the Event Hub middleware pipeline.
+ * @param configure Optionally configures `EventHubOptions` (e.g. `catchExceptions` /
+ *   `raiseOnFailureStatus`) — the defaults are safe-by-default on the failure-result axis
+ *   (`raiseOnFailureStatus` on, `catchExceptions` off).
  */
 export function useEventHub(
   app: IAzureFunctionAppBuilder,
   action: PipelineBuilderAction<EventHubContext>,
+  configure?: (options: EventHubOptions) => void,
 ): IAzureFunctionAppBuilder {
   const pipeline = app.create<EventHubContext>();
   action(pipeline);
+  const options = new EventHubOptions();
+  configure?.(options);
   app.add(
-    (serviceResolverFactory) => new EventHubApplication(pipeline.build(), serviceResolverFactory),
+    (serviceResolverFactory) =>
+      new EventHubApplication(pipeline.build(), serviceResolverFactory, options),
   );
   return app;
 }

@@ -6,8 +6,9 @@ import {
   BenzeneMessageRequest,
   IBenzeneMessageRequest,
 } from '@benzenejs/core-messages';
-import { BenzeneMessageApplication } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageApplication, MessageResult } from '@benzenejs/core-message-handlers';
 import { MiddlewareRouter } from '@benzenejs/core-middleware';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { EventHubContext } from './EventHubContext';
 
 /**
@@ -49,13 +50,21 @@ export class BenzeneMessageEventHubHandler extends MiddlewareRouter<
     return request.topic !== undefined && request.topic !== null;
   }
 
-  /** Handles the event by running it through the direct-message application. */
+  /**
+   * Handles the event by running it through the direct-message application and surfacing the inner
+   * handler's success/failure onto the outer `EventHubContext.messageResult`, so an
+   * `EventHubOptions.raiseOnFailureStatus` escalation sees a failure that occurred inside the
+   * (response-suppressed) envelope pipeline — matching the C# handler's assignment onto
+   * `EventHubContext.MessageResult` (same result-surfacing shape as
+   * `BenzeneMessageQueueStorageHandler`).
+   */
   protected async handleFunction(
     request: IBenzeneMessageRequest,
-    _context: EventHubContext,
+    context: EventHubContext,
     serviceResolverFactory: IServiceResolverFactory,
   ): Promise<void> {
-    await this.directMessageApplication.handleAsync(request, serviceResolverFactory);
+    const response = await this.directMessageApplication.handleAsync(request, serviceResolverFactory);
+    context.messageResult = new MessageResult(BenzeneResultStatus.isSuccess(response.statusCode));
   }
 
   /** Attempts to deserialize the Event Hub event body into a `BenzeneMessageRequest`; `undefined` on failure. */

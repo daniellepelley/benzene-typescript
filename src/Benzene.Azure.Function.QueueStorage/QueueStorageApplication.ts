@@ -89,7 +89,13 @@ export class QueueStorageBatchApplication implements IMiddlewareApplication<Queu
             }
           }
 
-          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+          // A null/unestablished outcome (messageResult never set — typically an unrouted message: no
+          // handler matched the topic) is escalated the same as an explicit failure, not treated as
+          // success. Queue Storage has a redelivery backstop for the resulting retry (`maxDequeueCount`
+          // + the poison queue), so retaining an unrouted message here is safe — unlike the Kafka/Event
+          // Hub triggers, which carve this out (work/settlement-consistency-fix-plan.md row 4 in
+          // benzene-dotnet).
+          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful !== true) {
             throw new QueueStorageMessageProcessingException(context.message.messageId ?? 'unknown');
           }
         } catch (ex) {

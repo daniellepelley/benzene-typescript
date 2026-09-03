@@ -2,9 +2,10 @@
 
 /**
  * Configures how `KafkaApplication` / `KafkaBatchApplication` handle a message handler's exceptions and
- * failure results. Both flags default to `false` (purely additive/opt-in), preserving the original
- * behavior: a handler exception cascades and fails the whole trigger invocation, and a non-exception
- * failure result is silently accepted.
+ * failure results. Safe-by-default on the failure-result axis, matching the .NET 1.0 settlement
+ * contract: `catchExceptions` off (a handler exception cascades and fails the trigger invocation) and
+ * `raiseOnFailureStatus` on (a returned failure result is escalated the same way). A null/unestablished
+ * outcome is deliberately NOT escalated — see the carve-out comment in `KafkaBatchApplication`.
  */
 export class KafkaOptions {
   /**
@@ -19,8 +20,9 @@ export class KafkaOptions {
   /**
    * Whether a message handler returning a non-exception failure result is escalated into a thrown
    * `KafkaMessageProcessingException`, so a failure is treated the same as an unhandled exception for
-   * retry purposes. Defaults to `false` — a failure result usually reflects a permanent/business-logic
-   * failure that retrying won't fix.
+   * retry purposes. Defaults to `true` — a returned failure is not silently settled; the Functions
+   * host's own retry policy takes over, and the handler must be idempotent. Set `false` for
+   * at-most-once, where a failure result is accepted as settled.
    */
-  raiseOnFailureStatus = false;
+  raiseOnFailureStatus = true;
 }

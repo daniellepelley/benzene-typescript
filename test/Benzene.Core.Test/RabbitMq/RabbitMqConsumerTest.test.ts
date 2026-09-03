@@ -349,14 +349,20 @@ describe('RabbitMqWorker', () => {
     expect(channel.nacked).toEqual([{ tag: 11, requeue: true }]);
   });
 
-  it('acks when no result is recorded (a pipeline that never records one does not wedge the queue)', async () => {
+  it('nacks when no result is recorded (null outcome is retained, not silently completed)', async () => {
+    // Nothing set a messageResult (result: undefined, no throw) — typically an unrouted delivery
+    // whose topic matched no handler. Per benzene-dotnet's work/settlement-consistency-fix-plan.md
+    // (row 7 and its decision register) a null outcome settles like a failure: nack, with the
+    // bounded single requeue + DLX as the backstop. This deliberately inverts the previous
+    // ack-on-null behaviour this test used to assert.
     const { worker, channel } = workerFor(baseConfig(), resultPipeline(undefined));
     await worker.startAsync();
 
     channel.onMessage!(delivery({ deliveryTag: 12, redelivered: false }));
 
-    await waitFor(() => channel.acked.length > 0);
-    expect(channel.acked).toEqual([12]);
+    await waitFor(() => channel.nacked.length > 0);
+    expect(channel.nacked).toEqual([{ tag: 12, requeue: true }]);
+    expect(channel.acked).toHaveLength(0);
   });
 
   it('consumes with noAck true under AutoAck mode and does not settle manually', async () => {

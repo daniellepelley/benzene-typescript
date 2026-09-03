@@ -145,10 +145,35 @@ describe('KafkaBatchApplication (direct)', () => {
     ).rejects.toThrow(KafkaMessageProcessingException);
   });
 
-  it('KafkaOptions defaults to not catching exceptions or raising on failure', () => {
+  it('KafkaOptions defaults: does not catch exceptions, escalates failure results', () => {
+    // Safe-by-default on the failure-result axis (the .NET 1.0 settlement contract):
+    // raiseOnFailureStatus on, catchExceptions off.
     const options = new KafkaOptions();
     expect(options.catchExceptions).toBe(false);
-    expect(options.raiseOnFailureStatus).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded does NOT throw (carve-out)', async () => {
+    // CARVE-OUT — unlike the queue-shaped transports, a null outcome here (typically an unrouted
+    // record) is NOT escalated: Kafka has no per-record dead-letter path, so retaining it would
+    // replay the partition forever. See benzene-dotnet's work/settlement-consistency-fix-plan.md
+    // row 15 — this test pins the carve-out so it can't be "fixed" by accident.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addKafka(container);
+
+    const builder = new MiddlewarePipelineBuilder<KafkaContext>(container);
+    builder.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new KafkaBatchApplication(builder.build());
+
+    // Reaching the end without throwing proves the null outcome settled as if it had succeeded.
+    await application.handleAsync(
+      [createRecord('no-such-topic', { orderId: '9' })],
+      container.createServiceResolverFactory(),
+    );
   });
 });
 

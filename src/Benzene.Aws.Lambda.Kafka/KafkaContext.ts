@@ -8,7 +8,8 @@ import { MSKEvent, MSKRecord } from 'aws-lambda';
  * TYPE-MODEL mapping: the .NET types (`Amazon.Lambda.KafkaEvents`) expose the event as `KafkaEvent` and
  * each record as the nested `KafkaEvent.KafkaEventRecord`. The `@types/aws-lambda` equivalents are `MSKEvent`
  * (Amazon MSK / managed Kafka) and the top-level `MSKRecord`. Note the event's `records` is an OBJECT keyed
- * by `"topic-partition"` → `MSKRecord[]` (not a flat array); `KafkaApplication` flattens it. `MSKRecord`
+ * by `"topic-partition"` → `MSKRecord[]` (not a flat array); `KafkaApplication` processes each partition
+ * sequentially in offset order. `MSKRecord`
  * fields are camelCase: `record.topic`, `record.partition`, `record.key`, `record.value` (base64),
  * `record.headers`.
  */

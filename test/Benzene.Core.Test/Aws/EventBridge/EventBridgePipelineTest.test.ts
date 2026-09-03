@@ -16,6 +16,8 @@ import {
   addEventBridge,
   EventBridgeApplication,
   EventBridgeContext,
+  EventBridgeMessageProcessingException,
+  EventBridgeOptions,
   useEventBridge,
 } from '@benzenejs/aws-lambda-eventbridge';
 import { useAwsLambda } from '@benzenejs/aws-lambda-core';
@@ -112,7 +114,7 @@ describe('EventBridgeApplication (direct)', () => {
     expect(messageResult?.isSuccessful).toBe(true);
   });
 
-  it('records an unsuccessful result for an unknown detail-type', async () => {
+  it('escalates an unsuccessful result for an unknown detail-type by default', async () => {
     handled.length = 0;
 
     const container = new DefaultBenzeneServiceContainer();
@@ -129,9 +131,104 @@ describe('EventBridgeApplication (direct)', () => {
     const application = new EventBridgeApplication(pipeline.build());
     const event = asEventBridge(messageBuilder('no.such.detail-type', { reference: '1' }));
 
+    // Safe-by-default: raiseOnFailureStatus (default true) escalates the recorded failure into a
+    // thrown exception so the rule target's retry/DLQ applies.
+    await expect(
+      application.handleAsync(event, container.createServiceResolverFactory()),
+    ).rejects.toThrow(EventBridgeMessageProcessingException);
+
+    expect(handled).toEqual([]);
+    expect(messageResult?.isSuccessful).toBe(false);
+  });
+
+  it('records (without throwing) an unsuccessful result when raiseOnFailureStatus is disabled', async () => {
+    handled.length = 0;
+
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventBridge(container);
+
+    let messageResult: IMessageResult | undefined;
+    const pipeline = new MiddlewarePipelineBuilder<EventBridgeContext>(container);
+    pipeline.onResponse((context) => {
+      messageResult = context.messageResult;
+    });
+    useMessageHandlers(pipeline, OrderCreatedHandler);
+
+    const options = new EventBridgeOptions();
+    options.raiseOnFailureStatus = false;
+    const application = new EventBridgeApplication(pipeline.build(), options);
+    const event = asEventBridge(messageBuilder('no.such.detail-type', { reference: '1' }));
+
     await application.handleAsync(event, container.createServiceResolverFactory());
 
     expect(handled).toEqual([]);
     expect(messageResult?.isSuccessful).toBe(false);
+  });
+
+  it('EventBridgeOptions defaults: does not catch exceptions, escalates failure results', () => {
+    // Safe-by-default (the .NET 1.0 settlement contract): raiseOnFailureStatus on, catchExceptions
+    // off.
+    const options = new EventBridgeOptions();
+    expect(options.catchExceptions).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+  });
+
+  it('raiseOnFailureStatus (default): no result recorded escalates to EventBridgeMessageProcessingException', async () => {
+    // Nothing sets a messageResult — a null/unestablished outcome. Per benzene-dotnet's
+    // work/settlement-consistency-fix-plan.md row 3, it escalates like a failure: the rule target's
+    // retry + DLQ is the backstop that makes retaining it safe.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventBridge(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventBridgeContext>(container);
+    pipeline.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new EventBridgeApplication(pipeline.build());
+    const event = asEventBridge(messageBuilder('order.created', { reference: '1' }));
+
+    await expect(
+      application.handleAsync(event, container.createServiceResolverFactory()),
+    ).rejects.toThrow(EventBridgeMessageProcessingException);
+  });
+
+  it('default options: a handler exception cascades', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventBridge(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventBridgeContext>(container);
+    pipeline.useFn(() => {
+      throw new Error('boom');
+    });
+
+    const application = new EventBridgeApplication(pipeline.build());
+    const event = asEventBridge(messageBuilder('order.created', { reference: '1' }));
+
+    await expect(
+      application.handleAsync(event, container.createServiceResolverFactory()),
+    ).rejects.toThrow('boom');
+  });
+
+  it('catchExceptions: a handler exception (and an escalated failure) is swallowed and logged', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventBridge(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<EventBridgeContext>(container);
+    pipeline.useFn(() => {
+      throw new Error('boom');
+    });
+
+    const options = new EventBridgeOptions();
+    options.catchExceptions = true;
+    const application = new EventBridgeApplication(pipeline.build(), options);
+    const event = asEventBridge(messageBuilder('order.created', { reference: '1' }));
+
+    // Reaching the end without throwing proves the exception was caught, not cascaded.
+    await application.handleAsync(event, container.createServiceResolverFactory());
   });
 });

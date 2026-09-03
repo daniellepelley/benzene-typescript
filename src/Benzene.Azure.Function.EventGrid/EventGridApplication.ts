@@ -88,7 +88,13 @@ export class EventGridBatchApplication implements IMiddlewareApplication<EventGr
             }
           }
 
-          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+          // A null/unestablished outcome (messageResult never set — typically an unrouted event: no
+          // handler matched the topic) is escalated the same as an explicit failure, not treated as
+          // success. Event Grid has a redelivery backstop for the resulting retry (its own retry with
+          // backoff + dead-lettering), so retaining an unrouted event here is safe — unlike the
+          // Kafka/Event Hub triggers, which carve this out (work/settlement-consistency-fix-plan.md
+          // row 5 in benzene-dotnet).
+          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful !== true) {
             throw new EventGridMessageProcessingException(
               context.event.id ?? context.event.eventType ?? 'unknown',
             );

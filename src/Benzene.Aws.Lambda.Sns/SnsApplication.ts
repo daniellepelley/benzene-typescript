@@ -20,8 +20,10 @@ import { SnsRecordContext } from './SnsRecordContext';
  *     `SnsRecordContext` per record;
  *   - runs each record's pipeline in ITS OWN service scope (`createScope()` / try-finally `dispose()`,
  *     the port of C# `using`), concurrently via `Promise.all` (the port of `Task.WhenAll`);
- *   - honors `SnsOptions`: `raiseOnFailureStatus` throws `SnsMessageProcessingException` when a handler
- *     reported an unsuccessful result; `catchExceptions` swallows-and-logs instead of cascading.
+ *   - honors `SnsOptions`: `raiseOnFailureStatus` (default `true`) throws `SnsMessageProcessingException`
+ *     when a handler reported an unsuccessful result — or when no result was established at all (a
+ *     null outcome escalates too; see the guard's comment); `catchExceptions` swallows-and-logs
+ *     instead of cascading.
  *
  * EXCEPTION SEMANTICS: C#'s `catch (Exception ex) when (_options.CatchExceptions)` is a conditional catch
  * — the exception is only caught when `catchExceptions` is true, otherwise it cascades. TypeScript has no
@@ -54,7 +56,13 @@ export class SnsApplication implements IMiddlewareApplication<SNSEvent> {
           }
         }
 
-        if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+        // A null/unestablished outcome (messageResult never set — typically an unrouted message: no
+        // handler matched the topic) is escalated the same as an explicit failure, not treated as
+        // success. SNS has a redelivery backstop for the resulting retry (subscription retry policy +
+        // redrive/DLQ), so retaining an unrouted message here is safe — unlike Kafka/Event Hub, which
+        // have no per-record dead-letter path and carve this out instead of retaining. Mirrors .NET's
+        // SingleContextEscalatingApplicationBase (work/settlement-consistency-fix-plan.md row 1).
+        if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful !== true) {
           throw new SnsMessageProcessingException(context.snsRecord.Sns.MessageId);
         }
       } catch (ex) {

@@ -23,7 +23,7 @@ export class ServiceBusApplication extends EntryPointMiddlewareApplication<Servi
    * @param pipeline The built Service Bus middleware pipeline to run each message through.
    * @param serviceResolverFactory The service resolver factory used to process each batch.
    * @param options Configures how a handler's exceptions and failure results are handled. Defaults to a
-   *   new `ServiceBusOptions` (both flags off).
+   *   new `ServiceBusOptions` (safe-by-default: `raiseOnFailureStatus` on, `catchExceptions` off).
    */
   constructor(
     pipeline: IMiddlewarePipeline<ServiceBusContext>,
@@ -84,7 +84,13 @@ export class ServiceBusBatchApplication implements IMiddlewareApplication<Servic
             }
           }
 
-          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+          // A null/unestablished outcome (messageResult never set — typically an unrouted message: no
+          // handler matched the topic) is escalated the same as an explicit failure, not treated as
+          // success. Service Bus has a redelivery backstop for the resulting retry (delivery count +
+          // dead-letter queue), so retaining an unrouted message here is safe — unlike the Kafka/Event
+          // Hub triggers, which have no per-record dead-letter path and carve this out instead
+          // (work/settlement-consistency-fix-plan.md row 8 in benzene-dotnet).
+          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful !== true) {
             throw new ServiceBusMessageProcessingException(String(context.message.messageId));
           }
         } catch (ex) {

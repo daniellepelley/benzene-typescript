@@ -105,7 +105,7 @@ describe('QueueStoragePipeline (via AzureFunctionApp entry point)', () => {
     expect(handled).toEqual(['7']);
   });
 
-  it('defers a non-envelope message without error', async () => {
+  it('escalates a deferred non-envelope message by default (null outcome is retained)', async () => {
     handled.length = 0;
 
     const app = new InlineAzureFunctionStartUp()
@@ -113,6 +113,33 @@ describe('QueueStoragePipeline (via AzureFunctionApp entry point)', () => {
       .configure((builder) =>
         useQueueStorage(builder, (queue) =>
           useBenzeneMessage(queue, (direct) => useMessageHandlers(direct, CreateOrderHandler)),
+        ),
+      )
+      .build();
+
+    // The envelope handler defers (the text is no envelope), so no result is recorded — a
+    // null/unestablished outcome. Per benzene-dotnet's work/settlement-consistency-fix-plan.md row 4
+    // that now escalates by default: the message is retained for the host's maxDequeueCount/poison
+    // handling rather than silently deleted.
+    await expect(handleQueueMessage(app, 'just some text, not an envelope')).rejects.toThrow(
+      QueueStorageMessageProcessingException,
+    );
+    expect(handled).toEqual([]);
+  });
+
+  it('defers a non-envelope message without error when raiseOnFailureStatus is disabled', async () => {
+    handled.length = 0;
+
+    const app = new InlineAzureFunctionStartUp()
+      .configureServices((services) => addBenzene(services))
+      .configure((builder) =>
+        useQueueStorage(
+          builder,
+          (queue) =>
+            useBenzeneMessage(queue, (direct) => useMessageHandlers(direct, CreateOrderHandler)),
+          (options) => {
+            options.raiseOnFailureStatus = false;
+          },
         ),
       )
       .build();
@@ -147,6 +174,9 @@ describe('QueueStoragePipeline (via AzureFunctionApp entry point)', () => {
         useQueueStorage(builder, (queue) =>
           queue.useFn('Capture', async (context, next) => {
             observed = context;
+            // Record a success so the safe-by-default null-outcome escalation doesn't fire for this
+            // observation-only pipeline.
+            context.messageResult = { isSuccessful: true };
             await next();
           }),
         ),
@@ -228,6 +258,9 @@ describe('QueueStorageBatchApplication (direct)', () => {
     pipeline.useFn(async (context, next, resolver) => {
       seenBodies.push(context.message.messageText);
       seenTransports.push(resolver.getService(ICurrentTransport).name);
+      // Record a success so the safe-by-default escalation (a null outcome is retained for
+      // redelivery, like a failure) doesn't fire for this observation-only pipeline.
+      context.messageResult = { isSuccessful: true };
       await next();
     });
 

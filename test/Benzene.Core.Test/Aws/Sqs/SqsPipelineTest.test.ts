@@ -150,6 +150,10 @@ describe('SqsApplication (direct)', () => {
     const pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(container);
     pipeline.useFn(async (context, next) => {
       seenBodies.push(context.sqsMessage.body);
+      // Record a success so the safe-by-default null-outcome policy (an unestablished outcome is
+      // reported for redelivery, like a failure) doesn't report these records for this
+      // observation-only pipeline.
+      context.isSuccessful = true;
       await next();
     });
 
@@ -165,6 +169,27 @@ describe('SqsApplication (direct)', () => {
       [JSON.stringify({ orderId: '1' }), JSON.stringify({ orderId: '2' })].sort(),
     );
     expect(response.batchItemFailures).toEqual([]);
+  });
+
+  it('reports a record with no established outcome as a batch item failure (null is not success)', async () => {
+    // Nothing sets isSuccessful — typically an unrouted message. Per benzene-dotnet's
+    // work/settlement-consistency-fix-plan.md row 9, a null outcome is reported for redelivery, not
+    // silently deleted with the batch: SQS's redrive policy/DLQ is the backstop.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addSqs(container);
+
+    const pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(container);
+    pipeline.useFn(async (_context, next) => {
+      await next();
+    });
+
+    const application = new SqsApplication(pipeline.build());
+    const event = createSqsEvent([{ messageId: 'null-outcome', topic: 'create-order', body: {} }]);
+
+    const response = await application.handleAsync(event, container.createServiceResolverFactory());
+
+    expect(response.batchItemFailures).toEqual([{ itemIdentifier: 'null-outcome' }]);
   });
 
   it('FailWholeBatch throws SqsBatchProcessingException listing failed message ids', async () => {

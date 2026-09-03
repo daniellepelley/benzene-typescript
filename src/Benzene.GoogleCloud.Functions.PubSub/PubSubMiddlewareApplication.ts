@@ -56,7 +56,12 @@ export class PubSubMiddlewareApplication implements IMiddlewareApplication<Messa
         }
       }
 
-      if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+      // A null/unestablished outcome (messageResult never set — typically an unrouted message: no
+      // handler matched the topic) is escalated the same as an explicit failure, not treated as
+      // success. Pub/Sub has a redelivery backstop for the resulting retry (ack-deadline redelivery +
+      // dead-letter topics), so retaining an unrouted message here is safe — unlike Kafka/Event Hub,
+      // which carve this out (work/settlement-consistency-fix-plan.md row 6 in benzene-dotnet).
+      if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful !== true) {
         throw new PubSubMessageProcessingException(messageIdOf(context));
       }
     } catch (ex) {
