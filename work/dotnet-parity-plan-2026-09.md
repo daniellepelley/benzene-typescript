@@ -252,6 +252,16 @@ spec) and this plan ports the *ruling* immediately regardless of .NET's landing 
 
 ## Wave 2 — contract and mesh parity
 
+> **Status: SHIPPED 2026-09-03** — all five items implemented and green (300 test files / 2189
+> tests). Commits: W2.1 `5e7fb68`, W2.2 `ac04242`, W2.3 `5d22d36`, W2.4 `6d47224`+`2f6c0bc`+
+> `a19273d`, W2.5 `018142e`. Both conformance-fixture exemptions removed; the coverage list is
+> empty. Notable findings recorded by the implementers: the R15 #226 recursive-caster overflow
+> does NOT reproduce in TS (no auto-mapper; probe test pins it); two fixture-vs-.NET tensions in
+> the versioned catalog were resolved fixture-side (per-version fleet rows; union-rebuilt edge
+> retraction) and are documented in `MeshCollectorStore.ts` — candidates to raise upstream, since
+> .NET vendors `mesh-service-version-cases.json` without a runner. The sections below are kept as
+> the record of what was specified.
+
 ### W2.1 Deterministic schema `required` ordering (S)
 
 - **.NET reference**: `src/Benzene.Mesh.Wire/MeshSchemaGenerator.cs:167` — `required` sorted
