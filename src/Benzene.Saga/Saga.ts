@@ -63,10 +63,22 @@ export class Saga {
     sagaId?: string,
   ): Promise<SagaResult> {
     const store = options.stateStore;
+
+    // #208/#257: a state-store call failing must never abort the saga's own execution, never skip
+    // rollback for effects already applied, and never replace a genuinely successful/rolled-back
+    // result with a raw error - it is surfaced on the returned SagaResult instead (see
+    // stateStoreFailure's doc). Every store call below goes through recordSafelyAsync for exactly that
+    // reason. Only the FIRST failure this attempt is kept (a store failing once is usually failing
+    // consistently; the earliest failure is the most informative), but every call is still attempted
+    // regardless of an earlier one having failed.
+    let stateStoreFailure: unknown = undefined;
+
     let id = sagaId;
     if (store !== undefined) {
       id ??= options.sagaId ?? randomUUID();
-      await store.recordStartedAsync(new SagaRunInfo(id, options.name, attempt, this.stages.length));
+      const runInfo = new SagaRunInfo(id, options.name, attempt, this.stages.length);
+      const startError = await Saga.recordSafelyAsync(() => store.recordStartedAsync(runInfo));
+      stateStoreFailure ??= startError;
     }
 
     const context = new SagaContext();
@@ -79,40 +91,103 @@ export class Saga {
         stage.publish(context);
         completedStages.push(stage);
         if (store !== undefined) {
-          await store.recordStageCompletedAsync(id!, attempt, i);
+          const stageError = await Saga.recordSafelyAsync(() =>
+            store.recordStageCompletedAsync(id!, attempt, i),
+          );
+          stateStoreFailure ??= stageError;
         }
 
         continue;
       }
 
       // Stage i failed. Roll back this stage's concurrently-succeeded steps first, then every completed
-      // stage newest-first, so effects are undone in the reverse of the order they were created.
+      // stage newest-first, so effects are undone in the reverse of the order they were created. Runs
+      // unconditionally - even if a state-store call already failed above - so a store outage can never
+      // suppress compensation for effects genuinely applied (#208).
       const rollbackClean = await Saga.rollBackAsync(context, completedStages, stage);
 
-      const failedStep = stage.steps.find((step) => step.state === SagaStepState.Failed);
+      // #209: every concurrently-failed step in the failing stage, not just the first one observed.
+      const failures = stage.steps.filter((step) => step.state === SagaStepState.Failed);
+      const failedStep = failures[0];
       const compensationFailures = Saga.collectCompensationFailures(completedStages, stage);
+      const outcome = rollbackClean ? SagaOutcome.RolledBack : SagaOutcome.PartiallyRolledBack;
 
-      const failure = new SagaResult(
-        rollbackClean ? SagaOutcome.RolledBack : SagaOutcome.PartiallyRolledBack,
+      if (store !== undefined) {
+        // Hand the store the outcome as known so far (any earlier store hiccup this attempt included);
+        // if THIS call also throws, that's folded into the returned result below rather than
+        // propagated - #208's failure-path variant: recordFinishedAsync itself failing after rollback
+        // already ran must not lose compensationFailures visibility.
+        const recorded = new SagaResult(
+          outcome,
+          i,
+          failedStep?.result,
+          failedStep?.exception,
+          compensationFailures,
+          failures,
+          stateStoreFailure,
+        );
+        const finishError = await Saga.recordSafelyAsync(() =>
+          store.recordFinishedAsync(id!, attempt, recorded),
+        );
+        stateStoreFailure ??= finishError;
+      }
+
+      return new SagaResult(
+        outcome,
         i,
         failedStep?.result,
         failedStep?.exception,
         compensationFailures,
+        failures,
+        stateStoreFailure,
       );
-
-      if (store !== undefined) {
-        await store.recordFinishedAsync(id!, attempt, failure);
-      }
-
-      return failure;
     }
 
-    const success = new SagaResult(SagaOutcome.Succeeded, undefined, undefined, undefined, []);
     if (store !== undefined) {
-      await store.recordFinishedAsync(id!, attempt, success);
+      const recorded = new SagaResult(
+        SagaOutcome.Succeeded,
+        undefined,
+        undefined,
+        undefined,
+        [],
+        [],
+        stateStoreFailure,
+      );
+      const finishError = await Saga.recordSafelyAsync(() =>
+        store.recordFinishedAsync(id!, attempt, recorded),
+      );
+      stateStoreFailure ??= finishError;
     }
 
-    return success;
+    // #257: even if recordFinishedAsync just threw (or an earlier store call did), every stage
+    // genuinely succeeded - return that success, with the store failure surfaced, rather than letting a
+    // raw error replace it (which would risk a caller retrying an already-succeeded saga with no
+    // compensation and no dedup).
+    return new SagaResult(
+      SagaOutcome.Succeeded,
+      undefined,
+      undefined,
+      undefined,
+      [],
+      [],
+      stateStoreFailure,
+    );
+  }
+
+  /**
+   * Runs a state-store call, catching any error it throws instead of letting it propagate - see
+   * {@link runOnceAsync}'s remarks on why a store failure must never abort the saga's own execution or
+   * replace its real outcome. Returns the caught error, or `undefined` when the call succeeded.
+   */
+  private static async recordSafelyAsync(storeCall: () => Promise<void>): Promise<unknown> {
+    try {
+      await storeCall();
+      return undefined;
+    } catch (error) {
+      // `undefined` doubles as "no failure" for the `??=` threading above, so a store that throws a
+      // literal `undefined` is normalized to a real Error rather than silently dropped.
+      return error ?? new Error('The saga state store threw a nullish error.');
+    }
   }
 
   private static async rollBackAsync(

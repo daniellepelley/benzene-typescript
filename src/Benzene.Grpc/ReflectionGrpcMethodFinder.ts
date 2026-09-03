@@ -35,14 +35,19 @@ export class ReflectionGrpcMethodFinder implements IGrpcMethodFinder {
       .findDefinitions()
       .flatMap((definition) => ReflectionGrpcMethodFinder.mapHandlers(definition));
 
+    // The duplicate check must use the SAME case-insensitive comparison as the GrpcRouteFinder route
+    // table, which is built lower-cased from this same source (.NET #261). Without this, a case-variant
+    // duplicate ('/pkg.Svc/Echo' vs '/pkg.svc/echo') would pass here and then silently lose a route in
+    // the map (last-in wins) instead of failing fast with the clear BenzeneException below.
     const seen = new Set<string>();
     for (const definition of definitions) {
-      if (seen.has(definition.method)) {
+      const key = definition.method.toLowerCase();
+      if (seen.has(key)) {
         throw new BenzeneException(
           `Grpc method '${definition.method}' has been assigned to more than one message handler, this is not permitted`,
         );
       }
-      seen.add(definition.method);
+      seen.add(key);
     }
 
     return definitions;

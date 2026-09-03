@@ -46,12 +46,26 @@ export function isAsyncIterable(value: unknown): value is AsyncIterable<unknown>
 
 /**
  * Adapts an inbound gRPC request stream to an `AsyncIterable<T>`. The grpc-js readable is already async-
- * iterable, so this simply re-yields it (the analog of .NET's `ReadAll` `MoveNext` loop) — giving the
+ * iterable, so this re-yields it (the analog of .NET's `ReadAll` `MoveNext` loop) — giving the
  * pipeline a clean `AsyncIterable<T>` seam independent of the concrete grpc-js stream type.
+ *
+ * Deliberately iterates via the explicit iterator and does NOT forward an early abandon to the source's
+ * `return()`: a Node `Readable`'s async-iterator `return()` **destroys the stream**, and on a
+ * `ServerDuplexStream` that kills the whole gRPC call — so a handler that stops reading mid-stream
+ * (most importantly one that throws, .NET #280) would destroy the call before the classified failure
+ * status/trailers could be sent, hanging the client. .NET's `IAsyncStreamReader<T>` has no such
+ * destroy-on-abandon; matching it, an abandoned read simply stops reading and leaves the call to end
+ * with its own status. Errors from the stream itself (client cancel, transport failure) still
+ * propagate through `next()`'s rejection.
  */
 export async function* readAll<T>(source: AsyncIterable<T>): AsyncIterable<T> {
-  for await (const item of source) {
-    yield item;
+  const iterator = source[Symbol.asyncIterator]();
+  while (true) {
+    const next = await iterator.next();
+    if (next.done) {
+      return;
+    }
+    yield next.value;
   }
 }
 

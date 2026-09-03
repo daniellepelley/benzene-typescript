@@ -24,11 +24,16 @@
  * **Boot-time route validation.** `InProcessRouteStartUpCheck` (registered by the first
  * `useInProcess`/`useInProcessFanOut` call) fails start-up if a route names a pipeline nothing registered —
  * the mistake that was previously only an `InProcessPipelineNotFoundException` at first send.
+ *
+ * **Standalone client.** `InProcessBenzeneMessageClient` is the standalone `IBenzeneMessageClient`
+ * over the same registered pipelines — typed results via the same envelope + `asBenzeneResult`
+ * mechanism the routed path uses, for code handed "a client" rather than the outbound routing table.
  */
 export * from './DependencyInjectionExtensions';
 export * from './DuplicateInProcessFanOutTargetException';
 export * from './DuplicateInProcessPipelineException';
 export * from './Extensions';
+export * from './InProcessBenzeneMessageClient';
 export * from './InProcessClientMiddleware';
 export * from './InProcessContextConverter';
 export * from './InProcessDispatcherRegistry';

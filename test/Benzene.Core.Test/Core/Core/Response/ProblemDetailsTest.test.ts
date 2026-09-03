@@ -103,3 +103,95 @@ describe('asBenzeneResult classification', () => {
     ).toBe(false);
   });
 });
+
+describe('asBenzeneResult failure bodies (RFC 9457 problem documents)', () => {
+  // The client-side half of .NET's AsBenzeneResult: a failure body is read as a problem document and
+  // its information surfaced on the result (the W3.12 error-payload remainder — no longer payload-less).
+  const serializer = new JsonSerializer();
+
+  it("populates the result's structured errors from the document's errors member — field, code and order intact", () => {
+    // Phase 5 of the .NET problem-details plan: a multi-error problem body's `errors` member is
+    // authoritative and round-trips as structured BenzeneErrors rather than one joined detail string.
+    const body = serializer.serialize({
+      benzeneStatus: BenzeneResultStatus.validationError,
+      detail: 'Name must not be empty, Age must be positive',
+      errors: [
+        { message: 'Name must not be empty', field: '/name', code: 'NotEmpty' },
+        { message: 'Age must be positive', field: '/age', code: 'Positive' },
+      ],
+    });
+    const response = new BenzeneMessageClientResponse(BenzeneResultStatus.validationError, body, {}, false);
+
+    const result = asBenzeneResult(response, serializer);
+
+    expect(result.status).toBe(BenzeneResultStatus.validationError);
+    expect(result.isSuccessful).toBe(false);
+    expect(result.errors).toEqual([
+      { message: 'Name must not be empty', field: '/name', code: 'NotEmpty' },
+      { message: 'Age must be positive', field: '/age', code: 'Positive' },
+    ]);
+  });
+
+  it('falls back to a single message-only error from detail when errors is absent (older producer)', () => {
+    const body = serializer.serialize({ benzeneStatus: BenzeneResultStatus.notFound, detail: 'some-error' });
+    const response = new BenzeneMessageClientResponse(BenzeneResultStatus.notFound, body, {}, false);
+
+    const result = asBenzeneResult(response, serializer);
+
+    expect(result.errors).toEqual([{ message: 'some-error' }]);
+  });
+
+  it('works over a numeric HTTP status code envelope too', () => {
+    const body = serializer.serialize({ detail: 'some-error' });
+
+    const result = asBenzeneResult(new BenzeneMessageClientResponse('422', body), serializer);
+
+    expect(result.status).toBe(BenzeneResultStatus.validationError);
+    expect(result.errors).toEqual([{ message: 'some-error' }]);
+  });
+
+  it('attaches the received document verbatim, so ProblemTypes.from returns what was received', () => {
+    // The received document — an application-owned `type` included — must survive, not be re-derived.
+    const body = serializer.serialize({
+      type: 'https://example.com/problems/order-already-shipped',
+      title: 'Order already shipped',
+      benzeneStatus: 'order-already-shipped',
+      detail: 'too late',
+    });
+    const response = new BenzeneMessageClientResponse(BenzeneResultStatus.conflict, body, {}, false);
+
+    const result = asBenzeneResult(response, serializer);
+    const problem = ProblemTypes.from(result);
+
+    expect(problem.type).toBe('https://example.com/problems/order-already-shipped');
+    expect(problem.title).toBe('Order already shipped');
+    expect(problem.detail).toBe('too late');
+    // The result's status stays the envelope's classification, never re-derived from the document's
+    // benzeneStatus (which can disagree for a still-transitioning producer).
+    expect(result.status).toBe(BenzeneResultStatus.conflict);
+  });
+
+  it('degrades to the historical error-less failure on an empty or non-JSON body', () => {
+    const empty = asBenzeneResult(
+      new BenzeneMessageClientResponse(BenzeneResultStatus.notFound, '', {}, false),
+      serializer,
+    );
+    expect(empty.isSuccessful).toBe(false);
+    expect(empty.errors).toEqual([]);
+
+    const garbage = asBenzeneResult(
+      new BenzeneMessageClientResponse(BenzeneResultStatus.serviceUnavailable, '<html>502</html>', {}, false),
+      serializer,
+    );
+    expect(garbage.isSuccessful).toBe(false);
+    expect(garbage.status).toBe(BenzeneResultStatus.serviceUnavailable);
+    expect(garbage.errors).toEqual([]);
+
+    // A JSON scalar body is not a problem document either.
+    const scalar = asBenzeneResult(
+      new BenzeneMessageClientResponse(BenzeneResultStatus.notFound, '"just a string"', {}, false),
+      serializer,
+    );
+    expect(scalar.errors).toEqual([]);
+  });
+});
