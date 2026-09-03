@@ -387,6 +387,20 @@ This is the one place TS is deliberately *behind the spec*, recorded as such:
 
 ## Wave 3 — remaining behavioral + auth
 
+> **Status: SHIPPED 2026-09-03** — all 13 items implemented and green (308 test files / 2299
+> tests). Commits: W3.1 `e709590`, W3.2 `8cbce18`, W3.3 `8533969`, W3.4 `787a598`, W3.5 `69efffb`,
+> W3.6 `1c46657`, W3.7 `3c61fdc`, W3.8 `95687c4`, W3.9 `2f92280`, W3.10+W3.11 `c676f94`,
+> W3.12 `0b7df23` (remaining-items.md emptied and deleted per its convention), W3.13 `7a58112`.
+> Notable: W3.2's "safe by construction" assessment was WRONG — porting the #280 tests exposed a
+> mid-drain throw escaping without a `benzene-status` trailer and a bidi stream-destruction hang,
+> both fixed; the duplicate-method case-fold bug was real and fixed; the grpc health bridge does
+> not exist (intentionally out of scope, so #281 has nothing to apply to). W3.3 ported the .NET
+> checkpoint engine (decision taken; `KinesisStreamOptions` deliberately not ported under the
+> no-new-settlement-flags rule). One follow-up observed and deliberately left: the Service Bus
+> worker settles inside the handler's try/catch, so the .NET #277/#232 settle-throw isolation fix
+> is unported — a candidate Wave 5 item. The sections below are kept as the record of what was
+> specified.
+
 ### W3.1 OAuth2 allowlist entry validation (S)
 
 - **.NET reference**: R14-15 #244 (`MeshOidcOptions.Validate()` rejects null/whitespace entries
