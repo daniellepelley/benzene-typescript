@@ -3,10 +3,14 @@ import { IBenzeneResult, IBenzeneResultOf } from '@benzenejs/abstractions';
 import { BenzeneResult } from '@benzenejs/results';
 import {
   InMemorySagaStateStore,
+  ISagaStateStore,
   SagaBuilder,
   SagaOutcome,
+  SagaResult,
   SagaRetryPolicy,
+  SagaRunInfo,
   SagaRunOptions,
+  SagaStateEvent,
   SagaStateEventKind,
 } from '@benzenejs/saga';
 
@@ -169,5 +173,157 @@ describe('Saga state store', () => {
     const result = await saga.runAsync();
 
     expect(result.outcome).toBe(SagaOutcome.Succeeded);
+  });
+});
+
+// ---- State-store failure handling (#208, #257) ----------------------------------------------------
+
+/**
+ * Wraps a real InMemorySagaStateStore so a test can make one specific call throw (a real store failure,
+ * not the store simply being absent) while every other call still records normally - used to prove
+ * #208/#257's fix: the saga's own outcome/rollback must never be lost or aborted by a state-store
+ * failure, and the failure itself must be surfaced via `SagaResult.stateStoreFailure` rather than
+ * propagating as a raw error out of `runAsync`.
+ */
+class ThrowingSagaStateStore implements ISagaStateStore {
+  private readonly inner = new InMemorySagaStateStore();
+
+  throwOnRecordStageCompleted = false;
+  throwOnRecordFinished = false;
+
+  get events(): readonly SagaStateEvent[] {
+    return this.inner.events;
+  }
+
+  recordStartedAsync(run: SagaRunInfo, signal?: AbortSignal): Promise<void> {
+    return this.inner.recordStartedAsync(run, signal);
+  }
+
+  recordStageCompletedAsync(
+    sagaId: string,
+    attempt: number,
+    stageIndex: number,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    if (this.throwOnRecordStageCompleted) {
+      throw new Error('simulated state store failure recording stage completion');
+    }
+
+    return this.inner.recordStageCompletedAsync(sagaId, attempt, stageIndex, signal);
+  }
+
+  recordFinishedAsync(
+    sagaId: string,
+    attempt: number,
+    result: SagaResult,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    if (this.throwOnRecordFinished) {
+      throw new Error('simulated state store failure recording finish');
+    }
+
+    return this.inner.recordFinishedAsync(sagaId, attempt, result, signal);
+  }
+}
+
+describe('Saga state-store failure handling', () => {
+  it('a store throwing after an effect-producing stage completes still rolls back and surfaces the failure', async () => {
+    // #208: a state-store failure occurring right after an effect-producing stage completes must not
+    // abort the run with zero rollback - a later stage's failure must still compensate the earlier
+    // stage's genuinely-applied effect, and the store failure is surfaced on the result, not thrown.
+    const log: string[] = [];
+    const store = new ThrowingSagaStateStore();
+    store.throwOnRecordStageCompleted = true;
+    const saga = new SagaBuilder()
+      .stage((s) =>
+        s.step<string>((step) =>
+          step
+            .do(() => {
+              log.push('s1');
+              return ok('a');
+            })
+            .compensate(() => {
+              log.push('undo-s1');
+              return undo();
+            }),
+        ),
+      )
+      .stage((s) => s.step<string>((step) => step.do(() => fail())))
+      .build();
+
+    const result = await saga.runAsync(options({ sagaId: 'saga-208', stateStore: store }));
+
+    // The saga's own outcome is unaffected by the store failure - rollback still ran for the stage
+    // that genuinely completed.
+    expect(result.outcome).toBe(SagaOutcome.RolledBack);
+    expect(log).toContain('undo-s1');
+
+    // The store failure is surfaced, not swallowed and not thrown.
+    expect(result.stateStoreFailure).toBeInstanceOf(Error);
+    expect((result.stateStoreFailure as Error).message).toContain('recording stage completion');
+  });
+
+  it('a store throwing on the finish record after rollback still returns the compensation failures', async () => {
+    // #208's failure-path variant: recordFinishedAsync itself throwing after rollback already ran
+    // must not lose compensationFailures visibility - the computed result (including compensation
+    // failures) must still come back, with the store failure added.
+    const store = new ThrowingSagaStateStore();
+    store.throwOnRecordFinished = true;
+    const saga = new SagaBuilder()
+      .stage((s) =>
+        s.step<string>((step) =>
+          step.do(() => ok('a')).compensate(() => Promise.resolve(BenzeneResult.serviceUnavailable())),
+        ),
+      ) // undo fails
+      .stage((s) => s.step<string>((step) => step.do(() => fail())))
+      .build();
+
+    const result = await saga.runAsync(options({ sagaId: 'saga-208b', stateStore: store }));
+
+    expect(result.outcome).toBe(SagaOutcome.PartiallyRolledBack);
+    expect(result.compensationFailures).toHaveLength(1); // not lost despite the store also failing
+    expect(result.stateStoreFailure).toBeInstanceOf(Error);
+  });
+
+  it('a store throwing on the finish record after full success still returns Succeeded', async () => {
+    // #257: recordFinishedAsync throwing after every stage genuinely succeeded must not discard the
+    // successful SagaResult - the caller must still learn the saga succeeded (so it does not blindly
+    // retry an already-completed saga), with stateStoreFailure populated to show the store didn't
+    // durably record it.
+    const store = new ThrowingSagaStateStore();
+    store.throwOnRecordFinished = true;
+    const saga = new SagaBuilder().stage((s) => s.step<string>((step) => step.do(() => ok('a')))).build();
+
+    const result = await saga.runAsync(options({ sagaId: 'saga-257', stateStore: store }));
+
+    expect(result.outcome).toBe(SagaOutcome.Succeeded);
+    expect(result.isSuccess).toBe(true);
+    expect(result.stateStoreFailure).toBeInstanceOf(Error);
+    expect((result.stateStoreFailure as Error).message).toContain('recording finish');
+  });
+
+  it('a store throwing on the finish record after full success does not trigger a retry', async () => {
+    // A configured retry policy must not re-run an already-succeeded saga just because the store
+    // failed to record it.
+    const store = new ThrowingSagaStateStore();
+    store.throwOnRecordFinished = true;
+    let attempts = 0;
+    const saga = new SagaBuilder()
+      .stage((s) =>
+        s.step<string>((step) =>
+          step.do(() => {
+            attempts += 1;
+            return ok('a');
+          }),
+        ),
+      )
+      .build();
+
+    const result = await saga.runAsync(
+      options({ sagaId: 'saga-257b', stateStore: store, retryPolicy: fastRetry(3) }),
+    );
+
+    expect(result.outcome).toBe(SagaOutcome.Succeeded);
+    expect(attempts).toBe(1); // succeeded on the first attempt - retry policy only fires on RolledBack
   });
 });

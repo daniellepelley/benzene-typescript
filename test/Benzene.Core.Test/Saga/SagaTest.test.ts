@@ -162,6 +162,85 @@ describe('Saga', () => {
     expect(result.compensationFailures).toHaveLength(0);
   });
 
+  it('two steps in the same stage failing concurrently surfaces both in failures', async () => {
+    // #209: when two steps in the same stage fail concurrently, both must be surfaced - not just the
+    // one `failure`/`failureException` happen to carry.
+    const saga = new SagaBuilder()
+      .stage((stage) =>
+        stage
+          .step<string>((step) => step.do(() => Promise.resolve(BenzeneResult.serviceUnavailable<string>())))
+          .step<string>((step) => step.do(() => Promise.resolve(BenzeneResult.notFound<string>()))),
+      )
+      .build();
+
+    const result = await saga.runAsync();
+
+    expect(result.outcome).toBe(SagaOutcome.RolledBack);
+    expect(result.failures).toHaveLength(2);
+    for (const step of result.failures) {
+      expect(step.state).toBe(SagaStepState.Failed);
+    }
+
+    // Both distinct failures are represented - a real regression here would show as duplicates
+    // (a single failure double-counted) or a missing status.
+    const statuses = result.failures.map((step) => step.result!.status);
+    expect(statuses).toContain(BenzeneResult.serviceUnavailable<string>().status);
+    expect(statuses).toContain(BenzeneResult.notFound<string>().status);
+
+    // The existing single-failure members stay populated too - first item, for compatibility with
+    // code written against the pre-#209 shape.
+    expect(result.failure).toBe(result.failures[0].result);
+    expect(result.failureException).toBe(result.failures[0].exception);
+  });
+
+  it('two steps failing concurrently, one by exception and one by result, surfaces both in failures', async () => {
+    // #209: the same concurrent-failure surfacing, but one step fails via a thrown error and the other
+    // via an ordinary failure result - `failures` must carry both regardless of which shape each
+    // step's failure took.
+    const saga = new SagaBuilder()
+      .stage((stage) =>
+        stage
+          .step<string>((step) => step.do(() => Promise.resolve(BenzeneResult.serviceUnavailable<string>())))
+          .step<string>((step) =>
+            step.do((): Promise<IBenzeneResultOf<string>> => {
+              throw new Error('boom');
+            }),
+          ),
+      )
+      .build();
+
+    const result = await saga.runAsync();
+
+    expect(result.outcome).toBe(SagaOutcome.RolledBack);
+    expect(result.failures).toHaveLength(2);
+    for (const step of result.failures) {
+      expect(step.state).toBe(SagaStepState.Failed);
+    }
+    expect(result.failures.some((step) => step.exception instanceof Error)).toBe(true);
+    expect(
+      result.failures.some((step) => step.exception === undefined && step.result?.isSuccessful === false),
+    ).toBe(true);
+
+    // failure/failureException remain a backward-compatible view over the first entry.
+    expect(result.failure).toBe(result.failures[0].result);
+    expect(result.failureException).toBe(result.failures[0].exception);
+  });
+
+  it('a single failing step yields exactly one matching failures entry', async () => {
+    // A single-step-failure run must still populate `failures` with exactly that one step, mirroring
+    // `failure` - not just the multi-failure case.
+    const saga = new SagaBuilder()
+      .stage((stage) =>
+        stage.step<string>((step) => step.do(() => Promise.resolve(BenzeneResult.serviceUnavailable<string>()))),
+      )
+      .build();
+
+    const result = await saga.runAsync();
+
+    expect(result.failures).toHaveLength(1);
+    expect(result.failure).toBe(result.failures[0].result);
+  });
+
   it('building with no stages throws', () => {
     expect(() => new SagaBuilder().build()).toThrow();
   });
