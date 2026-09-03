@@ -1,6 +1,7 @@
 /** Port of Benzene.Aws.Lambda.S3 (barrel). */
 export * from './S3RecordContext';
 export * from './S3Notification';
+export * from './S3ObjectKeyCodec';
 export * from './S3MessageBodyGetter';
 export * from './S3MessageTopicGetter';
 export * from './S3MessageHeadersGetter';

@@ -2,11 +2,14 @@
 import { IMessageBodyGetter } from '@benzenejs/abstractions-messages';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { S3Notification } from './S3Notification';
+import { S3ObjectKeyCodec } from './S3ObjectKeyCodec';
 import { S3RecordContext } from './S3RecordContext';
 
 /**
  * Builds the message body for an S3 record by serializing its bucket, object, and event metadata to JSON
- * (as an `S3Notification`), so it can be deserialized into a handler's request type.
+ * (as an `S3Notification`), so it can be deserialized into a handler's request type. The object key is
+ * URL-decoded via `S3ObjectKeyCodec` (.NET R11 #158): S3 delivers it URL-encoded (space as `+`), so the
+ * raw wire form would make the handler's own `GetObject` call fail with `NoSuchKey`.
  *
  * Field mapping (camelCase in `@types/aws-lambda`): C# `record.EventName`/`AwsRegion`/`S3.Bucket.Name`/
  * `S3.Object.Key`/`S3.Object.Size`/`S3.Object.ETag` become `record.eventName`/`awsRegion`/
@@ -23,7 +26,7 @@ export class S3MessageBodyGetter implements IMessageBodyGetter<S3RecordContext> 
     notification.eventName = record.eventName;
     notification.awsRegion = record.awsRegion;
     notification.bucketName = record.s3?.bucket?.name;
-    notification.key = record.s3?.object?.key;
+    notification.key = S3ObjectKeyCodec.decode(record.s3?.object?.key);
     notification.size = record.s3?.object?.size ?? 0;
     notification.eTag = record.s3?.object?.eTag;
 

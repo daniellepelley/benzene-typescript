@@ -1,10 +1,12 @@
 /** Port of Benzene.Aws.Lambda.S3.S3MessageHeadersGetter. */
 import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { S3ObjectKeyCodec } from './S3ObjectKeyCodec';
 import { S3RecordContext } from './S3RecordContext';
 
 /**
  * Exposes an S3 record's event name, region, bucket, and key as message headers, omitting any that aren't
- * present on the record. Field mapping (camelCase in `@types/aws-lambda`): C# `record.EventName`/
+ * present on the record. The key is URL-decoded via `S3ObjectKeyCodec` (.NET R11 #158), matching
+ * `S3MessageBodyGetter`. Field mapping (camelCase in `@types/aws-lambda`): C# `record.EventName`/
  * `AwsRegion`/`S3.Bucket.Name`/`S3.Object.Key` become `record.eventName`/`awsRegion`/`s3.bucket.name`/
  * `s3.object.key`.
  */
@@ -26,7 +28,7 @@ export class S3MessageHeadersGetter implements IMessageHeadersGetter<S3RecordCon
     }
 
     if (record.s3?.object?.key != null) {
-      headers['key'] = record.s3.object.key;
+      headers['key'] = S3ObjectKeyCodec.decode(record.s3.object.key)!;
     }
 
     return headers;
