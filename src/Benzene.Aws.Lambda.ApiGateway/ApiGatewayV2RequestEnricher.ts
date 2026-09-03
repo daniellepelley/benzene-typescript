@@ -2,6 +2,7 @@ import { IRequestEnricher } from '@benzenejs/abstractions-message-handlers';
 import { DictionaryUtils } from '@benzenejs/core';
 import { IHttpHeaderMappings, IRouteFinder } from '@benzenejs/http';
 import { ApiGatewayV2Context } from './ApiGatewayV2Context';
+import { QueryStringFirstWinsMapper } from './QueryStringFirstWinsMapper';
 
 /**
  * Port of Benzene.Aws.Lambda.ApiGateway.ApiGatewayV2RequestEnricher.
@@ -9,6 +10,10 @@ import { ApiGatewayV2Context } from './ApiGatewayV2Context';
  * Enriches the deserialized request with values that don't come from the body — query-string
  * parameters, path parameters, mapped headers (cookies folded in), and route parameters — layered on
  * with `DictionaryUtils.mapOnto` (first value wins). Returns an empty object when no route matches.
+ *
+ * A repeated query-string key resolves FIRST-value-wins (.NET R7-10 #90) via
+ * `QueryStringFirstWinsMapper.forV2`: AWS comma-joins repeated v2 values before Lambda sees the
+ * event, so the first comma-separated segment is taken — matching the Express adapter and v1.
  */
 export class ApiGatewayV2RequestEnricher implements IRequestEnricher<ApiGatewayV2Context> {
   constructor(
@@ -26,9 +31,13 @@ export class ApiGatewayV2RequestEnricher implements IRequestEnricher<ApiGatewayV
     const dictionary: Record<string, unknown> = {};
     const request = context.apiGatewayProxyRequest;
 
+    // First-value-wins for a repeated query key, matching the Express adapter — see
+    // QueryStringFirstWinsMapper.
     DictionaryUtils.mapOnto(
       dictionary,
-      (request.queryStringParameters ?? undefined) as Record<string, unknown> | undefined,
+      QueryStringFirstWinsMapper.forV2(request.queryStringParameters) as
+        | Record<string, unknown>
+        | undefined,
     );
     DictionaryUtils.mapOnto(
       dictionary,
