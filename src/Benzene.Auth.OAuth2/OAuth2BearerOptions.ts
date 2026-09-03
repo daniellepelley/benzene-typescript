@@ -5,6 +5,24 @@
  */
 export class OAuth2BearerOptions {
   /**
+   * Signing algorithms {@link validAlgorithms} entries are checked against - the standard JWS signing
+   * algorithms (RFC 7518 §3.1) plus `EdDSA` (RFC 8037 §3.1). Port of C#
+   * `OAuth2BearerOptions.KnownSigningAlgorithms` (which mirrors
+   * `Microsoft.IdentityModel.Tokens.SecurityAlgorithms`' JWS constants); `EdDSA` is a TS-ecosystem
+   * addition because `jose` — the library this package adapts — supports it first-class, while .NET's
+   * `SecurityAlgorithms` has no constant for it. Deliberately narrow: only names a bearer-token
+   * validator's allowlist can legitimately contain, matched case-sensitively (JWS `alg` values are
+   * case-sensitive per RFC 7515 §4.1.1, and .NET compares Ordinal).
+   */
+  private static readonly knownSigningAlgorithms: ReadonlySet<string> = new Set([
+    'HS256', 'HS384', 'HS512',
+    'RS256', 'RS384', 'RS512',
+    'ES256', 'ES384', 'ES512',
+    'PS256', 'PS384', 'PS512',
+    'EdDSA',
+  ]);
+
+  /**
    * The OIDC discovery URL (".../.well-known/openid-configuration"), used to fetch and auto-refresh
    * the JWKS. Set this OR {@link jwksUri}, not both - most identity providers (Auth0, Cognito, Azure
    * AD, Okta) expose full OIDC discovery; {@link jwksUri} is the escape hatch for ones that only
@@ -82,6 +100,34 @@ export class OAuth2BearerOptions {
         'validAlgorithms must contain at least one allowed signing algorithm - ' +
           'an empty list would trust whatever "alg" the token itself claims (RFC 8725 §3.1 algorithm confusion).',
       );
+    }
+
+    // #174/#244: each entry must itself be a genuine signing-algorithm name — a non-empty allowlist
+    // containing "none", a whitespace entry, or a typo'd name is exactly as dangerous (or as silently
+    // useless) as the empty-list case above, and must fail fast at wire-up, not at first verify.
+    for (const algorithm of this.validAlgorithms) {
+      if (algorithm === undefined || algorithm === null || algorithm.trim() === '') {
+        throw new Error(
+          'validAlgorithms contains a null/empty/whitespace entry - every entry must be a genuine signing algorithm name.',
+        );
+      }
+
+      // Explicit, named rejection - RFC 8725 §3.1's canonical algorithm-confusion attack is exactly
+      // "alg": "none" accepted by a validator that never meant to allow it. Called out separately
+      // from the "unrecognized name" check below so the error is unambiguous about why.
+      if (algorithm.toLowerCase() === 'none') {
+        throw new Error(
+          'validAlgorithms must not contain "none" - accepting the unsigned algorithm defeats ' +
+            'signature validation entirely (RFC 8725 §3.1 algorithm confusion).',
+        );
+      }
+
+      if (!OAuth2BearerOptions.knownSigningAlgorithms.has(algorithm)) {
+        throw new Error(
+          `validAlgorithms contains '${algorithm}', which is not a recognized JWS signing algorithm - ` +
+            'likely a typo that would silently make this entry unmatchable by any real token.',
+        );
+      }
     }
   }
 }
