@@ -1,4 +1,4 @@
-import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { IBenzeneServiceContainer, ILoggerFactory } from '@benzenejs/abstractions';
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
@@ -41,6 +41,7 @@ export function useIdempotency<TContext>(
       resolver.getService(IIdempotencyStore),
       keyStrategy,
       options,
+      resolver.tryGetService(ILoggerFactory)?.createLogger('Benzene.Idempotency'),
     );
   });
 }
