@@ -84,10 +84,34 @@ export abstract class RedisCacheService implements ICacheService {
   }
 
   protected createPrefixActions(prefix: string): ICacheInvalidateActions {
-    return new RedisWildcardActions(this, prefix + '*');
+    // The C# #198 guard: an empty/whitespace prefix used to append into the bare pattern "*" -
+    // every key in the logical database, deleted in batches. That is almost certainly a caller-side
+    // bug (e.g. an empty tenant id interpolated into the prefix), and it is exactly the kind of
+    // mistake that must fail loudly rather than silently wiping the cache. If invalidate-everything
+    // is genuinely intended, there is an explicit, unambiguous route for it -
+    // createWildcardActions('*') - so this refuses to guess which one was meant.
+    if (prefix.trim().length === 0) {
+      throw new Error(
+        'An empty/whitespace prefix would invalidate every key (the pattern "*"). ' +
+          'If invalidating everything is genuinely what you want, call ' +
+          "createWildcardActions('*') instead, which makes that intent explicit.",
+      );
+    }
+
+    // Escape glob metacharacters in the LITERAL prefix before appending the wildcard. Redis KEYS
+    // treats * ? [ ] \ as glob syntax, so a prefix derived from data (tenant id, email, ...) that
+    // contains one would otherwise match the wrong keys - under-invalidating (an unterminated "["
+    // matches nothing, leaving stale data) or over-invalidating (a "*" matches unrelated keys).
+    // createWildcardActions is left unescaped by design: its caller is passing an actual pattern.
+    return new RedisWildcardActions(this, escapeGlobLiteral(prefix) + '*');
   }
 
   protected createWildcardActions(pattern: string): ICacheInvalidateActions {
     return new RedisWildcardActions(this, pattern);
   }
+}
+
+/** Port of C# `RedisCacheService.EscapeGlobLiteral`. */
+function escapeGlobLiteral(value: string): string {
+  return value.replace(/[\\*?[\]]/g, (c) => '\\' + c);
 }

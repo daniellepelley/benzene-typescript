@@ -6,6 +6,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RedisOptions } from 'ioredis';
 import { ILogger, NullLogger } from '@benzenejs/abstractions';
+import { BenzeneResult } from '@benzenejs/results';
 import { ICacheEntry, ICacheInvalidateActions, ICacheWriteActions } from '@benzenejs/cache-core';
 import {
   IRedisConnectionFactory,
@@ -145,6 +146,49 @@ describe('RedisCacheEntry (cache-redis)', () => {
     expect(await service.entry<Widget>('absent').getValueAsync()).toBeUndefined();
   });
 
+  it('a Redis read error degrades to a genuine miss, never a false hit of an empty value (#201)', async () => {
+    const fake = createFakeRedis();
+    (fake.client.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('read blew up'));
+    const { service } = createService(fake);
+    const entry = service.entry<Widget>('widget:1');
+
+    expect(await entry.getValueAsync()).toBeUndefined();
+
+    // ...and lazy-load treats it as a miss: the database read runs and its result is returned.
+    const fromDb: Widget = { id: '1', name: 'from-db' };
+    const dbRead = vi.fn(() => Promise.resolve(BenzeneResult.ok(fromDb)));
+    const result = await entry.lazyLoadAsync(dbRead);
+    expect(dbRead).toHaveBeenCalledTimes(1);
+    expect(result.payload).toEqual(fromDb);
+  });
+
+  it('a stored empty string round-trips as a real hit, not a miss (#201)', async () => {
+    // '""' is the serialized form of the empty string - a legitimate cached value.
+    const fake = createFakeRedis(new Map([['greeting', '""']]));
+    const { service } = createService(fake);
+    const entry = service.entry<string>('greeting');
+
+    expect(await entry.getValueAsync()).toBe('');
+
+    const dbRead = vi.fn(() => Promise.resolve(BenzeneResult.ok('from-db')));
+    const result = await entry.lazyLoadAsync(dbRead);
+    expect(dbRead).not.toHaveBeenCalled();
+    expect(result.payload).toBe('');
+  });
+
+  it('a Redis write error during lazy-load does not fail the successful database read', async () => {
+    const fake = createFakeRedis();
+    (fake.client.set as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('write blew up'));
+    const { service } = createService(fake);
+    const fromDb: Widget = { id: '1', name: 'from-db' };
+
+    const result = await service
+      .entry<Widget>('widget:1')
+      .lazyLoadAsync(() => Promise.resolve(BenzeneResult.ok(fromDb)));
+
+    expect(result.payload).toEqual(fromDb);
+  });
+
   it('invalidateAsync deletes the key', async () => {
     const fake = createFakeRedis(new Map([['widget:1', JSON.stringify(widget)]]));
     const { service, client, store } = createService(fake);
@@ -223,5 +267,37 @@ describe('RedisWildcardActions (cache-redis)', () => {
 
     expect(await service.wildcard('none:*').invalidateAsync()).toBe(false);
     expect(client.del).not.toHaveBeenCalled();
+  });
+
+  // --- The #198 cache-wipe guards ---
+
+  it('createPrefixActions throws on an empty or whitespace prefix instead of building the pattern "*"', () => {
+    const { service } = createService();
+
+    expect(() => service.prefix('')).toThrow(/invalidate every key/);
+    expect(() => service.prefix('   ')).toThrow(/invalidate every key/);
+  });
+
+  it('an effectively-universal wildcard pattern is refused before any Redis command runs', async () => {
+    const { service, client } = createService(
+      createFakeRedis(new Map([['widget:1', 'a']])),
+    );
+
+    for (const pattern of ['*', '**', ' * ', '', '   ']) {
+      await expect(service.wildcard(pattern).invalidateAsync()).rejects.toThrow(
+        /entire keyspace/,
+      );
+    }
+    expect(client.keys).not.toHaveBeenCalled();
+    expect(client.del).not.toHaveBeenCalled();
+  });
+
+  it('createPrefixActions escapes glob metacharacters in the literal prefix', async () => {
+    const fake = createFakeRedis();
+    const { service, client } = createService(fake);
+
+    await service.prefix('tenant[1]:').invalidateAsync();
+
+    expect(client.keys).toHaveBeenCalledWith('tenant\\[1\\]:*');
   });
 });
