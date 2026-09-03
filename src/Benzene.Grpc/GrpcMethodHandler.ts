@@ -9,6 +9,8 @@ import {
 } from '@grpc/grpc-js';
 import { IServiceResolver, IServiceResolverFactory } from '@benzenejs/abstractions';
 import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { ArgumentException } from '@benzenejs/core';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import { GrpcBenzeneError } from './GrpcBenzeneError';
 import { encodeRichStatus, GRPC_STATUS_DETAILS_TRAILER } from './RichErrorDetails';
 import { GrpcContext, GrpcServerCall } from './GrpcContext';
@@ -89,8 +91,7 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
     try {
       const trailer = await this.runPipelineAsync(grpcContext, call, resolver);
       const items = this.resolveResponseStream<TResponse>(grpcContext, resolver);
-      await writeAll(items, call);
-      return trailer;
+      return await this.writeStreamAsync(items, call, trailer, resolver);
     } finally {
       if (resolver.disposeAsync) {
         await resolver.disposeAsync();
@@ -132,8 +133,7 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
     try {
       const trailer = await this.runPipelineAsync(grpcContext, call, resolver);
       const items = this.resolveResponseStream<TResponse>(grpcContext, resolver);
-      await writeAll(items, call);
-      return trailer;
+      return await this.writeStreamAsync(items, call, trailer, resolver);
     } finally {
       if (resolver.disposeAsync) {
         await resolver.disposeAsync();
@@ -194,6 +194,48 @@ export class GrpcMethodHandler implements IGrpcMethodHandler {
     }
 
     return trailer;
+  }
+
+  /**
+   * Drains a streaming response ({@link writeAll}) and only then hands back the success trailer — gRPC
+   * trailers are sent once, at call end, so this is safe, and it's what lets a mid-stream handler
+   * exception (.NET #280) still land a truthful trailer instead of the success one
+   * {@link runPipelineAsync} already built before the handler's async iterator ever ran. A mid-drain
+   * exception is classified the same way `MessageHandler` classifies a unary handler's exception
+   * (`ArgumentException` → validation-error, anything else → service-unavailable; a cancelled call gets
+   * the same `CANCELLED`/`DEADLINE_EXCEEDED` translation {@link runPipelineAsync} uses — TS has no
+   * `TimeoutException` class, so .NET's Timeout branch has no analog here), then run through the same
+   * {@link IGrpcStatusCodeMapper}/{@link encodeRichStatus} path as a pipeline-level failure. Port of
+   * .NET's `WriteStreamAsync` + `ClassifyStreamException`.
+   */
+  private async writeStreamAsync<TResponse>(
+    items: AsyncIterable<TResponse>,
+    call: ServerWritableStream<unknown, TResponse> | ServerDuplexStream<unknown, TResponse>,
+    trailer: Metadata,
+    resolver: IServiceResolver,
+  ): Promise<Metadata> {
+    try {
+      await writeAll(items, call);
+      return trailer;
+    } catch (error) {
+      if (call.cancelled) {
+        const cancelCode = isPastDeadline(call.getDeadline())
+          ? status.DEADLINE_EXCEEDED
+          : status.CANCELLED;
+        throw new GrpcBenzeneError(cancelCode, 'The call was cancelled.');
+      }
+
+      const benzeneStatus =
+        error instanceof ArgumentException
+          ? BenzeneResultStatus.validationError
+          : BenzeneResultStatus.serviceUnavailable;
+      const detail = error instanceof Error ? error.message : String(error);
+      const statusCode = resolver.getService(IGrpcStatusCodeMapper).map(benzeneStatus, false);
+      const failureTrailer = new Metadata();
+      failureTrailer.set(BENZENE_STATUS_TRAILER, benzeneStatus);
+      failureTrailer.set(GRPC_STATUS_DETAILS_TRAILER, encodeRichStatus(statusCode, detail));
+      throw new GrpcBenzeneError(statusCode, detail, failureTrailer);
+    }
   }
 
   /**
