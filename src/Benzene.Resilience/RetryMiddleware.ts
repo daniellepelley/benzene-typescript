@@ -12,6 +12,21 @@ export interface RetryOptions<TContext> {
   /** Initial delay in milliseconds before the first retry (C# `TimeSpan? initialDelay`). */
   initialDelayMs?: number;
   backoffFactor?: number;
+  /**
+   * Caps the actual sleep duration each attempt, in milliseconds (C# `TimeSpan? maxDelay`; default
+   * `undefined` = uncapped). The underlying exponential growth used to compute the NEXT attempt's
+   * delay is left uncapped, so later attempts still compound off the true curve — matching AWS's
+   * documented "full jitter" algorithm: `sleep = random(0, min(cap, base * factor^attempt))`.
+   */
+  maxDelayMs?: number;
+  /**
+   * Transforms the capped delay into the actual sleep duration, in milliseconds (C#
+   * `Func<TimeSpan, TimeSpan>? jitter`; default identity = no jitter).
+   * {@link RetryMiddleware.fullJitter} is a ready-made "full jitter" implementation
+   * (`random(0, delay)`) you can pass straight in — it spreads out retries from many callers that
+   * backed off at the same moment instead of them all retrying in lockstep.
+   */
+  jitter?: (delayMs: number) => number;
   shouldRetry?: (error: unknown) => boolean;
   shouldRetryContext?: (context: TContext) => boolean;
   delay?: DelayFunc;
@@ -29,6 +44,13 @@ const defaultDelay: DelayFunc = (delayMs) =>
   new Promise((resolve) => {
     setTimeout(resolve, delayMs);
   });
+
+// Node's setTimeout treats a delay above 2^31-1 ms (~24.8 days) as overflowed and fires it after
+// 1 ms. With no maxDelayMs set the uncapped exponential sleep crosses that ceiling around attempt
+// ~25, so the actual sleep is clamped here — the port of .NET's `MaxSleep` clamp (Task.Delay
+// *throws* above the same int.MaxValue-ms boundary; setTimeout's failure mode is a silent
+// fire-immediately, which would turn the tail of a long backoff into a hot loop).
+const maxSleepMs = 2_147_483_647;
 
 /**
  * Retries the rest of the pipeline on failure, with exponential backoff.
@@ -49,9 +71,23 @@ const defaultDelay: DelayFunc = (delayMs) =>
  * retried).
  */
 export class RetryMiddleware<TContext> implements IMiddleware<TContext> {
+  /**
+   * The "full jitter" backoff algorithm (AWS's documented recommendation): returns a jitter function
+   * yielding a random duration between zero and the input delay. Pass the result as the
+   * {@link RetryOptions.jitter} option. Port of the C# non-generic companion
+   * `RetryMiddleware.FullJitter(Random?)` — the injectable `random` (a `Math.random`-shaped source,
+   * defaulting to `Math.random`) is the C# `Random` parameter, letting tests pin the sleep sequence
+   * with a seeded/deterministic source.
+   */
+  static fullJitter(random: () => number = Math.random): (delayMs: number) => number {
+    return (delayMs) => random() * delayMs;
+  }
+
   private readonly numberOfRetries: number;
   private readonly initialDelayMs: number;
   private readonly backoffFactor: number;
+  private readonly maxDelayMs?: number;
+  private readonly jitter: (delayMs: number) => number;
   private readonly shouldRetry: (error: unknown) => boolean;
   private readonly shouldRetryContext: (context: TContext) => boolean;
   private readonly delay: DelayFunc;
@@ -61,6 +97,8 @@ export class RetryMiddleware<TContext> implements IMiddleware<TContext> {
     this.numberOfRetries = options.numberOfRetries ?? 3;
     this.initialDelayMs = options.initialDelayMs ?? 200;
     this.backoffFactor = options.backoffFactor ?? 2.0;
+    this.maxDelayMs = options.maxDelayMs;
+    this.jitter = options.jitter ?? ((delayMs) => delayMs);
     this.shouldRetry = options.shouldRetry ?? (() => true);
     this.shouldRetryContext = options.shouldRetryContext ?? (() => false);
     this.delay = options.delay ?? defaultDelay;
@@ -93,7 +131,16 @@ export class RetryMiddleware<TContext> implements IMiddleware<TContext> {
       }
 
       attempt++;
-      await this.delay(delay);
+
+      // The max-delay cap and jitter apply only to the actual sleep - the exponential growth driving
+      // `delay` itself is left uncapped/unjittered, so later attempts still compound off the true
+      // exponential curve (matching AWS's documented "full jitter" algorithm:
+      // sleep = random(0, min(cap, base * factor^attempt))). Unlike C#, the growth needs no overflow
+      // clamp — a JS number saturates to Infinity, which compares fine and is always capped before
+      // sleeping (by maxDelayMs when set, and by maxSleepMs regardless).
+      const cappedDelay = this.maxDelayMs !== undefined && delay > this.maxDelayMs ? this.maxDelayMs : delay;
+      const sleep = this.jitter(cappedDelay);
+      await this.delay(sleep > maxSleepMs ? maxSleepMs : sleep);
       delay = delay * this.backoffFactor;
     }
   }

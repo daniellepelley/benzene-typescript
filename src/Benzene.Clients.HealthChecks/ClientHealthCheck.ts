@@ -28,9 +28,15 @@ import { IHasHealthCheck } from './IHasHealthCheck';
  * unreachable provider is `failed`.
  */
 export class ClientHealthCheck implements IHealthCheck {
+  /**
+   * @param onError Optional server-side hook receiving the RAW error when the probe throws — the place
+   * to log the full message/stack. The health payload itself only ever carries the error's
+   * type/category (see {@link executeAsync}), never the message.
+   */
   constructor(
     private readonly serviceName: string,
     private readonly client: IHasHealthCheck,
+    private readonly onError?: (error: unknown) => void,
   ) {}
 
   get type(): string {
@@ -46,10 +52,16 @@ export class ClientHealthCheck implements IHealthCheck {
     } catch (ex) {
       // IHealthCheck contract: report expected failures (e.g. connection refused) as a failed result
       // rather than throwing. The processor's outer wrappers remain the backstop.
+      //
+      // R18 #298's info-leak rule (the Go port's long-documented stance, settled cross-port): the
+      // health payload carries only the error's TYPE/category — an exception message can embed infra
+      // detail (hostnames, connection strings, file paths) that a health caller must never see. The
+      // raw error goes only to the server-side `onError` log hook.
+      this.onError?.(ex);
       return new HealthCheckResult(
         HealthCheckStatus.failed,
         this.serviceName,
-        { reachable: false, error: errorMessage(ex) },
+        { reachable: false, error: errorCategory(ex) },
         dependencies,
       );
     }
@@ -101,7 +113,14 @@ function findMatch(response: HealthCheckResponse): ClientHashMatch | undefined {
   return raw instanceof ClientHashMatch ? raw : undefined;
 }
 
-/** Mirrors C#'s `ex.Message`. */
-function errorMessage(ex: unknown): string {
-  return ex instanceof Error ? ex.message : String(ex);
+/**
+ * The error's coarse type/category — its constructor name (falling back to `Error.name`), or, for a
+ * non-`Error` throw, its `typeof` (never `String(ex)`, which would leak a thrown string's content).
+ * Deliberately NOT `ex.message` — see the catch in {@link ClientHealthCheck.executeAsync}.
+ */
+function errorCategory(ex: unknown): string {
+  if (ex instanceof Error) {
+    return ex.constructor.name !== '' ? ex.constructor.name : ex.name;
+  }
+  return typeof ex;
 }

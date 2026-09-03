@@ -3,6 +3,7 @@ import { IBenzeneServiceContainer, tryAddSingletonInstance } from '@benzenejs/ab
 import { IMediaFormat } from '@benzenejs/abstractions-message-handlers';
 import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzenejs/abstractions-middleware';
 import { XmlMediaFormat } from './XmlMediaFormat';
+import { XmlOptions } from './XmlOptions';
 import { XmlSerializer } from './XmlSerializer';
 
 /**
@@ -20,10 +21,16 @@ import { XmlSerializer } from './XmlSerializer';
 
 /**
  * Registers {@link XmlMediaFormat} as an `IMediaFormat<TContext>` plus the shared {@link XmlSerializer}.
- * Port of C# `AddXml` / `AddXml<TContext>`.
+ * Port of C# `AddXml` / `AddXml<TContext>`; `configure` is the C# `Action<XmlOptions>?` (e.g. to raise
+ * {@link XmlOptions.maxDepth} for a legitimately deeply-nested payload).
  */
-export function addXml<TContext>(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
-  const serializer = new XmlSerializer();
+export function addXml<TContext>(
+  services: IBenzeneServiceContainer,
+  configure?: (options: XmlOptions) => void,
+): IBenzeneServiceContainer {
+  const options = new XmlOptions();
+  configure?.(options);
+  const serializer = new XmlSerializer(options);
   tryAddSingletonInstance(services, XmlSerializer, serializer);
   services.addSingletonFactory(
     IMediaFormat,
@@ -41,12 +48,13 @@ export function addXml<TContext>(services: IBenzeneServiceContainer): IBenzeneSe
  */
 export function useXml<TContext>(
   source: IMiddlewarePipelineBuilder<TContext>,
+  configure?: (options: XmlOptions) => void,
 ): IMiddlewarePipelineBuilder<TContext> {
-  source.register((container) => addXml<TContext>(container));
+  source.register((container) => addXml<TContext>(container, configure));
   return source;
 }
 
 /** XML content-negotiation as a {@link Capability}: `builder.use(xml())` (the .NET `UseXml()` shape). */
-export function xml<TContext>(): Capability<TContext> {
-  return capability<TContext>((builder) => useXml(builder));
+export function xml<TContext>(configure?: (options: XmlOptions) => void): Capability<TContext> {
+  return capability<TContext>((builder) => useXml(builder, configure));
 }

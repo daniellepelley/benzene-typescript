@@ -39,4 +39,52 @@ describe('CorrelationIdTest', () => {
 
     expect(correlationId.get()).toBe('second');
   });
+
+  // #64: a caller-controlled value carrying embedded CR/LF (plus forged content, as a real attacker
+  // would send) must be rejected outright - the self-generated UUID stays in place - so it can never
+  // round-trip verbatim into a log scope (CRLF/log-forging) or an outbound header (header injection).
+  it('Set_ValueWithEmbeddedCrLf_IsRejected_SelfGeneratedIdStaysInPlace', () => {
+    const correlationId = new CorrelationId();
+    const original = correlationId.get();
+
+    correlationId.set('real-id\r\nX-Forged-Header: evil\r\n\r\nForged-Log-Line: injected');
+
+    expect(correlationId.get()).toBe(original);
+    expect(correlationId.get()).not.toContain('\r');
+    expect(correlationId.get()).not.toContain('\n');
+  });
+
+  it.each([
+    ['CR', 'bad\rid'],
+    ['LF', 'bad\nid'],
+    ['TAB', 'bad\tid'],
+    ['NUL', 'bad\0id'],
+    ['DEL', 'bad\u007fid'],
+    ['C1', 'bad\u0085id'],
+  ])('Set_ValueWithAnyControlCharacter_IsRejected (%s)', (_label, value) => {
+    const correlationId = new CorrelationId();
+    const original = correlationId.get();
+
+    correlationId.set(value);
+
+    expect(correlationId.get()).toBe(original);
+  });
+
+  it('Set_ValueLongerThanMaxLength_IsRejected', () => {
+    const correlationId = new CorrelationId();
+    const original = correlationId.get();
+
+    correlationId.set('a'.repeat(CorrelationId.maxLength + 1));
+
+    expect(correlationId.get()).toBe(original);
+  });
+
+  it('Set_ValueAtMaxLength_IsAccepted', () => {
+    const correlationId = new CorrelationId();
+    const value = 'a'.repeat(CorrelationId.maxLength);
+
+    correlationId.set(value);
+
+    expect(correlationId.get()).toBe(value);
+  });
 });

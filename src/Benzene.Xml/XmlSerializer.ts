@@ -1,6 +1,7 @@
 /** Port of Benzene.Xml.XmlSerializer. */
 import { Constructor, ISerializer } from '@benzenejs/abstractions';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { XmlOptions } from './XmlOptions';
 
 /**
  * XML {@link ISerializer} adapting the `fast-xml-parser` library.
@@ -25,16 +26,40 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
  * so element text stays a `string` and round-trips faithfully (there is no declared type to coerce back
  * to, so leaving values as their on-the-wire string form is the predictable choice; a typed C# consumer
  * would coerce to the property type, which erasure removes here).
+ *
+ * **Untrusted-input hardening on `deserialize` (a negotiated request body), and where each .NET guard
+ * lands against this parser dependency (verified against fast-xml-parser 5.10.1):**
+ * - **Nesting depth (#260):** the library bounds nesting itself (`maxNestedTags`, library default 100),
+ *   so the .NET `DepthGuardedXmlReader` is NOT re-implemented — the library's own guard is pinned to
+ *   {@link XmlOptions.maxDepth} (default 32, matching .NET) via the off-by-one mapping documented on
+ *   {@link XmlOptions}. A deeper payload rejects with the library's `"Maximum nested tags exceeded"`.
+ * - **UTF-8 BOM (WP-L):** the library tolerates a leading U+FEFF (with or without an XML declaration),
+ *   so no strip is needed — the .NET port strips it by hand only because `XmlReader` refuses it. The
+ *   guarantee is pinned by test (`XmlSerializerTest`), not re-implemented.
+ * - **Null round-trip (#238):** `serialize(null)` → `''` and `deserialize('')` → `undefined` (the
+ *   TS shape of C#'s `null`), so the two are exact inverses — same contract as .NET/Avro/MessagePack.
  */
 export class XmlSerializer implements ISerializer {
   private static readonly builder = new XMLBuilder({ ignoreAttributes: true, suppressEmptyNode: true });
 
-  private static readonly parser = new XMLParser({
-    ignoreAttributes: true,
-    parseTagValue: false,
-    parseAttributeValue: false,
-    ignoreDeclaration: true,
-  });
+  private readonly parser: XMLParser;
+
+  /**
+   * Port of the C# parameterless / `XmlOptions`-taking constructor pair (an optional parameter here).
+   * The parser is per-instance because {@link XmlOptions.maxDepth} configures it; the builder stays
+   * shared (serialization is unguarded, matching .NET).
+   */
+  constructor(options: XmlOptions = new XmlOptions()) {
+    this.parser = new XMLParser({
+      ignoreAttributes: true,
+      parseTagValue: false,
+      parseAttributeValue: false,
+      ignoreDeclaration: true,
+      // See XmlOptions: the library's stack includes the document node, so element depth `maxDepth`
+      // is the deepest accepted when maxNestedTags is one less.
+      maxNestedTags: options.maxDepth - 1,
+    });
+  }
 
   /**
    * Port of C# `string Serialize<T>(T payload)` — XML text with the root element named after the
@@ -57,7 +82,7 @@ export class XmlSerializer implements ISerializer {
     if (payload === undefined || payload === null || payload === '') {
       return undefined;
     }
-    const parsed = XmlSerializer.parser.parse(payload) as Record<string, unknown>;
+    const parsed = this.parser.parse(payload) as Record<string, unknown>;
     const rootKeys = Object.keys(parsed);
     if (rootKeys.length === 0) {
       return undefined;
