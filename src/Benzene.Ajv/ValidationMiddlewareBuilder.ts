@@ -19,6 +19,13 @@ import { getJsonSchemaValidator } from './AjvSchemaRegistry';
  * metadata (`getMessageMetadata(...).requestType`) and looks up its compiled ajv validator in
  * `AjvSchemaRegistry`. That resolved validator (possibly `undefined` when no schema is registered for the
  * type) and the `IValidationStatusMapper` are handed to the middleware.
+ *
+ * VERSION-AWARENESS (the port of .NET #69's "validate the DECLARED version's schema"): .NET's schema
+ * provider joins the message's version signal into its topic lookup itself; here the same guarantee
+ * falls out of the architecture — the router routes on the version-joined topic (`getVersionedTopic`,
+ * .NET #98), each handler version declares its own request type, and this builder resolves the schema
+ * from the ROUTED handler's request type — so a message declaring a version via header validates
+ * against exactly that version's registered schema. Pinned by `AjvVersionedValidationPipelineTest`.
  */
 export class ValidationMiddlewareBuilder implements IHandlerMiddlewareBuilder {
   create<TRequest, TResponse>(

@@ -27,6 +27,7 @@ import {
   IMessageHandlersFinder,
   IMessageHandlersList,
   IMessageTopicGetter,
+  IMessageVersionGetter,
   IRequestEnricher,
   IRequestMapper,
   IResponseHandler,
@@ -137,7 +138,10 @@ export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneS
  */
 export function addBenzeneMessageHandling(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
   tryAddHeaderMessageVersionGetter<BenzeneMessageContext>(services);
-  tryAddScoped(services, BenzeneMessageGetter);
+  // Factory (not tryAddScoped) so the getter receives the scope's resolver: it lazily resolves the
+  // optional IMessageVersionGetter inside getTopic to join the message's declared version onto the
+  // topic (.NET #98) — see BenzeneBodyMapper's doc comment for why lazily.
+  tryAddScopedFactory(services, BenzeneMessageGetter, (r) => new BenzeneMessageGetter(r));
   tryAddScopedFactory(services, IMessageGetter, (r) =>
     r.getService(BenzeneMessageGetter) as unknown as IMessageGetter<unknown>,
   );
@@ -257,6 +261,9 @@ export function addContextItems(services: IBenzeneServiceContainer): IBenzeneSer
       r.getService(IMessageTopicGetter),
       r.getService(IMessageBodyGetter),
       r.getService(IMessageHeadersGetter),
+      // Optional: joins the message's declared version onto the topic (.NET #98) when a version
+      // getter is registered for this context; absent one, the topic is returned unaugmented.
+      r.tryGetService(IMessageVersionGetter),
     ),
   );
   tryAddScopedFactory(services, IResponsePayloadMapper, () => new DefaultResponsePayloadMapper());

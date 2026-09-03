@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IBenzeneResultOf } from '@benzenejs/abstractions';
-import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
+import { IBenzeneResultOf, IServiceResolver, ServiceIdentifier } from '@benzenejs/abstractions';
+import { IMessageHandler, IMessageVersionGetter } from '@benzenejs/abstractions-message-handlers';
 import {
   BenzeneMessageContext,
   BenzeneMessageRequest,
@@ -13,11 +13,31 @@ import {
   addBenzeneMessage,
   BenzeneMessageApplication,
   BenzeneMessageGetter,
+  HeaderMessageVersionGetter,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
 } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+
+/** A minimal scope resolver offering only the IMessageVersionGetter the version join looks up. */
+function resolverWithVersionGetter(): IServiceResolver {
+  const versionGetter = new HeaderMessageVersionGetter<BenzeneMessageContext>({
+    getHeaders: (context: BenzeneMessageContext) => context.benzeneMessageRequest.headers ?? {},
+  });
+  return {
+    getService<T>(identifier: ServiceIdentifier<T>): T {
+      throw new Error(`No service registered for ${String(identifier)}`);
+    },
+    tryGetService<T>(identifier: ServiceIdentifier<T>): T | undefined {
+      return identifier === IMessageVersionGetter ? (versionGetter as unknown as T) : undefined;
+    },
+    getServices<T>(): T[] {
+      return [];
+    },
+    dispose(): void {},
+  };
+}
 
 /**
  * End-to-end port of Benzene.Test.Core.Core.BenzeneMessagePipelineTest
@@ -118,9 +138,26 @@ describe('BenzeneMessageGetter', () => {
 
     expect(getter.getBody(context)).toBe('some-message');
     expect(getter.getTopic(context)?.id).toBe('some-topic');
-    expect(getter.getTopic(context)?.version).toBe('2.0');
+    // Direct construction with no resolver: the raw topic carries no version (the version join is
+    // the IMessageVersionGetter's job, resolved lazily from the scope — the .NET #98 shape; baking
+    // the raw `version` header into the raw topic would defeat the configured header order).
+    expect(getter.getTopic(context)?.version ?? '').toBe('');
     expect(getter.getHeaders(context)).toEqual({ orderId: 'some-order', version: '2.0' });
     expect(new TextDecoder().decode(getter.getBodyBytes(context))).toBe('some-message');
+  });
+
+  it('JoinsTheDeclaredVersionOntoTheTopic_WhenAVersionGetterIsResolvable', () => {
+    // The DI-resolved shape (.NET #98): the getter lazily resolves IMessageVersionGetter from the
+    // scope it was constructed with, so getTopic returns the version-joined topic every consumer
+    // (router, diagnostics, validation) then shares.
+    const getter = new BenzeneMessageGetter(resolverWithVersionGetter());
+    const request = new BenzeneMessageRequest();
+    request.topic = 'some-topic';
+    request.headers = { 'benzene-version': 'V2' };
+    const context = new BenzeneMessageContext(request);
+
+    expect(getter.getTopic(context)?.id).toBe('some-topic');
+    expect(getter.getTopic(context)?.version).toBe('V2');
   });
 
   it('EmptyRequest_YieldsMissingTopicAndEmptyBytes', () => {
