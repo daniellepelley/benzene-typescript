@@ -10,8 +10,8 @@ import type { RedisCacheService } from './RedisCacheService';
  * StackExchange.Redis → ioredis mapping: `StringGetAsync` → `get`; `StringSetAsync(key, val, ttl)`
  * → `set(key, val, 'EX', seconds)`; `KeyDeleteAsync` → `del`. The TTL `TimeSpan` becomes whole
  * seconds for `SET ... EX` (C# passes the `TimeSpan` straight through). As in C#, backend errors are
- * caught and logged as warnings, with `getEntryValueAsync` returning `''` and the write/delete hooks
- * returning `false`.
+ * caught and logged as warnings, with `getEntryValueAsync` degrading to `undefined` (a genuine miss —
+ * see the #201 note on that method) and the write/delete hooks returning `false`.
  */
 export class RedisCacheEntry<T> extends CacheEntry<T> {
   private readonly service: RedisCacheService;
@@ -38,7 +38,11 @@ export class RedisCacheEntry<T> extends CacheEntry<T> {
       return value ?? undefined;
     } catch {
       this.logger.logWarning('Error getting value from cache');
-      return '';
+      // The C# #201 rule: undefined/null, never '', is the miss marker CacheEntry<T> reads. A stored
+      // empty string is a legitimate cached value for some serializers - returning it here on a
+      // Redis error would masquerade a failed read as a real hit of an empty value, deserializing ''
+      // instead of degrading to a genuine miss.
+      return undefined;
     }
   }
 

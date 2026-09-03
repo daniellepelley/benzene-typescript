@@ -158,15 +158,18 @@ redelivery reprocesses the message:
 
 | First attempt | What happens |
 |---|---|
-| Handler succeeds | Key recorded **completed**; future duplicates short-circuit. |
+| Handler reports success (`context.messageResult.isSuccessful === true`) | Key recorded **completed**; future duplicates short-circuit. |
 | Handler **throws** | Claim **released**, error rethrown; the transport redelivers and reprocesses. |
 | Handler reports an unsuccessful result (`context.messageResult.isSuccessful === false`) | Claim **released**; the transport redelivers and reprocesses. |
+| Handler completes without ever setting `messageResult` (result-bearing context) | Claim **released** — completing without proving success is **not** success; the redelivery re-runs the handler. |
 
-"Success" is read from the context's `messageResult` when the transport sets one (`ServiceBusContext`
-implements `IHasMessageResult`); if there is no result, "the handler did not throw" counts as success.
-When a completed duplicate is short-circuited, the middleware writes `BenzeneResult.ok()` onto the
-context's `messageResult` so the duplicate is acknowledged and removed from the queue rather than
-redelivered forever.
+"Success" is read from the context's `messageResult` when the transport has one (`ServiceBusContext`
+implements `IHasMessageResult`): only an explicitly successful result records the key as completed.
+Only for a context with **no result concept at all** does "the handler did not throw" count as
+success — a result-bearing pipeline that never set its result has not proven anything, so the claim
+is released and the redelivery retries. When a completed duplicate is short-circuited, the middleware
+writes `BenzeneResult.ok()` onto the context's `messageResult` so the duplicate is acknowledged and
+removed from the queue rather than redelivered forever.
 
 A duplicate that arrives while the first copy is *still in progress* is, by default, dropped
 (`InProgressBehavior.Skip`) so the handler is never run twice concurrently. If losing a duplicate whose
@@ -184,13 +187,27 @@ useIdempotency<ServiceBusContext>(sb, (options) => {
 
 ## Step 5 — a shared store for multi-instance deployments
 
-`IIdempotencyStore` is three methods. Back it with anything that offers an **atomic** set-if-absent —
-the whole guarantee rests on `tryClaimAsync` being atomic. There is no shipped Redis/DynamoDB store, so
-you implement the interface yourself. A Redis implementation using `SET key value NX PX` (via `ioredis`,
-the same client `@benzenejs/cache-redis` uses — see [Caching](../caching.md) for the connection setup you
-can reuse):
+`IIdempotencyStore` is three methods, and a custom store must honour **two** disciplines:
+
+1. **`tryClaimAsync` must be atomic** (a set-if-absent — Redis `SET NX`, a DynamoDB conditional put,
+   a unique-key insert). The whole guarantee rests on concurrent redeliveries not both winning.
+2. **`completeAsync`/`releaseAsync` must be fenced on the claim token.** A winning `tryClaimAsync`
+   mints a fresh opaque token (`ClaimResult.won(claimToken)`); both settle methods take that token
+   back and must write **only if it still matches the live claim**, returning `false` without writing
+   otherwise. This stops a stale worker — one whose claim lapsed (TTL) and was reclaimed by another
+   worker — from clobbering the new holder's outcome with its late complete/release. There is
+   deliberately no token-less settle call: a skippable fence is no fence. Fence on token match
+   *alone*, not token-match-and-unexpired — a holder that outlived its own TTL with nobody having
+   reclaimed the key is still the only claimant and must still be able to settle.
+
+There is no shipped Redis/DynamoDB store, so you implement the interface yourself. A Redis
+implementation — `SET key token NX PX` for the atomic claim, and small Lua scripts for the fenced
+settles (a `GET`-compare-then-write must be one atomic unit; on DynamoDB the equivalent is a
+`ConditionExpression` on a `claimToken` attribute) — via `ioredis`, the same client
+`@benzenejs/cache-redis` uses (see [Caching](../caching.md) for the connection setup you can reuse):
 
 ```ts
+import { randomUUID } from 'node:crypto';
 import type { Redis } from 'ioredis';
 import {
   IIdempotencyStore,
@@ -199,6 +216,21 @@ import {
   IdempotencyStatus,
 } from '@benzenejs/idempotency';
 
+// Fenced settle: write/delete only when the key still holds THIS claim's in-progress token.
+const completeScript = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  redis.call('SET', KEYS[1], ARGV[2], 'PX', ARGV[3])
+  return 1
+end
+return 0`;
+
+const releaseScript = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  redis.call('DEL', KEYS[1])
+  return 1
+end
+return 0`;
+
 export class RedisIdempotencyStore implements IIdempotencyStore {
   constructor(
     private readonly redis: Redis,
@@ -206,29 +238,45 @@ export class RedisIdempotencyStore implements IIdempotencyStore {
   ) {}
 
   async tryClaimAsync(key: string): Promise<ClaimResult> {
-    // Atomic claim: only succeeds if the key does not already exist.
-    const won = await this.redis.set(key, 'in-progress', 'PX', this.timeToLiveMs, 'NX');
+    // Atomic claim: only succeeds if the key does not already exist. The stored value IS the fence —
+    // a fresh opaque token per claim, echoed back by the settle scripts' GET-compare.
+    const claimToken = `in-progress:${randomUUID()}`;
+    const won = await this.redis.set(key, claimToken, 'PX', this.timeToLiveMs, 'NX');
     if (won === 'OK') {
-      return ClaimResult.won();
+      return ClaimResult.won(claimToken);
     }
 
     const value = await this.redis.get(key);
-    const status =
-      value === 'completed' ? IdempotencyStatus.Completed : IdempotencyStatus.InProgress;
+    const status = value?.startsWith('in-progress:')
+      ? IdempotencyStatus.InProgress
+      : IdempotencyStatus.Completed;
     return ClaimResult.alreadyExists(
-      new IdempotencyRecord(key, status, status === IdempotencyStatus.Completed),
+      new IdempotencyRecord(key, status, value === 'completed'),
     );
   }
 
-  async completeAsync(key: string, wasSuccessful: boolean): Promise<void> {
-    await this.redis.set(key, wasSuccessful ? 'completed' : 'failed', 'PX', this.timeToLiveMs);
+  async completeAsync(key: string, claimToken: string, wasSuccessful: boolean): Promise<boolean> {
+    const settled = await this.redis.eval(
+      completeScript,
+      1,
+      key,
+      claimToken,
+      wasSuccessful ? 'completed' : 'failed',
+      String(this.timeToLiveMs),
+    );
+    return settled === 1; // 0 = the claim lapsed/was reclaimed; nothing was written
   }
 
-  async releaseAsync(key: string): Promise<void> {
-    await this.redis.del(key);
+  async releaseAsync(key: string, claimToken: string): Promise<boolean> {
+    const released = await this.redis.eval(releaseScript, 1, key, claimToken);
+    return released === 1;
   }
 }
 ```
+
+A `false` return from a settle is expected under contention (the middleware logs it as a warning,
+not an error): the claim lapsed, another worker reclaimed the key, and the new holder owns the
+outcome now.
 
 Register it as the `IIdempotencyStore` instead of calling `addInMemoryIdempotencyStore`:
 
@@ -280,15 +328,20 @@ describe('idempotency', () => {
   it('runs the handler once and short-circuits the duplicate', async () => {
     const store = new InMemoryIdempotencyStore();
     let calls = 0;
-    const next = () => {
+    // The handler reports success via messageResult — a result-bearing context that completes
+    // without setting one is released for redelivery, not recorded as completed (see Step 4).
+    const next = (ctx: TestContext) => () => {
       calls++;
+      ctx.messageResult = BenzeneResult.ok();
       return Promise.resolve();
     };
     const build = () =>
       new IdempotencyMiddleware<TestContext>(store, new FixedKeyStrategy('key-1'), new IdempotencyOptions());
 
-    await build().handleAsync(new TestContext(), next);
-    await build().handleAsync(new TestContext(), next);
+    const first = new TestContext();
+    await build().handleAsync(first, next(first));
+    const duplicate = new TestContext();
+    await build().handleAsync(duplicate, next(duplicate));
 
     expect(calls).toBe(1); // the second delivery is recognised as a duplicate
   });
@@ -325,8 +378,12 @@ See [Testing Benzene](../testing-benzene.md) for the full testing guide and
   reuses an identical payload for distinct events; stamp a unique `idempotency-key` header at the
   producer instead, or register a custom `IIdempotencyKeyStrategy` that keys on a business identifier.
 - **A failed message is never retried** — confirm the failure surfaces either as a thrown error or an
-  unsuccessful `messageResult`. A handler that silently swallows an error and returns success records the
+  unsuccessful `messageResult`. A handler that silently swallows an error and reports success records the
   key as completed, so the transport won't redeliver it.
+- **Every delivery re-runs the handler (nothing is ever recorded completed)** — on a result-bearing
+  context the pipeline must actually *set* a successful `messageResult` (normally `useMessageHandlers`
+  does); a pipeline that completes without setting one is treated as unproven and released for
+  redelivery (Step 4).
 
 ## Variations
 
