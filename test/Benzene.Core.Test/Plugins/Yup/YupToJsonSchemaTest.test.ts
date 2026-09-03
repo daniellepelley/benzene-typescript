@@ -23,6 +23,16 @@ describe('yupToJsonSchema', () => {
     expect(json['required']).toEqual(['orderId']);
   });
 
+  it('sorts required ordinally regardless of field declaration order (deterministic descriptors)', () => {
+    // Matches .NET's MeshSchemaGenerator (StringComparer.Ordinal): `required` is a set, so two Yup schemas
+    // listing the same fields in different orders must convert to the same JSON Schema.
+    const first = yup.object({ zebra: yup.string().required(), apple: yup.string().required() });
+    const second = yup.object({ apple: yup.string().required(), zebra: yup.string().required() });
+
+    expect(yupToJsonSchema(first)['required']).toEqual(['apple', 'zebra']);
+    expect(yupToJsonSchema(second)['required']).toEqual(['apple', 'zebra']);
+  });
+
   it('maps oneOf enums, formats (email), matches pattern, nested objects and arrays', () => {
     const schema = yup.object({
       email: yup.string().email(),

@@ -2,6 +2,8 @@
 import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 import {
   IMeshUsageSource,
+  MeshDeclaredSchema,
+  MeshDeclaredSchemaRole,
   MeshManifest,
   MeshManifestEntry,
   MeshRemovedTopic,
@@ -327,12 +329,17 @@ export class MeshAggregator {
         const aggregate = getOrAddAggregate(byTopic, topic.topic, topic.version);
         aggregate.reserved = aggregate.reserved || topic.reserved;
         aggregate.consumers.push(new MeshTopicService(entries[i]!.name, topic.httpMappings));
-        aggregate.consumerSchemas.push({ request: topic.requestSchema, response: topic.responseSchema });
+        aggregate.consumerSchemas.push({
+          service: entries[i]!.name,
+          request: topic.requestSchema,
+          response: topic.responseSchema,
+        });
       }
 
       for (const outbound of results[i]!.outboundTopics) {
         const aggregate = getOrAddAggregate(byTopic, outbound.topic, outbound.version);
         aggregate.producers.push(new MeshTopicProducer(entries[i]!.name));
+        aggregate.producerSchemas.push({ service: entries[i]!.name, message: outbound.messageSchema });
         aggregate.messageSchema = aggregate.messageSchema ?? outbound.messageSchema;
       }
     }
@@ -468,9 +475,18 @@ export class MeshAggregator {
   }
 }
 
+// KEYED BY SERVICE (matching the C# original's TopicAggregate): the mismatch attribution
+// (`declaredSchemas`) needs the declaring service's name, and a parallel-list coupling against
+// `consumers`/`producers` would be an invariant nothing enforces and nothing states.
 interface ConsumerSchemas {
+  readonly service: string;
   readonly request: JsonObject | undefined;
   readonly response: JsonObject | undefined;
+}
+
+interface ProducerSchema {
+  readonly service: string;
+  readonly message: JsonObject | undefined;
 }
 
 class TopicAggregate {
@@ -478,6 +494,7 @@ class TopicAggregate {
   readonly consumers: MeshTopicService[] = [];
   readonly producers: MeshTopicProducer[] = [];
   readonly consumerSchemas: ConsumerSchemas[] = [];
+  readonly producerSchemas: ProducerSchema[] = [];
   messageSchema: JsonObject | undefined;
 
   constructor(
@@ -602,6 +619,13 @@ function addParticipantSetChange(
   }
 }
 
+/**
+ * Re-stamps `entry` with its run-over-run `changes`, carrying every other field — **including
+ * `declaredSchemas`** — through untouched. That last clause is load-bearing (the C# original documents the
+ * same trap on its `compatibility` field): the catalogue is built first and only then diffed against the
+ * previous run, so a rebuild here that omitted a field would drop it from precisely the topics that just
+ * changed — the ones a reader opens the page to judge.
+ */
 function withChanges(entry: MeshTopicEntry, changes: MeshTopicChange[]): MeshTopicEntry {
   return new MeshTopicEntry(
     entry.topic,
@@ -615,6 +639,7 @@ function withChanges(entry: MeshTopicEntry, changes: MeshTopicChange[]): MeshTop
     entry.messageSchema,
     entry.schemaMismatch,
     changes,
+    entry.declaredSchemas,
   );
 }
 
@@ -671,7 +696,46 @@ function buildTopicEntry(topic: string, version: string, aggregate: TopicAggrega
     responseSchema,
     aggregate.messageSchema,
     mismatch,
+    [],
+    mismatch ? declaredSchemasOf(aggregate) : undefined,
   );
+}
+
+/**
+ * Every declaration on a topic, attributed by service — the substance behind the mismatch flag.
+ *
+ * Raw declarations, deliberately, rather than a diff: a diff needs a baseline, and choosing one says that
+ * service is the correct one, which is precisely the judgement the reader has context for and this
+ * aggregator does not (see `MeshDeclaredSchema`).
+ *
+ * A service that declared nothing at all on either side contributes no row — it is absent from the
+ * disagreement rather than a party to it. A service that declared one side and not the other keeps its row
+ * with `undefined` for the side it was silent on, because "declared no response" is a fact about that
+ * service and is exactly the kind of asymmetry the flag exists to surface.
+ *
+ * Producers join on the same terms. The mismatch flag is defined over consumers' inbound shapes, so a
+ * producer never trips it — but when a topic IS in disagreement, what the sending side declares it sends is
+ * the other half of the picture, and withholding it would leave a reader comparing consumers against each
+ * other with the actual message shape off-screen.
+ */
+function declaredSchemasOf(aggregate: TopicAggregate): MeshDeclaredSchema[] {
+  const declared = aggregate.consumerSchemas
+    .filter((consumer) => consumer.request !== undefined || consumer.response !== undefined)
+    .map(
+      (consumer) =>
+        new MeshDeclaredSchema(consumer.service, MeshDeclaredSchemaRole.consumer, consumer.request, consumer.response),
+    );
+
+  declared.push(
+    ...aggregate.producerSchemas
+      .filter((producer) => producer.message !== undefined)
+      .map(
+        (producer) =>
+          new MeshDeclaredSchema(producer.service, MeshDeclaredSchemaRole.producer, undefined, undefined, producer.message),
+      ),
+  );
+
+  return declared;
 }
 
 // A usage entry's status counts as success when it's the synthesized "success" token or a framework
