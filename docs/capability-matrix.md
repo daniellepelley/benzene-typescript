@@ -65,57 +65,73 @@ Two corollaries you'll see below:
 | **Configuration & secrets** | Provider-agnostic `ISecretStore` (env vars, files, in-memory, composed, cached) + fail-fast startup validation (`src/Benzene.Configuration.Core`) | Ship maintained cloud secret-store adapters (Key Vault / Secrets Manager / SSM) | Copy the small adapter from [Secrets & Configuration](cookbooks/secrets-configuration.md) and use the cloud SDK yourself |
 | **Outbound HTTP** | `HttpClientMiddleware` over an injectable `fetch`-like function, defaulting to the Node global `fetch` (`src/Benzene.Clients.Http`) | Ship its own HTTP stack or manage connection pooling — you inject the `fetch` you want (undici agent, a test stub) | Pass your configured `fetch` in; correlation/trace propagation is applied on the Benzene-message outbound path. See [Clients](clients.md) |
 | **Distributed tracing** | W3C `traceparent`/`tracestate` propagation (`W3CTraceContextMiddleware` in `src/Benzene.Clients`, extraction in `src/Benzene.Diagnostics`); OpenTelemetry via the standard API, exporter-agnostic | Ship a tracing backend or its sampling config — Benzene exports via the OTel API; Jaeger/Tempo/App Insights wiring is yours | [Monitoring & Diagnostics](monitoring.md), [Distributed tracing with OpenTelemetry](cookbooks/distributed-tracing-opentelemetry.md), [Sampling Strategies](sampling-strategies.md) |
-| **Retry on a returned failure result** | Per-transport settlement, with knobs on some transports — see the [breakdown below](#returned-failure-result-settlement--the-per-transport-breakdown). Safe by default on SQS, DynamoDB Streams, Queue Storage, Event Grid, Pub/Sub, RabbitMQ, and the Service Bus worker | A single cross-transport reliability abstraction — retry semantics are transport-native. **The .NET 1.0 settlement contract ("every queue-shaped transport is safe by default") is not yet fully ported**: several TS adapters still default to accepting a returned failure result, or have no escalation knob at all. The breakdown below states each honestly | Know your transport's default from the table below; where a knob exists, opt in; where none exists, have the handler **throw** for anything that must be retried. Any retried handler must be idempotent. See [Message Results](message-result.md) and the failure-handling cookbooks |
+| **Retry on a returned failure result** | Per-transport settlement matching the .NET 1.0 settlement contract — see the [breakdown below](#returned-failure-result-settlement--the-per-transport-breakdown). **Safe by default on every queue-shaped transport** (a returned failure result, and a null/unrouted outcome wherever a redelivery backstop exists, is redelivered rather than silently settled); the two self-hosted stream workers are the deliberate at-most-once exception | A single cross-transport reliability abstraction — retry semantics are transport-native | Know your transport's default from the table below; opt out per transport (`raiseOnFailureStatus = false` etc.) for at-most-once. Any retried handler must be idempotent. See [Message Results](message-result.md) and the failure-handling cookbooks |
 | **Multi-tenancy** | *(nothing as a framework feature today)* | — | Roll a tenant-resolver middleware + a scoped tenant holder — the documented [Multi-Tenancy](cookbooks/multi-tenancy.md) pattern |
 
 ## Returned-failure-result settlement — the per-transport breakdown
 
-"Failure result" means your handler returned `isSuccessful === false` — **not** a thrown
-exception. Every adapter lets an unhandled exception propagate to the host's own retry machinery
-by default; what varies is what happens to a *returned* failure result. The .NET port's 1.0
-settlement contract made every queue-shaped transport safe by default; **this port has not fully
-caught up**, and the differences below are stated plainly.
+Two handler outcomes drive settlement, and they are **separate axes** (the same policy the .NET
+port decided in its `work/settlement-consistency-fix-plan.md`, which this port now matches):
 
-**Safe by default** (a returned failure result is redelivered, at-least-once):
+- **Failure result** — your handler ran and returned `isSuccessful === false` (**not** a thrown
+  exception; every adapter lets an unhandled exception propagate to the host's own retry
+  machinery by default).
+- **Null/unrouted outcome** — no result was recorded at all. Overwhelmingly this means an
+  **unrouted** message: no handler matched the topic.
+
+The decided policy: *neither outcome is silently settled as success wherever a redelivery
+backstop exists to catch the retained message; a null outcome is acked only where retaining it
+would be an unbreakable poison loop (the Kafka/Event Hub carve-outs below).* Any retried handler
+must be idempotent.
+
+> **Breaking behavioural change (2026-09, this port's settlement catch-up).** Earlier releases
+> defaulted `raiseOnFailureStatus` to `false` on SNS, the Service Bus trigger, and the Azure Kafka
+> trigger; had no escalation knob at all on EventBridge, S3, the MSK trigger, and the Event Hub
+> trigger; escalated only on an explicit `isSuccessful === false` (so an unrouted message settled
+> as success); and committed a Kafka-worker record whose handler *returned* a failure. All of that
+> now matches the tables below: a returned failure — or an unrouted message, where a backstop
+> exists — that used to vanish now surfaces and is retried. Handlers must be idempotent. The
+> one-line opt-out for the old behaviour is per transport: `raiseOnFailureStatus = false` (or, for
+> the self-hosted Kafka worker's returned-failure handling, `raiseOnFailureStatus: false` in
+> `BenzeneKafkaConfig`).
+
+**Safe by default** (a returned failure result — and a null/unrouted outcome — is redelivered,
+at-least-once):
 
 | Transport | Verified default |
 |---|---|
-| AWS Lambda SQS (`src/Benzene.Aws.Lambda.Sqs`) | `SqsOptions.batchFailureMode` defaults `PartialBatchFailure` — failed messages reported via `ReportBatchItemFailures` |
-| AWS DynamoDB Streams (`src/Benzene.Aws.Lambda.DynamoDb`) | Sequential processing stops at the first failed record and reports it as a batch item failure |
-| Azure Queue Storage trigger (`src/Benzene.Azure.Function.QueueStorage`) | `raiseOnFailureStatus` defaults `true` — a failure result throws, so `maxDequeueCount` retry/poison handling applies |
-| Azure Event Grid trigger (`src/Benzene.Azure.Function.EventGrid`) | `raiseOnFailureStatus` defaults `true` |
-| Google Cloud Pub/Sub (`src/Benzene.GoogleCloud.Functions.PubSub`) | `raiseOnFailureStatus` defaults `true` |
-| RabbitMQ worker (`src/Benzene.RabbitMq`) | `ackMode` defaults `Explicit` — a failure nacks for requeue/dead-letter |
-| Azure Service Bus worker (`src/Benzene.Azure.ServiceBus`) | `ackMode` defaults `ServiceBusConsumerAckMode.Explicit` — a failure abandons the message |
+| AWS Lambda SQS (`src/Benzene.Aws.Lambda.Sqs`) | `SqsOptions.batchFailureMode` defaults `PartialBatchFailure` — failed messages reported via `ReportBatchItemFailures`; a null/unrouted outcome is reported too (`isSuccessful !== true`) |
+| AWS SQS self-hosted consumer (`src/Benzene.Aws.Sqs`) | Deletes only explicit successes (`isSuccessful !== true` retains); a failed or null/unrouted outcome is left for the redrive policy/DLQ |
+| AWS DynamoDB Streams (`src/Benzene.Aws.Lambda.DynamoDb`) | Sequential processing stops at the first record without a successful outcome (failure or null/unrouted outcome alike) and reports it as a batch item failure |
+| AWS SNS (`src/Benzene.Aws.Lambda.Sns`) | `SnsOptions.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so the subscription retry/redrive policy applies |
+| AWS S3 (`src/Benzene.Aws.Lambda.S3`) | `S3Options.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so the async-invoke retry/on-failure destination applies |
+| AWS EventBridge (`src/Benzene.Aws.Lambda.EventBridge`) | `EventBridgeOptions.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so the rule target retry/DLQ applies |
+| AWS Kafka/MSK trigger (`src/Benzene.Aws.Lambda.Kafka`) | `KafkaOptions.batchFailureMode` defaults `PartialBatchFailure` — partitions run sequentially in offset order, stop at the first failure, and report `{partition, offset}` resume points; a null/unrouted outcome is **acked** (carve-out — no per-record DLQ, retaining would replay the partition forever) |
+| Azure Queue Storage trigger (`src/Benzene.Azure.Function.QueueStorage`) | `raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so `maxDequeueCount` retry/poison handling applies |
+| Azure Event Grid trigger (`src/Benzene.Azure.Function.EventGrid`) | `raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so Event Grid retry/dead-lettering applies |
+| Azure Service Bus trigger (`src/Benzene.Azure.Function.ServiceBus`) | `ServiceBusOptions.raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so delivery-count/dead-letter handling applies |
+| Azure Kafka trigger (`src/Benzene.Azure.Function.Kafka`) | `KafkaOptions.raiseOnFailureStatus` defaults `true` — a returned failure result throws; a null/unrouted outcome is **acked** (carve-out — no per-record DLQ) |
+| Azure Event Hub trigger (`src/Benzene.Azure.Function.EventHub`) | `EventHubOptions.raiseOnFailureStatus` defaults `true` — a returned failure result throws so the trigger re-delivers the batch; a null/unrouted outcome is **acked** (carve-out — no per-record DLQ) |
+| Azure Service Bus worker (`src/Benzene.Azure.ServiceBus`) | `ackMode` defaults `ServiceBusConsumerAckMode.Explicit` — completes only explicit successes (`isSuccessful !== true` abandons); a failure or null/unrouted outcome is abandoned for redelivery/dead-letter |
+| Google Cloud Pub/Sub (`src/Benzene.GoogleCloud.Functions.PubSub`) | `raiseOnFailureStatus` defaults `true` — a failure result or a null/unrouted outcome throws, so ack-deadline redelivery/dead-letter topics apply |
+| RabbitMQ worker (`src/Benzene.RabbitMq`) | `ackMode` defaults `Explicit` — a failure result or a null/unrouted outcome nacks (bounded single requeue, then DLX/drop) |
 
-**At-most-once by default — a knob exists but defaults off** (divergent from .NET, where the same
-knob defaults `true`; the in-source rationale is the pre-1.0 one — "a failure result usually
-reflects a permanent failure that retrying won't fix"):
+**At-most-once by default — the two self-hosted stream workers** (deliberate, matching .NET: a
+stream has no per-message ack, so the only safe-by-default alternative is halting the worker on
+every poison record):
 
-| Transport | Opt-in |
+| Transport | Verified default |
 |---|---|
-| AWS SNS (`src/Benzene.Aws.Lambda.Sns`) | `SnsOptions.raiseOnFailureStatus = true` |
-| Azure Service Bus trigger (`src/Benzene.Azure.Function.ServiceBus`) | `ServiceBusOptions.raiseOnFailureStatus = true` |
-| Azure Kafka trigger (`src/Benzene.Azure.Function.Kafka`) | `KafkaOptions.raiseOnFailureStatus = true` |
+| Kafka self-hosted worker (`src/Benzene.Kafka.Core`) | `commitOnlyOnSuccess` defaults `false`: offsets auto-commit regardless of outcome, so a failed record is skipped (a returned failure result is at least logged — `raiseOnFailureStatus` defaults `true`). Opt into at-least-once with `commitOnlyOnSuccess: true` (requires `catchHandlerExceptions: false`); a returned failure result then settles like a throw (no commit, worker stops, record redelivers). A null/unrouted outcome is always committed (carve-out — no per-record DLQ) |
+| Azure Event Hubs self-hosted worker (`src/Benzene.Azure.EventHub`) | `catchHandlerExceptions` defaults `true` (skip-and-continue), so a failed event — or an escalated failure result, `raiseOnFailureStatus` also defaults `true` — is logged and skipped once a later event checkpoints past it. Opt into at-least-once with `catchHandlerExceptions: false` and accept that a poison record halts the worker. A null/unrouted outcome checkpoints normally (carve-out — no per-record DLQ) |
 
-**No escalation knob at all — not implemented** (in .NET each of these has one; here a returned
-failure result is always settled, so the handler must **throw** for anything that must retry):
+**Fan-in transports** (Kinesis per-record adaptation aside, no per-record result is inspected, so
+there is no failure-vs-null axis to have a policy about):
 
 | Transport | State |
 |---|---|
-| AWS EventBridge (`src/Benzene.Aws.Lambda.EventBridge`) | No options type; .NET has `RaiseOnFailureStatus` (default `true`) |
-| AWS S3 (`src/Benzene.Aws.Lambda.S3`) | No options type; .NET has `RaiseOnFailureStatus` (default `true`) |
-| AWS Kafka/MSK trigger (`src/Benzene.Aws.Lambda.Kafka`) | No `batchFailureMode`; .NET defaults to partial-batch-failure reporting |
-| AWS Kinesis (`src/Benzene.Aws.Lambda.Kinesis`) | Per-record fan-out **adaptation** — the C# streaming/checkpoint engine is not ported (stated in the package's own ADAPTATION note), so there is no per-record checkpoint semantics |
-| Azure Event Hub trigger (`src/Benzene.Azure.Function.EventHub`) | No `raiseOnFailureStatus`; .NET has one (default `true`) |
-
-**The two self-hosted stream workers deliberately default to at-most-once** — this matches .NET
-and is a design decision, not a gap: a stream has no per-message ack, so the only safe-by-default
-alternative is halting the worker on every poison record. `src/Benzene.Kafka.Core` defaults
-`commitOnlyOnSuccess: false` and `src/Benzene.Azure.EventHub` defaults
-`catchHandlerExceptions: true` (skip-and-continue); opt into at-least-once with
-`commitOnlyOnSuccess: true` / `catchHandlerExceptions: false` and accept that a poison record then
-halts the worker until handled or dead-lettered.
+| AWS Kinesis (`src/Benzene.Aws.Lambda.Kinesis`) | Per-record fan-out **adaptation** — the C# streaming/checkpoint engine is not ported (stated in the package's own ADAPTATION note), so there is no per-record checkpoint semantics; a null/unrouted outcome has no settlement effect. Have the handler **throw** for anything that must retry |
+| Azure Cosmos DB change feed (`src/Benzene.Azure.CosmosDb`, `src/Benzene.Azure.Function.CosmosDb`) | Fan-in: the whole batch is one invocation and failure is signalled by throwing or withholding the checkpoint; a null/unrouted outcome has no per-record settlement axis |
 
 ## Why "we don't do that" is a feature
 
