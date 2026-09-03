@@ -72,6 +72,13 @@ Evidence-checked in this repo's source, not just commit messages:
 
 ## Wave 1 — safety and correctness
 
+> **Status: SHIPPED 2026-09-03** — all five items implemented and green (292 test files / 2051
+> tests). Commits: W1.1 `209be23` + `78b1044` + `7ac7d05` (drift guard), W1.2 `7644cb6`,
+> W1.5 `aa88b7b`, W1.3 `4b5ec2f`, W1.4 `66b7e0e`. Known follow-ups recorded by the implementers:
+> batch clients (`*BatchMessageClient`) deliberately not signal-threaded pending a mid-batch-abort
+> design (see W1.3 audit in the commit); README porting-conventions could note the idempotency
+> fencing divergence. The sections below are kept as the record of what was specified.
+
 ### W1.1 Complete the settlement contract across every transport (L)
 
 **The single most important item in this plan.** The .NET 1.0 settlement contract (maintainer-
