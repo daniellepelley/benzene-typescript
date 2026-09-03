@@ -28,6 +28,7 @@ export * from './MeshTopicService';
 export * from './MeshTopicChange';
 export * from './MeshRemovedTopic';
 export * from './MeshTopicVersionCompatibility';
+export * from './MeshServiceVersion';
 export * from './MeshUsage';
 export * from './MeshUsageEntry';
 export * from './MeshAnnotation';
