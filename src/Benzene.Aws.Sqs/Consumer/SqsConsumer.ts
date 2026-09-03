@@ -28,7 +28,9 @@ const MAX_ERROR_BACKOFF_SECONDS = 30;
  * ADAPTATION — cancellation. C# `CancellationToken` maps to an `AbortSignal` (the {@link IBenzeneWorker}
  * mapping), and `Task.Delay(..., token)` to a signal-aware `delay` that resolves early on abort rather
  * than throwing. `using var client` has no v3 counterpart — the injected `SQSClient` the factory wraps is
- * app-owned, so it is not disposed here.
+ * app-owned, so it is not disposed here. Settlement is cancellation-DETACHED (.NET R10 #115): the delete
+ * of already-handled messages runs without the stop signal, so a shutdown firing between the handler
+ * completing and the delete still settles the work instead of silently redelivering it.
  */
 export class SqsConsumer implements IBenzeneWorker {
   private readonly config: Required<SqsConsumerConfig>;
@@ -85,38 +87,40 @@ export class SqsConsumer implements IBenzeneWorker {
               : batchResult.successfulMessages;
 
           if (messagesToDelete.length > 0) {
-            const deleteResult = await client.deleteMessageBatchAsync(
-              {
+            // These messages have already been successfully processed by the pipeline, so deleting
+            // them is part of graceful drain, not more work subject to the poll loop's own
+            // cancellation. Deliberately pass NO abort signal here (the port of .NET's
+            // `CancellationToken.None`, bounded naturally by the AWS SDK HTTP client's own timeout)
+            // so a shutdown signal firing between the handler completing and this call can never
+            // turn already-completed work into a silent redelivery/double-processing (.NET R10 #115).
+            try {
+              const deleteResult = await client.deleteMessageBatchAsync({
                 QueueUrl: this.config.queueUrl,
                 Entries: messagesToDelete.map((x) => ({
                   Id: x.MessageId,
                   ReceiptHandle: x.ReceiptHandle,
                 })),
-              },
-              cancellationToken,
-            );
+              });
 
-            // A batch delete can partially fail: the call succeeds while individual entries land in
-            // Failed. Those messages were NOT removed and will reappear after the visibility timeout,
-            // so surface it rather than let the redelivery look unexplained.
-            const failed = deleteResult.Failed ?? [];
-            if (failed.length > 0) {
-              const loggingScope = this.serviceResolverFactory.createScope();
-              try {
-                const logger =
-                  loggingScope.tryGetService(ILoggerFactory)?.createLogger('SqsConsumer') ??
-                  NullLogger.instance;
-                logger.logError(
+              // A batch delete can partially fail: the call succeeds while individual entries land in
+              // Failed. Those messages were NOT removed and will reappear after the visibility timeout,
+              // so surface it rather than let the redelivery look unexplained.
+              const failed = deleteResult.Failed ?? [];
+              if (failed.length > 0) {
+                await this.logDeleteFailure(
                   undefined,
                   `Failed to delete ${failed.length} handled SQS message(s) from queue ${this.config.queueUrl}; they will be redelivered: ${failed.map((x) => x.Id).join(', ')}`,
                 );
-              } finally {
-                if (loggingScope.disposeAsync) {
-                  await loggingScope.disposeAsync();
-                } else {
-                  loggingScope.dispose();
-                }
               }
+            } catch (error) {
+              // The delete call itself failed (not a partial per-entry failure) - every message in
+              // this batch will be redelivered after the visibility timeout. Contained here (not the
+              // outer catch) so a delete fault is logged as a settlement failure, never mistaken for
+              // a poll failure that trips the receive backoff.
+              await this.logDeleteFailure(
+                error,
+                `Failed to delete ${messagesToDelete.length} handled SQS message(s) from queue ${this.config.queueUrl}; they will be redelivered: ${messagesToDelete.map((x) => x.MessageId).join(', ')}`,
+              );
             }
           }
         }
@@ -163,6 +167,23 @@ export class SqsConsumer implements IBenzeneWorker {
   /** Stops the worker. No cleanup is required beyond exiting the poll loop in `startAsync`. */
   async stopAsync(_cancellationToken?: AbortSignal): Promise<void> {
     return Promise.resolve();
+  }
+
+  /** Logs a settlement (delete) failure through the worker's `ILoggerFactory`/`NullLogger` scope. */
+  private async logDeleteFailure(error: unknown, messageText: string): Promise<void> {
+    const loggingScope = this.serviceResolverFactory.createScope();
+    try {
+      const logger =
+        loggingScope.tryGetService(ILoggerFactory)?.createLogger('SqsConsumer') ??
+        NullLogger.instance;
+      logger.logError(error, messageText);
+    } finally {
+      if (loggingScope.disposeAsync) {
+        await loggingScope.disposeAsync();
+      } else {
+        loggingScope.dispose();
+      }
+    }
   }
 }
 
