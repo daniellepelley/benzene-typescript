@@ -24,16 +24,12 @@ const testRoot = resolve(fixturesDir, '..', '..', '..');
 
 /**
  * Fixtures this port deliberately does not run, each with the reason it is absent. Deleting an entry
- * (and writing the runner) is always the preferred way off this list.
+ * (and writing the runner) is always the preferred way off this list. Currently empty: the last two
+ * entries (`mesh-service-version-cases.json` / `mesh-version-order-cases.json`, which awaited a
+ * cross-port claim-or-drop decision) came off it when this port claimed the §2.4/§2.5 versioned
+ * catalog - `MeshCollectorConformanceTest` and `MeshVersionOrderConformanceTest` now run them.
  */
-const notClaimed: Readonly<Record<string, string>> = {
-  // Cross-port claim-or-drop decision still open: no port has claimed the service-version feed, and
-  // this port has no `MeshServiceVersion` type to run it against (see the missing mesh-contracts
-  // types noted in `src/Benzene.Mesh.Collector/index.ts`). Vendored so the decision stays visible.
-  'mesh-service-version-cases.json': 'awaits a cross-port claim-or-drop decision',
-  // Same decision, same feed: version ORDERING over those same absent types.
-  'mesh-version-order-cases.json': 'awaits a cross-port claim-or-drop decision',
-};
+const notClaimed: Readonly<Record<string, string>> = {};
 
 function vendoredFixtureNames(): string[] {
   return readdirSync(fixturesDir)
