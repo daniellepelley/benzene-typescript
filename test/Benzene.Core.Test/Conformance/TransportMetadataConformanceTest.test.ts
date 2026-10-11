@@ -32,8 +32,8 @@ import { IMessageGetter } from '@benzenejs/abstractions-message-handlers';
 import { addBenzene, addContextItems, HeaderMessageVersionGetter } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { addSqsConsumer, SqsConsumerMessageContext } from '@benzenejs/aws-sqs';
-import { SqsOptions } from '@benzenejs/aws-lambda-sqs';
-import { SnsOptions } from '@benzenejs/aws-lambda-sns';
+import { addSqs, SqsMessageContext, SqsOptions } from '@benzenejs/aws-lambda-sqs';
+import { addSns, SnsOptions, SnsRecordContext } from '@benzenejs/aws-lambda-sns';
 import { EventBridgeMessageHeadersGetter, EventBridgeOptions } from '@benzenejs/aws-lambda-eventbridge';
 import { OutboundEventBridgeContextConverter } from '@benzenejs/clients-aws-eventbridge';
 import { S3Options } from '@benzenejs/aws-lambda-s3';
@@ -41,7 +41,7 @@ import { DynamoDbOptions } from '@benzenejs/aws-lambda-dynamodb';
 import { KinesisOptions } from '@benzenejs/aws-lambda-kinesis';
 import { KafkaOptions as MskKafkaOptions } from '@benzenejs/aws-lambda-kafka';
 import { BenzeneMessageLambdaOptions } from '@benzenejs/aws-lambda-core';
-import { ServiceBusOptions } from '@benzenejs/azure-function-service-bus';
+import { addServiceBus, ServiceBusContext, ServiceBusOptions } from '@benzenejs/azure-function-service-bus';
 import { QueueStorageOptions } from '@benzenejs/azure-function-queue-storage';
 import { EventGridOptions } from '@benzenejs/azure-function-event-grid';
 import { KafkaOptions as FunctionsKafkaOptions } from '@benzenejs/azure-function-kafka';
@@ -50,19 +50,42 @@ import { TimerOptions } from '@benzenejs/azure-function-timer';
 import { BlobStorageOptions } from '@benzenejs/azure-function-blob-storage';
 import { CosmosDbChangeFeedOptions } from '@benzenejs/azure-function-cosmos-db';
 import { BenzeneCosmosChangeFeedConfig } from '@benzenejs/azure-cosmos-db';
-import { withEventHubConfigDefaults } from '@benzenejs/azure-event-hub';
+import { addEventHubConsumer, EventHubConsumerContext, withEventHubConfigDefaults } from '@benzenejs/azure-event-hub';
 import { withKafkaConfigDefaults } from '@benzenejs/kafka-core';
-import { RabbitMqAckMode, withRabbitMqConfigDefaults } from '@benzenejs/rabbitmq';
-import { PubSubOptions } from '@benzenejs/google-cloud-functions-pubsub';
+import { addRabbitMqConsumer, RabbitMqAckMode, RabbitMqContext, withRabbitMqConfigDefaults } from '@benzenejs/rabbitmq';
+import {
+  addGooglePubSub,
+  MessagePublishedData,
+  PubSubContext,
+  PubSubOptions,
+} from '@benzenejs/google-cloud-functions-pubsub';
+import { Constants } from '@benzenejs/core-messages';
+import type { SNSEventRecord, SQSRecord } from 'aws-lambda';
+import type { ServiceBusReceivedMessage } from '@azure/service-bus';
+import type { ReceivedEventData } from '@azure/event-hubs';
+import type { ConsumeMessage } from 'amqplib';
 // @benzenejs/azure-service-bus fails to load here (see the topic-key note below), so its config module is
 // imported directly from source.
 import { withServiceBusConfigDefaults } from '../../../src/Benzene.Azure.ServiceBus/BenzeneServiceBusConfig';
 import { ServiceBusConsumerAckMode } from '../../../src/Benzene.Azure.ServiceBus/ServiceBusConsumerAckMode';
+import { addServiceBusConsumer } from '../../../src/Benzene.Azure.ServiceBus/DependencyInjectionExtensions';
+import { ServiceBusConsumerContext } from '../../../src/Benzene.Azure.ServiceBus/ServiceBusConsumerContext';
+
+interface MetadataExpectation {
+  topic: string;
+  version?: string;
+  headers?: Record<string, string>;
+  headersExclude?: string[];
+}
 
 interface MetadataCase {
   name: string;
   metadata: Record<string, string>;
-  expected: { topic: string; version?: string; headers?: Record<string, string>; headersExclude?: string[] };
+  expected: MetadataExpectation;
+}
+
+interface OverrideCase extends MetadataCase {
+  metadataKeys: { topic: string };
 }
 
 type Settlement = 'redeliver' | 'skip-and-continue' | 'n/a';
@@ -70,6 +93,7 @@ type Settlement = 'redeliver' | 'skip-and-continue' | 'n/a';
 interface MetadataFixture {
   defaultMetadataKeys: { topic: string; version: string; headers: string };
   metadataCases: MetadataCase[];
+  overrideCases: OverrideCase[];
   settlementDefaults: {
     shapes: Record<string, { onFailure: Settlement[]; unmatchedTopic: Settlement[] }>;
     bindings: { binding: string; shape: string }[];
@@ -118,33 +142,32 @@ describe('TransportMetadataConformanceTest', () => {
     expect(OutboundEventBridgeContextConverter.EmbeddedHeadersKey).toBe(fixture.defaultMetadataKeys.headers);
   });
 
-  // The version cases, through a metadata-carrying binding (the self-hosted SQS consumer: message
-  // attributes are its native string->string channel). benzene-version is tier A, so they run
-  // unconditionally. NOT asserted: `headersExclude` — no TypeScript binding yet drops the consumed topic
-  // key from the header dictionary (a pre-existing gap the runner never exercised before spec-0.2.0; the
-  // other metadataCases are not run here for the same reason, see docs/capability-matrix.md).
-  describe('version metadata cases', () => {
-    for (const metadataCase of fixture.metadataCases.filter((c) => c.expected.version !== undefined)) {
-      it(metadataCase.name, () => {
-        const container = new DefaultBenzeneServiceContainer();
-        addBenzene(container);
-        addSqsConsumer(container);
-        addContextItems(container);
-        const scope = container.createServiceResolverFactory().createScope();
-        const getter = scope.getService(IMessageGetter) as unknown as IMessageGetter<SqsConsumerMessageContext>;
-        const context = SqsConsumerMessageContext.createInstance({
-          MessageId: 'm',
-          Body: '{}',
-          MessageAttributes: Object.fromEntries(
-            Object.entries(metadataCase.metadata).map(([key, value]) => [key, { DataType: 'String', StringValue: value }]),
-          ),
-        });
+  // metadataCases and overrideCases, through every binding whose topic comes from native metadata
+  // (topicSources `source: "metadata"`): each case's neutral dictionary is written into the binding's own
+  // native channel, the binding is registered through its real DI function (with the case's topic key on
+  // an override), and the topic, version and headers are read back through the container's IMessageGetter
+  // - the same path the router reads them on. benzene-version is tier A, so every case runs unconditionally.
+  // Kafka is not here: its topicSources entry says metadata, but this port (like .NET) routes a Kafka record
+  // by its native topic name.
+  describe('metadataCases', () => {
+    for (const binding of metadataBindings) {
+      describe(binding.name, () => {
+        for (const metadataCase of fixture.metadataCases) {
+          it(metadataCase.name, () => {
+            assertResolution(binding, expectedTopicKey, metadataCase.metadata, metadataCase.expected);
+          });
+        }
+      });
+    }
+  });
 
-        const topic = getter.getTopic(context);
-        expect(topic?.id).toBe(metadataCase.expected.topic);
-        expect(topic?.version ?? '').toBe(metadataCase.expected.version);
-        for (const [key, value] of Object.entries(metadataCase.expected.headers ?? {})) {
-          expect(getter.getHeaders(context)[key]).toBe(value);
+  describe('overrideCases', () => {
+    for (const binding of metadataBindings) {
+      describe(binding.name, () => {
+        for (const overrideCase of fixture.overrideCases) {
+          it(overrideCase.name, () => {
+            assertResolution(binding, overrideCase.metadataKeys.topic, overrideCase.metadata, overrideCase.expected);
+          });
         }
       });
     }
@@ -210,6 +233,119 @@ describe('TransportMetadataConformanceTest', () => {
     }
   });
 });
+
+/**
+ * A native-metadata inbound binding under test: registers itself (with the given topic key) on a
+ * container, and builds its native context from the fixture's neutral string->string dictionary.
+ */
+interface MetadataBinding {
+  name: string;
+  register: (container: DefaultBenzeneServiceContainer, topicKey: string) => void;
+  context: (metadata: Record<string, string>) => unknown;
+}
+
+const metadataBindings: MetadataBinding[] = [
+  {
+    name: 'sqs (lambda): message attributes',
+    register: (container, topicKey) => addSqs(container, topicKey),
+    context: (metadata) =>
+      SqsMessageContext.createInstance({ Records: [] }, {
+        messageId: 'm',
+        body: '{}',
+        messageAttributes: mapValues(metadata, (value) => ({ dataType: 'String', stringValue: value })),
+      } as unknown as SQSRecord),
+  },
+  {
+    name: 'sns (lambda): message attributes',
+    register: (container, topicKey) => addSns(container, topicKey),
+    context: (metadata) =>
+      SnsRecordContext.createInstance({ Records: [] }, {
+        Sns: { Message: '{}', MessageAttributes: mapValues(metadata, (value) => ({ Type: 'String', Value: value })) },
+      } as unknown as SNSEventRecord),
+  },
+  {
+    name: 'sqs (self-hosted consumer): message attributes',
+    register: (container, topicKey) => addSqsConsumer(container, topicKey),
+    context: (metadata) =>
+      SqsConsumerMessageContext.createInstance({
+        MessageId: 'm',
+        Body: '{}',
+        MessageAttributes: mapValues(metadata, (value) => ({ DataType: 'String', StringValue: value })),
+      }),
+  },
+  {
+    name: 'pubsub: attributes',
+    register: (container, topicKey) => addGooglePubSub(container, topicKey),
+    context: (metadata) => new PubSubContext({ message: { data: '', attributes: { ...metadata } } } as unknown as MessagePublishedData),
+  },
+  {
+    name: 'servicebus (functions trigger): application properties',
+    register: (container, topicKey) => addServiceBus(container, topicKey),
+    context: (metadata) => new ServiceBusContext({ body: {}, applicationProperties: { ...metadata } } as unknown as ServiceBusReceivedMessage),
+  },
+  {
+    name: 'servicebus (self-hosted consumer): application properties',
+    register: (container, topicKey) => addServiceBusConsumer(container, topicKey),
+    context: (metadata) =>
+      ServiceBusConsumerContext.createInstance({ body: {}, applicationProperties: { ...metadata } } as unknown as ServiceBusReceivedMessage),
+  },
+  {
+    name: 'eventhub (self-hosted consumer): application properties',
+    register: (container, topicKey) => addEventHubConsumer(container, topicKey),
+    context: (metadata) => EventHubConsumerContext.createInstance({ body: {}, properties: { ...metadata } } as unknown as ReceivedEventData),
+  },
+  {
+    // No routing key: the AMQP routing-key fallback (topicSources) is for a non-Benzene producer and
+    // would otherwise stand in for an absent topic header.
+    name: 'rabbitmq: BasicProperties.Headers',
+    register: (container, topicKey) => addRabbitMqConsumer(container, topicKey),
+    context: (metadata) =>
+      RabbitMqContext.createInstance({
+        content: Buffer.from('{}'),
+        fields: { routingKey: '' },
+        // RabbitMQ carries header values as byte[]: deliver them that way.
+        properties: { headers: mapValues(metadata, (value) => Buffer.from(value)) },
+      } as unknown as ConsumeMessage),
+  },
+];
+
+/**
+ * Registers `binding` with `topicKey`, then reads the case's topic, version and headers back through the
+ * container's IMessageGetter. An unresolved topic is the port's `<missing>` id (`Constants.missing`), which
+ * the fixture spells `""`.
+ */
+function assertResolution(
+  binding: MetadataBinding,
+  topicKey: string,
+  metadata: Record<string, string>,
+  expected: MetadataExpectation,
+): void {
+  const container = new DefaultBenzeneServiceContainer();
+  addBenzene(container);
+  binding.register(container, topicKey);
+  addContextItems(container);
+  const scope = container.createServiceResolverFactory().createScope();
+  const getter = scope.getService(IMessageGetter) as unknown as IMessageGetter<unknown>;
+  const context = binding.context(metadata);
+
+  const topic = getter.getTopic(context);
+  const topicId = topic === undefined || topic.id === Constants.missing.id ? '' : topic.id;
+  expect(topicId, 'topic').toBe(expected.topic);
+  expect(topic?.version ?? '', 'version').toBe(expected.version ?? '');
+  const headers = getter.getHeaders(context);
+  for (const [key, value] of Object.entries(expected.headers ?? {})) {
+    expect(headers[key], `headers['${key}']`).toBe(value);
+  }
+  for (const key of expected.headersExclude ?? []) {
+    expect(Object.keys(headers).map((k) => k.toLowerCase()), `headers must not carry the consumed '${key}'`).not.toContain(
+      key.toLowerCase(),
+    );
+  }
+}
+
+function mapValues<T>(record: Record<string, string>, map: (value: string) => T): Record<string, T> {
+  return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, map(value)]));
+}
 
 function queue(binding: string, port: string, redeliversFailure: boolean, ignoresUnmatched: boolean) {
   return settle(binding, port, 'queue', redeliversFailure, ignoresUnmatched);

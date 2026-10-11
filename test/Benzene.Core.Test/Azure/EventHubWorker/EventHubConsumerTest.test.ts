@@ -86,11 +86,13 @@ describe('EventHubConsumer mappers', () => {
     expect(getter.getTopic(context({ properties: {} }))!.id).toBe('preset-topic');
   });
 
-  it('returns only string-typed properties as headers', () => {
+  it('returns only string-typed properties as headers, without the consumed topic property', () => {
     const headers = new EventHubConsumerMessageHeadersGetter().getHeaders(
-      context({ properties: { topic: 'some-topic', count: 5 } }),
+      context({ properties: { topic: 'some-topic', tenant: 'acme', count: 5 } }),
     );
-    expect(headers['topic']).toBe('some-topic');
+    expect(headers['tenant']).toBe('acme');
+    // The topic property is the topic, not a header (transport-metadata-cases.json headersExclude).
+    expect('topic' in headers).toBe(false);
     expect('count' in headers).toBe(false);
   });
 

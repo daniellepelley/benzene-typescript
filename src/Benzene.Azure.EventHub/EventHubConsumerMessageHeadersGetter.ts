@@ -1,5 +1,7 @@
 /** Port of Benzene.Azure.EventHub.EventHubConsumerMessageHeadersGetter. */
 import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { withoutMetadataKey } from '@benzenejs/core-messages';
+import { EventHubConsumerMessageTopicGetter } from './EventHubConsumerMessageTopicGetter';
 import { EventHubConsumerContext } from './EventHubConsumerContext';
 
 /**
@@ -12,6 +14,10 @@ import { EventHubConsumerContext } from './EventHubConsumerContext';
 export class EventHubConsumerMessageHeadersGetter
   implements IMessageHeadersGetter<EventHubConsumerContext>
 {
+  constructor(
+    private readonly topicPropertyKey: string = EventHubConsumerMessageTopicGetter.DefaultTopicProperty,
+  ) {}
+
   getHeaders(context: EventHubConsumerContext): Record<string, string> {
     const headers: Record<string, string> = {};
     const properties = context.eventData.properties;
@@ -22,6 +28,6 @@ export class EventHubConsumerMessageHeadersGetter
         }
       }
     }
-    return headers;
+    return withoutMetadataKey(headers, this.topicPropertyKey);
   }
 }

@@ -21,7 +21,13 @@ export class SnsMessageTopicGetter implements IMessageTopicGetter<SnsRecordConte
    */
   static readonly DefaultTopicAttribute = 'topic';
 
+  /**
+   * @param topicAttributeKey The message attribute the topic is read from - {@link DefaultTopicAttribute}
+   * unless the service renamed it (wire-contracts.md §2: reserved names are configurable).
+   */
+  constructor(private readonly topicAttributeKey: string = SnsMessageTopicGetter.DefaultTopicAttribute) {}
+
   getTopic(context: SnsRecordContext): ITopic | undefined {
-    return new Topic(SnsUtils.getFromAttributes(context, SnsMessageTopicGetter.DefaultTopicAttribute));
+    return new Topic(SnsUtils.getFromAttributes(context, this.topicAttributeKey));
   }
 }

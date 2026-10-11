@@ -3,6 +3,7 @@ import { ServiceBusReceivedMessage } from '@azure/service-bus';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { IAzureFunctionApp, IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { addServiceBus } from './DependencyInjectionExtensions';
+import { ServiceBusMessageTopicGetter } from './ServiceBusMessageTopicGetter';
 import { ServiceBusApplication } from './ServiceBusApplication';
 import { ServiceBusContext } from './ServiceBusContext';
 import { ServiceBusOptions } from './ServiceBusOptions';
@@ -20,13 +21,15 @@ import { ServiceBusOptions } from './ServiceBusOptions';
  * @param app The Azure Function app builder to add Service Bus handling to.
  * @param action Configures the Service Bus middleware pipeline.
  * @param configure Optionally configures `ServiceBusOptions` (e.g. `catchExceptions` / `raiseOnFailureStatus`).
+ * @param topicPropertyKey The application property the topic is read from (default `topic`, wire-contracts.md §2).
  */
 export function useServiceBus(
   app: IAzureFunctionAppBuilder,
   action: PipelineBuilderAction<ServiceBusContext>,
   configure?: (options: ServiceBusOptions) => void,
+  topicPropertyKey: string = ServiceBusMessageTopicGetter.DefaultTopicProperty,
 ): IAzureFunctionAppBuilder {
-  app.register((x) => addServiceBus(x));
+  app.register((x) => addServiceBus(x, topicPropertyKey));
   const pipeline = app.create<ServiceBusContext>();
   action(pipeline);
   const options = new ServiceBusOptions();

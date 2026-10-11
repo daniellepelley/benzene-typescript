@@ -214,15 +214,18 @@ describe('SqsConsumerMessageTopicGetter', () => {
 });
 
 describe('SqsConsumerMessageHeadersGetter', () => {
-  it('returns only string-typed attributes', () => {
+  it('returns only string-typed attributes, without the consumed topic attribute', () => {
     const context = SqsConsumerMessageContext.createInstance({
       MessageAttributes: {
         topic: { DataType: 'String', StringValue: 'some-topic' },
+        tenant: { DataType: 'String', StringValue: 'acme' },
         count: { DataType: 'Number', StringValue: '5' },
       },
     });
     const headers = new SqsConsumerMessageHeadersGetter().getHeaders(context);
-    expect(headers['topic']).toBe('some-topic');
+    expect(headers['tenant']).toBe('acme');
+    // The topic attribute is the topic, not a header (transport-metadata-cases.json headersExclude).
+    expect('topic' in headers).toBe(false);
     expect('count' in headers).toBe(false);
   });
 });

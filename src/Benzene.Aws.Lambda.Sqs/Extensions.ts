@@ -2,6 +2,7 @@ import { IMiddlewarePipelineBuilder, PipelineBuilderAction } from '@benzenejs/ab
 import { AwsEventStreamContext } from '@benzenejs/aws-lambda-core';
 import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { addSqs } from './DependencyInjectionExtensions';
+import { SqsMessageTopicGetter } from './SqsMessageTopicGetter';
 import { SqsApplication } from './SqsApplication';
 import { SqsLambdaHandler } from './SqsLambdaHandler';
 import { SqsMessageContext } from './SqsMessageContext';
@@ -14,14 +15,16 @@ import { SqsOptions } from './SqsOptions';
  * Adds SQS handling to an AWS Lambda (`AwsEventStreamContext`) pipeline: registers the SQS services,
  * builds the inner per-record `SqsMessageContext` pipeline from `action`, and appends an
  * `SqsLambdaHandler` (which runs an `SqsApplication` over that pipeline). Optionally configure
- * `SqsOptions` (e.g. set `batchFailureMode` to `FailWholeBatch`).
+ * `SqsOptions` (e.g. set `batchFailureMode` to `FailWholeBatch`). `topicAttributeKey` renames the message
+ * attribute the topic is read from (default `topic`, wire-contracts.md §2).
  */
 export function useSqs(
   app: IMiddlewarePipelineBuilder<AwsEventStreamContext>,
   action: PipelineBuilderAction<SqsMessageContext>,
   configure?: (options: SqsOptions) => void,
+  topicAttributeKey: string = SqsMessageTopicGetter.DefaultTopicAttribute,
 ): IMiddlewarePipelineBuilder<AwsEventStreamContext> {
-  app.register((x) => addSqs(x));
+  app.register((x) => addSqs(x, topicAttributeKey));
   const pipeline = createMiddlewarePipeline(app, action);
   const options = new SqsOptions();
   configure?.(options);

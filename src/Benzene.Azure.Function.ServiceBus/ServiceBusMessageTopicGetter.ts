@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.Function.ServiceBus.ServiceBusMessageTopicGetter. */
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { ServiceBusContext } from './ServiceBusContext';
 
 /**
@@ -16,12 +16,22 @@ import { ServiceBusContext } from './ServiceBusContext';
  * property yields `undefined`, which `Topic` maps to the `<missing>` id (C# `Constants.Missing`).
  */
 export class ServiceBusMessageTopicGetter implements IMessageTopicGetter<ServiceBusContext> {
+  /** The default application property the topic is read from - the spec's reserved `topic` (wire-contracts.md §2). */
+  static readonly DefaultTopicProperty = 'topic';
+
+  /**
+   * @param topicPropertyKey The application property the topic is read from - {@link DefaultTopicProperty}
+   * unless the service renamed it (wire-contracts.md §2: reserved names are configurable).
+   */
+  constructor(private readonly topicPropertyKey: string = ServiceBusMessageTopicGetter.DefaultTopicProperty) {}
+
   getTopic(context: ServiceBusContext): ITopic | undefined {
-    return new Topic(ServiceBusMessageTopicGetter.getTopicProperty(context));
+    return new Topic(this.getTopicProperty(context));
   }
 
-  private static getTopicProperty(context: ServiceBusContext): string | undefined {
-    const value = context.message.applicationProperties?.['topic'];
+  private getTopicProperty(context: ServiceBusContext): string | undefined {
+    // Matched case-insensitively: header keys are case-insensitive on read (wire-contracts.md).
+    const value = findMetadataValue(context.message.applicationProperties, this.topicPropertyKey);
     return typeof value === 'string' ? value : undefined;
   }
 }

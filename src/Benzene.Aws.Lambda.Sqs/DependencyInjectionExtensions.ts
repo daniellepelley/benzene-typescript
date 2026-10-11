@@ -16,6 +16,7 @@ import {
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
   TransportInfo,
+  tryAddHeaderMessageVersionGetter,
 } from '@benzenejs/core-message-handlers';
 import { SqsMessageBodyGetter } from './SqsMessageBodyGetter';
 import { SqsMessageContext } from './SqsMessageContext';
@@ -38,8 +39,15 @@ import { SqsMessageTopicGetter } from './SqsMessageTopicGetter';
  * the port uses `tryAddScoped`; where it uses `AddScoped`/`AddSingleton` the port uses the
  * non-`try` factory registrations, so these SQS getters win over the generic `addContextItems`
  * defaults registered later.
+ *
+ * `topicAttributeKey` is the message attribute the topic is read from (default `topic`, wire-contracts.md §2); it is
+ * consumed - the topic, not a header - and a `benzene-version` message attribute selects the handler version
+ * (`tryAddHeaderMessageVersionGetter`, as .NET's `TryAddHeaderMessageVersionGetter`).
  */
-export function addSqs(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+export function addSqs(
+  services: IBenzeneServiceContainer,
+  topicAttributeKey: string = SqsMessageTopicGetter.DefaultTopicAttribute,
+): IBenzeneServiceContainer {
   tryAddScoped(services, JsonSerializer);
   tryAddScoped(services, PresetTopicHolder);
 
@@ -47,14 +55,15 @@ export function addSqs(services: IBenzeneServiceContainer): IBenzeneServiceConta
     IMessageTopicGetter,
     (resolver) =>
       new PresetTopicMessageTopicGetter<SqsMessageContext>(
-        new SqsMessageTopicGetter(),
+        new SqsMessageTopicGetter(topicAttributeKey),
         resolver.getService(PresetTopicHolder),
       ) as IMessageTopicGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new SqsMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new SqsMessageHeadersGetter(topicAttributeKey) as IMessageHeadersGetter<unknown>,
   );
+  tryAddHeaderMessageVersionGetter<SqsMessageContext>(services);
   services.addScopedFactory(
     IMessageBodyGetter,
     () => new SqsMessageBodyGetter() as IMessageBodyGetter<unknown>,

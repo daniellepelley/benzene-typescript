@@ -17,6 +17,7 @@ import {
   PresetTopicHolder,
   PresetTopicMessageTopicGetter,
   TransportInfo,
+  tryAddHeaderMessageVersionGetter,
 } from '@benzenejs/core-message-handlers';
 import { ServiceBusContext } from './ServiceBusContext';
 import { ServiceBusMessageBodyGetter } from './ServiceBusMessageBodyGetter';
@@ -37,8 +38,15 @@ import { ServiceBusMessageTopicGetter } from './ServiceBusMessageTopicGetter';
  * `<ServiceBusContext>` is closed here). Where C# uses `TryAddScoped` the port uses `tryAddScoped`;
  * `AddScoped`/`AddSingleton` become the non-`try` factory registrations, so these Service Bus getters
  * win over any generic defaults registered later.
+ *
+ * `topicPropertyKey` is the application property the topic is read from (default `topic`, wire-contracts.md §2); it is
+ * consumed - the topic, not a header - and a `benzene-version` application property selects the handler version
+ * (`tryAddHeaderMessageVersionGetter`, as .NET's `TryAddHeaderMessageVersionGetter`).
  */
-export function addServiceBus(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+export function addServiceBus(
+  services: IBenzeneServiceContainer,
+  topicPropertyKey: string = ServiceBusMessageTopicGetter.DefaultTopicProperty,
+): IBenzeneServiceContainer {
   tryAddScoped(services, JsonSerializer);
   tryAddScoped(services, PresetTopicHolder);
 
@@ -46,14 +54,15 @@ export function addServiceBus(services: IBenzeneServiceContainer): IBenzeneServi
     IMessageTopicGetter,
     (resolver) =>
       new PresetTopicMessageTopicGetter<ServiceBusContext>(
-        new ServiceBusMessageTopicGetter(),
+        new ServiceBusMessageTopicGetter(topicPropertyKey),
         resolver.getService(PresetTopicHolder),
       ) as IMessageTopicGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new ServiceBusMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new ServiceBusMessageHeadersGetter(topicPropertyKey) as IMessageHeadersGetter<unknown>,
   );
+  tryAddHeaderMessageVersionGetter<ServiceBusContext>(services);
   services.addScopedFactory(
     IMessageBodyGetter,
     () => new ServiceBusMessageBodyGetter() as IMessageBodyGetter<unknown>,

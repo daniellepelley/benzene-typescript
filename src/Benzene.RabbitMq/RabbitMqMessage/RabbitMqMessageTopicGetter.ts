@@ -1,7 +1,7 @@
 /** Port of Benzene.RabbitMq.RabbitMqMessage.RabbitMqMessageTopicGetter. */
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { RabbitMqConstants } from '../RabbitMqConstants';
 import { RabbitMqContext } from './RabbitMqContext';
 
@@ -45,7 +45,8 @@ export class RabbitMqMessageTopicGetter implements IMessageTopicGetter<RabbitMqC
     if (headers === undefined || headers === null) {
       return undefined;
     }
-    const value: unknown = headers[this.topicHeaderKey];
+    // Matched case-insensitively: header keys are case-insensitive on read (wire-contracts.md).
+    const value: unknown = findMetadataValue<unknown>(headers, this.topicHeaderKey);
     if (value === undefined || value === null) {
       return undefined;
     }

@@ -1,6 +1,6 @@
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { SqsMessageContext } from './SqsMessageContext';
 
 /**
@@ -19,19 +19,17 @@ export class SqsMessageTopicGetter implements IMessageTopicGetter<SqsMessageCont
    */
   static readonly DefaultTopicAttribute = 'topic';
 
-  /** Returns the topic from the `topic` attribute, or a topic with a missing id if it is absent. */
+  /**
+   * @param topicAttributeKey The message attribute the topic is read from - {@link DefaultTopicAttribute}
+   * unless the service renamed it (wire-contracts.md §2: reserved names are configurable).
+   */
+  constructor(private readonly topicAttributeKey: string = SqsMessageTopicGetter.DefaultTopicAttribute) {}
+
+  /**
+   * Returns the topic from the topic attribute (its key matched case-insensitively), or a topic with a
+   * missing id if it is absent.
+   */
   getTopic(context: SqsMessageContext): ITopic | undefined {
-    return new Topic(
-      SqsMessageTopicGetter.getFromAttributes(context, SqsMessageTopicGetter.DefaultTopicAttribute),
-    );
-  }
-
-  private static getFromAttributes(context: SqsMessageContext, key: string): string | undefined {
-    const attribute = context.sqsMessage.messageAttributes[key];
-    if (attribute === undefined) {
-      return undefined;
-    }
-
-    return attribute.stringValue;
+    return new Topic(findMetadataValue(context.sqsMessage.messageAttributes, this.topicAttributeKey)?.stringValue);
   }
 }

@@ -57,7 +57,7 @@ export function addSqsConsumer(
   addHeaderMessageVersionGetter<SqsConsumerMessageContext>(services);
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new SqsConsumerMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new SqsConsumerMessageHeadersGetter(topicAttributeKey) as IMessageHeadersGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageBodyGetter,

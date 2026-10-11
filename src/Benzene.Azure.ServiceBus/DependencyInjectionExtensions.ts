@@ -57,7 +57,7 @@ export function addServiceBusConsumer(
   addHeaderMessageVersionGetter<ServiceBusConsumerContext>(services);
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new ServiceBusConsumerMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new ServiceBusConsumerMessageHeadersGetter(topicPropertyKey) as IMessageHeadersGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageBodyGetter,

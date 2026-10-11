@@ -51,7 +51,7 @@ export function addEventHubConsumer(
   addHeaderMessageVersionGetter<EventHubConsumerContext>(services);
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new EventHubConsumerMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new EventHubConsumerMessageHeadersGetter(topicPropertyKey) as IMessageHeadersGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageBodyGetter,

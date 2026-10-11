@@ -1,5 +1,7 @@
 /** Port of Benzene.RabbitMq.RabbitMqMessage.RabbitMqMessageHeadersGetter. */
 import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { isMetadataKey } from '@benzenejs/core-messages';
+import { RabbitMqConstants } from '../RabbitMqConstants';
 import { RabbitMqContext } from './RabbitMqContext';
 
 /**
@@ -15,6 +17,8 @@ import { RabbitMqContext } from './RabbitMqContext';
  * a null header value).
  */
 export class RabbitMqMessageHeadersGetter implements IMessageHeadersGetter<RabbitMqContext> {
+  constructor(private readonly topicHeaderKey: string = RabbitMqConstants.DefaultTopicHeader) {}
+
   getHeaders(context: RabbitMqContext): Record<string, string> {
     const result: Record<string, string> = {};
     const headers = context.message.properties.headers;
@@ -23,7 +27,9 @@ export class RabbitMqMessageHeadersGetter implements IMessageHeadersGetter<Rabbi
     }
 
     for (const [key, value] of Object.entries(headers)) {
-      if (value === undefined || value === null) {
+      // The configured topic header is consumed - it is the topic, not a header
+      // (transport-metadata-cases.json `headersExclude`).
+      if (value === undefined || value === null || isMetadataKey(key, this.topicHeaderKey)) {
         continue;
       }
       result[key] = decode(value);

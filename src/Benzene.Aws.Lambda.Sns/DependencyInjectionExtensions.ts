@@ -17,6 +17,7 @@ import {
   JsonSerializer,
   MultiSerializerOptionsRequestMapper,
   TransportInfo,
+  tryAddHeaderMessageVersionGetter,
 } from '@benzenejs/core-message-handlers';
 import { SnsMessageBodyGetter } from './SnsMessageBodyGetter';
 import { SnsMessageHeadersGetter } from './SnsMessageHeadersGetter';
@@ -38,18 +39,26 @@ import { SnsRecordContext } from './SnsRecordContext';
  * TOPIC GETTER: matching the C# `AddSns`, the topic getter is registered DIRECTLY (no
  * `PresetTopicMessageTopicGetter`/`PresetTopicHolder` wrapping — that is an SQS/ServiceBus concern). SNS
  * derives the topic from the `topic` message attribute set by a Benzene publisher.
+ *
+ * `topicAttributeKey` is the message attribute the topic is read from (default `topic`, wire-contracts.md §2); it is
+ * consumed - the topic, not a header - and a `benzene-version` message attribute selects the handler version
+ * (`tryAddHeaderMessageVersionGetter`, as .NET's `TryAddHeaderMessageVersionGetter`).
  */
-export function addSns(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+export function addSns(
+  services: IBenzeneServiceContainer,
+  topicAttributeKey: string = SnsMessageTopicGetter.DefaultTopicAttribute,
+): IBenzeneServiceContainer {
   tryAddScoped(services, JsonSerializer);
 
   services.addScopedFactory(
     IMessageTopicGetter,
-    () => new SnsMessageTopicGetter() as IMessageTopicGetter<unknown>,
+    () => new SnsMessageTopicGetter(topicAttributeKey) as IMessageTopicGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new SnsMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new SnsMessageHeadersGetter(topicAttributeKey) as IMessageHeadersGetter<unknown>,
   );
+  tryAddHeaderMessageVersionGetter<SnsRecordContext>(services);
   services.addScopedFactory(
     IMessageBodyGetter,
     () => new SnsMessageBodyGetter() as IMessageBodyGetter<unknown>,

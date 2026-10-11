@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Sqs.Consumer.SqsConsumerMessageTopicGetter (SqsMessageTopicMapper.cs). */
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { SqsConsumerMessageContext } from './SqsConsumerMessageContext';
 
 /**
@@ -19,6 +19,7 @@ export class SqsConsumerMessageTopicGetter implements IMessageTopicGetter<SqsCon
   }
 
   private getFromAttributes(context: SqsConsumerMessageContext, key: string): string | undefined {
-    return context.message.MessageAttributes?.[key]?.StringValue;
+    // Matched case-insensitively: header keys are case-insensitive on read (wire-contracts.md).
+    return findMetadataValue(context.message.MessageAttributes, key)?.StringValue;
   }
 }

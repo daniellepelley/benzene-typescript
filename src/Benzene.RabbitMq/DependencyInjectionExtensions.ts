@@ -58,7 +58,7 @@ export function addRabbitMqConsumer(
   addHeaderMessageVersionGetter<RabbitMqContext>(services);
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new RabbitMqMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new RabbitMqMessageHeadersGetter(topicHeaderKey) as IMessageHeadersGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageBodyGetter,

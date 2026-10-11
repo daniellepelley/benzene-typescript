@@ -1,5 +1,7 @@
 /** Port of Benzene.Azure.Function.ServiceBus.ServiceBusMessageHeadersGetter. */
 import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { withoutMetadataKey } from '@benzenejs/core-messages';
+import { ServiceBusMessageTopicGetter } from './ServiceBusMessageTopicGetter';
 import { ServiceBusContext } from './ServiceBusContext';
 
 /**
@@ -12,6 +14,8 @@ import { ServiceBusContext } from './ServiceBusContext';
  * matching the .NET filter.
  */
 export class ServiceBusMessageHeadersGetter implements IMessageHeadersGetter<ServiceBusContext> {
+  constructor(private readonly topicPropertyKey: string = ServiceBusMessageTopicGetter.DefaultTopicProperty) {}
+
   getHeaders(context: ServiceBusContext): Record<string, string> {
     const headers: Record<string, string> = {};
     const properties = context.message.applicationProperties;
@@ -22,6 +26,6 @@ export class ServiceBusMessageHeadersGetter implements IMessageHeadersGetter<Ser
         }
       }
     }
-    return headers;
+    return withoutMetadataKey(headers, this.topicPropertyKey);
   }
 }

@@ -1,7 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.PubSubMessageTopicGetter. */
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { PubSubContext } from './PubSubContext';
 
 /**
@@ -33,6 +33,7 @@ export class PubSubMessageTopicGetter implements IMessageTopicGetter<PubSubConte
   }
 
   private getTopicAttribute(context: PubSubContext): string | undefined {
-    return context.message.attributes?.[this.topicAttributeKey];
+    // Matched case-insensitively: header keys are case-insensitive on read (wire-contracts.md).
+    return findMetadataValue(context.message.attributes, this.topicAttributeKey);
   }
 }

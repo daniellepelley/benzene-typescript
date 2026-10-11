@@ -60,7 +60,7 @@ export function addGooglePubSub(
   addHeaderMessageVersionGetter<PubSubContext>(services);
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new PubSubMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new PubSubMessageHeadersGetter(topicAttributeKey) as IMessageHeadersGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageBodyGetter,

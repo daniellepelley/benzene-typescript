@@ -964,6 +964,17 @@ next to its C# counterpart:
     `BenzeneWireNames.DefaultTopic` alias), so a published message round-trips to the port's own inbound
     getters and any conformant peer. Every inbound and outbound topic key is now pinned to the fixture
     default.
+  - **Reserved topic key — one resolution rule (`MetadataTopic`, TS-only).** .NET repeats the read rules
+    in each binding's getters; the port keeps them in `@benzenejs/core-messages`' `MetadataTopic`
+    (`findMetadataValue`, `withoutMetadataKey`), which every native-metadata inbound binding (Lambda SQS
+    and SNS, the self-hosted SQS consumer, Pub/Sub, both Service Bus bindings, the Event Hub consumer,
+    RabbitMQ) uses: the topic key is matched case-insensitively and is **consumed** - it is the topic and
+    is left out of the header dictionary (the fixture's `headersExclude`), while `benzene-version` stays a
+    header for the version getter. Each binding's topic key is configurable and reaches both its getters
+    (`addSqs`/`addSns`/`addServiceBus` and `useSqs`/`useSns`/`useServiceBus` gained an optional key
+    argument, like `addSqsConsumer`/`usePubSub`), and Lambda SQS/SNS and the Functions Service Bus trigger
+    now register the header version getter, as .NET's do. `TransportMetadataConformanceTest` runs every
+    `metadataCases` and `overrideCases` case through each of these bindings.
   - **`contract-document-cases.json` / `contract-hash-cases.json` — producer and client generator.**
     This port is both a contract-document producer (R5) and a client generator, so every group runs.
     `ContractDocumentProducerConformanceTest` derives the canonical document through the real DI wiring

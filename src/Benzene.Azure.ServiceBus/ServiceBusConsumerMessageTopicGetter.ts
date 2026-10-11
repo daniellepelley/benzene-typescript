@@ -1,7 +1,7 @@
 /** Port of Benzene.Azure.ServiceBus.ServiceBusConsumerMessageTopicGetter. */
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { ServiceBusConsumerContext } from './ServiceBusConsumerContext';
 
 /**
@@ -34,7 +34,8 @@ export class ServiceBusConsumerMessageTopicGetter
   }
 
   private getTopicProperty(context: ServiceBusConsumerContext): string | undefined {
-    const value = context.message.applicationProperties?.[this.topicPropertyKey];
+    // Matched case-insensitively: header keys are case-insensitive on read (wire-contracts.md).
+    const value = findMetadataValue(context.message.applicationProperties, this.topicPropertyKey);
     return typeof value === 'string' ? value : undefined;
   }
 }

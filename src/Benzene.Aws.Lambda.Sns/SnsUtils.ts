@@ -1,4 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsUtils. */
+import { findMetadataValue } from '@benzenejs/core-messages';
 import { SnsRecordContext } from './SnsRecordContext';
 
 /**
@@ -15,6 +16,7 @@ export const SnsUtils = {
    * `Sns`/`MessageAttributes` object) is absent. C# `null` maps to `undefined`.
    */
   getFromAttributes(context: SnsRecordContext, key: string): string | undefined {
-    return context.snsRecord.Sns?.MessageAttributes?.[key]?.Value;
+    // Matched case-insensitively: header keys are case-insensitive on read (wire-contracts.md).
+    return findMetadataValue(context.snsRecord.Sns?.MessageAttributes, key)?.Value;
   },
 };
