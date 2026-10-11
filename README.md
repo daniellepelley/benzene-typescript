@@ -935,9 +935,9 @@ next to its C# counterpart:
 - **Conformance fixtures are vendored and run against real port code.** The language-neutral
   conformance fixtures (`docs/specification/conformance/*.json`, owned by the cross-language benzene
   repo) are vendored **byte-for-byte** into `test/Benzene.Core.Test/Conformance/fixtures/` with a
-  `SPEC_VERSION` file recording the source commit, mirroring the .NET port's `test/conformance-fixtures/`
-  snapshot. `ConformanceDriftTest` + the `conformance-drift-check` workflow fail if a vendored fixture
-  drifts from canonical. Each Core-level fixture is driven against the actual port behavior, not a
+  `SPEC_VERSION` file pinning the spec release they came from (a `spec-x.y.z` tag), mirroring the .NET
+  port's `test/conformance-fixtures/` snapshot. `ConformanceDriftTest` + the `conformance-drift-check`
+  workflow fail if the snapshot differs from that release. Each Core-level fixture is driven against the actual port behavior, not a
   re-parse: `status-vocabulary` against `BenzeneResultStatus` + `BenzeneResultHttpMapper`;
   `http-status-mapping` / `grpc-status-mapping` against `DefaultHttpStatusCodeMapper` /
   `DefaultGrpcStatusCodeMapper` / `DefaultGrpcStatusReverseMapper`; `envelope-cases` through the real
