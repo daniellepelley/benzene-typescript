@@ -5,6 +5,8 @@ export * from './KinesisMessageTopicGetter';
 export * from './KinesisMessageHeadersGetter';
 export * from './KinesisMessageMessageHandlerResultSetter';
 export * from './KinesisApplication';
+export * from './KinesisOptions';
+export * from './KinesisMessageProcessingException';
 export * from './KinesisLambdaHandler';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';

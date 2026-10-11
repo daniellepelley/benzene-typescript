@@ -6,6 +6,8 @@ export * from './S3MessageTopicGetter';
 export * from './S3MessageHeadersGetter';
 export * from './S3MessageMessageHandlerResultSetter';
 export * from './S3Application';
+export * from './S3Options';
+export * from './S3MessageProcessingException';
 export * from './S3LambdaHandler';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';

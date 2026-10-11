@@ -5,6 +5,7 @@ import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { addKinesis } from './DependencyInjectionExtensions';
 import { KinesisApplication } from './KinesisApplication';
 import { KinesisLambdaHandler } from './KinesisLambdaHandler';
+import { KinesisOptions } from './KinesisOptions';
 import { KinesisMessageContext } from './KinesisMessageContext';
 
 /**
@@ -21,8 +22,11 @@ import { KinesisMessageContext } from './KinesisMessageContext';
 export function useKinesis(
   app: IMiddlewarePipelineBuilder<AwsEventStreamContext>,
   action: PipelineBuilderAction<KinesisMessageContext>,
+  configure?: (options: KinesisOptions) => void,
 ): IMiddlewarePipelineBuilder<AwsEventStreamContext> {
   app.register((x) => addKinesis(x));
   const pipeline = createMiddlewarePipeline(app, action);
-  return app.use((resolver) => new KinesisLambdaHandler(new KinesisApplication(pipeline), resolver));
+  const options = new KinesisOptions();
+  configure?.(options);
+  return app.use((resolver) => new KinesisLambdaHandler(new KinesisApplication(pipeline, options), resolver));
 }

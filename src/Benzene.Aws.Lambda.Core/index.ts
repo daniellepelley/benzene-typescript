@@ -5,6 +5,7 @@ export * from './toLambdaHandler';
 export * from './AwsEventPredicates';
 export * from './CompositeAwsLambdaEntryPoint';
 export * from './BenzeneMessage/BenzeneMessageLambdaHandler';
+export * from './BenzeneMessage/BenzeneMessageLambdaOptions';
 export * from './BenzeneMessage/Extensions';
 export * from './AwsLambdaMiddlewareRouter';
 export * from './IAwsEntryPointBuilder';

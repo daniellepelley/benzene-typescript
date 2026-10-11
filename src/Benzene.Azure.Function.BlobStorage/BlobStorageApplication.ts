@@ -1,9 +1,10 @@
 /** Port of Benzene.Azure.Function.BlobStorage.BlobStorageApplication. */
-import { IServiceResolverFactory } from '@benzenejs/abstractions';
-import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { EntryPointMiddlewareApplication, MiddlewareApplication } from '@benzenejs/core-middleware';
 import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { BlobStorageContext } from './BlobStorageContext';
+import { BlobStorageOptions } from './BlobStorageOptions';
 import { BlobTriggerEvent } from './BlobTriggerEvent';
 
 /**
@@ -26,13 +27,35 @@ export class BlobStorageApplication extends EntryPointMiddlewareApplication<Blob
   constructor(
     pipeline: IMiddlewarePipeline<BlobStorageContext>,
     serviceResolverFactory: IServiceResolverFactory,
+    options?: BlobStorageOptions,
   ) {
+    const inner = new MiddlewareApplication<BlobTriggerEvent, BlobStorageContext>(
+      new TransportMiddlewarePipeline<BlobStorageContext>(TransportNames.BlobStorage, pipeline),
+      (blob) => new BlobStorageContext(blob),
+    );
     super(
-      new MiddlewareApplication<BlobTriggerEvent, BlobStorageContext>(
-        new TransportMiddlewarePipeline<BlobStorageContext>(TransportNames.BlobStorage, pipeline),
-        (blob) => new BlobStorageContext(blob),
-      ),
+      options?.atMostOnce === true ? new AtMostOnceBlobApplication(inner) : inner,
       serviceResolverFactory,
     );
+  }
+}
+
+/** Catches and logs an uncaught error so the invocation succeeds (`BlobStorageOptions.atMostOnce`). */
+class AtMostOnceBlobApplication implements IMiddlewareApplication<BlobTriggerEvent> {
+  constructor(private readonly inner: IMiddlewareApplication<BlobTriggerEvent>) {}
+
+  async handleAsync(blob: BlobTriggerEvent, serviceResolverFactory: IServiceResolverFactory): Promise<void> {
+    try {
+      await this.inner.handleAsync(blob, serviceResolverFactory);
+    } catch (ex) {
+      const loggingScope = serviceResolverFactory.createScope();
+      try {
+        const logger =
+          loggingScope.tryGetService(ILoggerFactory)?.createLogger('BlobStorageApplication') ?? NullLogger.instance;
+        logger.logError(ex, 'Processing the blob failed; acknowledged (atMostOnce)');
+      } finally {
+        loggingScope.dispose();
+      }
+    }
   }
 }

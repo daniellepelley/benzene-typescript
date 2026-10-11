@@ -5,6 +5,7 @@ import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { TransportInfo } from '@benzenejs/core-message-handlers';
 import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { BlobStorageApplication } from './BlobStorageApplication';
+import { BlobStorageOptions } from './BlobStorageOptions';
 import { BlobStorageContext } from './BlobStorageContext';
 
 /**
@@ -41,12 +42,15 @@ export function addBlobStorage(services: IBenzeneServiceContainer): IBenzeneServ
 export function useBlobStorage(
   app: IAzureFunctionAppBuilder,
   action: PipelineBuilderAction<BlobStorageContext>,
+  configure?: (options: BlobStorageOptions) => void,
 ): IAzureFunctionAppBuilder {
   app.register((x) => addBlobStorage(x));
   const pipeline = app.create<BlobStorageContext>();
   action(pipeline);
+  const options = new BlobStorageOptions();
+  configure?.(options);
   app.add(
-    (serviceResolverFactory) => new BlobStorageApplication(pipeline.build(), serviceResolverFactory),
+    (serviceResolverFactory) => new BlobStorageApplication(pipeline.build(), serviceResolverFactory, options),
   );
   return app;
 }

@@ -2,6 +2,7 @@
 export * from './BlobTriggerEvent';
 export * from './BlobStorageContext';
 export * from './BlobStorageApplication';
+export * from './BlobStorageOptions';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
 

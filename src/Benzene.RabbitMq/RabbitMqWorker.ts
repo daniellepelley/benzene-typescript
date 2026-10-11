@@ -3,6 +3,7 @@ import { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 import { ILogger, ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BoundedConcurrentDispatcher } from '@benzenejs/self-host';
+import { isSettledAsFailure } from '@benzenejs/core-message-handlers';
 import { RabbitMqAckMode } from './RabbitMqAckMode';
 import { RabbitMqConfig, withRabbitMqConfigDefaults } from './RabbitMqConfig';
 import { IRabbitMqConnectionFactory } from './IRabbitMqConnectionFactory';
@@ -150,7 +151,12 @@ export class RabbitMqWorker implements IBenzeneWorker {
     try {
       const messageResult = await this.application.handleAsync(delivery, this.serviceResolverFactory);
 
-      if (messageResult?.isSuccessful === false) {
+      // A failure result and a missing result are both nacked (transport-bindings §1, obligation 8; .NET's
+      // `MessageResult?.IsSuccessful != true`); only a success — or anything, under atMostOnce — is acked.
+      if (
+        this.config.atMostOnce !== true &&
+        isSettledAsFailure(messageResult, { ignoreUnmatchedTopics: this.config.ignoreUnmatchedTopics })
+      ) {
         this.nack(delivery);
       } else {
         this.ack(delivery);
@@ -160,9 +166,13 @@ export class RabbitMqWorker implements IBenzeneWorker {
       // than leaving the delivery unacknowledged until the channel closes.
       this.resolveLogger().logError(
         error,
-        `Handling RabbitMQ delivery ${delivery.fields.deliveryTag} threw; nacking.`,
+        `Handling RabbitMQ delivery ${delivery.fields.deliveryTag} threw; ${this.config.atMostOnce === true ? 'acking (atMostOnce)' : 'nacking'}.`,
       );
-      this.nack(delivery);
+      if (this.config.atMostOnce === true) {
+        this.ack(delivery);
+      } else {
+        this.nack(delivery);
+      }
     }
   }
 

@@ -1,4 +1,5 @@
 /** Port of Benzene.RabbitMq.RabbitMqConfig. */
+import { SettlementOptions } from '@benzenejs/core-message-handlers';
 import { RabbitMqAckMode } from './RabbitMqAckMode';
 import { RabbitMqConstants } from './RabbitMqConstants';
 
@@ -7,11 +8,17 @@ import { RabbitMqConstants } from './RabbitMqConstants';
  * queue (and any dead-letter topology) already exists — declaring exchanges/queues is out of scope here,
  * exactly as the Kafka worker assumes its topics exist.
  *
+ * Settlement (transport-bindings §1, obligation 8) — a **queue** binding, per delivery: under the default
+ * `Explicit` ack mode only a successful result is acked; a failure result, no result and an uncaught
+ * exception are nacked (requeued once, then to the dead-letter exchange). The optional `atMostOnce` acks
+ * every delivery after handling whatever the outcome (`AutoAck` is the broker-side equivalent, acking on
+ * dispatch); `ignoreUnmatchedTopics` acks a delivery whose topic no handler serves.
+ *
  * PORTING NOTE: the C# class (get/set properties with defaults) becomes an interface with optional
  * members; {@link withRabbitMqConfigDefaults} applies the same defaults the C# property initializers do.
  * The C# `DrainTimeout` (`TimeSpan`) becomes {@link drainTimeoutMs} (a millisecond `number`).
  */
-export interface RabbitMqConfig {
+export interface RabbitMqConfig extends Partial<SettlementOptions> {
   /** The name of the queue to consume. */
   queueName: string;
 

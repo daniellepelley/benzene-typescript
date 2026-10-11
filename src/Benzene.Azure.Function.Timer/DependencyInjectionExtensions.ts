@@ -22,6 +22,7 @@ import {
 } from '@benzenejs/core-message-handlers';
 import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 import { TimerApplication } from './TimerApplication';
+import { TimerOptions } from './TimerOptions';
 import { TimerContext } from './TimerContext';
 import {
   TimerMessageBodyGetter,
@@ -102,16 +103,20 @@ export function addAzureTimer(services: IBenzeneServiceContainer): IBenzeneServi
  *
  * @param app The Azure Function app builder to add timer handling to.
  * @param action Configures the timer middleware pipeline.
+ * @param configure Optionally configures `TimerOptions` (settlement of a failed tick).
  */
 export function useTimerTrigger(
   app: IAzureFunctionAppBuilder,
   action: PipelineBuilderAction<TimerContext>,
+  configure?: (options: TimerOptions) => void,
 ): IAzureFunctionAppBuilder {
   app.register((x) => addAzureTimer(x));
   const pipeline = app.create<TimerContext>();
   action(pipeline);
+  const options = new TimerOptions();
+  configure?.(options);
   app.add(
-    (serviceResolverFactory) => new TimerApplication(pipeline.build(), serviceResolverFactory),
+    (serviceResolverFactory) => new TimerApplication(pipeline.build(), serviceResolverFactory, options),
   );
   return app;
 }

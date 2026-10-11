@@ -134,9 +134,10 @@ describe('KafkaBatchApplication (direct)', () => {
 
     const options = new KafkaOptions();
     options.raiseOnFailureStatus = true;
+    options.ignoreUnmatchedTopics = false;
     const application = new KafkaBatchApplication(builder.build(), options);
 
-    // Unroutable topic -> handler result is not successful -> raiseOnFailureStatus throws.
+    // Unroutable topic -> not-found failure; with ignoreUnmatchedTopics off it is escalated.
     await expect(
       application.handleAsync(
         [createRecord('no-such-topic', { orderId: '9' })],
@@ -145,10 +146,27 @@ describe('KafkaBatchApplication (direct)', () => {
     ).rejects.toThrow(KafkaMessageProcessingException);
   });
 
-  it('KafkaOptions defaults to not catching exceptions or raising on failure', () => {
+  it('KafkaOptions defaults: failures escalate; unmatched topics are skipped (stream carve-out)', () => {
     const options = new KafkaOptions();
     expect(options.catchExceptions).toBe(false);
-    expect(options.raiseOnFailureStatus).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+    expect(options.atMostOnce).toBe(false);
+    expect(options.ignoreUnmatchedTopics).toBe(true);
+  });
+
+  it('acknowledges an unmatched topic by default (the documented stream skip-and-continue)', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addKafka(container);
+    const builder = new MiddlewarePipelineBuilder<KafkaContext>(container);
+    useMessageHandlers(builder, CreateOrderHandler);
+
+    await expect(
+      new KafkaBatchApplication(builder.build()).handleAsync(
+        [createRecord('no-such-topic', { orderId: '9' })],
+        container.createServiceResolverFactory(),
+      ),
+    ).resolves.toBeUndefined();
   });
 });
 

@@ -31,6 +31,7 @@ export * from './HandlerPipelineBuilder';
 export * from './PipelineMessageHandler';
 export * from './PipelineMessageHandlerWrapper';
 export * from './MessageRouter';
+export * from './Settlement';
 export * from './MessageRouterBuilder';
 export * from './Constants';
 export * from './Serialization/JsonSerializer';

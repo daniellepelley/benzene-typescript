@@ -18,6 +18,7 @@ export class KinesisMessageMessageHandlerResultSetter
     messageHandlerResult: IMessageHandlerResult,
   ): Promise<void> {
     context.isSuccessful = messageHandlerResult.benzeneResult.isSuccessful;
+    context.messageResult = messageHandlerResult.benzeneResult;
     return Promise.resolve();
   }
 }

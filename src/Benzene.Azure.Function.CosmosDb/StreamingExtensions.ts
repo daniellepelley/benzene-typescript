@@ -1,6 +1,6 @@
 /** Port of Benzene.Azure.Function.CosmosDb.StreamingExtensions. */
-import { IServiceResolverFactory } from '@benzenejs/abstractions';
-import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
+import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
+import { IMiddlewareApplication, PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import {
   EntryPointMiddlewareApplication,
   StreamContext,
@@ -34,20 +34,55 @@ import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
 export function useCosmosDbChangeFeed<TDocument>(
   app: IAzureFunctionAppBuilder,
   action: PipelineBuilderAction<StreamContext<TDocument>>,
+  configure?: (options: CosmosDbChangeFeedOptions) => void,
 ): IAzureFunctionAppBuilder {
   const pipeline = app.create<StreamContext<TDocument>>();
   action(pipeline);
-  app.add(
-    (serviceResolverFactory: IServiceResolverFactory) =>
-      new EntryPointMiddlewareApplication<readonly TDocument[]>(
-        new StreamMiddlewareApplication<readonly TDocument[], TDocument>(
-          pipeline.build(),
-          toStreamContext,
-        ),
-        serviceResolverFactory,
-      ),
-  );
+  const options = new CosmosDbChangeFeedOptions();
+  configure?.(options);
+  app.add((serviceResolverFactory: IServiceResolverFactory) => {
+    const stream = new StreamMiddlewareApplication<readonly TDocument[], TDocument>(pipeline.build(), toStreamContext);
+    return new EntryPointMiddlewareApplication<readonly TDocument[]>(
+      options.atMostOnce ? new AtMostOnceChangeFeedApplication(stream) : stream,
+      serviceResolverFactory,
+    );
+  });
   return app;
+}
+
+/**
+ * Settlement for the Functions Cosmos DB change-feed trigger (transport-bindings §1, obligation 8) — the
+ * `cosmosdb-changefeed` **stream** binding. It is fan-in (the delivered batch is one `StreamContext`, with
+ * no routing and so no per-document result); the unit of settlement is the **batch (lease)**: an uncaught
+ * error fails the invocation, the lease is not checkpointed, and the batch is redelivered.
+ *
+ * TypeScript-only type (the .NET trigger has no options yet).
+ */
+export class CosmosDbChangeFeedOptions {
+  /**
+   * The **at-most-once override**: catch and log an uncaught error so the invocation succeeds and the
+   * lease checkpoints past the batch (skip-and-continue). Defaults to `false`.
+   */
+  atMostOnce = false;
+}
+
+class AtMostOnceChangeFeedApplication<TDocument> implements IMiddlewareApplication<readonly TDocument[]> {
+  constructor(private readonly inner: IMiddlewareApplication<readonly TDocument[]>) {}
+
+  async handleAsync(documents: readonly TDocument[], serviceResolverFactory: IServiceResolverFactory): Promise<void> {
+    try {
+      await this.inner.handleAsync(documents, serviceResolverFactory);
+    } catch (ex) {
+      const loggingScope = serviceResolverFactory.createScope();
+      try {
+        const logger =
+          loggingScope.tryGetService(ILoggerFactory)?.createLogger('CosmosDbChangeFeed') ?? NullLogger.instance;
+        logger.logError(ex, 'Processing the change-feed batch failed; checkpointed past it (atMostOnce)');
+      } finally {
+        loggingScope.dispose();
+      }
+    }
+  }
 }
 
 function toStreamContext<TDocument>(

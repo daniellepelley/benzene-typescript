@@ -5,6 +5,8 @@ import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BenzeneKafkaConfig, withKafkaConfigDefaults } from './BenzeneKafkaConfig';
 import { IKafkaConsumerFactory } from './IKafkaConsumerFactory';
 import { KafkaApplication } from './KafkaMessage/KafkaApplication';
+import { KafkaMessageProcessingException } from './KafkaMessageProcessingException';
+import { isSettledAsFailure } from '@benzenejs/core-message-handlers';
 
 /**
  * A long-running worker that consumes Kafka records and dispatches each through the middleware
@@ -104,12 +106,36 @@ export class BenzeneKafkaWorker implements IBenzeneWorker {
 
   private async onEachMessage(payload: EachMessagePayload): Promise<void> {
     try {
-      await this.application.handleAsync(payload, this.serviceResolverFactory);
+      const messageResult = await this.application.handleAsync(payload, this.serviceResolverFactory);
+
+      // A failure result takes the exception path (port of .NET's RaiseOnFailureStatus); a missing result
+      // is acknowledged; an unmatched topic follows ignoreUnmatchedTopics (default on for this stream).
+      if (
+        !this.config.atMostOnce &&
+        this.config.raiseOnFailureStatus &&
+        isSettledAsFailure(messageResult, {
+          ignoreUnmatchedTopics: this.config.ignoreUnmatchedTopics,
+          missingResult: 'acknowledge',
+        })
+      ) {
+        throw new KafkaMessageProcessingException(
+          payload.topic,
+          payload.partition,
+          payload.message.offset,
+          (messageResult as { status?: string } | undefined)?.status,
+        );
+      }
     } catch (error) {
       this.logError(
         error,
         `Handling record ${payload.topic}-${payload.partition}-${payload.message.offset} failed`,
       );
+
+      if (this.config.atMostOnce === true) {
+        // At-most-once: acknowledge the failed record like a success (committed below when committing by hand).
+        await this.commitIfManual(payload);
+        return;
+      }
 
       if (!this.config.catchHandlerExceptions) {
         // At-least-once: stop the worker without committing the failed record, so a restart resumes from
@@ -125,6 +151,10 @@ export class BenzeneKafkaWorker implements IBenzeneWorker {
       return;
     }
 
+    await this.commitIfManual(payload);
+  }
+
+  private async commitIfManual(payload: EachMessagePayload): Promise<void> {
     if (this.config.commitOnlyOnSuccess) {
       // kafkajs commits the NEXT offset to read, so commit message.offset + 1. Handled without throwing
       // and (preserveOrderPerPartition) strictly in order, so the watermark never advances past an

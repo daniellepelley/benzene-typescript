@@ -85,7 +85,7 @@ export class BenzeneCosmosAllVersionsChangeFeedWorker<TDocument> implements IBen
         `Processing all-versions change feed batch of ${changes.length} changes on lease ${context.leaseToken} failed`,
       );
 
-      if (!this.config.catchHandlerExceptions) {
+      if (!this.config.catchHandlerExceptions && !this.config.atMostOnce) {
         // Retry mode (default): let the exception reach the processor — it does not checkpoint, so the
         // same batch is redelivered (at-least-once).
         throw error;

@@ -6,7 +6,7 @@ import {
   BenzeneMessageRequest,
   IBenzeneMessageRequest,
 } from '@benzenejs/core-messages';
-import { BenzeneMessageApplication } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageResultApplication } from '@benzenejs/core-message-handlers';
 import { MiddlewareRouter } from '@benzenejs/core-middleware';
 import { EventHubContext } from './EventHubContext';
 
@@ -31,7 +31,7 @@ export class BenzeneMessageEventHubHandler extends MiddlewareRouter<
   IBenzeneMessageRequest,
   EventHubContext
 > {
-  private readonly directMessageApplication: BenzeneMessageApplication;
+  private readonly directMessageApplication: BenzeneMessageResultApplication;
   private readonly serializer: ISerializer;
 
   /**
@@ -41,7 +41,7 @@ export class BenzeneMessageEventHubHandler extends MiddlewareRouter<
   constructor(pipeline: IMiddlewarePipeline<BenzeneMessageContext>, serviceResolver: IServiceResolver) {
     super(serviceResolver);
     this.serializer = serviceResolver.getService(ISerializer);
-    this.directMessageApplication = new BenzeneMessageApplication(pipeline);
+    this.directMessageApplication = new BenzeneMessageResultApplication(pipeline);
   }
 
   /** Determines whether the deserialized request looks like a direct Benzene message (has a topic). */
@@ -52,10 +52,12 @@ export class BenzeneMessageEventHubHandler extends MiddlewareRouter<
   /** Handles the event by running it through the direct-message application. */
   protected async handleFunction(
     request: IBenzeneMessageRequest,
-    _context: EventHubContext,
+    context: EventHubContext,
     serviceResolverFactory: IServiceResolverFactory,
   ): Promise<void> {
-    await this.directMessageApplication.handleAsync(request, serviceResolverFactory);
+    // Surface the inner handler's result onto the outer context, so `EventHubOptions.raiseOnFailureStatus`
+    // sees a failure that happened inside the envelope (as .NET's handler does).
+    context.messageResult = await this.directMessageApplication.handleAsync(request, serviceResolverFactory);
   }
 
   /** Attempts to deserialize the Event Hub event body into a `BenzeneMessageRequest`; `undefined` on failure. */

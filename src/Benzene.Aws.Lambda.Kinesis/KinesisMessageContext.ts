@@ -1,4 +1,5 @@
 /** Port of Benzene.Aws.Lambda.Kinesis (record context — see the ADAPTATION note below). */
+import { IBenzeneResult } from '@benzenejs/abstractions';
 import { KinesisStreamEvent, KinesisStreamRecord } from 'aws-lambda';
 
 /**
@@ -40,4 +41,11 @@ export class KinesisMessageContext {
    * `undefined` if no result has been set yet.
    */
   isSuccessful?: boolean;
+
+  /**
+   * The handler's result, as recorded by the result setter — `undefined` when the pipeline finished
+   * without one. The binding settles the record from it (transport-bindings §1, obligation 8): no result
+   * is redelivered, and the router's unmatched-topic result is recognised for `ignoreUnmatchedTopics`.
+   */
+  messageResult?: IBenzeneResult;
 }

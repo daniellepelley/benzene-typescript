@@ -151,6 +151,7 @@ describe('SqsApplication (direct)', () => {
     pipeline.useFn(async (context, next) => {
       seenBodies.push(context.sqsMessage.body);
       await next();
+      context.messageResult = BenzeneResult.ok();
     });
 
     const application = new SqsApplication(pipeline.build());

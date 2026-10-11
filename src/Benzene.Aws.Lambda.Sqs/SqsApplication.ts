@@ -1,5 +1,6 @@
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { ISetCurrentTransport, TransportNames } from '@benzenejs/abstractions-message-handlers';
+import { isSettledAsFailure } from '@benzenejs/core-message-handlers';
 import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { SQSBatchItemFailure, SQSBatchResponse, SQSEvent } from 'aws-lambda';
 import { SqsBatchFailureMode } from './SqsBatchFailureMode';
@@ -61,7 +62,12 @@ export class SqsApplication implements IMiddlewareApplicationWithResult<SQSEvent
             }
           }
 
-          if (context.isSuccessful === false) {
+          // A failure result and a missing result are both reported (transport-bindings §1, obligation 8):
+          // SQS makes the message visible again, subject to the queue's redrive policy.
+          if (
+            !this.options.atMostOnce &&
+            isSettledAsFailure(context.messageResult, { ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics })
+          ) {
             batchItemFailures.push({ itemIdentifier: context.sqsMessage.messageId });
           }
         } catch (ex) {
@@ -79,7 +85,9 @@ export class SqsApplication implements IMiddlewareApplicationWithResult<SQSEvent
             }
           }
 
-          batchItemFailures.push({ itemIdentifier: context.sqsMessage.messageId });
+          if (!this.options.atMostOnce) {
+            batchItemFailures.push({ itemIdentifier: context.sqsMessage.messageId });
+          }
         }
       },
     );

@@ -3,7 +3,6 @@ import {
   IMessageHandlerResult,
   IMessageHandlerResultSetter,
 } from '@benzenejs/abstractions-message-handlers';
-import { MessageResult } from './MessageResult';
 
 /**
  * Base `IMessageHandlerResultSetter<TContext>` implementation for transports whose context carries
@@ -16,7 +15,9 @@ export abstract class MessageMessageHandlerResultSetterBase<TContext extends IHa
   implements IMessageHandlerResultSetter<TContext>
 {
   setResultAsync(context: TContext, messageHandlerResult: IMessageHandlerResult): Promise<void> {
-    context.messageResult = new MessageResult(messageHandlerResult.benzeneResult.isSuccessful);
+    // The result itself, as .NET's `MessageHandlerResultSetterBase` records it — not a copy of its flag —
+    // so a binding settling the message can read its status and tell an unmatched topic apart.
+    context.messageResult = messageHandlerResult.benzeneResult;
     return Promise.resolve();
   }
 }

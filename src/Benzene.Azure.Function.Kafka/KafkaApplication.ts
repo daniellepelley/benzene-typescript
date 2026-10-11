@@ -2,7 +2,7 @@
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { EntryPointMiddlewareApplication } from '@benzenejs/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
+import { isSettledAsFailure, TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { KafkaContext } from './KafkaContext';
 import { KafkaMessageProcessingException } from './KafkaMessageProcessingException';
 import { KafkaOptions } from './KafkaOptions';
@@ -80,11 +80,20 @@ export class KafkaBatchApplication implements IMiddlewareApplication<KafkaRecord
             }
           }
 
-          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+          // A failure result is redelivered; a missing result is acknowledged — the stream carve-out .NET makes
+          // for this trigger (see the options type); an unmatched topic follows ignoreUnmatchedTopics.
+          if (
+            !this.options.atMostOnce &&
+            this.options.raiseOnFailureStatus &&
+            isSettledAsFailure(context.messageResult, {
+              ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics,
+              missingResult: 'acknowledge',
+            })
+          ) {
             throw new KafkaMessageProcessingException(context.kafkaEvent.topic);
           }
         } catch (ex) {
-          if (!this.options.catchExceptions) {
+          if (!this.options.catchExceptions && !this.options.atMostOnce) {
             throw ex;
           }
 

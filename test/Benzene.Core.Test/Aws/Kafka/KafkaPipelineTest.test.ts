@@ -77,8 +77,8 @@ describe('KafkaPipeline (via the benzeneTestHost harness)', () => {
 
     // The handler genuinely ran with the base64-decoded value deserialized into its request...
     expect(handled).toEqual(['42']);
-    // ...and Kafka is fire-and-forget: the router marks the event handled with the null sentinel.
-    expect(response).toBeNull();
+    // ...and the partial-batch response reports no failed partition.
+    expect(response).toEqual({ batchItemFailures: [] });
   });
 
   it('throws BenzeneException when no router recognizes the event', async () => {

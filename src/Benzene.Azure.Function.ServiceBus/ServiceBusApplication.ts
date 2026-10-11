@@ -3,7 +3,7 @@ import { ServiceBusReceivedMessage } from '@azure/service-bus';
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { EntryPointMiddlewareApplication } from '@benzenejs/core-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
+import { isSettledAsFailure, TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { ServiceBusContext } from './ServiceBusContext';
 import { ServiceBusMessageProcessingException } from './ServiceBusMessageProcessingException';
 import { ServiceBusOptions } from './ServiceBusOptions';
@@ -84,11 +84,16 @@ export class ServiceBusBatchApplication implements IMiddlewareApplication<Servic
             }
           }
 
-          if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+          // A failure result and a missing result are both redelivered (transport-bindings §1, obligation 8).
+          if (
+            !this.options.atMostOnce &&
+            this.options.raiseOnFailureStatus &&
+            isSettledAsFailure(context.messageResult, { ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics })
+          ) {
             throw new ServiceBusMessageProcessingException(String(context.message.messageId));
           }
         } catch (ex) {
-          if (!this.options.catchExceptions) {
+          if (!this.options.catchExceptions && !this.options.atMostOnce) {
             throw ex;
           }
 

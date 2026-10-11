@@ -349,14 +349,25 @@ describe('RabbitMqWorker', () => {
     expect(channel.nacked).toEqual([{ tag: 11, requeue: true }]);
   });
 
-  it('acks when no result is recorded (a pipeline that never records one does not wedge the queue)', async () => {
+  it('nacks when no result is recorded (transport-bindings §1, obligation 8: a missing result is redelivered)', async () => {
     const { worker, channel } = workerFor(baseConfig(), resultPipeline(undefined));
     await worker.startAsync();
 
     channel.onMessage!(delivery({ deliveryTag: 12, redelivered: false }));
 
+    await waitFor(() => channel.nacked.length > 0);
+    expect(channel.acked).toHaveLength(0);
+  });
+
+  it('acks a failure result under atMostOnce', async () => {
+    const { worker, channel } = workerFor(baseConfig({ atMostOnce: true }), resultPipeline(false));
+    await worker.startAsync();
+
+    channel.onMessage!(delivery({ deliveryTag: 14, redelivered: false }));
+
     await waitFor(() => channel.acked.length > 0);
-    expect(channel.acked).toEqual([12]);
+    expect(channel.acked).toEqual([14]);
+    expect(channel.nacked).toHaveLength(0);
   });
 
   it('consumes with noAck true under AutoAck mode and does not settle manually', async () => {

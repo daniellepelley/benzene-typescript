@@ -8,6 +8,7 @@ import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { addDynamoDb } from './DependencyInjectionExtensions';
 import { DynamoDbApplication } from './DynamoDbApplication';
 import { DynamoDbLambdaHandler } from './DynamoDbLambdaHandler';
+import { DynamoDbOptions } from './DynamoDbOptions';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 
 /**
@@ -19,10 +20,13 @@ import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 export function useDynamoDb(
   app: IMiddlewarePipelineBuilder<AwsEventStreamContext>,
   action: PipelineBuilderAction<DynamoDbRecordContext>,
+  configure?: (options: DynamoDbOptions) => void,
 ): IMiddlewarePipelineBuilder<AwsEventStreamContext> {
   app.register((x) => addDynamoDb(x));
   const pipeline = createMiddlewarePipeline(app, action);
+  const options = new DynamoDbOptions();
+  configure?.(options);
   return app.use(
-    (resolver) => new DynamoDbLambdaHandler(new DynamoDbApplication(pipeline), resolver),
+    (resolver) => new DynamoDbLambdaHandler(new DynamoDbApplication(pipeline, options), resolver),
   );
 }

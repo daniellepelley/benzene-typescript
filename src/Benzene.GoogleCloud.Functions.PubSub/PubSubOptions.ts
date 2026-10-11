@@ -1,10 +1,11 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.PubSubOptions. */
+import { SettlementOptions } from '@benzenejs/core-message-handlers';
 
 /**
  * Configures how `PubSubMiddlewareApplication` handles a message handler's exceptions and failure
  * results.
  */
-export class PubSubOptions {
+export class PubSubOptions implements SettlementOptions {
   /**
    * Whether an unhandled exception from a message handler is caught (logged) instead of left to cascade
    * and fail the whole invocation. Defaults to `false` — the Functions Framework has no partial-failure
@@ -23,4 +24,10 @@ export class PubSubOptions {
    * `false`.
    */
   raiseOnFailureStatus = true;
+
+  /** See {@link SettlementOptions.atMostOnce}: acknowledge every message, whatever the outcome. */
+  atMostOnce = false;
+
+  /** See {@link SettlementOptions.ignoreUnmatchedTopics}: acknowledge a message whose topic no handler serves. */
+  ignoreUnmatchedTopics = false;
 }

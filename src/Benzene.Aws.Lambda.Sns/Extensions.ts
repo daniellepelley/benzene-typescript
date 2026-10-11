@@ -14,9 +14,9 @@ import { SnsRecordContext } from './SnsRecordContext';
 /**
  * Adds SNS handling to an AWS Lambda (`AwsEventStreamContext`) pipeline: registers the SNS services,
  * builds the inner per-record `SnsRecordContext` pipeline from `action`, and appends an `SnsLambdaHandler`
- * (which runs an `SnsApplication` over that pipeline). Optionally configure `SnsOptions` — e.g. set
- * `catchExceptions` to swallow handler exceptions, or `raiseOnFailureStatus` to escalate a non-exception
- * failure result into a thrown exception so SNS retries it too.
+ * (which runs an `SnsApplication` over that pipeline). Optionally configure `SnsOptions`: the defaults
+ * redeliver a failure result, a missing result and an uncaught exception; set `ignoreUnmatchedTopics` for a
+ * subscription that sees other services' topics, or `atMostOnce` to acknowledge every notification.
  */
 export function useSns(
   app: IMiddlewarePipelineBuilder<AwsEventStreamContext>,

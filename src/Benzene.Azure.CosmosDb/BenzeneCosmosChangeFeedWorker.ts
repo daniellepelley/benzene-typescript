@@ -91,7 +91,7 @@ export class BenzeneCosmosChangeFeedWorker<TDocument> implements IBenzeneWorker 
         `Processing change feed batch of ${changes.length} documents on lease ${context.leaseToken} failed`,
       );
 
-      if (this.config.catchHandlerExceptions) {
+      if (this.config.catchHandlerExceptions || this.config.atMostOnce) {
         // Skip mode: checkpoint the failed batch anyway so it is permanently passed over and the
         // lease keeps moving.
         await checkpointAsync();

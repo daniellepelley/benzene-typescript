@@ -1,4 +1,5 @@
 /** Port of Benzene.Azure.Function.EventGrid.EventGridOptions. */
+import { SettlementOptions } from '@benzenejs/core-message-handlers';
 
 /**
  * Configures how `EventGridApplication` / `EventGridBatchApplication` handle a message handler's
@@ -6,7 +7,7 @@
  * (and, in turn, `KafkaOptions`), keeping the C# defaults: `catchExceptions` off, `raiseOnFailureStatus`
  * on.
  */
-export class EventGridOptions {
+export class EventGridOptions implements SettlementOptions {
   /**
    * Whether an unhandled exception from a message handler is caught (logged, and the invocation reports
    * success — so Event Grid sees a delivered event and does not retry) instead of left to cascade and
@@ -17,7 +18,7 @@ export class EventGridOptions {
   catchExceptions = false;
 
   /**
-   * Whether a message handler returning a non-exception failure result is escalated into a thrown
+   * Whether a failure result — or no result at all — is escalated into a thrown
    * `EventGridMessageProcessingException`, so Event Grid retries the event the same way it would for an
    * unhandled exception (its retry runs with backoff up to 24h, then dead-letters). Defaults to `true`
    * (safe-by-default: a returned failure is escalated and redelivered; set `false` for at-most-once,
@@ -32,4 +33,10 @@ export class EventGridOptions {
    * delivery has nothing to bound.
    */
   maxDegreeOfParallelism?: number;
+
+  /** See {@link SettlementOptions.atMostOnce}: acknowledge every event, whatever the outcome. */
+  atMostOnce = false;
+
+  /** See {@link SettlementOptions.ignoreUnmatchedTopics}: acknowledge an event type no handler serves (a subscription that sees other services' event types). */
+  ignoreUnmatchedTopics = false;
 }

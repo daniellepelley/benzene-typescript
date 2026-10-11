@@ -7,6 +7,7 @@ export * from './DynamoDbMessageTopicGetter';
 export * from './DynamoDbMessageHeadersGetter';
 export * from './DynamoDbMessageMessageHandlerResultSetter';
 export * from './DynamoDbApplication';
+export * from './DynamoDbOptions';
 export * from './DynamoDbLambdaHandler';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';

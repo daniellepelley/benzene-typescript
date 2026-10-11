@@ -2,7 +2,9 @@
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { ISetCurrentTransport, TransportNames } from '@benzenejs/abstractions-message-handlers';
 import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
-import { DynamoDBBatchResponse, DynamoDBStreamEvent } from 'aws-lambda';
+import { DynamoDBBatchResponse, DynamoDBRecord, DynamoDBStreamEvent } from 'aws-lambda';
+import { isSettledAsFailure } from '@benzenejs/core-message-handlers';
+import { DynamoDbOptions } from './DynamoDbOptions';
 import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 
 /**
@@ -27,7 +29,14 @@ import { DynamoDbRecordContext } from './DynamoDbRecordContext';
 export class DynamoDbApplication
   implements IMiddlewareApplicationWithResult<DynamoDBStreamEvent, DynamoDBBatchResponse>
 {
-  constructor(private readonly pipeline: IMiddlewarePipeline<DynamoDbRecordContext>) {}
+  private readonly options: DynamoDbOptions;
+
+  constructor(
+    private readonly pipeline: IMiddlewarePipeline<DynamoDbRecordContext>,
+    options?: DynamoDbOptions,
+  ) {
+    this.options = options ?? new DynamoDbOptions();
+  }
 
   async handleAsync(
     event: DynamoDBStreamEvent,
@@ -67,17 +76,28 @@ export class DynamoDbApplication
         }
 
         context.isSuccessful = false;
+        if (this.options.atMostOnce) {
+          continue;
+        }
+        return failureAt(record);
       }
 
-      if (context.isSuccessful === false) {
-        return {
-          batchItemFailures: [
-            { itemIdentifier: record.dynamodb?.SequenceNumber ?? record.eventID ?? '' },
-          ],
-        };
+      // A failure result and a missing result both stop the shard here (transport-bindings §1,
+      // obligation 8; .NET's `MessageResult?.IsSuccessful != true`): Lambda resumes from this record.
+      if (
+        !this.options.atMostOnce &&
+        isSettledAsFailure(context.messageResult, { ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics })
+      ) {
+        return failureAt(record);
       }
     }
 
     return { batchItemFailures: [] };
   }
+}
+
+function failureAt(record: DynamoDBRecord): DynamoDBBatchResponse {
+  return {
+    batchItemFailures: [{ itemIdentifier: record.dynamodb?.SequenceNumber ?? record.eventID ?? '' }],
+  };
 }

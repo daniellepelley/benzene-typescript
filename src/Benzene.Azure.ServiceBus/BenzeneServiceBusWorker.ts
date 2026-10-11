@@ -11,6 +11,7 @@ import {
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
 import { BenzeneException } from '@benzenejs/core';
+import { isSettledAsFailure } from '@benzenejs/core-message-handlers';
 import { BenzeneServiceBusConfig, withServiceBusConfigDefaults } from './BenzeneServiceBusConfig';
 import { IServiceBusClientFactory } from './IServiceBusClientFactory';
 import { IServiceBusMessageSettler } from './IServiceBusMessageSettler';
@@ -328,25 +329,37 @@ export class BenzeneServiceBusWorker implements IBenzeneWorker {
     if (this.config.ackMode === ServiceBusConsumerAckMode.AutoComplete) {
       // The receiver settles from whether this handler throws: complete on return, abandon on throw
       // (autoCompleteMessages is on). A non-exception failure result still completes.
-      await this.application.handleAsync(message, this.serviceResolverFactory);
+      try {
+        await this.application.handleAsync(message, this.serviceResolverFactory);
+      } catch (error) {
+        if (this.config.atMostOnce !== true) {
+          throw error;
+        }
+        // At-most-once: swallow so the receiver completes the message.
+        this.logError(error, `Processing Service Bus message ${message.messageId} failed; completed (atMostOnce)`);
+      }
       return;
     }
 
     const settler = this.settlerFor(receiver, message);
     try {
       const decision = await this.application.handleAsync(message, this.serviceResolverFactory);
-      await BenzeneServiceBusWorker.settleAsync(settler, decision);
+      await this.settleAsync(settler, decision);
     } catch (error) {
       // The rethrow surfaces the error to processError, but that only has the entity/error-source —
       // not which message failed. Log here with the message id so a failure is diagnosable to a
       // specific message, matching the other workers (SQS/Kafka).
       this.logError(error, `Processing Service Bus message ${message.messageId} failed`);
+      if (this.config.atMostOnce === true) {
+        await settler.completeMessageAsync();
+        return;
+      }
       await settler.abandonMessageAsync();
       throw error;
     }
   }
 
-  private static async settleAsync(
+  private async settleAsync(
     settler: IServiceBusMessageSettler,
     decision: ServiceBusSettlementDecision,
   ): Promise<void> {
@@ -376,7 +389,10 @@ export class BenzeneServiceBusWorker implements IBenzeneWorker {
     // Abandon on a failure OR an unset result (a pipeline that short-circuited without setting one),
     // completing only on a genuine success — matching the SQS reference's "unset errs toward
     // redelivery, never toward silent loss".
-    if (decision.messageResult?.isSuccessful !== true) {
+    if (
+      this.config.atMostOnce !== true &&
+      isSettledAsFailure(decision.messageResult, { ignoreUnmatchedTopics: this.config.ignoreUnmatchedTopics })
+    ) {
       await settler.abandonMessageAsync();
     } else {
       await settler.completeMessageAsync();

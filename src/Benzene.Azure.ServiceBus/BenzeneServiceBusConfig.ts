@@ -1,4 +1,5 @@
 /** Port of Benzene.Azure.ServiceBus.BenzeneServiceBusConfig. */
+import { SettlementOptions } from '@benzenejs/core-message-handlers';
 import { ServiceBusConsumerAckMode } from './ServiceBusConsumerAckMode';
 import { ServiceBusConsumerMessageTopicGetter } from './ServiceBusConsumerMessageTopicGetter';
 
@@ -7,10 +8,17 @@ import { ServiceBusConsumerMessageTopicGetter } from './ServiceBusConsumerMessag
  * {@link queueName} or both {@link topicName} and {@link subscriptionName} — exactly one entity kind,
  * validated at worker startup.
  *
+ * Settlement (transport-bindings §1, obligation 8) — a **queue** binding: under the default `Explicit`
+ * ack mode only a successful result completes the message; a failure result, no result and an uncaught
+ * exception abandon it for redelivery (up to the entity's max delivery count, then its DLQ). The optional
+ * `atMostOnce` completes every message whatever the outcome; `ignoreUnmatchedTopics` completes a message
+ * whose topic no handler serves (a subscription on a shared topic). A per-message
+ * `ServiceBusSettlementHolder.override` still wins over both.
+ *
  * PORTING NOTE: the C# class (get/set properties with defaults) becomes an interface with optional
  * members; {@link withServiceBusConfigDefaults} applies the same defaults the C# property initializers do.
  */
-export interface BenzeneServiceBusConfig {
+export interface BenzeneServiceBusConfig extends Partial<SettlementOptions> {
   /** The queue to consume from. Mutually exclusive with {@link topicName}/{@link subscriptionName}. */
   queueName?: string;
   /** The topic to consume from. Requires {@link subscriptionName}; mutually exclusive with {@link queueName}. */

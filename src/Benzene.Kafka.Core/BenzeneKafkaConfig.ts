@@ -1,4 +1,5 @@
 /** Port of Benzene.Kafka.Core.BenzeneKafkaConfig. */
+import { SettlementOptions } from '@benzenejs/core-message-handlers';
 
 /**
  * Configures the processing behaviour used by {@link BenzeneKafkaWorker}, plus the topics to subscribe
@@ -15,10 +16,16 @@
  * are *not* fields here — they belong on the caller-built `Consumer`. See the README porting-conventions
  * bullet.
  *
+ * Settlement (transport-bindings §1, obligation 8) — a **stream** binding whose unit of settlement is the
+ * **partition offset**. By default it skips-and-continues (as .NET does): a failed record is logged and the
+ * offset advances. `commitOnlyOnSuccess: true` with `catchHandlerExceptions: false` is at-least-once (a
+ * failure result or exception stops the worker uncommitted); `atMostOnce` commits every record whatever the
+ * outcome.
+ *
  * The C# class (get/set properties with defaults) becomes an interface with optional members;
  * {@link withKafkaConfigDefaults} applies the same defaults the C# property initializers do.
  */
-export interface BenzeneKafkaConfig {
+export interface BenzeneKafkaConfig extends Partial<SettlementOptions> {
   /** The topics the worker subscribes to. Mapped to the kafkajs `consumer.subscribe({ topics })` call. */
   topics: string[];
 
@@ -67,6 +74,16 @@ export interface BenzeneKafkaConfig {
    * offset to read, so the worker commits `record.offset + 1`.)
    */
   commitOnlyOnSuccess?: boolean;
+
+  /**
+   * Whether a handler's **failure result** is treated like a thrown exception (port of .NET's
+   * `RaiseOnFailureStatus`). Defaults to `true`. Under `commitOnlyOnSuccess` the record is then left
+   * uncommitted and redelivered; under the default auto-commit it is logged and skipped (the offset was
+   * committed regardless — the stream's documented skip-and-continue). A **missing result** is not a
+   * failure here, as in .NET: Kafka has no per-record dead-letter path. `ignoreUnmatchedTopics` defaults
+   * `true` for the same reason (in .NET an unrouted record is a missing result).
+   */
+  raiseOnFailureStatus?: boolean;
 }
 
 /** Fills in the C# property-initializer defaults for the fields the worker reads. */
@@ -76,7 +93,13 @@ export function withKafkaConfigDefaults(
   Required<
     Pick<
       BenzeneKafkaConfig,
-      'concurrentRequests' | 'preserveOrderPerPartition' | 'catchHandlerExceptions' | 'commitOnlyOnSuccess'
+      | 'concurrentRequests'
+      | 'preserveOrderPerPartition'
+      | 'catchHandlerExceptions'
+      | 'commitOnlyOnSuccess'
+      | 'raiseOnFailureStatus'
+      | 'atMostOnce'
+      | 'ignoreUnmatchedTopics'
     >
   > {
   return {
@@ -85,5 +108,8 @@ export function withKafkaConfigDefaults(
     preserveOrderPerPartition: config.preserveOrderPerPartition ?? true,
     catchHandlerExceptions: config.catchHandlerExceptions ?? true,
     commitOnlyOnSuccess: config.commitOnlyOnSuccess ?? false,
+    raiseOnFailureStatus: config.raiseOnFailureStatus ?? true,
+    atMostOnce: config.atMostOnce ?? false,
+    ignoreUnmatchedTopics: config.ignoreUnmatchedTopics ?? true,
   };
 }

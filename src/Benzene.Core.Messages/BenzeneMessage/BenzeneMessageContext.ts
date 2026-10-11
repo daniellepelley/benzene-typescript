@@ -1,3 +1,4 @@
+import { IBenzeneResult } from '@benzenejs/abstractions';
 import { IBenzeneMessageRequest } from './IBenzeneMessageRequest';
 import { IBenzeneMessageResponse } from './IBenzeneMessageResponse';
 import { BenzeneMessageResponse } from './BenzeneMessageResponse';
@@ -16,6 +17,14 @@ import { BenzeneMessageResponse } from './BenzeneMessageResponse';
 export class BenzeneMessageContext {
   readonly benzeneMessageRequest: IBenzeneMessageRequest;
   benzeneMessageResponse: IBenzeneMessageResponse;
+
+  /**
+   * The handler's result, as the result setter recorded it — `undefined` when no handler result was
+   * recorded (a middleware ended the pipeline without one). Read by a one-way binding that carries the
+   * envelope inside its own message (a queue whose body is an envelope) to settle it. Port of .NET's
+   * `BenzeneMessageContext : IHasMessageResult`.
+   */
+  messageResult?: IBenzeneResult;
 
   constructor(benzeneMessageRequest: IBenzeneMessageRequest) {
     this.benzeneMessageRequest = benzeneMessageRequest;

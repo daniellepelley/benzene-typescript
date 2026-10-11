@@ -4,7 +4,7 @@ import { IServiceResolverFactory } from '@benzenejs/abstractions';
 import { IMiddlewareApplicationWithResult, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import { TransportNames } from '@benzenejs/abstractions-message-handlers';
 import { BoundedFanOut } from '@benzenejs/core-middleware';
-import { TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
+import { isSettledAsFailure, TransportMiddlewarePipeline } from '@benzenejs/core-message-handlers';
 import { SqsConsumerAckMode } from './SqsConsumerAckMode';
 import { SqsConsumerBatchResult } from './SqsConsumerBatchResult';
 import { SqsConsumerMessageContext } from './SqsConsumerMessageContext';
@@ -55,10 +55,16 @@ export class SqsConsumerApplication
           // Only an explicit success is deleted. A failure result OR an unset outcome (undefined
           // messageResult — e.g. an unroutable message) is reported as failed, so it stays on the queue
           // for redelivery/DLQ redrive. At-least-once: err toward redelivery.
-          if (context.messageResult?.isSuccessful !== true) {
+          if (
+            this.options.atMostOnce !== true &&
+            isSettledAsFailure(context.messageResult, { ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics })
+          ) {
             return message;
           }
         } catch (error) {
+          if (this.options.atMostOnce === true) {
+            return undefined;
+          }
           if (this.options.ackMode === SqsConsumerAckMode.WholeBatch) {
             throw error;
           }

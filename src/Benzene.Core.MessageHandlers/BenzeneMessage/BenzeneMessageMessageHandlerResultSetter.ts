@@ -1,4 +1,4 @@
-import { IResponseHandlerContainer } from '@benzenejs/abstractions-message-handlers';
+import { IMessageHandlerResult, IResponseHandlerContainer } from '@benzenejs/abstractions-message-handlers';
 import { BenzeneMessageContext } from '@benzenejs/core-messages';
 import { ResponseMessageMessageHandlerResultSetterBase } from '../ResponseMessageMessageHandlerResultSetterBase';
 
@@ -12,5 +12,11 @@ import { ResponseMessageMessageHandlerResultSetterBase } from '../ResponseMessag
 export class BenzeneMessageMessageHandlerResultSetter extends ResponseMessageMessageHandlerResultSetterBase<BenzeneMessageContext> {
   constructor(responseHandlerContainer: IResponseHandlerContainer<BenzeneMessageContext>) {
     super(responseHandlerContainer);
+  }
+
+  /** Records the result on the context (for a binding that settles an envelope), then renders it. */
+  override setResultAsync(context: BenzeneMessageContext, messageHandlerResult: IMessageHandlerResult): Promise<void> {
+    context.messageResult = messageHandlerResult.benzeneResult;
+    return super.setResultAsync(context, messageHandlerResult);
   }
 }

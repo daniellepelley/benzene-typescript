@@ -16,6 +16,7 @@
  */
 export * from './BenzeneKafkaConfig';
 export * from './BenzeneKafkaWorker';
+export * from './KafkaMessageProcessingException';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
 export * from './IKafkaConsumerFactory';

@@ -12,6 +12,7 @@ import { IDefaultStatuses } from './MessageResult';
 import { MessageHandlerDefinition } from './MessageHandlerDefinition';
 import { MessageHandlerResult } from './MessageHandlerResult';
 import { RequestMapperThunk } from './RequestMapperThunk';
+import { markUnmatchedTopic } from './Settlement';
 
 /**
  * The pipeline entry point for message-handler dispatch: extracts the topic from the incoming
@@ -78,7 +79,9 @@ export class MessageRouter<TContext> implements IMiddleware<TContext> {
         new MessageHandlerResult(
           topic,
           MessageHandlerDefinition.empty(),
-          BenzeneResult.setErrors(this.defaultStatuses.notFound, notFound),
+          // Marked so a one-way binding can treat an unmatched topic as `ignored` when configured to
+          // (transport-bindings §1, obligation 8) without confusing it with a handler's own not-found.
+          markUnmatchedTopic(BenzeneResult.setErrors(this.defaultStatuses.notFound, notFound)),
         ),
       );
       return;

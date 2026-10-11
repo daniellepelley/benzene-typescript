@@ -105,7 +105,7 @@ describe('QueueStoragePipeline (via AzureFunctionApp entry point)', () => {
     expect(handled).toEqual(['7']);
   });
 
-  it('defers a non-envelope message without error', async () => {
+  it('does not acknowledge a non-envelope message: no result is redelivered (transport-bindings §1, obligation 8)', async () => {
     handled.length = 0;
 
     const app = new InlineAzureFunctionStartUp()
@@ -117,7 +117,9 @@ describe('QueueStoragePipeline (via AzureFunctionApp entry point)', () => {
       )
       .build();
 
-    await handleQueueMessage(app, 'just some text, not an envelope');
+    await expect(handleQueueMessage(app, 'just some text, not an envelope')).rejects.toThrow(
+      QueueStorageMessageProcessingException,
+    );
 
     expect(handled).toEqual([]);
   });
@@ -148,6 +150,8 @@ describe('QueueStoragePipeline (via AzureFunctionApp entry point)', () => {
           queue.useFn('Capture', async (context, next) => {
             observed = context;
             await next();
+            // A middleware that ends a one-way pipeline must set a result, or the message is redelivered.
+            context.messageResult = BenzeneResult.ok();
           }),
         ),
       )
@@ -229,6 +233,7 @@ describe('QueueStorageBatchApplication (direct)', () => {
       seenBodies.push(context.message.messageText);
       seenTransports.push(resolver.getService(ICurrentTransport).name);
       await next();
+      context.messageResult = BenzeneResult.ok();
     });
 
     const application = new QueueStorageBatchApplication(pipeline.build());

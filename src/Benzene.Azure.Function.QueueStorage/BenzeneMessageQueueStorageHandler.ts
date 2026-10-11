@@ -6,9 +6,8 @@ import {
   BenzeneMessageRequest,
   IBenzeneMessageRequest,
 } from '@benzenejs/core-messages';
-import { BenzeneMessageApplication, MessageResult } from '@benzenejs/core-message-handlers';
+import { BenzeneMessageResultApplication } from '@benzenejs/core-message-handlers';
 import { MiddlewareRouter } from '@benzenejs/core-middleware';
-import { BenzeneResultStatus } from '@benzenejs/results';
 import { QueueStorageContext } from './QueueStorageContext';
 
 /**
@@ -23,21 +22,17 @@ import { QueueStorageContext } from './QueueStorageContext';
  * QueueStorageContext>` — the already-ported `MiddlewareRouter` base drives `tryExtractRequest` ->
  * `canHandle` -> `handleFunction`.
  *
- * RESULT SURFACING (why this differs from the Event Hub handler): the C# handler runs a
- * `BenzeneMessageResultApplication` and assigns its `IBenzeneResult` onto the outer
- * `QueueStorageContext.MessageResult`, so a `raiseOnFailureStatus` escalation sees a failure that
- * occurred inside the (response-suppressed) envelope pipeline. `BenzeneMessageResultApplication` is not
- * ported (the TS transport-envelope `BenzeneMessageContext` dropped `IHasMessageResult`), so the port
- * reuses the already-ported `BenzeneMessageApplication` and maps the returned response's `statusCode`
- * — itself a `BenzeneResultStatus` written by the inner result setter — back to a pass/fail
- * `MessageResult` via `BenzeneResultStatus.isSuccess`, which is the exact signal the C# escalation
- * reads.
+ * RESULT SURFACING: as the C# handler does, this runs a `BenzeneMessageResultApplication` and assigns
+ * the inner handler's `IBenzeneResult` onto the outer `QueueStorageContext.messageResult`, so the queue's
+ * settlement sees a failure — or a missing result — that occurred inside the (response-suppressed)
+ * envelope pipeline. (Before spec-0.2.0 the port re-derived a pass/fail flag from the response's status
+ * text, which wire-contracts §1.2 forbids.)
  */
 export class BenzeneMessageQueueStorageHandler extends MiddlewareRouter<
   IBenzeneMessageRequest,
   QueueStorageContext
 > {
-  private readonly directMessageApplication: BenzeneMessageApplication;
+  private readonly directMessageApplication: BenzeneMessageResultApplication;
   private readonly serializer: ISerializer;
 
   /**
@@ -47,7 +42,7 @@ export class BenzeneMessageQueueStorageHandler extends MiddlewareRouter<
   constructor(pipeline: IMiddlewarePipeline<BenzeneMessageContext>, serviceResolver: IServiceResolver) {
     super(serviceResolver);
     this.serializer = serviceResolver.getService(ISerializer);
-    this.directMessageApplication = new BenzeneMessageApplication(pipeline);
+    this.directMessageApplication = new BenzeneMessageResultApplication(pipeline);
   }
 
   /** Determines whether the deserialized request looks like a direct Benzene message (has a topic). */
@@ -66,8 +61,13 @@ export class BenzeneMessageQueueStorageHandler extends MiddlewareRouter<
     context: QueueStorageContext,
     serviceResolverFactory: IServiceResolverFactory,
   ): Promise<void> {
-    const response = await this.directMessageApplication.handleAsync(request, serviceResolverFactory);
-    context.messageResult = new MessageResult(BenzeneResultStatus.isSuccess(response.statusCode));
+    // The inner handler's result itself — never re-derived from the status text (wire-contracts §1.2) —
+    // so the queue settles on isSuccessful, sees a missing result as missing (redelivered), and can tell
+    // the router's unmatched-topic result apart for ignoreUnmatchedTopics.
+    const result = await this.directMessageApplication.handleAsync(request, serviceResolverFactory);
+    if (result !== undefined) {
+      context.messageResult = result;
+    }
   }
 
   /** Attempts to deserialize the Queue Storage message text into a `BenzeneMessageRequest`; `undefined` on failure. */

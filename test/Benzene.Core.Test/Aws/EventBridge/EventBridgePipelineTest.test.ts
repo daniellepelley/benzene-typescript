@@ -18,6 +18,8 @@ import {
   EventBridgeContext,
   EventBridgeMessageBodyGetter,
   EventBridgeMessageHeadersGetter,
+  EventBridgeMessageProcessingException,
+  EventBridgeOptions,
   useEventBridge,
 } from '@benzenejs/aws-lambda-eventbridge';
 import { useAwsLambda } from '@benzenejs/aws-lambda-core';
@@ -114,7 +116,7 @@ describe('EventBridgeApplication (direct)', () => {
     expect(messageResult?.isSuccessful).toBe(true);
   });
 
-  it('records an unsuccessful result for an unknown detail-type', async () => {
+  it('fails the invocation for an unknown detail-type, recording the unsuccessful result', async () => {
     handled.length = 0;
 
     const container = new DefaultBenzeneServiceContainer();
@@ -131,10 +133,36 @@ describe('EventBridgeApplication (direct)', () => {
     const application = new EventBridgeApplication(pipeline.build());
     const event = asEventBridge(messageBuilder('no.such.detail-type', { reference: '1' }));
 
-    await application.handleAsync(event, container.createServiceResolverFactory());
+    // One-shot settlement (transport-bindings §1, obligation 8): an unmatched topic is a not-found failure,
+    // so the invocation fails and EventBridge retries the event.
+    await expect(application.handleAsync(event, container.createServiceResolverFactory())).rejects.toThrow(
+      EventBridgeMessageProcessingException,
+    );
 
     expect(handled).toEqual([]);
     expect(messageResult?.isSuccessful).toBe(false);
+  });
+
+  it('acknowledges an unknown detail-type under ignoreUnmatchedTopics, and a failure under atMostOnce', async () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addEventBridge(container);
+    const pipeline = new MiddlewarePipelineBuilder<EventBridgeContext>(container);
+    useMessageHandlers(pipeline, OrderCreatedHandler);
+    const built = pipeline.build();
+    const event = asEventBridge(messageBuilder('no.such.detail-type', { reference: '1' }));
+
+    const ignoring = new EventBridgeOptions();
+    ignoring.ignoreUnmatchedTopics = true;
+    await expect(
+      new EventBridgeApplication(built, ignoring).handleAsync(event, container.createServiceResolverFactory()),
+    ).resolves.toBeUndefined();
+
+    const atMostOnce = new EventBridgeOptions();
+    atMostOnce.atMostOnce = true;
+    await expect(
+      new EventBridgeApplication(built, atMostOnce).handleAsync(event, container.createServiceResolverFactory()),
+    ).resolves.toBeUndefined();
   });
 });
 

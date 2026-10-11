@@ -9,6 +9,7 @@ import { addKafka } from './DependencyInjectionExtensions';
 import { KafkaApplication } from './KafkaApplication';
 import { KafkaContext } from './KafkaContext';
 import { KafkaLambdaHandler } from './KafkaLambdaHandler';
+import { KafkaOptions } from './KafkaOptions';
 
 /**
  * Adds Kafka handling to an AWS Lambda (`AwsEventStreamContext`) pipeline: registers the Kafka services,
@@ -19,8 +20,11 @@ import { KafkaLambdaHandler } from './KafkaLambdaHandler';
 export function useKafka(
   app: IMiddlewarePipelineBuilder<AwsEventStreamContext>,
   action: PipelineBuilderAction<KafkaContext>,
+  configure?: (options: KafkaOptions) => void,
 ): IMiddlewarePipelineBuilder<AwsEventStreamContext> {
   app.register((x) => addKafka(x));
   const pipeline = createMiddlewarePipeline(app, action);
-  return app.use((resolver) => new KafkaLambdaHandler(new KafkaApplication(pipeline), resolver));
+  const options = new KafkaOptions();
+  configure?.(options);
+  return app.use((resolver) => new KafkaLambdaHandler(new KafkaApplication(pipeline, options), resolver));
 }

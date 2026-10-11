@@ -1,12 +1,16 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsOptions. */
+import { SettlementOptions } from '@benzenejs/core-message-handlers';
 
 /**
- * Configures how `SnsApplication` handles a message handler's exceptions and failure results. Both flags
- * default to `false` (purely additive/opt-in), preserving the original behavior: a handler exception
- * cascades out of the invocation (SNS's own subscription retry policy applies) and a non-exception failure
- * result is silently accepted (no retry).
+ * Configures how `SnsApplication` settles each notification (transport-bindings §1, obligation 8). SNS
+ * invokes the Lambda asynchronously — a **one-shot** binding: failing the invocation is the only way to
+ * get the notification retried (SNS's subscription retry policy, then its redrive policy / DLQ).
+ *
+ * Defaults are **at-least-once**: a failure result, a missing result and an uncaught exception all fail
+ * the invocation, so the notification is redelivered; handlers must be idempotent. A throw fails every
+ * record in the event (the unit of settlement is the invocation).
  */
-export class SnsOptions {
+export class SnsOptions implements SettlementOptions {
   /**
    * Whether an unhandled exception from a message handler is caught (logged, and the Lambda invocation
    * reports success to SNS — no retry) instead of left to cascade out of the invocation. Defaults to
@@ -17,10 +21,16 @@ export class SnsOptions {
   catchExceptions = false;
 
   /**
-   * Whether a message handler returning a non-exception failure result (e.g. a validation error) is
-   * escalated into a thrown `SnsMessageProcessingException`, so SNS retries the notification the same way
-   * it would for an unhandled exception. Defaults to `false` — a failure result usually reflects a
-   * permanent/business-logic failure that retrying won't fix.
+   * Whether a message handler returning a failure result (e.g. a validation error) — or no result at all —
+   * is escalated into a thrown `SnsMessageProcessingException`, so SNS retries the notification the same
+   * way it would for an unhandled exception. Defaults to `true` (spec-0.2.0 settlement; .NET's default):
+   * a failure is redelivered, not silently acknowledged. Set `false` to accept failure results.
    */
-  raiseOnFailureStatus = false;
+  raiseOnFailureStatus = true;
+
+  /** See {@link SettlementOptions.atMostOnce}: acknowledge every notification, whatever the outcome. */
+  atMostOnce = false;
+
+  /** See {@link SettlementOptions.ignoreUnmatchedTopics}: acknowledge a notification no handler serves. */
+  ignoreUnmatchedTopics = false;
 }

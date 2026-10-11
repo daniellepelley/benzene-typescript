@@ -1,5 +1,6 @@
 /** Port of Benzene.Azure.Function.EventHub.Function.EventHubContext. */
 import { ReceivedEventData } from '@azure/event-hubs';
+import { IMessageResult } from '@benzenejs/abstractions-message-handlers';
 
 /**
  * Provides the middleware pipeline context for a single event within an Event Hub trigger batch.
@@ -24,6 +25,14 @@ export class EventHubContext {
 
   /** The Event Hub event data. */
   readonly eventData: ReceivedEventData;
+
+  /**
+   * The outcome of routing this event: the inner envelope's handler result, surfaced by
+   * `BenzeneMessageEventHubHandler` (or a result a middleware recorded directly) — `undefined` when none
+   * was recorded. Read by `EventHubApplication` to settle the batch (port of .NET's
+   * `EventHubContext.MessageResult`).
+   */
+  messageResult?: IMessageResult;
 
   /**
    * Creates a new `EventHubContext` for a single event. Port of C# `static EventHubContext

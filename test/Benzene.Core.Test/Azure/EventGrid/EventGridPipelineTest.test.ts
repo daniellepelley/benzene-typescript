@@ -195,6 +195,7 @@ describe('EventGridBatchApplication (direct)', () => {
       seenIds.push(context.event.id);
       seenTransports.push(resolver.getService(ICurrentTransport).name);
       await next();
+      context.messageResult = BenzeneResult.ok();
     });
 
     const application = new EventGridBatchApplication(pipeline.build());

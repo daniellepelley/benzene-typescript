@@ -1,7 +1,7 @@
 /** Port of Benzene.GoogleCloud.Functions.PubSub.PubSubMiddlewareApplication. */
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
+import { isSettledAsFailure, TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { MessagePublishedData } from './MessagePublishedData';
 import { PubSubContext } from './PubSubContext';
 import { PubSubMessageProcessingException } from './PubSubMessageProcessingException';
@@ -56,11 +56,16 @@ export class PubSubMiddlewareApplication implements IMiddlewareApplication<Messa
         }
       }
 
-      if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+      // A failure result and a missing result are both redelivered (transport-bindings §1, obligation 8).
+      if (
+        !this.options.atMostOnce &&
+        this.options.raiseOnFailureStatus &&
+        isSettledAsFailure(context.messageResult, { ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics })
+      ) {
         throw new PubSubMessageProcessingException(messageIdOf(context));
       }
     } catch (ex) {
-      if (!this.options.catchExceptions) {
+      if (!this.options.catchExceptions && !this.options.atMostOnce) {
         throw ex;
       }
 

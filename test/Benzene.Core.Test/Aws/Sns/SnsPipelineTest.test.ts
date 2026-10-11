@@ -135,9 +135,11 @@ describe('SnsApplication (direct)', () => {
     ).rejects.toThrow(SnsMessageProcessingException);
   });
 
-  it('SnsOptions defaults both flags to false', () => {
+  it('SnsOptions defaults to at-least-once (spec-0.2.0 settlement)', () => {
     const options = new SnsOptions();
     expect(options.catchExceptions).toBe(false);
-    expect(options.raiseOnFailureStatus).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+    expect(options.atMostOnce).toBe(false);
+    expect(options.ignoreUnmatchedTopics).toBe(false);
   });
 });

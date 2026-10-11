@@ -1,6 +1,8 @@
 /** Port of Benzene.Azure.Function.EventHub.Function (barrel). */
 export * from './EventHubContext';
 export * from './EventHubApplication';
+export * from './EventHubOptions';
+export * from './EventHubMessageProcessingException';
 export * from './BenzeneMessageEventHubHandler';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
@@ -8,7 +10,7 @@ export * from './AzureFunctionHostExtensions';
 
 // MESSAGE-TYPE ADAPTATION: the .NET `Azure.Messaging.EventHubs.EventData` maps to the ecosystem-native
 // `ReceivedEventData` from `@azure/event-hubs` (the read side of that SDK). The Event Hub package is
-// deliberately DIFFERENT in shape from Service Bus/Kafka: its `EventHubContext` carries no message result
+// deliberately DIFFERENT in shape from Service Bus/Kafka: its `EventHubContext` carries only the result surfaced from the inner envelope
 // and there are no per-message body/topic/headers getters or result setter. Instead
 // `BenzeneMessageEventHubHandler` (a `MiddlewareRouter`) deserializes each event body into a
 // `BenzeneMessageRequest` and routes it through the transport-agnostic `BenzeneMessageApplication` — a

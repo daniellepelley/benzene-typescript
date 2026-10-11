@@ -1,7 +1,7 @@
 /** Port of Benzene.Aws.Lambda.Sns.SnsApplication. */
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IMiddlewareApplication, IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
-import { TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
+import { isSettledAsFailure, TransportMiddlewarePipeline, TransportNames } from '@benzenejs/core-message-handlers';
 import { SNSEvent } from 'aws-lambda';
 import { SnsMessageProcessingException } from './SnsMessageProcessingException';
 import { SnsOptions } from './SnsOptions';
@@ -20,8 +20,10 @@ import { SnsRecordContext } from './SnsRecordContext';
  *     `SnsRecordContext` per record;
  *   - runs each record's pipeline in ITS OWN service scope (`createScope()` / try-finally `dispose()`,
  *     the port of C# `using`), concurrently via `Promise.all` (the port of `Task.WhenAll`);
- *   - honors `SnsOptions`: `raiseOnFailureStatus` throws `SnsMessageProcessingException` when a handler
- *     reported an unsuccessful result; `catchExceptions` swallows-and-logs instead of cascading.
+ *   - honors `SnsOptions`: `raiseOnFailureStatus` (default on) throws `SnsMessageProcessingException` when
+ *     a handler reported an unsuccessful result or none at all (an unmatched topic too, unless
+ *     `ignoreUnmatchedTopics`); `catchExceptions` swallows-and-logs instead of cascading; `atMostOnce`
+ *     acknowledges whatever the outcome.
  *
  * EXCEPTION SEMANTICS: C#'s `catch (Exception ex) when (_options.CatchExceptions)` is a conditional catch
  * — the exception is only caught when `catchExceptions` is true, otherwise it cascades. TypeScript has no
@@ -54,11 +56,17 @@ export class SnsApplication implements IMiddlewareApplication<SNSEvent> {
           }
         }
 
-        if (this.options.raiseOnFailureStatus && context.messageResult?.isSuccessful === false) {
+        // A failure result or no result at all is not acknowledged (transport-bindings §1, obligation 8):
+        // failing the invocation is how a one-shot SNS delivery gets retried.
+        if (
+          !this.options.atMostOnce &&
+          this.options.raiseOnFailureStatus &&
+          isSettledAsFailure(context.messageResult, { ignoreUnmatchedTopics: this.options.ignoreUnmatchedTopics })
+        ) {
           throw new SnsMessageProcessingException(context.snsRecord.Sns.MessageId);
         }
       } catch (ex) {
-        if (!this.options.catchExceptions) {
+        if (!this.options.catchExceptions && !this.options.atMostOnce) {
           throw ex;
         }
 

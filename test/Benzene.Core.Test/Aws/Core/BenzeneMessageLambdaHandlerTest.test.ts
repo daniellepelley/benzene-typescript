@@ -5,6 +5,8 @@ import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
 import { BenzeneResult } from '@benzenejs/results';
 import { addBenzene, message, MessageHandlersRegistry, useMessageHandlers } from '@benzenejs/core-message-handlers';
 import {
+  BenzeneMessageInvocationFailedException,
+  BenzeneMessageLambdaOptions,
   compositeAwsLambda,
   InlineAwsLambdaStartUp,
   isBenzeneMessageEvent,
@@ -53,6 +55,39 @@ describe('BenzeneMessageLambdaHandler (direct invoke)', () => {
     // reads `response.body`.
     expect(response.statusCode).toBe('ok');
     expect(JSON.parse(response.body)).toEqual({ reply: 'pong:42' });
+  });
+
+  it("in 'Event' mode settles the envelope as a one-shot delivery: a failure fails the invocation", async () => {
+    // transport-bindings §1: the asynchronous envelope is a separately configured entry point.
+    const asyncEntryPoint = (configure?: (o: BenzeneMessageLambdaOptions) => void) =>
+      new InlineAwsLambdaStartUp()
+        .configureServices((s) => addBenzene(s))
+        .configure((app) =>
+          useBenzeneMessage(app, (bm) => useMessageHandlers(bm, PingHandler), (o) => {
+            o.invocationType = 'Event';
+            configure?.(o);
+          }),
+        )
+        .build();
+
+    await expect(
+      asyncEntryPoint().functionHandlerAsync({ topic: 'no-such-topic', headers: {}, body: '{}' }, context),
+    ).rejects.toThrow(BenzeneMessageInvocationFailedException);
+    await expect(
+      asyncEntryPoint().functionHandlerAsync({ topic: 'ping', headers: {}, body: '{}' }, context),
+    ).resolves.toBeNull();
+    await expect(
+      asyncEntryPoint((o) => (o.ignoreUnmatchedTopics = true)).functionHandlerAsync(
+        { topic: 'no-such-topic', headers: {}, body: '{}' },
+        context,
+      ),
+    ).resolves.toBeNull();
+    await expect(
+      asyncEntryPoint((o) => (o.atMostOnce = true)).functionHandlerAsync(
+        { topic: 'no-such-topic', headers: {}, body: '{}' },
+        context,
+      ),
+    ).resolves.toBeNull();
   });
 
   it('isBenzeneMessageEvent discriminates a topic envelope from other event shapes', () => {

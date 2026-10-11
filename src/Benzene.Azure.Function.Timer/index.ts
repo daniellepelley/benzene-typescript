@@ -3,6 +3,8 @@ export * from './TimerTriggerInfo';
 export * from './TimerContext';
 export * from './TimerMessageMappers';
 export * from './TimerApplication';
+export * from './TimerOptions';
+export * from './TimerMessageProcessingException';
 export * from './DependencyInjectionExtensions';
 export * from './Extensions';
 

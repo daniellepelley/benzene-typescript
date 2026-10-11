@@ -4,6 +4,7 @@ import { addBenzeneMessage } from '@benzenejs/core-message-handlers';
 import { createMiddlewarePipeline } from '@benzenejs/core-middleware';
 import { AwsEventStreamContext } from '../AwsEventStream/AwsEventStreamContext';
 import { BenzeneMessageLambdaHandler } from './BenzeneMessageLambdaHandler';
+import { BenzeneMessageLambdaOptions } from './BenzeneMessageLambdaOptions';
 
 /**
  * Port of Benzene.Aws.Lambda.Core.BenzeneMessage.Extensions (C# fluent extension method -> free function
@@ -18,8 +19,11 @@ import { BenzeneMessageLambdaHandler } from './BenzeneMessageLambdaHandler';
 export function useBenzeneMessage(
   app: IMiddlewarePipelineBuilder<AwsEventStreamContext>,
   action: PipelineBuilderAction<BenzeneMessageContext>,
+  configure?: (options: BenzeneMessageLambdaOptions) => void,
 ): IMiddlewarePipelineBuilder<AwsEventStreamContext> {
   app.register((x) => addBenzeneMessage(x));
   const pipeline = createMiddlewarePipeline(app, action);
-  return app.use((resolver) => new BenzeneMessageLambdaHandler(pipeline, resolver));
+  const options = new BenzeneMessageLambdaOptions();
+  configure?.(options);
+  return app.use((resolver) => new BenzeneMessageLambdaHandler(pipeline, resolver, options));
 }

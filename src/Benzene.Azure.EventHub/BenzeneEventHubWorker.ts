@@ -8,6 +8,7 @@ import {
 } from '@azure/event-hubs';
 import { ILoggerFactory, IServiceResolverFactory, NullLogger } from '@benzenejs/abstractions';
 import { IBenzeneWorker } from '@benzenejs/abstractions-middleware';
+import { isSettledAsFailure } from '@benzenejs/core-message-handlers';
 import { BenzeneEventHubConfig, withEventHubConfigDefaults } from './BenzeneEventHubConfig';
 import { EventHubConsumerApplication } from './EventHubConsumerApplication';
 import { EventHubMessageProcessingException } from './EventHubMessageProcessingException';
@@ -91,7 +92,16 @@ export class BenzeneEventHubWorker implements IBenzeneWorker {
       try {
         const messageResult = await this.application.handleAsync(event, this.serviceResolverFactory);
 
-        if (this.config.raiseOnFailureStatus && messageResult?.isSuccessful === false) {
+        // A failure result escalates; a missing result is acknowledged (as .NET: `== false` only); an
+        // unmatched topic follows ignoreUnmatchedTopics (default on for this stream binding).
+        if (
+          !this.config.atMostOnce &&
+          this.config.raiseOnFailureStatus &&
+          isSettledAsFailure(messageResult, {
+            ignoreUnmatchedTopics: this.config.ignoreUnmatchedTopics,
+            missingResult: 'acknowledge',
+          })
+        ) {
           // Escalate a non-exception failure result into the same path as a thrown exception: don't
           // checkpoint past this event, and (if catchHandlerExceptions is off) stop the worker so a
           // restart reprocesses from the last checkpoint.
@@ -115,18 +125,20 @@ export class BenzeneEventHubWorker implements IBenzeneWorker {
           }
         }
 
-        if (!this.config.catchHandlerExceptions) {
+        if (this.config.atMostOnce === true) {
+          // At-most-once: the failed event is acknowledged like a success and counts toward the checkpoint.
+        } else if (!this.config.catchHandlerExceptions) {
           // At-least-once: stop the worker without checkpointing the failed event, so a restart
           // resumes from the last checkpoint and redelivers it. Deferred (not awaited) so closing the
           // subscription doesn't deadlock waiting for this very handler to return; guarded so a
           // concurrent host stopAsync is safe.
           this.initiateStop();
           return;
+        } else {
+          // catchHandlerExceptions (default): skip this event (not checkpointed) and keep going — a
+          // later event checkpoints past it. The failed event does not count toward the interval.
+          continue;
         }
-
-        // catchHandlerExceptions (default): skip this event (not checkpointed) and keep going — a
-        // later event checkpoints past it. The failed event does not count toward the interval.
-        continue;
       }
 
       // One event at a time per partition, so this count has no same-partition race.

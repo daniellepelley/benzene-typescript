@@ -1,3 +1,4 @@
+import { IBenzeneResult } from '@benzenejs/abstractions';
 import { TransportNames } from '@benzenejs/abstractions-message-handlers';
 import { IMiddlewarePipeline } from '@benzenejs/abstractions-middleware';
 import {
@@ -33,6 +34,26 @@ export class BenzeneMessageApplication extends MiddlewareApplicationWithResult<
       new TransportMiddlewarePipeline<BenzeneMessageContext>(TransportNames.Benzene, pipeline),
       (event) => new BenzeneMessageContext(event),
       (context) => context.benzeneMessageResponse,
+    );
+  }
+}
+
+/**
+ * Runs an envelope through the pipeline and returns the handler's **result** rather than the response
+ * envelope — for a one-way binding whose message body is an envelope (a queue or event trigger) and which
+ * settles the message from the outcome (`undefined` when no result was recorded).
+ * Port of Benzene.Core.MessageHandlers.BenzeneMessage.BenzeneMessageResultApplication.
+ */
+export class BenzeneMessageResultApplication extends MiddlewareApplicationWithResult<
+  IBenzeneMessageRequest,
+  BenzeneMessageContext,
+  IBenzeneResult | undefined
+> {
+  constructor(pipeline: IMiddlewarePipeline<BenzeneMessageContext>) {
+    super(
+      new TransportMiddlewarePipeline<BenzeneMessageContext>(TransportNames.Benzene, pipeline),
+      (event) => new BenzeneMessageContext(event),
+      (context) => context.messageResult,
     );
   }
 }

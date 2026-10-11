@@ -114,6 +114,7 @@ describe('ServiceBusBatchApplication (direct)', () => {
     pipeline.useFn(async (context, next) => {
       seenBodies.push(context.message.body as string);
       await next();
+      context.messageResult = BenzeneResult.ok();
     });
 
     const application = new ServiceBusBatchApplication(pipeline.build());
@@ -151,9 +152,11 @@ describe('ServiceBusBatchApplication (direct)', () => {
     ).rejects.toThrow(ServiceBusMessageProcessingException);
   });
 
-  it('ServiceBusOptions defaults to not catching exceptions or raising on failure', () => {
+  it('ServiceBusOptions defaults to at-least-once: exceptions cascade, failures and missing results escalate', () => {
     const options = new ServiceBusOptions();
     expect(options.catchExceptions).toBe(false);
-    expect(options.raiseOnFailureStatus).toBe(false);
+    expect(options.raiseOnFailureStatus).toBe(true);
+    expect(options.atMostOnce).toBe(false);
+    expect(options.ignoreUnmatchedTopics).toBe(false);
   });
 });

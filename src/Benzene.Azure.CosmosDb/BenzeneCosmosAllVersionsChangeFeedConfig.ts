@@ -20,9 +20,20 @@ export class BenzeneCosmosAllVersionsChangeFeedConfig {
    */
   catchHandlerExceptions = false;
 
-  constructor(overrides?: Partial<Pick<BenzeneCosmosAllVersionsChangeFeedConfig, 'catchHandlerExceptions'>>) {
+  /**
+   * The **at-most-once override** every one-way binding carries (transport-bindings §1, obligation 8),
+   * spelled the same as on the other bindings: acknowledge (checkpoint past) a failed batch. On this fan-in
+   * stream binding it is the same behaviour as `catchHandlerExceptions: true`; either turns it on.
+   * Defaults to `false`. (There is no routing here, so no unmatched topic to settle.)
+   */
+  atMostOnce = false;
+
+  constructor(overrides?: Partial<Pick<BenzeneCosmosAllVersionsChangeFeedConfig, 'catchHandlerExceptions' | 'atMostOnce'>>) {
     if (overrides?.catchHandlerExceptions !== undefined) {
       this.catchHandlerExceptions = overrides.catchHandlerExceptions;
+    }
+    if (overrides?.atMostOnce !== undefined) {
+      this.atMostOnce = overrides.atMostOnce;
     }
   }
 }
