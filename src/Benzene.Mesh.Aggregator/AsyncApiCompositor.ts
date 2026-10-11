@@ -1,4 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.AsyncApiCompositor. */
+import { BenzeneTopic } from '@benzenejs/abstractions';
 
 /**
  * Merges each service's own AsyncAPI 3.0 document (fetched from its `spec` endpoint with `type=asyncapi`)
@@ -22,7 +23,11 @@ export interface ServiceDocument {
   readonly serviceName: string;
   /** The service's raw AsyncAPI 3.0 JSON. */
   readonly asyncApiJson: string;
-  /** The service's reserved (utility) topic ids, whose channels/operations are skipped. */
+  /**
+   * Extra reserved (utility) topic ids whose channels/operations are skipped. Every `benzene:`-prefixed topic
+   * is skipped regardless (`BenzeneTopic.isReserved`): a Contract Document no longer lists reserved topics,
+   * so the prefix is the rule.
+   */
   readonly reservedTopics: ReadonlySet<string>;
 }
 
@@ -113,7 +118,8 @@ export const AsyncApiCompositor = {
           if (
             primaryKey === undefined ||
             !channelKeyMap.has(primaryKey) ||
-            service.reservedTopics.has(channelAddress.get(primaryKey)!)
+            service.reservedTopics.has(channelAddress.get(primaryKey)!) ||
+            BenzeneTopic.isReserved(channelAddress.get(primaryKey))
           ) {
             continue; // no resolvable channel, or a reserved/utility operation - drop it
           }

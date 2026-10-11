@@ -1,11 +1,14 @@
 /** Port of Benzene.Mesh.Aggregator.MeshSnapshotBuilder. */
 import { HealthCheckResponse } from '@benzenejs/health-checks-core';
-import { MeshHashing, MeshServiceSnapshot } from '@benzenejs/mesh-contracts';
+import { MeshServiceSnapshot } from '@benzenejs/mesh-contracts';
 import { IMeshArtifactStore } from './IMeshArtifactStore';
 
 /**
- * Builds a `MeshServiceSnapshot` from a spec/health fetch (or self-reported push), computing the spec hash
- * and comparing it against the previous run's via `IMeshArtifactStore`. Shared by `MeshAggregator` (pulled
+ * Builds a `MeshServiceSnapshot` from a spec/health fetch (or self-reported push), reading the spec's hash
+ * and comparing it against the previous run's via `IMeshArtifactStore`. The hash is the **served**
+ * `contractHash` of the service's Contract Document (contract-document.md §6.1) — the aggregator computes no
+ * hash of its own, so its drift flag means exactly what a generated client's drift check means. A spec
+ * without one (not a Contract Document, or none fetched) has no hash, and so no drift verdict. Shared by `MeshAggregator` (pulled
  * snapshots) and any `IMeshReportPublisher` that turns a pushed `MeshServiceReport` into the same snapshot
  * shape, so both compute `MeshServiceSnapshot.contractDrift` identically instead of two copies of the logic.
  *
@@ -26,13 +29,26 @@ export const MeshSnapshotBuilder = {
     health: HealthCheckResponse | undefined,
     error: string | undefined,
   ): Promise<MeshServiceSnapshot> {
-    const specHash = specJson !== undefined ? MeshHashing.computeHash(specJson) : undefined;
+    const specHash = servedContractHash(specJson);
     const previousSpecHash = await tryGetPreviousSpecHashAsync(store, name);
     const contractDrift = specHash !== undefined && previousSpecHash !== undefined && previousSpecHash !== specHash;
 
     return new MeshServiceSnapshot(name, fetchedAtUtc, specJson, specHash, previousSpecHash, contractDrift, health, error);
   },
 };
+
+/** The served `contractHash` of a fetched spec, or `undefined` when there is none. */
+function servedContractHash(specJson: string | undefined): string | undefined {
+  if (specJson === undefined) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(specJson) as { contractHash?: unknown } | null;
+    return typeof parsed?.contractHash === 'string' ? parsed.contractHash : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 async function tryGetPreviousSpecHashAsync(store: IMeshArtifactStore, serviceName: string): Promise<string | undefined> {
   const previousJson = await store.tryReadAsync(`services/${serviceName}.json`);

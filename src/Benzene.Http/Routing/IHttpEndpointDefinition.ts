@@ -17,6 +17,14 @@ export interface IHttpEndpointDefinition {
 
   /** The topic/message name that identifies the handler for this endpoint. */
   readonly topic: string;
+
+  /**
+   * The handler version this route reaches, when it was declared on a versioned handler (`@httpEndpoint` on
+   * a `@message(topic, { version })` class). Absent for a route registered against a bare topic: it reaches
+   * whichever handler the request's version selects. Lets the spec attach `httpMappings` to the right
+   * `(topic, version)` entry (contract-document.md §2).
+   */
+  readonly version?: string;
 }
 
 export const IHttpEndpointDefinition: ServiceToken<IHttpEndpointDefinition> =

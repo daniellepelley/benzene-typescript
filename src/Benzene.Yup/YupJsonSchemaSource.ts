@@ -1,7 +1,7 @@
 import { Constructor } from '@benzenejs/abstractions';
 import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import { getYupSchema } from './YupSchemaRegistry';
-import { yupToJsonSchema } from './yupToJsonSchema';
+import { yupSchemaName, yupToJsonSchema } from './yupToJsonSchema';
 
 /**
  * An `ITypeJsonSchemaSource` backed by the registered Yup schemas: for a request/response type, it returns
@@ -13,5 +13,11 @@ export class YupJsonSchemaSource implements ITypeJsonSchemaSource {
   getJsonSchema(type: Constructor<unknown>): Record<string, unknown> | undefined {
     const schema = getYupSchema(type);
     return schema === undefined ? undefined : yupToJsonSchema(schema);
+  }
+
+  /** The schema's declared name: its Yup `.meta({ id })` (contract-document.md §4.1 rule 5). */
+  getSchemaName(type: Constructor<unknown>): string | undefined {
+    const schema = getYupSchema(type);
+    return schema === undefined ? undefined : yupSchemaName(schema);
   }
 }

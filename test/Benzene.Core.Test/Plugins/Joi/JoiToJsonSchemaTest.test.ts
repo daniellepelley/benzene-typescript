@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import Joi from 'joi';
-import { joiToJsonSchema } from '@benzenejs/joi';
+import { joiSchemaName, joiToJsonSchema } from '@benzenejs/joi';
 
 /**
  * Unit tests for `joiToJsonSchema` — the Joi → JSON Schema conversion (via `schema.describe()`) used to
@@ -48,5 +48,28 @@ describe('joiToJsonSchema', () => {
     const json = joiToJsonSchema(Joi.object({ score: Joi.number().greater(0).less(100) }));
     const score = (json['properties'] as Record<string, Record<string, unknown>>)['score'];
     expect(score).toMatchObject({ type: 'number', exclusiveMinimum: 0, exclusiveMaximum: 100 });
+  });
+
+  it('keeps nullability in the OpenAPI 3.0 forms (contract-document.md §4.2)', () => {
+    const json = joiToJsonSchema(
+      Joi.object({
+        note: Joi.string().allow(null).required(),
+        child: Joi.object({ name: Joi.string().required() }).allow(null),
+        labels: Joi.object().pattern(Joi.string(), Joi.string()),
+      }),
+    );
+    const props = json['properties'] as Record<string, unknown>;
+    expect(props['note']).toEqual({ type: 'string', nullable: true });
+    expect(props['child']).toEqual({
+      type: 'object',
+      nullable: true,
+      allOf: [{ type: 'object', properties: { name: { type: 'string' } }, required: ['name'] }],
+    });
+    expect(props['labels']).toEqual({ type: 'object', additionalProperties: { type: 'string' } });
+  });
+
+  it('reads the declared schema name from Joi .id() (contract-document.md §4.1 rule 5)', () => {
+    expect(joiSchemaName(Joi.object({}).id('OrderItem'))).toBe('OrderItem');
+    expect(joiSchemaName(Joi.object({}))).toBeUndefined();
   });
 });

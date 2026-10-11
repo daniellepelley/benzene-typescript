@@ -4,97 +4,143 @@
  * see `ContractDocument.ts`'s header for why this reads into a plain interface rather than the
  * existing `@benzenejs/schema-openapi` write-side model.
  *
- * Structural validation only: required fields (`openapi`, each entry's `topic`) must be present with
- * the right JSON kind; every other field - including the whole top-level `tags` the .NET producer's
- * in-memory model still carries - is passed through untouched or ignored, matching the spec's
- * "ignore what you don't recognize" forward-compatibility posture (contract-document.md §1's
- * non-normative note).
+ * Structural validation only: `schemaDialect` must be one this reader knows (`openapi-3.0`) - a document
+ * in any other dialect is rejected with {@link UnknownSchemaDialectError} (contract-document.md §1) - and
+ * each entry needs its `topic`. A `benzene:`-prefixed entry is ignored, not listed (§1, §5.1); every
+ * other unrecognized field is passed through untouched or ignored, the spec's "ignore what you don't
+ * recognize" forward-compatibility posture.
  */
 import {
   ContractDocument,
-  ContractDocumentInfo,
   ContractEvent,
   ContractRequestResponse,
+  ContractSend,
   HttpMapping,
   OpenApiSchemaObject,
+  SupportedSchemaDialect,
 } from './ContractDocument';
 
 /** Thrown when the input is not valid JSON, or is structurally not a Contract Document. */
 export class ContractDocumentParseError extends Error {
+  /** The conformance error kind (`conformance/README.md`), when there is one. */
+  readonly kind: string = 'invalid-document';
+
   constructor(message: string) {
     super(message);
     this.name = 'ContractDocumentParseError';
   }
 }
 
+/** Thrown for a document whose `schemaDialect` this reader does not know (contract-document.md §1). */
+export class UnknownSchemaDialectError extends ContractDocumentParseError {
+  override readonly kind = 'unknown-schema-dialect';
+
+  constructor(readonly schemaDialect: string | undefined) {
+    super(
+      schemaDialect === undefined
+        ? `Contract Document has no 'schemaDialect'; this reader knows only '${SupportedSchemaDialect}'`
+        : `Contract Document schemaDialect '${schemaDialect}' is not supported; this reader knows only ` +
+            `'${SupportedSchemaDialect}'`,
+    );
+    this.name = 'UnknownSchemaDialectError';
+  }
+}
+
+const ReservedTopicPrefix = 'benzene:';
+
 /** Parses `source` (a JSON string, or an already-parsed object) into a `ContractDocument`. */
 export function parseContractDocument(source: string | Record<string, unknown>): ContractDocument {
   const root = typeof source === 'string' ? parseJson(source) : source;
 
-  if (root['openapi'] === undefined) {
-    throw new ContractDocumentParseError("Contract Document is missing the required 'openapi' field");
+  const dialect = root['schemaDialect'];
+  if (dialect !== SupportedSchemaDialect) {
+    throw new UnknownSchemaDialectError(typeof dialect === 'string' ? dialect : undefined);
   }
 
-  const info = asObject(root['info'], 'info') ?? {};
   const componentsField = asObject(root['components'], 'components');
   const schemas =
     (componentsField !== undefined ? asObject(componentsField['schemas'], 'components.schemas') : undefined) ?? {};
 
   return {
-    openapi: String(root['openapi']),
-    info: readInfo(info),
+    schemaDialect: dialect,
+    service: asOptionalString(root['service'], 'service') ?? '',
+    serviceVersion: asOptionalString(root['serviceVersion'], 'serviceVersion'),
+    versionScheme: asOptionalString(root['versionScheme'], 'versionScheme'),
+    description: asOptionalString(root['description'], 'description'),
     messageEndpoint: asOptionalString(root['messageEndpoint'], 'messageEndpoint'),
     transports: asOptionalStringArray(root['transports'], 'transports'),
-    requests: asArray(root['requests'], 'requests').map(readRequest),
-    events: asArray(root['events'], 'events').map(readEvent),
+    contractHash: asOptionalString(root['contractHash'], 'contractHash'),
+    registrationHash: asOptionalString(root['registrationHash'], 'registrationHash'),
+    requests: entries(root['requests'], 'requests', readRequest),
+    events: entries(root['events'], 'events', readEvent),
+    sends: entries(root['sends'], 'sends', readSend),
     components: { schemas: schemas as Record<string, OpenApiSchemaObject> },
   };
 }
 
-function readInfo(info: Record<string, unknown>): ContractDocumentInfo {
-  return {
-    title: asOptionalString(info['title'], 'info.title'),
-    description: asOptionalString(info['description'], 'info.description'),
-    version: asOptionalString(info['version'], 'info.version'),
-  };
+/** Reads a list of entries, ignoring any whose topic is a reserved `benzene:` topic. */
+function entries<T extends { topic: string }>(
+  value: unknown,
+  path: string,
+  read: (json: Record<string, unknown>, at: string) => T,
+): T[] {
+  return asArray(value, path)
+    .map((raw, index) => {
+      const at = `${path}[${index}]`;
+      const json = asObject(raw, at);
+      if (json === undefined || typeof json['topic'] !== 'string') {
+        throw new ContractDocumentParseError(`${at} is missing its required 'topic'`);
+      }
+      return read(json, at);
+    })
+    .filter((entry) => !entry.topic.startsWith(ReservedTopicPrefix));
 }
 
-function readRequest(raw: unknown, index: number): ContractRequestResponse {
-  const json = asObject(raw, `requests[${index}]`);
-  if (json === undefined || typeof json['topic'] !== 'string') {
-    throw new ContractDocumentParseError(`requests[${index}] is missing its required 'topic'`);
-  }
-
-  return {
-    topic: json['topic'],
-    version: asOptionalString(json['version'], `requests[${index}].version`),
-    reserved: json['reserved'] === true ? true : undefined,
-    httpMappings: readHttpMappings(json['httpMappings'], index),
+function readRequest(json: Record<string, unknown>, at: string): ContractRequestResponse {
+  const request: ContractRequestResponse = {
+    topic: json['topic'] as string,
+    version: asOptionalString(json['version'], `${at}.version`),
+    httpMappings: readHttpMappings(json['httpMappings'], at),
     request: readSchema(json['request']),
-    response: readSchema(json['response']),
-    example: json['example'],
   };
-}
-
-function readEvent(raw: unknown, index: number): ContractEvent {
-  const json = asObject(raw, `events[${index}]`);
-  if (json === undefined || typeof json['topic'] !== 'string') {
-    throw new ContractDocumentParseError(`events[${index}] is missing its required 'topic'`);
+  if (json['response'] !== undefined) {
+    request.response = readSchema(json['response']);
   }
-
-  return {
-    topic: json['topic'],
-    version: asOptionalString(json['version'], `events[${index}].version`),
-    message: readSchema(json['message']),
-    example: json['example'],
-  };
+  if (json['example'] !== undefined) {
+    request.example = json['example'];
+  }
+  return request;
 }
 
-function readHttpMappings(value: unknown, requestIndex: number): HttpMapping[] | undefined {
+function readEvent(json: Record<string, unknown>, at: string): ContractEvent {
+  const event: ContractEvent = {
+    topic: json['topic'] as string,
+    version: asOptionalString(json['version'], `${at}.version`),
+    message: readSchema(json['message']),
+  };
+  if (json['example'] !== undefined) {
+    event.example = json['example'];
+  }
+  return event;
+}
+
+function readSend(json: Record<string, unknown>, at: string): ContractSend {
+  const send: ContractSend = {
+    topic: json['topic'] as string,
+    version: asOptionalString(json['version'], `${at}.version`),
+    request: readSchema(json['request']),
+  };
+  if (json['response'] !== undefined) {
+    send.response = readSchema(json['response']);
+  }
+  return send;
+}
+
+function readHttpMappings(value: unknown, at: string): HttpMapping[] | undefined {
   if (value === undefined) {
     return undefined;
   }
-  const array = asArray(value, `requests[${requestIndex}].httpMappings`);
+  const array = asArray(value, `${at}.httpMappings`);
   return array.map((entry) => {
     const json = entry as Record<string, unknown>;
     return { method: String(json['method']), path: String(json['path']) };

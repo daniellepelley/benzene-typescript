@@ -15,7 +15,6 @@
  * `ServiceToken.ts`'s `InjectableConstructor`) instead of relying on reflection.
  */
 import { ClientSdkOptions } from './ClientSdkOptions';
-import { computeContractHash } from './ContractHash';
 import { ContractDocument, ContractRequestResponse } from './ContractDocument';
 import { camelCase, toIdentifierSegment } from './NameFormatter';
 import { buildTypeDeclarations } from './OpenApiPayloadBuilder';
@@ -49,9 +48,9 @@ export function buildMessageClientSdk(document: ContractDocument, options: Messa
     // modules have no `namespace` keyword to wrap output in, so the C# "namespace" concept maps onto
     // the generated file's own path instead).
     fileName: namespacedFileName(options.namespace, `${serviceName}ServiceClient.ts`),
-    // A service-level client (§5.2's include-list projection, or the domain-only default) is never
-    // topic-scoped for hash purposes (contract-document.md §6.2) - only a single-topic atomic client is.
-    source: renderClientModule(serviceName, scoped, methodName, false),
+    // The include-list projection (§5.2) carries its own recomputed contractHash; with no include-list
+    // it equals the served one, so a drift check compares like with like (contract-document.md §6.4).
+    source: renderClientModule(serviceName, scoped, methodName),
   };
 }
 
@@ -77,15 +76,11 @@ interface TopicBinding {
  * and DI registration. Shared by `buildMessageClientSdk` and `AtomicClientSdkBuilder.ts` (which calls
  * this once per topic against that topic's already-projected, topic-scoped document).
  */
-export function renderClientModule(
-  serviceName: string,
-  document: ContractDocument,
-  methodName: IMethodName,
-  isTopicScopedForHash: boolean,
-): string {
+export function renderClientModule(serviceName: string, document: ContractDocument, methodName: IMethodName): string {
   const interfaceName = `I${serviceName}ServiceClient`;
   const className = `${serviceName}ServiceClient`;
-  const contractHash = computeContractHash(document, { topicScoped: isTopicScopedForHash });
+  // The document is already the projection this client covers, with its hashes recomputed over it.
+  const contractHash = document.contractHash ?? '';
 
   const declarations = buildTypeDeclarations(document.components.schemas);
   const bindings = document.requests.map((request) => toBinding(request, methodName));
@@ -118,7 +113,8 @@ function toBinding(request: ContractRequestResponse, methodName: IMethodName): T
     topic: request.topic,
     method: `${camelCase(base)}Async`,
     requestType: typeExpression(request.request),
-    responseType: typeExpression(request.response),
+    // An absent response means the handler returns no payload (contract-document.md §2).
+    responseType: request.response === undefined ? 'void' : typeExpression(request.response),
   };
 }
 
@@ -167,9 +163,7 @@ function methodSignature(binding: TopicBinding): string {
 
 // Reflected over by an outbound-routing start-up check (mirroring Benzene.Clients' C#
 // ValidateOutboundRouting()) - exactly the topics this client has methods for. Benzene's own reserved
-// endpoints (benzene:*) are framework plumbing, excluded by TopicScope like any other reserved topic
-// unless explicitly asked for; naming one here would demand an outbound route the consumer never
-// asked for.
+// endpoints (benzene:*) are never in a Contract Document, so never here.
 function renderRequiredTopics(serviceName: string, requests: ContractRequestResponse[]): string {
   const topics = requests.map((request) => `'${request.topic}'`).join(', ');
   return `export const ${serviceName}ServiceClientRequiredTopics: readonly string[] = [${topics}];`;

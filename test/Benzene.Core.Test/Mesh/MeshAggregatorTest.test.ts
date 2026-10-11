@@ -731,15 +731,16 @@ describe('MeshAggregator', () => {
   });
 
   it('RunOnceAsync_ChangedSpec_SecondRun_ReportsDrift', async () => {
+    // Drift is the served contractHash changing (contract-document.md §6.1); the aggregator hashes nothing.
     const handler = routingFetch()
-      .mapGet(SpecUrl, 200, '{"info":{"title":"orders-api"}}')
+      .mapGet(SpecUrl, 200, '{"service":"orders-api","contractHash":"sha256:aaaa"}')
       .mapGet(HealthUrl, 200, serializeHealth(true));
     const store = new FileSystemMeshArtifactStore(rootDirectory);
     const aggregator = httpAggregator(handler, store);
 
     await aggregator.runOnceAsync(singleServiceRegistry());
 
-    handler.mapGet(SpecUrl, 200, '{"info":{"title":"orders-api","version":"2"}}');
+    handler.mapGet(SpecUrl, 200, '{"service":"orders-api","contractHash":"sha256:bbbb"}');
     const manifest = await aggregator.runOnceAsync(singleServiceRegistry());
 
     expect(manifest.services[0]!.contractDrift).toBe(true);

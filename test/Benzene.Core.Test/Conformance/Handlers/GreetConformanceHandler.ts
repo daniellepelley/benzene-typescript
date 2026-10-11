@@ -10,7 +10,7 @@ export class GreetRequest {
   name = '';
 }
 
-export class GreetReply {
+export class GreetResponse {
   greeting = '';
 }
 
@@ -21,11 +21,11 @@ export class GreetReply {
 @message('conformance:greet', {
   registry: conformanceRegistry,
   requestType: GreetRequest,
-  responseType: GreetReply,
+  responseType: GreetResponse,
 })
-export class GreetConformanceHandler implements IMessageHandler<GreetRequest, GreetReply> {
-  handleAsync(request: GreetRequest): Promise<IBenzeneResultOf<GreetReply>> {
-    const reply = new GreetReply();
+export class GreetConformanceHandler implements IMessageHandler<GreetRequest, GreetResponse> {
+  handleAsync(request: GreetRequest): Promise<IBenzeneResultOf<GreetResponse>> {
+    const reply = new GreetResponse();
     reply.greeting = `Hello ${request.name}`;
     return Promise.resolve(BenzeneResult.ok(reply));
   }

@@ -1,6 +1,7 @@
 /**
- * The Contract Document (docs/specification/contract-document.md): the `{Service}.spec.json` shape a
- * client generator parses - `{ openapi, info, messageEndpoint?, transports?, requests[], events[],
+ * The Contract Document (docs/specification/contract-document.md): the `{service}.spec.json` shape a
+ * client generator parses - `{ schemaDialect, service, serviceVersion?, versionScheme?, description?,
+ * messageEndpoint?, transports?, contractHash, registrationHash, requests[], events[], sends[],
  * components.schemas }`, with every `$ref` pointing into `#/components/schemas/<name>`.
  *
  * Plain, JSON-shaped interfaces rather than classes: a parsed Contract Document already *is* this
@@ -13,11 +14,8 @@
  * reading someone else's committed document can do without. See the README Porting-conventions table.
  */
 
-export interface ContractDocumentInfo {
-  title?: string;
-  description?: string;
-  version?: string;
-}
+/** The one schema dialect this port reads (contract-document.md §1); any other is rejected. */
+export const SupportedSchemaDialect = 'openapi-3.0';
 
 export interface HttpMapping {
   method: string;
@@ -53,15 +51,14 @@ export interface ContractRequestResponse {
   topic: string;
   /** The handler version (core-concepts.md §2). Absent means the unversioned handler - never `""`. */
   version?: string;
-  /** True only when this is a reserved Benzene utility topic; never written as `false`. */
-  reserved?: boolean;
   httpMappings?: HttpMapping[];
   request: OpenApiSchemaObject;
-  response: OpenApiSchemaObject;
+  /** The response payload's schema. **Absent means the handler returns no payload**; `{}` means any. */
+  response?: OpenApiSchemaObject;
   example?: unknown;
 }
 
-/** One `events[]` entry (contract-document.md §3): a produced, fire-and-forget topic. */
+/** One `events[]` entry (contract-document.md §3.1): a topic the service publishes and defines. */
 export interface ContractEvent {
   topic: string;
   version?: string;
@@ -69,14 +66,29 @@ export interface ContractEvent {
   example?: unknown;
 }
 
+/** One `sends[]` entry (contract-document.md §3.2): a message to a topic another party defines. */
+export interface ContractSend {
+  topic: string;
+  version?: string;
+  request: OpenApiSchemaObject;
+  /** The reply's schema. **Absent means one-way.** */
+  response?: OpenApiSchemaObject;
+}
+
 /** The full top-level shape (contract-document.md §1). */
 export interface ContractDocument {
-  openapi: string;
-  info: ContractDocumentInfo;
+  schemaDialect: string;
+  service: string;
+  serviceVersion?: string;
+  versionScheme?: string;
+  description?: string;
   messageEndpoint?: string;
   transports?: string[];
+  contractHash?: string;
+  registrationHash?: string;
   requests: ContractRequestResponse[];
   events: ContractEvent[];
+  sends: ContractSend[];
   components: { schemas: Record<string, OpenApiSchemaObject> };
 }
 

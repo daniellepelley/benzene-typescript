@@ -9,6 +9,7 @@ export class HttpEndpointDefinition implements IHttpEndpointDefinition {
     readonly method: string,
     readonly path: string,
     readonly topic: string,
+    readonly version?: string,
   ) {}
 
   /** Port of C# `CreateInstance`. */

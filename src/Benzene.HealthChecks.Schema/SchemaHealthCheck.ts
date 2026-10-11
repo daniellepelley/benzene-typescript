@@ -1,62 +1,41 @@
 /** Port of Benzene.HealthChecks.Schema.SchemaHealthCheck. */
-import { IMessageHandlerDefinitionLookUp } from '@benzenejs/abstractions-message-handlers';
-import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
+import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   HealthCheckResult,
   IHealthCheck,
   IHealthCheckResult,
   SchemaHealthCheckConstants,
 } from '@benzenejs/health-checks-core';
-import { MeshHashing } from '@benzenejs/mesh-contracts';
-import { EventServiceDocumentBuilder, SchemaBuilder } from '@benzenejs/schema-openapi';
+import { SpecBuilder, SpecCache, SpecRequest } from '@benzenejs/schema-openapi';
 
 /**
- * A provider-side contract health check: it hashes the service's current message contract (every
- * registered handler's topic + request/response schema) and publishes the hash so consumers can tell
- * whether the contract still matches what their client was built against. The consumer side of the loop
- * is `@benzenejs/clients-health-checks`'s `ClientHealthCheckProcessor`.
+ * A provider-side contract health check: it publishes the `contractHash` of the Contract Document this
+ * service serves on `benzene:spec` (contract-document.md §6.1), so a consumer's
+ * `@benzenejs/clients-health-checks` drift check can compare it with the hash its generated client embeds.
  *
- * PORTING NOTES:
- * - C#'s `CodeGenHelpers.GenerateHash(handlers)` builds an `EventServiceDocument` from the handlers,
- *   strips the non-contract decoration (generated `example` payloads and the `messageEndpoint`
- *   advertisement), serializes it, and HMAC-hashes the JSON. `@benzenejs/schema-openapi`'s ported document
- *   already omits examples/`messageEndpoint`, so `EventServiceDocumentBuilder.generateJson()` is the
- *   normalized serialization directly; the HMAC is the shared `MeshHashing.computeHash` primitive (C#
- *   keeps it in `CodeGen.Core`, which isn't ported — `MeshHashing` documents itself as deliberately the
- *   same algorithm). The hash *value* differs from .NET (the whole TS spec serialization is hand-rolled,
- *   not `Microsoft.OpenApi`), but it is consistent across every TS component that hashes a contract — the
- *   mesh, the spec endpoint, and this check — which is what the drift loop needs.
- * - PORT DIVERGENCE: C#'s `SchemaBuilder` reflects the CLR type to produce each schema, so the C# check
- *   needs only the handler lookup. The TS `SchemaBuilder` sources schemas from the registered
- *   `ITypeJsonSchemaSource`s (validation-derived / bring-your-own — the runtime replacement for
- *   reflection, the same seam `SpecBuilder` and the mesh descriptor use), so this check additionally
- *   takes them; `addSchemaHealthCheck` resolves them from DI. Without any source the request/response
- *   schemas are empty and the hash captures only the topic set.
+ * The check does not hash anything itself: it reads the **served** document's `contractHash` — the same
+ * document, built by the same `SpecBuilder` (through the `SpecCache` when `useSpec` registered one), that
+ * `benzene:spec` answers with. A default generated client embeds the `contractHash` of that same document,
+ * so the two compare like with like (contract-document.md §6.4).
+ *
+ * PORTING NOTES: C#'s check rebuilt a hash per call from the handlers alone (no events, no application
+ * info) with a private HMAC, which never matched what a client generated from the served document embeds;
+ * the design ruling (Phase 3a, §10.2.8) replaces it, in every port, with the served value.
  */
 export class SchemaHealthCheck implements IHealthCheck {
-  /**
-   * @param lookUp The lookup used to enumerate the service's registered handlers.
-   * @param sources The registered JSON-schema sources used to resolve each handler's request/response
-   * schema (see the port divergence above). Defaults to none — a topic-set-only hash.
-   */
-  constructor(
-    private readonly lookUp: IMessageHandlerDefinitionLookUp,
-    private readonly sources: readonly ITypeJsonSchemaSource[] = [],
-  ) {}
+  /** @param resolver Resolves the spec feeds (handlers, outbound declarations, schema sources). */
+  constructor(private readonly resolver: IServiceResolver) {}
 
   get type(): string {
     return SchemaHealthCheckConstants.type;
   }
 
   executeAsync(): Promise<IHealthCheckResult> {
-    // Build the document from the handlers only — the message contract, deliberately without the
-    // info/transport decoration the spec endpoint adds — so the hash is stable across deploys and
-    // transport changes, mirroring C#'s handlers-only GenerateHash.
-    const json = new EventServiceDocumentBuilder(new SchemaBuilder(this.sources))
-      .addMessageHandlerDefinitions(this.lookUp.getAllHandlers())
-      .generateJson();
-
-    const hashCode = MeshHashing.computeHash(json);
+    const request = new SpecRequest('benzene', 'json');
+    const build = (r: SpecRequest): string => new SpecBuilder().createSpec(this.resolver, r);
+    const cache = this.resolver.tryGetService(SpecCache);
+    const json = cache !== undefined ? cache.getOrBuild(request, build) : build(request);
+    const hashCode = (JSON.parse(json) as { contractHash?: string }).contractHash;
 
     const data: Record<string, unknown> = { [SchemaHealthCheckConstants.hashCodeKey]: hashCode };
 

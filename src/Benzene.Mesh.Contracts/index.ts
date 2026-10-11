@@ -38,7 +38,6 @@ export * from './MeshTopology';
 export * from './TopologyEdge';
 export * from './MeshDiscoveryFilter';
 
-export * from './MeshHashing';
 export * from './MeshRegistryJson';
 export * from './MeshDiscoveryRunner';
 export * from './IMeshDiscoveryProvider';

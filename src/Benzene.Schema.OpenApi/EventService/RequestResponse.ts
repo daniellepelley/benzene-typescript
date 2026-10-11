@@ -2,32 +2,35 @@
 import { HttpMapping } from './HttpMapping';
 
 /**
- * One consumed topic in the benzene spec document: its `request`/`response` payload schemas (usually a
- * `$ref` into `components.schemas`), plus version/reserved/httpMappings metadata. `version` and `reserved`
- * serialize only when meaningful (non-empty / true); `request`/`response` are always written. The generated
- * `example` field of the C# original is not ported (example generation is out of scope).
+ * One `requests[]` entry of the Contract Document (contract-document.md §2): a topic this service serves,
+ * its `request` and optional `response` payload schemas (usually a `$ref` into `components.schemas`), its
+ * version and its HTTP routes. `version` serializes only when non-empty; `httpMappings` only when there are
+ * some; `response` only when the handler returns a payload — **absent means no payload**, `{}` a payload
+ * of any shape; `example` only when an author supplied one (examples are never synthesized).
  */
 export class RequestResponse {
   topic = '';
   version = '';
-  reserved = false;
   httpMappings: HttpMapping[] = [];
   request: Record<string, unknown> = {};
-  response: Record<string, unknown> = {};
+  response?: Record<string, unknown>;
+  example?: unknown;
 
   toJson(): Record<string, unknown> {
     const json: Record<string, unknown> = { topic: this.topic };
     if (this.version !== '') {
       json['version'] = this.version;
     }
-    if (this.reserved) {
-      json['reserved'] = true;
-    }
     if (this.httpMappings.length > 0) {
       json['httpMappings'] = this.httpMappings.map((mapping) => mapping.toJson());
     }
     json['request'] = this.request;
-    json['response'] = this.response;
+    if (this.response !== undefined) {
+      json['response'] = this.response;
+    }
+    if (this.example !== undefined) {
+      json['example'] = this.example;
+    }
     return json;
   }
 }

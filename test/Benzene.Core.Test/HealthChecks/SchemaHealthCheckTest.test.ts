@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Constructor } from '@benzenejs/abstractions';
-import {
-  IMessageHandlerDefinition,
-  IMessageHandlerDefinitionLookUp,
-} from '@benzenejs/abstractions-message-handlers';
+import { Constructor, IServiceResolver } from '@benzenejs/abstractions';
+import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
 import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import {
   HealthCheckResponse,
@@ -11,46 +8,27 @@ import {
   SchemaHealthCheckConstants,
 } from '@benzenejs/health-checks-core';
 import { ClientHashMatch, ClientHealthCheckProcessor } from '@benzenejs/clients-health-checks';
-import { MeshHashing } from '@benzenejs/mesh-contracts';
-import { EventServiceDocumentBuilder, SchemaBuilder } from '@benzenejs/schema-openapi';
+import { applyTopicScope, parseContractDocument } from '@benzenejs/codegen-client';
+import { addMessageHandlers, MessageHandlerDefinition, setApplicationInfo } from '@benzenejs/core-message-handlers';
+import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { SpecBuilder, SpecRequest } from '@benzenejs/schema-openapi';
 import { SchemaHealthCheck } from '@benzenejs/health-checks-schema';
 
 /**
- * Ports Benzene.Test.HealthChecks.SchemaHealthCheckTest: the provider publishes exactly the canonical
- * contract hash a client compares against, so the provider `SchemaHealthCheck` and the consumer
- * `ClientHealthCheckProcessor` form a drift loop — matching hashes report a match, a changed contract
+ * Ports Benzene.Test.HealthChecks.SchemaHealthCheckTest: the provider publishes the `contractHash` of the
+ * Contract Document it serves (contract-document.md §6.1), and a client generated from that same served
+ * document embeds the same value - so the provider `SchemaHealthCheck` and the consumer
+ * `ClientHealthCheckProcessor` form a drift loop: matching hashes report a match, a changed contract
  * reports drift.
- *
- * PORT DIVERGENCE (see SchemaHealthCheck): TS resolves each payload schema from `ITypeJsonSchemaSource`s
- * rather than reflecting the type, so the check takes the sources and the hash reflects the resolved
- * schema shape.
  */
 
-// Simple request/response types so the schema sources have something to key on.
 class CreateThing {}
 class ThingCreated {}
+class NoopHandler {}
 
-/** A source that returns a fixed schema per type name — the runtime stand-in for reflected schemas. */
+/** A source that returns a fixed schema per type name - the runtime stand-in for reflected schemas. */
 function sourceOf(schemas: Record<string, Record<string, unknown>>): ITypeJsonSchemaSource {
-  return {
-    getJsonSchema: (type: Constructor<unknown>) => schemas[type.name],
-  };
-}
-
-function handlerDef(topic: string, requestType: unknown, responseType: unknown): IMessageHandlerDefinition {
-  return {
-    topic: { id: topic, version: '' },
-    requestType,
-    responseType,
-    handlerType: class {},
-  } as unknown as IMessageHandlerDefinition;
-}
-
-function lookUpOf(...defs: IMessageHandlerDefinition[]): IMessageHandlerDefinitionLookUp {
-  return {
-    getAllHandlers: () => defs,
-    findHandler: (t) => defs.find((d) => d.topic.id === t.id),
-  };
+  return { getJsonSchema: (type: Constructor<unknown>) => schemas[type.name] };
 }
 
 const sources = [
@@ -60,66 +38,71 @@ const sources = [
   }),
 ];
 
-const handlers = () => [handlerDef('thing:create', CreateThing, ThingCreated)];
+function serviceWith(topics: string[], schemaSources: ITypeJsonSchemaSource[] = sources): IServiceResolver {
+  const container = new DefaultBenzeneServiceContainer();
+  addMessageHandlers(container);
+  setApplicationInfo(container, 'things', '1.0.0', '');
+  for (const source of schemaSources) {
+    container.addSingletonInstance(ITypeJsonSchemaSource, source);
+  }
+  for (const topic of topics) {
+    container.addSingletonInstance(
+      IMessageHandlerDefinition,
+      MessageHandlerDefinition.createInstance(topic, '', CreateThing, ThingCreated, NoopHandler),
+    );
+  }
+  return container.createServiceResolverFactory().createScope();
+}
 
-/** The canonical contract hash the same way the check computes it — build handlers-only, hash. */
-function contractHash(defs: IMessageHandlerDefinition[], srcs: ITypeJsonSchemaSource[]): string {
-  const json = new EventServiceDocumentBuilder(new SchemaBuilder(srcs))
-    .addMessageHandlerDefinitions(defs)
-    .generateJson();
-  return MeshHashing.computeHash(json);
+/** What a default generated client embeds: the contractHash of the served document, no include-list. */
+function clientBakedHash(resolver: IServiceResolver): string {
+  const served = parseContractDocument(new SpecBuilder().createSpec(resolver, new SpecRequest('benzene', 'json')));
+  return applyTopicScope(served, {}).contractHash!;
+}
+
+function match(schemaResult: HealthCheckResult, clientHash: string): ClientHashMatch {
+  const providerResponse = new HealthCheckResponse(true, { [SchemaHealthCheckConstants.type]: schemaResult });
+  const processed = ClientHealthCheckProcessor.process(providerResponse, clientHash);
+  return processed.healthChecks[SchemaHealthCheckConstants.type]!.data[SchemaHealthCheckConstants.matchKey] as ClientHashMatch;
 }
 
 describe('SchemaHealthCheck', () => {
-  it('publishes the canonical contract hash', async () => {
-    const result = await new SchemaHealthCheck(lookUpOf(...handlers()), sources).executeAsync();
+  it("publishes the served document's contractHash", async () => {
+    const resolver = serviceWith(['thing:create']);
+    const served = JSON.parse(new SpecBuilder().createSpec(resolver, new SpecRequest())) as { contractHash: string };
+
+    const result = await new SchemaHealthCheck(resolver).executeAsync();
 
     expect(result.type).toBe(SchemaHealthCheckConstants.type);
     expect(result.status).toBe('ok');
-    expect(result.data[SchemaHealthCheckConstants.hashCodeKey]).toBe(contractHash(handlers(), sources));
+    expect(result.data[SchemaHealthCheckConstants.hashCodeKey]).toBe(served.contractHash);
+    expect(served.contractHash).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 
   it('reflects the resolved schema shape, not just the topic set', async () => {
-    const withSchemas = await new SchemaHealthCheck(lookUpOf(...handlers()), sources).executeAsync();
-    const withoutSchemas = await new SchemaHealthCheck(lookUpOf(...handlers())).executeAsync();
+    const withSchemas = await new SchemaHealthCheck(serviceWith(['thing:create'])).executeAsync();
+    const withoutSchemas = await new SchemaHealthCheck(serviceWith(['thing:create'], [])).executeAsync();
 
-    // Same handlers, different resolved schemas -> different hash (schemas are in the hash).
     expect(withSchemas.data[SchemaHealthCheckConstants.hashCodeKey]).not.toBe(
       withoutSchemas.data[SchemaHealthCheckConstants.hashCodeKey],
     );
   });
 
-  it('end to end: a client baked against the current contract reports a match', async () => {
-    const clientBakedHash = contractHash(handlers(), sources);
+  it('end to end: a client generated from the served document reports a match', async () => {
+    const resolver = serviceWith(['thing:create']);
+    const schemaResult = (await new SchemaHealthCheck(resolver).executeAsync()) as HealthCheckResult;
 
-    const schemaResult = (await new SchemaHealthCheck(lookUpOf(...handlers()), sources).executeAsync()) as HealthCheckResult;
-    const providerResponse = new HealthCheckResponse(true, { [SchemaHealthCheckConstants.type]: schemaResult });
-
-    const processed = ClientHealthCheckProcessor.process(providerResponse, clientBakedHash);
-
-    const match = processed.healthChecks[SchemaHealthCheckConstants.type]!.data[
-      SchemaHealthCheckConstants.matchKey
-    ] as ClientHashMatch;
-    expect(match.isMatch).toBe(true);
+    expect(match(schemaResult, clientBakedHash(resolver)).isMatch).toBe(true);
   });
 
-  it('end to end: a client baked against an old contract reports drift', async () => {
-    // The client was generated against the original single-handler contract...
-    const clientBakedHash = contractHash(handlers(), sources);
+  it('end to end: a client generated from an older contract reports drift', async () => {
+    const clientHash = clientBakedHash(serviceWith(['thing:create']));
 
-    // ...but the provider now exposes an extra handler.
-    const changed = [
-      handlerDef('thing:create', CreateThing, ThingCreated),
-      handlerDef('thing:delete', CreateThing, ThingCreated),
-    ];
-    const schemaResult = (await new SchemaHealthCheck(lookUpOf(...changed), sources).executeAsync()) as HealthCheckResult;
-    const providerResponse = new HealthCheckResponse(true, { [SchemaHealthCheckConstants.type]: schemaResult });
+    // The provider now exposes an extra handler.
+    const schemaResult = (await new SchemaHealthCheck(
+      serviceWith(['thing:create', 'thing:delete']),
+    ).executeAsync()) as HealthCheckResult;
 
-    const processed = ClientHealthCheckProcessor.process(providerResponse, clientBakedHash);
-
-    const match = processed.healthChecks[SchemaHealthCheckConstants.type]!.data[
-      SchemaHealthCheckConstants.matchKey
-    ] as ClientHashMatch;
-    expect(match.isMatch).toBe(false);
+    expect(match(schemaResult, clientHash).isMatch).toBe(false);
   });
 });

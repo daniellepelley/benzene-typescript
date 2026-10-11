@@ -2,10 +2,9 @@
 import { randomUUID } from 'node:crypto';
 import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
-import { IMessageSenderDefinition } from '@benzenejs/abstractions-messages';
-import { BenzeneMessageContext, MessageSenderDefinition } from '@benzenejs/core-messages';
+import { BenzeneMessageContext } from '@benzenejs/core-messages';
 import { IHealthCheck } from '@benzenejs/health-checks-core';
-import { IMeshTraceExporter, MeshPlacement, MeshServiceInfo } from '@benzenejs/mesh-wire';
+import { IMeshTraceExporter, MeshOutboundRegistry, MeshPlacement, MeshServiceInfo } from '@benzenejs/mesh-wire';
 import { CloudServicePaths } from './CloudServicePaths';
 import type { CloudServiceProfileReport } from './CloudServiceProfileReport';
 
@@ -47,12 +46,20 @@ export interface ICloudServiceBuilder {
   withHandlers(...handlerTypes: Constructor<unknown>[]): ICloudServiceBuilder;
 
   /**
-   * Declares an outbound topic this service may send (mesh.md §2.3's outbound registration) - no handler,
-   * since nothing here receives. This is what populates the descriptor's `produces` field, the sole source
-   * a collector reads to build this service's PROVIDER edges (mesh.md §4) - a topic never declared here is
-   * never a provider edge, however much traffic actually flows. Mirrors `withHandlers` for the inbound side;
-   * `requestType`/`responseType` default to "no payload" (matching `MessageSenderDefinition.create`'s
-   * `VoidResult` sentinel) when the service doesn't need §2.1 schema derivation for this topic.
+   * Declares what this service puts on the wire (contract-document.md §3.3): the events it publishes and the
+   * sends it makes to topics other parties define, as a {@link MeshOutboundRegistry}. The declarations feed the
+   * Contract Document's `events[]`/`sends[]` and the mesh descriptor's `produces` (events ∪ sends) — a topic
+   * never declared is never a provider edge, however much traffic flows. May be called more than once; the
+   * declarations accumulate (a topic declared both as an event and a send throws).
+   */
+  withOutbound(outbound: MeshOutboundRegistry): ICloudServiceBuilder;
+
+  /**
+   * Declares one send: a message to `topic`, whose contract another party defines.
+   *
+   * @deprecated Use {@link withOutbound} with `{ kind: 'send', ... }` — or `{ kind: 'event', ... }` for a topic
+   * this service publishes and defines. Kept so existing composition roots compile; it always declares a
+   * send, and `responseType` is the reply's type (omitted: one-way).
    */
   withProduces(
     topic: string,
@@ -62,10 +69,9 @@ export interface ICloudServiceBuilder {
   ): ICloudServiceBuilder;
 
   /**
-   * The former name of {@link withProduces}, kept so existing composition roots still compile.
+   * The former name of {@link withProduces}.
    *
-   * @deprecated The 2026-08 role inversion (mesh.md §4) made a service's outbound registration its
-   * PRODUCER claim, so the old name says the opposite of what the method does. Use `withProduces`.
+   * @deprecated Use {@link withOutbound}.
    */
   withConsumes(
     topic: string,
@@ -129,7 +135,8 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
   collectorEnvelopeUrl?: string;
   readonly healthChecks: IHealthCheck[] = [];
   handlerTypes?: Constructor<unknown>[];
-  readonly producesDefinitions: IMessageSenderDefinition[] = [];
+  /** The outbound declarations (`withOutbound`), feeding the spec's events/sends and the descriptor's produces. */
+  readonly outbound = new MeshOutboundRegistry();
   envelopeMiddleware?: PipelineBuilderAction<BenzeneMessageContext>;
   invokePath: string = CloudServicePaths.invoke;
   specPath: string = CloudServicePaths.spec;
@@ -189,17 +196,31 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
     return this;
   }
 
+  withOutbound(outbound: MeshOutboundRegistry): ICloudServiceBuilder {
+    for (const declaration of outbound.getAllDeclarations()) {
+      this.outbound.register(declaration);
+    }
+    return this;
+  }
+
+  /** @deprecated Use {@link withOutbound}. */
   withProduces(
     topic: string,
     requestType: ServiceIdentifier<unknown> = VoidResult,
     responseType: ServiceIdentifier<unknown> = VoidResult,
     version = '',
   ): ICloudServiceBuilder {
-    this.producesDefinitions.push(MessageSenderDefinition.create(topic, requestType, responseType, VoidResult, version));
+    this.outbound.register({
+      kind: 'send',
+      topic,
+      version,
+      request: requestType,
+      response: responseType === VoidResult ? undefined : responseType,
+    });
     return this;
   }
 
-  /** @deprecated Use {@link withProduces}. */
+  /** @deprecated Use {@link withOutbound}. */
   withConsumes(
     topic: string,
     requestType: ServiceIdentifier<unknown> = VoidResult,

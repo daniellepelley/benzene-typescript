@@ -17,14 +17,16 @@ export interface ISchemaBuilder {
   build(): Record<string, Record<string, unknown>>;
 
   /**
-   * Records the schema for `type` (from the registered sources) under a stable id and returns a `$ref` to
-   * it. A `VoidResult`/unknown type — or a type with no source schema — yields an empty inline schema `{}`
-   * (unconstrained), never a dangling `$ref`.
+   * Records the schema for `type` (from the registered sources) under its component name — the declared
+   * schema name, else the class name — and returns a `$ref` to it. A `VoidResult`/unknown type — or a type
+   * with no source schema — yields an empty inline schema `{}` (unconstrained), never a dangling `$ref`.
+   * `usage` (e.g. `"orders:create (request)"`) names the use for a collision error. Throws
+   * `ComponentNameCollisionError` when a different schema already holds the name (contract-document.md §4.1).
    */
-  addSchema(type: ServiceIdentifier<unknown>): Record<string, unknown>;
+  addSchema(type: ServiceIdentifier<unknown>, usage?: string): Record<string, unknown>;
 
-  /** Records a hand-supplied `schema` under `schemaId` (if absent) and returns a `$ref` to it. */
-  addNamedSchema(schemaId: string, schema: Record<string, unknown>): Record<string, unknown>;
+  /** Records a hand-supplied `schema` under `schemaId` and returns a `$ref` to it (same collision rule). */
+  addNamedSchema(schemaId: string, schema: Record<string, unknown>, usage?: string): Record<string, unknown>;
 }
 
 export const ISchemaBuilder: ServiceToken<ISchemaBuilder> = serviceToken<ISchemaBuilder>('ISchemaBuilder');

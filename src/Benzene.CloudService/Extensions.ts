@@ -10,6 +10,7 @@ import {
   setApplicationInfo,
   useMessageHandlers,
 } from '@benzenejs/core-message-handlers';
+import { IMeshOutboundDefinitionLookUp } from '@benzenejs/abstractions-messages';
 import { BenzeneMessageContext } from '@benzenejs/core-messages';
 import { Constants as HealthCheckConstants, useHealthCheck } from '@benzenejs/health-checks';
 import {
@@ -75,7 +76,7 @@ export function useBenzeneCloudService<TContext extends IHttpContext>(
   const info = builder.buildServiceInfo();
   const report = CloudServiceProfileReport.evaluate(builder);
   builder.profileReportCallback?.(report);
-  const descriptorSource = new CloudServiceDescriptorSource(info, report, builder.handlerTypes, builder.producesDefinitions);
+  const descriptorSource = new CloudServiceDescriptorSource(info, report, builder.handlerTypes, builder.outbound.getAllDefinitions());
   const healthChecks = [...builder.healthChecks];
 
   const announcer =
@@ -94,6 +95,10 @@ export function useBenzeneCloudService<TContext extends IHttpContext>(
     // info.service + the log scope + the benzene.service span attribute).
     setApplicationInfo(x, serviceName, '', '');
     x.addSingletonFactory(CloudServiceProfileReport, () => report);
+    // The outbound declarations feed the Contract Document's events/sends (contract-document.md §3.3).
+    if (builder.outbound.getAllDeclarations().length > 0) {
+      x.addSingletonInstance(IMeshOutboundDefinitionLookUp, builder.outbound);
+    }
     x.addSingletonFactory(
       IHttpEndpointDefinition,
       () => new HttpEndpointDefinition('get', builder.specPath, SchemaConstants.DefaultSpecTopic),

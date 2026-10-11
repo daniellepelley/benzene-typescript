@@ -20,17 +20,10 @@ export interface ClientSdkOptions {
   namespace: string;
 
   /**
-   * The topic include-list: only these topics are in scope. Undefined/empty means "every domain
-   * topic" (contract-document.md §5.1), subject to `includeReserved`. A topic named here the
-   * document doesn't have fails loud (§5.2) rather than silently generating nothing for it.
+   * The topic include-list: only these topics are in scope. Undefined/empty means every topic in the
+   * document's `requests[]` (contract-document.md §5.2). A topic named here the document doesn't have
+   * fails loud rather than silently generating nothing for it. `benzene:` topics are never in a parsed
+   * document, so a generated client covers a service's own topics only (§5.1).
    */
   topics?: readonly string[];
-
-  /**
-   * When true (and `topics` is not set), every reserved Benzene utility topic (`benzene:spec`,
-   * `benzene:healthcheck`, `benzene:mesh`, ...) is admitted too, so a generated client can cover
-   * Benzene's own framework surface as well as a service's domain topics. Ignored when `topics`
-   * explicitly names a topic: an explicit ask always wins over this default.
-   */
-  includeReserved?: boolean;
 }

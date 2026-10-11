@@ -33,7 +33,7 @@ import {
 import { findSubsetMismatch, load } from './ConformanceFixtures';
 import {
   GreetConformanceHandler,
-  GreetReply,
+  GreetResponse,
   GreetRequest,
 } from './Handlers/GreetConformanceHandler';
 import {
@@ -168,7 +168,7 @@ function canonicalLookUp(...extraHandlerTypes: Constructor<unknown>[]): Definiti
 
 // Reference the handlers' payload types so their imports are load-bearing (and the classes register).
 void GreetRequest;
-void GreetReply;
+void GreetResponse;
 void StatusRequest;
 void StatusReply;
 

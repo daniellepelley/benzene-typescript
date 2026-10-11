@@ -4,7 +4,12 @@ import {
   IMessageHandlerDefinition,
   IMessageHandlerDefinitionLookUp,
 } from '@benzenejs/abstractions-message-handlers';
-import { IMessageSenderDefinition, IMessageSendersFinder, ITopic } from '@benzenejs/abstractions-messages';
+import {
+  IMeshOutboundDefinitionLookUp,
+  IMessageSenderDefinition,
+  IMessageSendersFinder,
+  ITopic,
+} from '@benzenejs/abstractions-messages';
 import { CacheMessageHandlersFinder, RegistryMessageHandlersFinder } from '@benzenejs/core-message-handlers';
 import { MeshDescriptorFactory, MeshServiceDescriptor, MeshServiceInfo } from '@benzenejs/mesh-wire';
 import { CloudServiceProfileReport } from './CloudServiceProfileReport';
@@ -15,10 +20,11 @@ import { CloudServiceProfileReport } from './CloudServiceProfileReport';
  * lazily from the container's registry on first use. Both paths stamp the profile self-assessment onto the
  * descriptor (mesh.md §2's `profile` field, excluded from the contract hash).
  *
- * `producesDefinitions` (mesh.md §2.3, `ICloudServiceBuilder.withProduces`) is the outbound-registration
- * counterpart of `handlerTypes`: when the builder declared any, they populate `produces` eagerly the same
- * way `handlerTypes` populates `topics`; when it declared none, the lazy path still checks the container for
- * an `IMessageSendersFinder` a host may have registered independently, exactly mirroring how the lazy
+ * `producesDefinitions` (the builder's `withOutbound` declarations, events ∪ sends, contract-document.md §3.3)
+ * is the outbound-registration counterpart of `handlerTypes`: when the builder declared any, they populate
+ * `produces` eagerly the same way `handlerTypes` populates `topics`; when it declared none, the lazy path
+ * still checks the container for an `IMeshOutboundDefinitionLookUp` (or an `IMessageSendersFinder`) a host
+ * may have registered independently, exactly mirroring how the lazy
  * `topics` path checks for `IMessageHandlerDefinitionLookUp`. Neither path guesses at outbound registration
  * from handler bodies (mesh.md §2.3 forbids it) - an app with no `withConsumes` calls and no registered
  * finder degrades `produces` (`degraded: ["outbound-registry"]`), same as an app with no handlers degrades
@@ -54,7 +60,7 @@ export class CloudServiceDescriptorSource {
   get(resolver: IServiceResolver): MeshServiceDescriptor {
     return (this.descriptor ??= this.build(
       resolver.tryGetService(IMessageHandlerDefinitionLookUp),
-      this.eagerSendersFinder() ?? resolver.tryGetService(IMessageSendersFinder),
+      this.eagerSendersFinder() ?? lookUpFinder(resolver) ?? resolver.tryGetService(IMessageSendersFinder),
     ));
   }
 
@@ -73,6 +79,12 @@ export class CloudServiceDescriptorSource {
     descriptor.profile = this.report.toMeshProfile();
     return descriptor;
   }
+}
+
+/** The container's outbound declarations (events ∪ sends) as a senders finder, when a host registered them. */
+function lookUpFinder(resolver: IServiceResolver): IMessageSendersFinder | undefined {
+  const lookUp = resolver.tryGetService(IMeshOutboundDefinitionLookUp);
+  return lookUp === undefined ? undefined : new ListSendersFinder(lookUp.getAllDefinitions());
 }
 
 /** A fixed-list `IMessageHandlerDefinitionLookUp` over eagerly-derived definitions (C# private `ListLookUp`). */

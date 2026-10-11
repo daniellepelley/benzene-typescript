@@ -19,3 +19,4 @@ export * from './BenzeneClient/IBenzeneClientRequest';
 export * from './BenzeneClient/IGetTopic';
 export * from './BenzeneClient/IBenzeneClientContextMiddlewareBuilder';
 export * from './BenzeneClient/BenzeneClientContext';
+export * from './IMeshOutboundDefinitionLookUp';

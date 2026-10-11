@@ -29,7 +29,6 @@ export * from './BenzeneClientBuilder';
 export * from './ContractDocument';
 export * from './ContractDocumentParser';
 export * from './ClientSdkOptions';
-export * from './ContractReservedTopics';
 export * from './TopicScope';
 export * from './SchemaClosure';
 export * from './TopicScopedDocument';

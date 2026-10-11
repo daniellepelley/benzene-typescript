@@ -1,18 +1,19 @@
 /** Port of Benzene.Schema.OpenApi.Extensions (the UseSpec half). */
-import { tryAddSingletonFactory } from '@benzenejs/abstractions';
+import { IStartUpCheck, tryAddSingletonFactory } from '@benzenejs/abstractions';
 import { IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
 import { Capability, IMiddlewarePipelineBuilder, capability } from '@benzenejs/abstractions-middleware';
 import { MessageHandlerDefinition } from '@benzenejs/core-message-handlers';
 import { RawStringMessage } from '@benzenejs/core-messages';
 import { AsyncApiSpecOptions } from './AsyncApi/AsyncApiSpecOptions';
 import { Constants } from './Constants';
+import { ContractDocumentStartUpCheck } from './ContractDocumentStartUpCheck';
 import { SpecCache } from './SpecCache';
 import { SpecMessageHandler } from './SpecMessageHandler';
 import { SpecRequest } from './SpecRequest';
 
 /**
- * Registers the `benzene:spec` handler, which serves the service's benzene spec document (topics + payload JSON
- * Schemas + `components.schemas`) on the reserved `benzene:spec` topic. Opt-in, like the C# `UseSpec`: nothing is
+ * Registers the `benzene:spec` handler, which serves the service's Contract Document (contract-document.md) on
+ * the reserved `benzene:spec` topic, and a start-up check that derives it before any message is handled. Opt-in, like the C# `UseSpec`: nothing is
  * exposed unless called. C# extension method → free function taking the pipeline builder first.
  *
  * The handler is DI-registered (definition + scoped factory), so it's dispatched by the message-handler
@@ -30,6 +31,12 @@ export function useSpec<TContext>(
     container.addScopedFactory(SpecMessageHandler, (resolver) => new SpecMessageHandler(resolver));
     // TryAdd so a second useSpec call (or a host that pre-registers a cache) is a no-op.
     tryAddSingletonFactory(container, SpecCache, () => new SpecCache());
+    // Derive the document at start-up, so a naming collision or an event/send clash fails before the first
+    // message (contract-document.md §3.3, §4.1). Guarded by its class token, so a second useSpec is a no-op.
+    if (!container.isTypeRegistered(ContractDocumentStartUpCheck)) {
+      container.addSingletonFactory(ContractDocumentStartUpCheck, () => new ContractDocumentStartUpCheck());
+      container.addSingletonFactory(IStartUpCheck, (resolver) => resolver.getService(ContractDocumentStartUpCheck));
+    }
   });
   return app;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as yup from 'yup';
-import { yupToJsonSchema } from '@benzenejs/yup';
+import { yupSchemaName, yupToJsonSchema } from '@benzenejs/yup';
 
 /**
  * Unit tests for `yupToJsonSchema` — the Yup → JSON Schema conversion (via `schema.describe()`) used to
@@ -48,5 +48,27 @@ describe('yupToJsonSchema', () => {
     expect(score).toMatchObject({ type: 'number', exclusiveMinimum: 0, exclusiveMaximum: 100 });
     expect(score['minimum']).toBeUndefined();
     expect(score['maximum']).toBeUndefined();
+  });
+
+  it('keeps nullability in the OpenAPI 3.0 forms (contract-document.md §4.2)', () => {
+    const json = yupToJsonSchema(
+      yup.object({
+        note: yup.string().nullable().defined(),
+        child: yup.object({ name: yup.string().required() }).nullable().default(undefined),
+      }),
+    );
+    const props = json['properties'] as Record<string, unknown>;
+    expect(props['note']).toEqual({ type: 'string', nullable: true });
+    expect(props['child']).toEqual({
+      type: 'object',
+      nullable: true,
+      allOf: [{ type: 'object', properties: { name: { type: 'string' } }, required: ['name'] }],
+    });
+    expect(json['required']).toEqual(['note']);
+  });
+
+  it('reads the declared schema name from Yup .meta({ id }) (contract-document.md §4.1 rule 5)', () => {
+    expect(yupSchemaName(yup.object({}).meta({ id: 'OrderItem' }))).toBe('OrderItem');
+    expect(yupSchemaName(yup.object({}))).toBeUndefined();
   });
 });

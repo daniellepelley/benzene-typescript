@@ -1,52 +1,56 @@
 /**
- * Runs `docs/specification/contract-document.md`'s two fixtures - the TypeScript reference runner for
- * the Contract Document format, its topic-scope/schema-closure generation semantics (§5), and its
- * `contractHash` algorithm (§6). Port of the .NET port's own contract-document conformance test (see
- * `conformance/README.md`'s "Contract Document and contract hash case formats").
+ * Runs the **client-generator** groups of `contract-document-cases.json` (`parseCases`, `topicScopeCases`,
+ * `schemaClosureCases`) and every case of `contract-hash-cases.json` (contract-document.md §5, §6, §8). The
+ * producer groups run in `ContractDocumentProducerConformanceTest`.
  *
- * `expectedTopics`/`expectedComponents` are compared as **sets** (order-independent, no duplicates
- * expected either side) per the fixture format; everything else follows the subset-matching rules
- * `ConformanceFixtures.ts` already implements for the other conformance tests in this directory.
+ * The hash cases run twice over: the cases without a `projection` through `@benzenejs/codegen-core` -
+ * the runtime hash every document this port serves carries (the producer claim) - and every case,
+ * projections included, through the client generator's own projection functions (`applyTopicScope`,
+ * `projectTopicScoped`), whose recomputed `contractHash`/`registrationHash` are what a generated client
+ * embeds. Topic, event, send and component lists compare as sets.
  */
 import { describe, expect, it } from 'vitest';
+import { ContractHash } from '@benzenejs/codegen-core';
 import {
   ContractDocument,
+  ContractDocumentParseError,
   OpenApiSchemaObject,
-  parseContractDocument,
-  computeContractHash,
-  applyTopicScope,
   UnknownTopicsError,
+  applyTopicScope,
+  parseContractDocument,
+  projectTopicScoped,
   reachableSchemaNames,
-  isReservedEntry,
 } from '@benzenejs/codegen-client';
 import { load } from './ConformanceFixtures';
 
-interface ExpectedRequest {
+interface ExpectedEntry {
   topic: string;
   versionPresent?: boolean;
   version?: string;
-  reserved?: boolean;
-}
-
-interface ExpectedEvent {
-  topic: string;
-  versionPresent?: boolean;
-  version?: string;
+  responsePresent?: boolean;
 }
 
 interface ParseCase {
   name: string;
   documentRef: string;
   options?: { topics?: string[] };
-  expected?: { openapi?: string; requests?: ExpectedRequest[]; events?: ExpectedEvent[] };
-  expectedError?: { unknownTopics: string[]; validTopics: string[] };
+  expected?: {
+    schemaDialect?: string;
+    service?: string;
+    requests?: ExpectedEntry[];
+    events?: ExpectedEntry[];
+    sends?: ExpectedEntry[];
+  };
+  expectedError?: { kind: string; unknownTopics?: string[]; validTopics?: string[] };
 }
 
 interface TopicScopeCase {
   name: string;
   documentRef: string;
-  options: { topics?: string[]; includeReserved?: boolean };
+  options: { topics?: string[] };
   expectedTopics: string[];
+  expectedEvents?: string[];
+  expectedSends?: string[];
 }
 
 interface SchemaClosureCase {
@@ -57,7 +61,7 @@ interface SchemaClosureCase {
 }
 
 interface ContractDocumentFixture {
-  documents: Record<string, unknown>;
+  documents: Record<string, Record<string, unknown>>;
   parseCases: ParseCase[];
   topicScopeCases: TopicScopeCase[];
   schemaClosureCases: SchemaClosureCase[];
@@ -66,75 +70,90 @@ interface ContractDocumentFixture {
 interface HashCase {
   name: string;
   document: Record<string, unknown>;
-  expectedHash: string;
-}
-
-interface ContractHashFixture {
-  cases: HashCase[];
+  projection?: { kind: 'topic'; topic: string } | { kind: 'include-list'; topics: string[] };
+  expectedContractHash: string;
+  expectedRegistrationHash: string;
 }
 
 const documentCasesFixture = load<ContractDocumentFixture>('contract-document-cases.json');
-const hashCasesFixture = load<ContractHashFixture>('contract-hash-cases.json');
+const hashCasesFixture = load<{ cases: HashCase[] }>('contract-hash-cases.json');
 
 function documentFor(ref: string): ContractDocument {
-  return parseContractDocument(documentCasesFixture.documents[ref] as Record<string, unknown>);
+  return parseContractDocument(documentCasesFixture.documents[ref]!);
 }
 
 function assertSetEqual(actual: Iterable<string>, expected: readonly string[], label: string): void {
-  const actualSorted = [...new Set(actual)].sort();
-  const expectedSorted = [...new Set(expected)].sort();
-  expect(actualSorted, label).toEqual(expectedSorted);
+  expect([...new Set(actual)].sort(), label).toEqual([...new Set(expected)].sort());
+}
+
+/** Asserts per-entry rows keyed by (topic, version) against `entries` (README "parseCases"). */
+function assertEntries(
+  entries: ReadonlyArray<{ topic: string; version?: string; response?: unknown }>,
+  rows: readonly ExpectedEntry[],
+  member: string,
+): void {
+  for (const row of rows) {
+    const actual = entries.find(
+      (entry) =>
+        entry.topic === row.topic &&
+        (row.versionPresent === false ? entry.version === undefined : row.version === undefined || entry.version === row.version),
+    );
+    expect(actual, `${member}[] missing ${row.topic} ${row.version ?? ''}`).toBeDefined();
+    if (row.versionPresent === false) {
+      expect('version' in actual! && actual!.version !== undefined, `${row.topic}.version must be absent`).toBe(false);
+    }
+    if (row.versionPresent === true) {
+      expect(actual!.version).toBe(row.version);
+    }
+    if (row.responsePresent !== undefined) {
+      expect(actual!.response !== undefined, `${member} ${row.topic} response presence`).toBe(row.responsePresent);
+    }
+  }
 }
 
 describe('ContractDocumentConformanceTest', () => {
   describe('parseCases', () => {
     for (const parseCase of documentCasesFixture.parseCases) {
       it(parseCase.name, () => {
-        const document = documentFor(parseCase.documentRef);
-
         if (parseCase.expectedError !== undefined) {
           let caught: unknown;
           try {
-            applyTopicScope(document, { topics: parseCase.options?.topics });
+            applyTopicScope(documentFor(parseCase.documentRef), { topics: parseCase.options?.topics });
           } catch (error) {
             caught = error;
           }
-          expect(caught, 'expected UnknownTopicsError to be thrown').toBeInstanceOf(UnknownTopicsError);
-          const unknownTopicsError = caught as UnknownTopicsError;
-          assertSetEqual(unknownTopicsError.unknownTopics, parseCase.expectedError.unknownTopics, 'unknownTopics');
-          assertSetEqual(unknownTopicsError.validTopics, parseCase.expectedError.validTopics, 'validTopics');
+          expect(caught, `expected a '${parseCase.expectedError.kind}' failure`).toBeDefined();
+          expect((caught as { kind?: string }).kind).toBe(parseCase.expectedError.kind);
+          if (parseCase.expectedError.kind === 'unknown-schema-dialect') {
+            expect(caught).toBeInstanceOf(ContractDocumentParseError);
+          }
+          if (parseCase.expectedError.kind === 'unknown-topics') {
+            const error = caught as UnknownTopicsError;
+            assertSetEqual(error.unknownTopics, parseCase.expectedError.unknownTopics!, 'unknownTopics');
+            assertSetEqual(error.validTopics, parseCase.expectedError.validTopics!, 'validTopics');
+          }
           return;
         }
 
+        const document = documentFor(parseCase.documentRef);
         const expected = parseCase.expected!;
-        if (expected.openapi !== undefined) {
-          expect(document.openapi).toBe(expected.openapi);
+        if (expected.schemaDialect !== undefined) {
+          expect(document.schemaDialect).toBe(expected.schemaDialect);
         }
-
-        for (const expectedRequest of expected.requests ?? []) {
-          const actual = document.requests.find((request) => request.topic === expectedRequest.topic);
-          expect(actual, `requests[] missing topic '${expectedRequest.topic}'`).toBeDefined();
-          if (expectedRequest.versionPresent === false) {
-            expect(actual!.version, `${expectedRequest.topic}.version should be absent`).toBeUndefined();
-          }
-          if (expectedRequest.versionPresent === true) {
-            expect(actual!.version).toBe(expectedRequest.version);
-          }
-          if (expectedRequest.reserved !== undefined) {
-            expect(isReservedEntry(actual!)).toBe(expectedRequest.reserved);
-          }
+        if (expected.service !== undefined) {
+          expect(document.service).toBe(expected.service);
         }
-
-        for (const expectedEvent of expected.events ?? []) {
-          const actual = document.events.find((event) => event.topic === expectedEvent.topic);
-          expect(actual, `events[] missing topic '${expectedEvent.topic}'`).toBeDefined();
-          if (expectedEvent.versionPresent === false) {
-            expect(actual!.version, `${expectedEvent.topic}.version should be absent`).toBeUndefined();
-          }
-          if (expectedEvent.versionPresent === true) {
-            expect(actual!.version).toBe(expectedEvent.version);
-          }
+        if (expected.requests !== undefined) {
+          // A `benzene:` entry is ignored, not listed: the listed rows are exactly the topics there.
+          assertSetEqual(
+            document.requests.map((r) => r.topic),
+            expected.requests.map((r) => r.topic),
+            'requests',
+          );
+          assertEntries(document.requests, expected.requests, 'requests');
         }
+        assertEntries(document.events, expected.events ?? [], 'events');
+        assertEntries(document.sends, expected.sends ?? [], 'sends');
       });
     }
   });
@@ -142,13 +161,14 @@ describe('ContractDocumentConformanceTest', () => {
   describe('topicScopeCases', () => {
     for (const topicScopeCase of documentCasesFixture.topicScopeCases) {
       it(topicScopeCase.name, () => {
-        const document = documentFor(topicScopeCase.documentRef);
-        const scoped = applyTopicScope(document, topicScopeCase.options);
-        assertSetEqual(
-          scoped.requests.map((request) => request.topic),
-          topicScopeCase.expectedTopics,
-          'expectedTopics',
-        );
+        const scoped = applyTopicScope(documentFor(topicScopeCase.documentRef), topicScopeCase.options);
+        assertSetEqual(scoped.requests.map((r) => r.topic), topicScopeCase.expectedTopics, 'expectedTopics');
+        if (topicScopeCase.expectedEvents !== undefined) {
+          assertSetEqual(scoped.events.map((e) => e.topic), topicScopeCase.expectedEvents, 'expectedEvents');
+        }
+        if (topicScopeCase.expectedSends !== undefined) {
+          assertSetEqual(scoped.sends.map((s) => s.topic), topicScopeCase.expectedSends, 'expectedSends');
+        }
       });
     }
   });
@@ -170,15 +190,29 @@ describe('ContractDocumentConformanceTest', () => {
     }
   });
 
-  describe('contract-hash-cases', () => {
+  describe('contract-hash-cases (runtime hash: cases without a projection)', () => {
+    for (const hashCase of hashCasesFixture.cases.filter((c) => c.projection === undefined)) {
+      it(hashCase.name, () => {
+        const hashes = ContractHash.compute(hashCase.document);
+        expect(hashes.contractHash, 'contractHash').toBe(hashCase.expectedContractHash);
+        expect(hashes.registrationHash, 'registrationHash').toBe(hashCase.expectedRegistrationHash);
+      });
+    }
+  });
+
+  describe('contract-hash-cases (client generator: every case)', () => {
     for (const hashCase of hashCasesFixture.cases) {
       it(hashCase.name, () => {
-        // Every fixture case is already the exact projection to hash (a whole-service document, or
-        // one already topic-scoped per §5.3); `topicScoped` only changes whether a *surviving*
-        // reserved entry is stripped entirely (§6.2) - none of these four cases has one that
-        // survives, so `false` (the default) is correct for all of them.
-        const actual = computeContractHash(hashCase.document);
-        expect(actual, hashCase.name).toBe(hashCase.expectedHash);
+        const document = parseContractDocument(hashCase.document);
+        const projection = hashCase.projection;
+        const projected =
+          projection === undefined
+            ? applyTopicScope(document, {})
+            : projection.kind === 'topic'
+              ? projectTopicScoped(document, projection.topic)
+              : applyTopicScope(document, { topics: projection.topics });
+        expect(projected.contractHash, 'contractHash').toBe(hashCase.expectedContractHash);
+        expect(projected.registrationHash, 'registrationHash').toBe(hashCase.expectedRegistrationHash);
       });
     }
   });

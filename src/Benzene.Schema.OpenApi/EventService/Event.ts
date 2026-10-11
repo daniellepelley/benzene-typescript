@@ -1,12 +1,13 @@
 /** Port of Benzene.Schema.OpenApi.EventService.Event. */
 
 /**
- * One produced/sent topic in the benzene spec document (its `events` array): the topic and its `message`
- * payload schema (usually a `$ref`). `version` serializes only when non-empty. The C# `example` field is
- * not ported.
+ * One `events[]` entry of the Contract Document (contract-document.md §3.1): a topic this service publishes
+ * and defines, with its `message` payload schema (usually a `$ref`). `version` serializes only when
+ * non-empty; `example` only when an author supplied one.
  */
 export class Event {
   version = '';
+  example?: unknown;
 
   constructor(
     readonly topic: string,
@@ -19,6 +20,9 @@ export class Event {
       json['version'] = this.version;
     }
     json['message'] = this.message;
+    if (this.example !== undefined) {
+      json['example'] = this.example;
+    }
     return json;
   }
 }

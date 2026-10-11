@@ -1,9 +1,10 @@
 /**
  * Dogfoods `@benzenejs/codegen-client`'s Contract Document input path (contract-document.md) end-to-end
- * against a real, unedited `.spec.json` build artifact copied verbatim from the .NET port
+ * against the .NET port's `payments.spec.json` build artifact
  * (`benzene-dotnet/examples/AwsMesh/Orders/contracts/payments.spec.json`,
- * `@benzene-example/payments-client`'s `contracts/payments.spec.json`) - proving a Node consumer gets a
- * typed, topic-scoped client for a .NET service with no .NET SDK involved. Mirrors
+ * `@benzene-example/payments-client`'s `contracts/payments.spec.json`, migrated to the spec-0.3.0 shape -
+ * see that example's README) - proving a Node consumer gets a typed, topic-scoped client for a .NET
+ * service with no .NET SDK involved. Mirrors
  * `GeneratedClientRoundTripTest.test.ts`'s golden-file pattern for the mesh-descriptor input path,
  * applied here to the topic-scoped (`AtomicClientSdkBuilder`, contract-document.md §5.3) output shape.
  */
@@ -67,30 +68,36 @@ const options: AtomicClientSdkOptions = {
 
 /**
  * An independent oracle for `payments:capture`'s topic-scoped `contractHash` (contract-document.md
- * §5.3, §6.2): hand-built from the source document rather than computed through
- * `@benzenejs/codegen-client`'s own `computeContractHash`, so this test doesn't just check the
- * implementation agrees with itself. `payments.spec.json`'s `payments:capture` entry reaches exactly
- * `CapturePayment`/`PaymentDto` (both flat objects, no nested `$ref`) - already normalize()'s no-op
- * shape (no `example`/`messageEndpoint`/`transports`/`reserved`), matching how
- * `contract-hash-cases.json`'s own `topicScoped` case is expressed.
+ * §5.3, §6.2): the projection P written out by hand from the source document - one request entry, no
+ * events or sends, every `$ref` replaced by its component with the annotations (`description`, `format`)
+ * removed and `required` sorted - then canonicalized with the `canonicalize` package and hashed with
+ * `node:crypto` directly, rather than through `@benzenejs/codegen-core`, so this test does not just check
+ * the implementation agrees with itself.
  */
 function independentlyComputedTopicScopedHash(): string {
-  const document = parseContractDocument(readFileSync(contractPath, 'utf8'));
-  const request = document.requests.find((r) => r.topic === 'payments:capture')!;
+  const raw = JSON.parse(readFileSync(contractPath, 'utf8')) as {
+    components: { schemas: Record<string, { properties: Record<string, Record<string, unknown>>; required?: string[] } & Record<string, unknown>> };
+  };
+  const plain = (name: string): Record<string, unknown> => {
+    const { properties, required, ...rest } = raw.components.schemas[name]!;
+    const stripped: Record<string, unknown> = {};
+    for (const [key, property] of Object.entries(properties)) {
+      const { description: _d, format: _f, ...kept } = property;
+      stripped[key] = kept;
+    }
+    return { ...rest, properties: stripped, ...(required !== undefined && required.length > 0 ? { required: [...required].sort() } : {}) };
+  };
 
   const projected = {
-    openapi: document.openapi,
-    info: document.info,
     requests: [
       {
-        topic: request.topic,
-        httpMappings: request.httpMappings,
-        request: request.request,
-        response: request.response,
+        topic: 'payments:capture',
+        httpMappings: [{ method: 'POST', path: '/payments' }],
+        request: plain('CapturePayment'),
+        response: plain('PaymentDto'),
       },
     ],
     events: [],
-    components: { schemas: { CapturePayment: document.components.schemas['CapturePayment'], PaymentDto: document.components.schemas['PaymentDto'] } },
   };
 
   const canonical = canonicalize(projected)!;
@@ -107,11 +114,13 @@ describe('PaymentsClientDogfoodTest', () => {
     expect(regeneratedRegistration!.source).toBe(readFileSync(committedRegistrationPath, 'utf8'));
   });
 
-  it('carries no benzene:* reserved topic anywhere in the generated output, even though the source document has one', () => {
-    const document = parseContractDocument(readFileSync(contractPath, 'utf8'));
-    expect(document.requests.some((r) => r.topic === 'benzene:spec')).toBe(true); // sanity: the source document DOES have one
+  it('ignores a benzene:* entry a document carries: never parsed, never generated (contract-document.md §1)', () => {
+    const raw = JSON.parse(readFileSync(contractPath, 'utf8')) as { requests: unknown[] };
+    raw.requests.push({ topic: 'benzene:spec', request: {}, response: {} });
+    const document = parseContractDocument(raw as unknown as Record<string, unknown>);
+    expect(document.requests.some((r) => r.topic.startsWith('benzene:'))).toBe(false);
 
-    const files = buildAtomicClientSdk(document, options);
+    const files = buildAtomicClientSdk(document, { ...options, topics: undefined });
     for (const file of files) {
       expect(file.source, file.fileName).not.toContain('benzene:');
     }

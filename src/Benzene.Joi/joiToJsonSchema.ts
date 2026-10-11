@@ -16,7 +16,8 @@ import type { Schema } from 'joi';
  * JSON Schema equivalent:
  *   object → type+properties+required   array → type+items+minItems/maxItems   string → type+minLength/
  *   maxLength/format(email,uri,uuid)/pattern   number → type(number|integer)+minimum/maximum/exclusive*
- *   .valid(...) → enum   boolean → type   date → string/date-time.
+ *   .valid(...) → enum   boolean → type   date → string/date-time   .pattern(string, V) → map of V
+ *   .allow(null) → nullable (contract-document.md §4.2's OpenAPI 3.0 forms).
  * A constraint with no JSON Schema keyword (e.g. a custom `.external()` check) is simply not represented —
  * the payload stays valid, just less constrained, exactly as the spec's unconstrained `{}` case allows.
  */
@@ -31,7 +32,8 @@ interface JoiRule {
 
 interface JoiDescription {
   type?: string;
-  flags?: { presence?: string; only?: boolean };
+  flags?: { presence?: string; only?: boolean; id?: string };
+  patterns?: { schema?: JoiDescription; rule?: JoiDescription }[];
   keys?: Record<string, JoiDescription>;
   items?: JoiDescription[];
   rules?: JoiRule[];
@@ -59,6 +61,11 @@ function convert(desc: JoiDescription): Record<string, unknown> {
       }
       if (required.length > 0) {
         schema['required'] = required;
+      }
+      // `Joi.object().pattern(Joi.string(), V)` with no fixed keys is a string-keyed map of V.
+      const pattern = desc.patterns?.[0]?.rule;
+      if (Object.keys(properties).length === 0 && pattern !== undefined) {
+        schema['additionalProperties'] = convert(pattern);
       }
       break;
     }
@@ -103,11 +110,41 @@ function convert(desc: JoiDescription): Record<string, unknown> {
 
   // `.valid(a, b, ...)` sets `flags.only` + `allow` — a closed set of values → JSON Schema `enum`.
   if (desc.flags?.only === true && Array.isArray(desc.allow) && desc.allow.length > 0) {
-    schema['enum'] = [...desc.allow];
+    schema['enum'] = desc.allow.filter((value) => value !== null);
+  }
+
+  // `.allow(null)` (or `.valid(..., null)`) makes the value nullable (contract-document.md §4.2).
+  if (Array.isArray(desc.allow) && desc.allow.includes(null)) {
+    return applyNullable(schema);
   }
 
   return schema;
 }
+
+/** The schema's declared name: its Joi `.id()` (contract-document.md §4.1 rule 5). */
+export function joiSchemaName(schema: Schema): string | undefined {
+  const id = (schema.describe() as unknown as JoiDescription).flags?.id;
+  return typeof id === 'string' && id !== '' ? id : undefined;
+}
+
+/**
+ * Applies `nullable` the way the derivation table does (contract-document.md §4.2): a nullable object or
+ * enum is the wrapper `{"type":<T's type>,"nullable":true,"allOf":[T]}`; a nullable primitive, array or
+ * map is its own schema plus `"nullable": true`.
+ */
+function applyNullable(schema: Record<string, unknown>): Record<string, unknown> {
+  const isMap = schema['type'] === 'object' && schema['properties'] === undefined && schema['additionalProperties'] !== undefined;
+  if ((schema['type'] === 'object' && !isMap) || Array.isArray(schema['enum'])) {
+    const inner = { ...schema };
+    if (Array.isArray(inner['enum'])) {
+      inner['enum'] = (inner['enum'] as unknown[]).filter((value) => value !== null);
+    }
+    const wrapper: Record<string, unknown> = { nullable: true, allOf: [inner] };
+    return inner['type'] === undefined ? wrapper : { type: inner['type'], ...wrapper };
+  }
+  return { ...schema, nullable: true };
+}
+
 
 /** Copies a numeric `limit` rule onto the target keyword (skips non-numeric limits, e.g. Joi refs). */
 function applyLimit(

@@ -6,11 +6,11 @@
  *
  * ```
  * codegen-client --file <path.spec.json> --output <client|topic-client> --namespace <dir>
- *                 [--service-name <name>] [--topics a,b,c] [--include-reserved] [--out <dir>]
+ *                 [--service-name <name>] [--topics a,b,c] [--out <dir>]
  * ```
  *
- * Exits non-zero (message on stderr) on an unknown flag, an unparseable/invalid document, or a
- * `--topics` entry the document doesn't have - see `run()`, which is also called directly (not just
+ * Exits non-zero (message on stderr) on an unknown flag, an unparseable/invalid document (including one
+ * whose `schemaDialect` this reader does not know), or a `--topics` entry the document doesn't have - see `run()`, which is also called directly (not just
  * via the process entry point below) by this package's CLI tests.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -24,8 +24,7 @@ const OUTPUT_VALUES = ['client', 'topic-client'] as const;
 type OutputValue = (typeof OUTPUT_VALUES)[number];
 
 const FLAGS_WITH_VALUES = ['--file', '--output', '--namespace', '--service-name', '--topics', '--out'] as const;
-const BOOLEAN_FLAGS = ['--include-reserved'] as const;
-const KNOWN_FLAGS = new Set<string>([...FLAGS_WITH_VALUES, ...BOOLEAN_FLAGS]);
+const KNOWN_FLAGS = new Set<string>(FLAGS_WITH_VALUES);
 
 /** Thrown for any CLI-level failure (bad flags, bad document, unknown topic) - `run()`'s caller maps this to a non-zero exit. */
 export class CliError extends Error {}
@@ -36,23 +35,17 @@ interface ParsedArgs {
   namespace?: string;
   serviceName?: string;
   topics?: string;
-  includeReserved: boolean;
   out?: string;
 }
 
 /** Parses `argv` (excluding `node`/script path). Throws `CliError` on an unknown flag or a flag missing its value. */
 export function parseArgs(argv: readonly string[]): ParsedArgs {
-  const args: ParsedArgs = { includeReserved: false };
+  const args: ParsedArgs = {};
 
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i]!;
     if (!KNOWN_FLAGS.has(flag)) {
       throw new CliError(`Unknown flag '${flag}'. Known flags: ${[...KNOWN_FLAGS].sort().join(', ')}.`);
-    }
-
-    if ((BOOLEAN_FLAGS as readonly string[]).includes(flag)) {
-      args.includeReserved = true;
-      continue;
     }
 
     const value = argv[++i];
@@ -138,7 +131,6 @@ export async function run(argv: readonly string[]): Promise<void> {
         serviceName: args.serviceName,
         namespace: args.namespace,
         topics,
-        includeReserved: args.includeReserved,
       };
       files = [buildMessageClientSdk(document, options)];
     } else {
@@ -146,7 +138,6 @@ export async function run(argv: readonly string[]): Promise<void> {
         serviceName: args.serviceName,
         namespace: args.namespace,
         topics,
-        includeReserved: args.includeReserved,
       };
       files = buildAtomicClientSdk(document, options);
     }

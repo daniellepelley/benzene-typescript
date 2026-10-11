@@ -1,9 +1,10 @@
 /** Port of Benzene.Spec.Ui.SpecUiPage. */
 
 /**
- * The self-contained Benzene Spec Explorer page — a Swagger-UI-style viewer for the benzene message spec
- * (topics, request/response payloads, published events, and the validation rules carried in their JSON
- * Schemas). It fetches the spec from the URL injected as `data-spec-url` on the document root (see
+ * The self-contained Benzene Spec Explorer page — a Swagger-UI-style viewer for the Contract Document
+ * (docs/specification/contract-document.md): the service's topics with their request/response payloads,
+ * the events it publishes, the messages it sends to other services, and the validation rules carried in
+ * their schemas. It fetches the spec from the URL injected as `data-spec-url` on the document root (see
  * {@link SpecUiPage.getHtml}) and resolves each `$ref` against the document's `components.schemas`.
  *
  * Divergence from the C# original (documented in the README "Porting conventions"): C# ships the page as an
@@ -88,6 +89,10 @@ const HTML = String.raw`<!doctype html>
       <h2>Published events <span id="events-count" class="muted"></span></h2>
       <div id="events"></div>
     </section>
+    <section id="sends-section">
+      <h2>Sends <span id="sends-count" class="muted"></span></h2>
+      <div id="sends"></div>
+    </section>
   </main>
   <script>
     var $ = function (id) { return document.getElementById(id); };
@@ -168,8 +173,9 @@ const HTML = String.raw`<!doctype html>
     function render(doc) {
       var components = (doc.components && doc.components.schemas) || {};
 
-      var info = doc.info || {};
-      $('subtitle').textContent = (info.title || 'service') + (info.version ? ' · v' + info.version : '');
+      var title = doc.service || 'service';
+      $('subtitle').textContent = title + (doc.serviceVersion ? ' · ' + doc.serviceVersion : '') +
+        (doc.description ? ' — ' + doc.description : '');
 
       var transports = doc.transports || [];
       if (transports.length) {
@@ -177,32 +183,49 @@ const HTML = String.raw`<!doctype html>
         $('transports-section').hidden = false;
       }
 
-      // Requests (topics) — domain first, reserved utility topics last.
-      var requests = (doc.requests || []).slice().sort(function (a, b) {
-        return (a.reserved === b.reserved) ? String(a.topic).localeCompare(b.topic) : (a.reserved ? 1 : -1);
-      });
+      // Requests (topics). A Contract Document never lists the reserved benzene: topics; skip any it carries.
+      var requests = (doc.requests || []).filter(function (r) { return !/^benzene:/.test(String(r.topic)); })
+        .slice().sort(function (a, b) { return String(a.topic).localeCompare(b.topic); });
       $('requests-count').textContent = requests.length ? '(' + requests.length + ')' : '';
       $('requests').innerHTML = requests.length ? requests.map(function (r) {
         var maps = (r.httpMappings || []).map(function (m) { return '<span class="badge method">' + esc(String(m.method).toUpperCase()) + ' ' + esc(m.path) + '</span>'; }).join(' ');
-        var reserved = r.reserved ? '<span class="badge warn">reserved</span>' : '';
-        var version = r.version ? '<span class="chip">v' + esc(r.version) + '</span>' : '';
-        var badges = (maps || reserved || version) ? '<div class="row">' + version + reserved + maps + '</div>' : '';
+        var version = r.version ? '<span class="chip">' + esc(r.version) + '</span>' : '';
+        var badges = (maps || version) ? '<div class="row">' + version + maps + '</div>' : '';
         var req = isEmptySchema(resolveRef(r.request, components)) ? '' : payload('Request', r.request, components);
-        var res = isEmptySchema(resolveRef(r.response, components)) ? '' : payload('Response', r.response, components);
+        // An absent response means the handler returns no payload.
+        var res = r.response === undefined
+          ? '<div class="payload"><div class="payload-label">Response</div><div class="schema"><span class="muted">no payload</span></div></div>'
+          : (isEmptySchema(resolveRef(r.response, components)) ? '' : payload('Response', r.response, components));
         return '<div class="card"><div class="topic">' + esc(r.topic) + '</div>' + badges + req + res + '</div>';
       }).join('') : '<div class="empty">No topics.</div>';
 
-      // Events (published).
+      // Events (published, defined by this service).
       var events = doc.events || [];
       $('events-count').textContent = events.length ? '(' + events.length + ')' : '';
       if (events.length) {
         $('events').innerHTML = events.map(function (e) {
-          var version = e.version ? '<div class="row"><span class="chip">v' + esc(e.version) + '</span></div>' : '';
+          var version = e.version ? '<div class="row"><span class="chip">' + esc(e.version) + '</span></div>' : '';
           var msg = isEmptySchema(resolveRef(e.message, components)) ? '' : payload('Message', e.message, components);
           return '<div class="card"><div class="topic">' + esc(e.topic) + '</div>' + version + msg + '</div>';
         }).join('');
       } else {
         $('events-section').hidden = true;
+      }
+
+      // Sends (messages to topics other services define).
+      var sends = doc.sends || [];
+      $('sends-count').textContent = sends.length ? '(' + sends.length + ')' : '';
+      if (sends.length) {
+        $('sends').innerHTML = sends.map(function (x) {
+          var oneWay = x.response === undefined ? '<span class="chip">one-way</span>' : '';
+          var version = x.version ? '<span class="chip">' + esc(x.version) + '</span>' : '';
+          var badges = (oneWay || version) ? '<div class="row">' + version + oneWay + '</div>' : '';
+          var req = isEmptySchema(resolveRef(x.request, components)) ? '' : payload('Message', x.request, components);
+          var res = x.response === undefined || isEmptySchema(resolveRef(x.response, components)) ? '' : payload('Reply', x.response, components);
+          return '<div class="card"><div class="topic">' + esc(x.topic) + '</div>' + badges + req + res + '</div>';
+        }).join('');
+      } else {
+        $('sends-section').hidden = true;
       }
     }
 

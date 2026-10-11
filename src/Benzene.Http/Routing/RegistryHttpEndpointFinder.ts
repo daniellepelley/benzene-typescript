@@ -22,7 +22,7 @@ export class RegistryHttpEndpointFinder implements IHttpEndpointFinder {
       .flatMap((definition) =>
         (getHttpEndpointMetadata(definition.handlerType) ?? []).map(
           (endpoint) =>
-            new HttpEndpointDefinition(endpoint.method, endpoint.url, definition.topic.id),
+            new HttpEndpointDefinition(endpoint.method, endpoint.url, definition.topic.id, definition.topic.version),
         ),
       );
 

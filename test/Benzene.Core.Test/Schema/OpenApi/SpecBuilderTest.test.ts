@@ -4,17 +4,29 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { IServiceResolver, ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
-import { ITypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
+import { ITypeJsonSchemaSource, MapTypeJsonSchemaSource } from '@benzenejs/abstractions-validation';
 import {
   IApplicationInfo,
   IMessageHandlerDefinition,
   IMessageHandlersFinder,
   ITransportsInfo,
 } from '@benzenejs/abstractions-message-handlers';
-import { IMessageDefinition, IMessageDefinitionFinder, IMessageSendersFinder } from '@benzenejs/abstractions-messages';
+import {
+  IMeshOutboundDefinitionLookUp,
+  IMessageDefinition,
+  IMessageDefinitionFinder,
+  IMessageSendersFinder,
+} from '@benzenejs/abstractions-messages';
+import { MeshOutboundRegistry } from '@benzenejs/mesh-wire';
 import { IHttpEndpointDefinition, IHttpEndpointFinder } from '@benzenejs/http';
 import { registerZodSchema, ZodJsonSchemaSource } from '@benzenejs/zod';
-import { AsyncApiSpecOptions, SpecBuilder, SpecMessageHandler, SpecRequest } from '@benzenejs/schema-openapi';
+import {
+  AsyncApiSpecOptions,
+  ComponentNameCollisionError,
+  SpecBuilder,
+  SpecMessageHandler,
+  SpecRequest,
+} from '@benzenejs/schema-openapi';
 import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   FileSystemMeshArtifactStore,
@@ -25,7 +37,7 @@ import { MeshServiceRegistry, MeshServiceRegistryEntry } from '@benzenejs/mesh-c
 
 /**
  * Tests the ported `Benzene.Schema.OpenApi` `benzene` document: `SpecBuilder` turns the container's
- * handler/sender/http feeds into `{ requests, events, components.schemas }` with payload schemas stored once
+ * handler/sender/outbound/http feeds into the Contract Document `{ requests, events, sends, components.schemas }` with payload schemas stored once
  * and referenced by `$ref` — sourced from the registered Zod schemas, not reflection. Also proves the doc
  * round-trips through the real mesh aggregator (which inlines the `$ref`s).
  */
@@ -59,6 +71,7 @@ function httpDef(method: string, path: string, topic: string): IHttpEndpointDefi
 }
 
 interface ResolverConfig {
+  outbound?: IMeshOutboundDefinitionLookUp;
   sources?: ITypeJsonSchemaSource[];
   handlers?: IMessageHandlerDefinition[];
   senders?: IMessageDefinition[];
@@ -79,6 +92,7 @@ function fakeResolver(config: ResolverConfig): IServiceResolver {
       if (id === IHttpEndpointFinder) return finder(config.httpEndpoints) as T | undefined;
       if (id === IMessageSendersFinder) return finder(config.senders) as T | undefined;
       if (id === IMessageDefinitionFinder) return undefined;
+      if (id === IMeshOutboundDefinitionLookUp) return config.outbound as T | undefined;
       if (id === ITransportsInfo && config.transports) return { transports: config.transports } as T;
       if (id === IApplicationInfo && config.applicationName) {
         return { name: config.applicationName, description: '', version: '1.0.0' } as T;
@@ -111,10 +125,14 @@ describe('SpecBuilder (benzene document)', () => {
       new SpecRequest('benzene', 'json'),
     );
     const doc = JSON.parse(json) as {
-      info?: { title?: string };
+      schemaDialect: string;
+      service: string;
+      contractHash: string;
+      registrationHash: string;
       transports?: string[];
       requests: { topic: string; httpMappings?: { method: string; path: string }[]; request: Record<string, unknown>; response: Record<string, unknown> }[];
       events: { topic: string; message: Record<string, unknown> }[];
+      sends: { topic: string; request: Record<string, unknown>; response?: Record<string, unknown> }[];
       components: { schemas: Record<string, Record<string, unknown>> };
     };
 
@@ -128,23 +146,108 @@ describe('SpecBuilder (benzene document)', () => {
       properties: { orderId: { type: 'string', minLength: 1 } },
     });
 
-    // A sender definition becomes an event with a $ref message.
-    const placed = doc.events.find((e) => e.topic === 'order:placed')!;
-    expect(placed.message).toEqual({ $ref: '#/components/schemas/OrderPlaced' });
+    // A sender definition is a send (a topic another party defines), never an event (contract-document.md §3).
+    expect(doc.events).toEqual([]);
+    const placed = doc.sends.find((e) => e.topic === 'order:placed')!;
+    expect(placed.request).toEqual({ $ref: '#/components/schemas/OrderPlaced' });
+    expect('response' in placed).toBe(false);
     expect(doc.components.schemas['OrderPlaced']).toBeDefined();
 
-    // Document-level info + transports.
-    expect(doc.info?.title).toBe('orders-api');
+    // Document-level identity, dialect, hashes and transports.
+    expect(doc.schemaDialect).toBe('openapi-3.0');
+    expect(doc.service).toBe('orders-api');
+    expect(doc.contractHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(doc.registrationHash).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(doc.transports).toEqual(['http', 'sqs']);
   });
 
-  it('emits an empty inline schema (not a $ref) for a VoidResult response', () => {
+  it('omits the response of a handler that returns no payload (VoidResult) - absent, not {}', () => {
     const json = new SpecBuilder().createSpec(
       fakeResolver({ sources: [new ZodJsonSchemaSource()], handlers: [handlerDef('order:placed', OrderPlaced, VoidResult)] }),
       new SpecRequest(),
     );
-    const doc = JSON.parse(json) as { requests: { topic: string; response: Record<string, unknown> }[] };
-    expect(doc.requests[0]!.response).toEqual({});
+    const doc = JSON.parse(json) as { requests: Record<string, unknown>[] };
+    expect('response' in doc.requests[0]!).toBe(false);
+  });
+
+  it('never lists a benzene: topic (contract-document.md §1)', () => {
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({
+        sources: [new ZodJsonSchemaSource()],
+        handlers: [handlerDef('benzene:spec', CreateOrder, OrderConfirmation), handlerDef('orders:create', CreateOrder, OrderConfirmation)],
+      }),
+      new SpecRequest(),
+    );
+    const doc = JSON.parse(json) as { requests: { topic: string }[] };
+    expect(doc.requests.map((r) => r.topic)).toEqual(['orders:create']);
+  });
+
+  it('splits outbound declarations into events and sends, and rejects a topic declared as both', () => {
+    const outbound = new MeshOutboundRegistry()
+      .register({ kind: 'event', topic: 'order:placed', message: OrderPlaced })
+      .register({ kind: 'send', topic: 'payment:take', request: CreateOrder })
+      .register({ kind: 'send', topic: 'inventory:reserve', version: 'v2', request: GetOrder, response: OrderConfirmation });
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({ sources: [new ZodJsonSchemaSource()], handlers: [], outbound }),
+      new SpecRequest(),
+    );
+    const doc = JSON.parse(json) as {
+      events: { topic: string }[];
+      sends: { topic: string; version?: string; response?: unknown }[];
+    };
+    expect(doc.events.map((e) => e.topic)).toEqual(['order:placed']);
+    expect(doc.sends.map((e) => e.topic)).toEqual(['payment:take', 'inventory:reserve']);
+    expect(doc.sends[0]!.response).toBeUndefined();
+    expect(doc.sends[1]).toMatchObject({ version: 'v2', response: { $ref: '#/components/schemas/OrderConfirmation' } });
+
+    expect(() => outbound.register({ kind: 'send', topic: 'order:placed', request: OrderPlaced })).toThrow(/both as an event and as a send/);
+    // Across feeds too: a sender definition for a declared event fails derivation.
+    expect(() =>
+      new SpecBuilder().createSpec(
+        fakeResolver({ sources: [], handlers: [], outbound, senders: [messageDef('order:placed', OrderPlaced)] }),
+        new SpecRequest(),
+      ),
+    ).toThrow(/both as an event and as a send/);
+  });
+
+  it('attaches httpMappings to the (topic, version) entry the route reaches', () => {
+    const v1 = { ...handlerDef('orders:get', GetOrder, OrderConfirmation), topic: { id: 'orders:get', version: 'v1' } } as IMessageHandlerDefinition;
+    const v2 = { ...handlerDef('orders:get', GetOrder, OrderConfirmation), topic: { id: 'orders:get', version: 'v2' }, isDefault: true } as IMessageHandlerDefinition;
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({
+        sources: [],
+        handlers: [v1, v2],
+        httpEndpoints: [
+          { method: 'GET', path: '/orders/v1', topic: 'orders:get', version: 'v1' },
+          httpDef('GET', '/orders', 'orders:get'),
+        ],
+      }),
+      new SpecRequest(),
+    );
+    const doc = JSON.parse(json) as { requests: { version: string; httpMappings?: unknown[] }[] };
+    expect(doc.requests.find((r) => r.version === 'v1')!.httpMappings).toEqual([{ method: 'GET', path: '/orders/v1' }]);
+    // A bare-topic route reaches the default handler when no version is sent.
+    expect(doc.requests.find((r) => r.version === 'v2')!.httpMappings).toEqual([{ method: 'GET', path: '/orders' }]);
+  });
+
+  it('fails derivation when two different schemas claim one component name, and a declared name resolves it', () => {
+    const OrderA = { Item: class {} }.Item;
+    const OrderB = { Item: class {} }.Item;
+    const collide = new MapTypeJsonSchemaSource()
+      .register(OrderA, { type: 'object', properties: { sku: { type: 'string' } } })
+      .register(OrderB, { type: 'object', properties: { paymentId: { type: 'string' } } });
+    const handlers = [handlerDef('orders:item', OrderA, VoidResult), handlerDef('payments:item', OrderB, VoidResult)];
+    expect(() => new SpecBuilder().createSpec(fakeResolver({ sources: [collide], handlers }), new SpecRequest())).toThrow(
+      ComponentNameCollisionError,
+    );
+
+    const declared = new MapTypeJsonSchemaSource()
+      .register(OrderA, { type: 'object', properties: { sku: { type: 'string' } } }, { name: 'OrderItem' })
+      .register(OrderB, { type: 'object', properties: { paymentId: { type: 'string' } } }, { name: 'PaymentItem' });
+    const doc = JSON.parse(new SpecBuilder().createSpec(fakeResolver({ sources: [declared], handlers }), new SpecRequest())) as {
+      components: { schemas: Record<string, unknown> };
+    };
+    expect(Object.keys(doc.components.schemas)).toEqual(['OrderItem', 'PaymentItem']);
   });
 
   it('memoizes via SpecCache in the SpecMessageHandler', async () => {

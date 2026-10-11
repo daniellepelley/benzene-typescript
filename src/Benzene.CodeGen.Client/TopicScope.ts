@@ -4,8 +4,8 @@
  * other about what's in scope. Port of `Benzene.CodeGen.Client.TopicScope`.
  */
 import { ClientSdkOptions } from './ClientSdkOptions';
-import { ContractDocument, ContractRequestResponse } from './ContractDocument';
-import { isReservedEntry } from './ContractReservedTopics';
+import { withRecomputedHashes } from './ContractHash';
+import { ContractDocument } from './ContractDocument';
 
 /**
  * Thrown by `applyTopicScope` when `options.topics` names a topic the document doesn't have
@@ -13,6 +13,9 @@ import { isReservedEntry } from './ContractReservedTopics';
  * exactly what was wrong without re-deriving them.
  */
 export class UnknownTopicsError extends Error {
+  /** The conformance error kind (`conformance/README.md`). */
+  readonly kind = 'unknown-topics';
+
   constructor(
     readonly unknownTopics: readonly string[],
     readonly validTopics: readonly string[],
@@ -26,35 +29,27 @@ export class UnknownTopicsError extends Error {
 }
 
 /**
- * Projects `document.requests` down to the topics in scope per `options`, returning a new document
- * with everything else (`info`, `events`, `components`, `messageEndpoint`, `transports`) unchanged.
- * `benzene:healthcheck` (or any other reserved topic) has no special case here: it is excluded by
- * default like any other reserved topic, and admitted only by `options.includeReserved` or by
- * being named in `options.topics` - generated clients are for a service's *domain* surface by default.
+ * The include-list projection (contract-document.md §5.2): `document.requests` narrowed to the topics in
+ * `options.topics` (every one when absent or empty), with `events`, `sends`, `components` and the
+ * document-level fields unchanged except `contractHash`/`registrationHash`, which are recomputed over the
+ * projection. A parsed document never holds `benzene:` entries (the parser ignores them), so there is no
+ * reserved-topic option.
  */
-export function applyTopicScope(
-  document: ContractDocument,
-  options: Pick<ClientSdkOptions, 'topics' | 'includeReserved'>,
-): ContractDocument {
+export function applyTopicScope(document: ContractDocument, options: Pick<ClientSdkOptions, 'topics'>): ContractDocument {
   const requestedTopics = options.topics !== undefined && options.topics.length > 0 ? options.topics : undefined;
-
-  if (requestedTopics !== undefined) {
-    const known = new Set(document.requests.map((request) => request.topic));
-    const unknown = requestedTopics.filter((topic) => !known.has(topic));
-    if (unknown.length > 0) {
-      throw new UnknownTopicsError(unknown, [...known]);
-    }
+  if (requestedTopics === undefined) {
+    return withRecomputedHashes(document);
   }
 
-  const included = requestedTopics !== undefined ? new Set(requestedTopics) : undefined;
+  const known = new Set(document.requests.map((request) => request.topic));
+  const unknown = requestedTopics.filter((topic) => !known.has(topic));
+  if (unknown.length > 0) {
+    throw new UnknownTopicsError(unknown, [...known]);
+  }
 
-  const inScope = (request: ContractRequestResponse): boolean =>
-    included !== undefined
-      ? included.has(request.topic)
-      : options.includeReserved === true || !isReservedEntry(request);
-
-  return {
+  const included = new Set(requestedTopics);
+  return withRecomputedHashes({
     ...document,
-    requests: document.requests.filter(inScope),
-  };
+    requests: document.requests.filter((request) => included.has(request.topic)),
+  });
 }

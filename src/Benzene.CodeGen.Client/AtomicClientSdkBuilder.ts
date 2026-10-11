@@ -6,7 +6,7 @@
  * in unused surface nor invalidates this client. Port of `Benzene.CodeGen.Client.AtomicClientSdkBuilder`.
  *
  * Reuses `renderClientModule` (from `MessageClientSdkBuilder.ts`) against each topic's already-
- * projected, self-contained document (`projectTopicScoped` - one request, no events, only the
+ * projected, self-contained document (`projectTopicScoped` - one request, no events or sends, only the
  * component schemas that request reaches), so the generated client/interface/DTO shapes match the
  * service-level client exactly and the contract hash falls out topic-scoped. Each topic is emitted
  * under its own client name (from `TopicMethodName` by default, e.g. `payments:capture` ->
@@ -54,10 +54,8 @@ export function buildAtomicClientSdk(
     const topicDocument = projectTopicScoped(document, request.topic);
     return {
       fileName: namespacedFileName(options.namespace, `${name}/${name}ServiceClient.ts`),
-      // contract-document.md §5.3's topic-scoped shape: its contract hash does not strip a reserved
-      // entry entirely (only its flag) - an atomic client explicitly built for one reserved topic
-      // hashes that topic's contract, not an empty one.
-      source: renderClientModule(name, topicDocument, methodName, true),
+      // contract-document.md §5.3's topic-scoped projection, its contractHash recomputed over it.
+      source: renderClientModule(name, topicDocument, methodName),
     };
   });
 

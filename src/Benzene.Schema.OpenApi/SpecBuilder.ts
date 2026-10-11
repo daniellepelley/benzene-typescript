@@ -6,7 +6,11 @@ import {
   IMessageHandlersFinder,
   ITransportsInfo,
 } from '@benzenejs/abstractions-message-handlers';
-import { IMessageDefinitionFinder, IMessageSendersFinder } from '@benzenejs/abstractions-messages';
+import {
+  IMeshOutboundDefinitionLookUp,
+  IMessageDefinitionFinder,
+  IMessageSendersFinder,
+} from '@benzenejs/abstractions-messages';
 import { IHttpEndpointFinder } from '@benzenejs/http';
 import { AsyncApiDocumentBuilder } from './AsyncApi/AsyncApiDocumentBuilder';
 import { AsyncApiSpecOptions } from './AsyncApi/AsyncApiSpecOptions';
@@ -17,7 +21,7 @@ import { SpecRequest } from './SpecRequest';
 
 /**
  * Builds a service's spec document, dispatching on `specRequest.type` to one of three document formats — the
- * default `benzene` event-service document, real `openapi` (OpenAPI 3.0), or real `asyncapi` (AsyncAPI 3.0).
+ * default `benzene` Contract Document (contract-document.md), real `openapi` (OpenAPI 3.0), or real `asyncapi` (AsyncAPI 3.0).
  * Each format pulls only the self-description feeds it consumes from the container (mirroring the C#
  * `IConsumes*` interface probing in `CreateSpec<TBuilder>`) and delegates every payload schema to a fresh
  * `SchemaBuilder`.
@@ -64,6 +68,7 @@ export class SpecBuilder {
       builder.addMessageHandlerDefinitions(handlersFinder.findDefinitions());
     }
 
+    // events: response events (broadcasts); sends: sender definitions; both: explicit declarations (§3.3).
     const broadcastFinder = resolver.tryGetService(IMessageDefinitionFinder);
     if (broadcastFinder !== undefined) {
       builder.addBroadcastEventDefinitions(broadcastFinder.findDefinitions());
@@ -72,6 +77,11 @@ export class SpecBuilder {
     const sendersFinder = resolver.tryGetService(IMessageSendersFinder);
     if (sendersFinder !== undefined) {
       builder.addMessageSenderDefinitions(sendersFinder.findDefinitions());
+    }
+
+    const outbound = resolver.tryGetService(IMeshOutboundDefinitionLookUp);
+    if (outbound !== undefined) {
+      builder.addOutboundDeclarations(outbound.getAllDeclarations());
     }
 
     const transportsInfo = resolver.tryGetService(ITransportsInfo);

@@ -14,6 +14,7 @@ import { ITypeJsonSchemaSource } from './ITypeJsonSchemaSource';
  */
 export class MapTypeJsonSchemaSource implements ITypeJsonSchemaSource {
   private readonly schemas = new Map<Constructor<unknown>, Record<string, unknown>>();
+  private readonly names = new Map<Constructor<unknown>, string>();
 
   constructor(entries?: Iterable<readonly [Constructor<unknown>, Record<string, unknown>]>) {
     if (entries !== undefined) {
@@ -23,13 +24,26 @@ export class MapTypeJsonSchemaSource implements ITypeJsonSchemaSource {
     }
   }
 
-  /** Registers (or replaces) the JSON Schema published for a type. Returns `this` for chaining. */
-  register(type: Constructor<unknown>, schema: Record<string, unknown>): this {
+  /**
+   * Registers (or replaces) the schema published for a type. Returns `this` for chaining. `options.name`
+   * declares the type's schema name (contract-document.md §4.1 rule 5): the component key the spec uses
+   * in place of the class name — the remedy when two different types share a class name.
+   */
+  register(type: Constructor<unknown>, schema: Record<string, unknown>, options?: { name?: string }): this {
     this.schemas.set(type, schema);
+    if (options?.name !== undefined) {
+      this.names.set(type, options.name);
+    } else {
+      this.names.delete(type);
+    }
     return this;
   }
 
   getJsonSchema(type: Constructor<unknown>): Record<string, unknown> | undefined {
     return this.schemas.get(type);
+  }
+
+  getSchemaName(type: Constructor<unknown>): string | undefined {
+    return this.names.get(type);
   }
 }

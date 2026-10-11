@@ -45,8 +45,8 @@ describe('ArtifactStoreMeshReportPublisher', () => {
     const store = new FileSystemMeshArtifactStore(rootDirectory);
     const publisher = new ArtifactStoreMeshReportPublisher(store);
 
-    await publisher.publishAsync(new MeshServiceReport('payments-fn', Date.now(), '{"info":{"title":"v1"}}', healthyResponse(), undefined));
-    await publisher.publishAsync(new MeshServiceReport('payments-fn', Date.now(), '{"info":{"title":"v2"}}', healthyResponse(), undefined));
+    await publisher.publishAsync(new MeshServiceReport('payments-fn', Date.now(), '{"service":"payments-fn","contractHash":"sha256:aaaa"}', healthyResponse(), undefined));
+    await publisher.publishAsync(new MeshServiceReport('payments-fn', Date.now(), '{"service":"payments-fn","contractHash":"sha256:bbbb"}', healthyResponse(), undefined));
 
     const snapshotJson = await store.tryReadAsync('services/payments-fn.json');
     const snapshot = JSON.parse(snapshotJson!) as MeshServiceSnapshot;

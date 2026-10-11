@@ -28,6 +28,24 @@ export class EnrichingRequestMapper<TContext> implements IRequestMapper<TContext
       return request;
     }
 
+    // A bodyless (or empty-object) request has no properties for `enrich` to match by name: C# fills a
+    // default instance of TRequest's declared properties, but TypeScript erases TRequest, so here the
+    // enrichment IS the request. This is what lets `GET /benzene/spec?type=…` reach the handler as
+    // `{ type }` (contract-document.md §7), and `GET /orders/{id}` as `{ id }`.
+    // Earlier enrichers win, as in the fold below; keys keep their case (the fold lower-cases them).
+    if (typeof request === 'object' && Object.keys(request as object).length === 0) {
+      const target = request as Record<string, unknown>;
+      for (const enricher of this.enrichers) {
+        for (const [key, value] of Object.entries(enricher.enrich(request, context))) {
+          const taken = Object.keys(target).some((k) => k.toLowerCase() === key.toLowerCase());
+          if (value !== undefined && value !== null && !taken) {
+            target[key] = value;
+          }
+        }
+      }
+      return request;
+    }
+
     let dictionary: Record<string, unknown> = {};
     for (const enricher of this.enrichers) {
       dictionary = DictionaryUtils.mapOnto(dictionary, enricher.enrich(request, context));

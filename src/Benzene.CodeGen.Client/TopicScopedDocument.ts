@@ -1,10 +1,11 @@
 /**
  * The topic-scoped projection of contract-document.md §5.3: a self-contained, single-topic document -
- * `requests` holds exactly that one entry, `events` is empty, and `components.schemas` is narrowed to
- * exactly what that topic's request/response reach. `info`/`messageEndpoint`/`transports` pass through
- * unchanged. This is what `buildAtomicClientSdk` generates each topic-client from, and what its
+ * `requests` holds exactly that one entry, `events` and `sends` are empty, `components.schemas` is
+ * narrowed to exactly what that topic's request/response reach, and `contractHash`/`registrationHash` are
+ * recomputed over the projection. Every other field passes through unchanged. This is what `buildAtomicClientSdk` generates each topic-client from, and what its
  * embedded contract hash is computed over.
  */
+import { withRecomputedHashes } from './ContractHash';
 import { ContractDocument } from './ContractDocument';
 import { reachableSchemas } from './SchemaClosure';
 
@@ -16,10 +17,11 @@ export function projectTopicScoped(document: ContractDocument, topic: string): C
     throw new Error(`Topic '${topic}' is not present in the document. Valid topics: ${known.join(', ')}.`);
   }
 
-  return {
+  return withRecomputedHashes({
     ...document,
     requests: [request],
     events: [],
+    sends: [],
     components: { schemas: reachableSchemas(document.components.schemas, request.request, request.response) },
-  };
+  });
 }

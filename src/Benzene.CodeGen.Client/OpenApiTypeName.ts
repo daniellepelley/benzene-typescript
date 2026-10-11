@@ -123,6 +123,10 @@ function unionExpression(members: OpenApiSchemaObject[]): string {
 }
 
 function allOfExpression(members: OpenApiSchemaObject[]): string {
+  // A single-member allOf (the nullable wrapper of contract-document.md §4.2) is just that member.
+  if (members.length === 1) {
+    return typeExpression(members[0]);
+  }
   const { refs, own } = mergeAllOf(members);
   const parts = [...refs];
   if (refs.length === 0 || Object.keys(own.properties ?? {}).length > 0) {

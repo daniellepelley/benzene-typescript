@@ -48,12 +48,48 @@ describe('zodToJsonSchema', () => {
   });
 
   it('renders an unrepresentable field as unconstrained rather than throwing', () => {
-    const schema = z.object({ id: z.string(), when: z.date().optional() });
+    const schema = z.object({ id: z.string(), big: z.bigint().optional() });
 
     const json = zodToJsonSchema(schema);
     const props = json['properties'] as Record<string, Record<string, unknown>>;
 
     expect(props['id']).toMatchObject({ type: 'string' });
-    expect(props['when']).toEqual({});
+    expect(props['big']).toEqual({});
+  });
+
+  it('describes a date as the RFC 3339 string it marshals to (contract-document.md §4.2)', () => {
+    const props = zodToJsonSchema(z.object({ when: z.date() }))['properties'] as Record<string, unknown>;
+    expect(props['when']).toEqual({ type: 'string', format: 'date-time' });
+  });
+
+  it('emits the OpenAPI 3.0 nullable forms: nullable primitive, nullable object wrapper', () => {
+    const json = zodToJsonSchema(
+      z.object({ note: z.string().nullable(), child: z.object({ name: z.string() }).nullable() }),
+    );
+    const props = json['properties'] as Record<string, unknown>;
+    expect(props['note']).toEqual({ type: 'string', nullable: true });
+    expect(props['child']).toEqual({
+      type: 'object',
+      nullable: true,
+      allOf: [{ type: 'object', properties: { name: { type: 'string' } }, required: ['name'] }],
+    });
+    expect(json['required']).toEqual(['note', 'child']);
+  });
+
+  it('drops the implicit safe-integer bounds of .int() but keeps declared ones', () => {
+    const props = zodToJsonSchema(z.object({ a: z.number().int(), b: z.number().int().min(1) }))[
+      'properties'
+    ] as Record<string, unknown>;
+    expect(props['a']).toEqual({ type: 'integer' });
+    expect(props['b']).toEqual({ type: 'integer', minimum: 1 });
+  });
+
+  it('returns named sub-schemas under $defs, with the nullable reference wrapper typed', () => {
+    const Child = z.object({ name: z.string() }).meta({ id: 'ZodTestChild' });
+    const json = zodToJsonSchema(z.object({ child: Child, maybe: Child.nullable() }));
+    const props = json['properties'] as Record<string, unknown>;
+    expect(props['child']).toEqual({ $ref: '#/$defs/ZodTestChild' });
+    expect(props['maybe']).toEqual({ type: 'object', nullable: true, allOf: [{ $ref: '#/$defs/ZodTestChild' }] });
+    expect(Object.keys(json['$defs'] as object)).toEqual(['ZodTestChild']);
   });
 });

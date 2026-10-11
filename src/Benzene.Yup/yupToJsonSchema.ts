@@ -13,8 +13,9 @@ import type { Schema } from 'yup';
  * Documented subset (README "Porting conventions"): object → type+properties+required, array →
  * type+items+minItems/maxItems, string → type+minLength/maxLength/format(email,uri,uuid)/pattern, number →
  * type(number|integer)+minimum/maximum/exclusive*, `.oneOf(...)` → enum, boolean → type, date →
- * string/date-time. A constraint with no JSON Schema keyword is left unrepresented (a valid, less-
- * constrained payload — the spec's unconstrained case). A field is `required` when Yup marks it non-optional
+ * string/date-time, `.nullable()` → nullable (contract-document.md §4.2's OpenAPI 3.0 forms). A constraint
+ * with no JSON Schema keyword is left unrepresented (a valid, less-constrained payload — the spec's
+ * unconstrained case). A field is `required` when Yup marks it non-optional
  * (`.required()`/`.defined()`).
  *
  * Yup names both bound tests `min`/`max` regardless of inclusivity and distinguishes them by which param is
@@ -33,6 +34,8 @@ interface YupTest {
 interface YupDescription {
   type?: string;
   optional?: boolean;
+  nullable?: boolean;
+  meta?: { id?: unknown };
   oneOf?: unknown[];
   tests?: YupTest[];
   fields?: Record<string, YupDescription>;
@@ -101,11 +104,41 @@ function convert(desc: YupDescription): Record<string, unknown> {
 
   // `.oneOf([...])` is a closed set of allowed values → JSON Schema `enum`.
   if (Array.isArray(desc.oneOf) && desc.oneOf.length > 0) {
-    schema['enum'] = [...desc.oneOf];
+    schema['enum'] = desc.oneOf.filter((value) => value !== null);
+  }
+
+  // `.nullable()` makes the value nullable (contract-document.md §4.2).
+  if (desc.nullable === true) {
+    return applyNullable(schema);
   }
 
   return schema;
 }
+
+/** The schema's declared name: its Yup `.meta({ id })` (contract-document.md §4.1 rule 5). */
+export function yupSchemaName(schema: Schema): string | undefined {
+  const id = (schema.describe() as unknown as YupDescription).meta?.id;
+  return typeof id === 'string' && id !== '' ? id : undefined;
+}
+
+/**
+ * Applies `nullable` the way the derivation table does (contract-document.md §4.2): a nullable object or
+ * enum is the wrapper `{"type":<T's type>,"nullable":true,"allOf":[T]}`; a nullable primitive, array or
+ * map is its own schema plus `"nullable": true`.
+ */
+function applyNullable(schema: Record<string, unknown>): Record<string, unknown> {
+  const isMap = schema['type'] === 'object' && schema['properties'] === undefined && schema['additionalProperties'] !== undefined;
+  if ((schema['type'] === 'object' && !isMap) || Array.isArray(schema['enum'])) {
+    const inner = { ...schema };
+    if (Array.isArray(inner['enum'])) {
+      inner['enum'] = (inner['enum'] as unknown[]).filter((value) => value !== null);
+    }
+    const wrapper: Record<string, unknown> = { nullable: true, allOf: [inner] };
+    return inner['type'] === undefined ? wrapper : { type: inner['type'], ...wrapper };
+  }
+  return { ...schema, nullable: true };
+}
+
 
 /** The numeric value of `params[paramKey]` on the test named `testName`, or undefined. */
 function paramNum(tests: YupTest[], testName: string, paramKey: string): number | undefined {

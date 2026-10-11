@@ -33,7 +33,7 @@ export class PaymentsCaptureServiceClient implements IPaymentsCaptureServiceClie
   }
 
   /** The Contract Document's contractHash (docs/specification/contract-document.md §6) this client was generated from. */
-  static readonly contractHash = 'sha256:1520b2c06e9f4095f5cd993cd2a4f5ffe3b71dc0ce64f60d5e895cb269934584';
+  static readonly contractHash = 'sha256:fdf467cb3b1189d7b1d86a81a77fff73dbb18cc182fb7d09cf561233709409af';
 
   capturePaymentsAsync(message: CapturePayment, headers?: Record<string, string>): Promise<IBenzeneResultOf<PaymentDto>> {
     return this.sender.sendAsync<CapturePayment, PaymentDto>('payments:capture', message, headers);

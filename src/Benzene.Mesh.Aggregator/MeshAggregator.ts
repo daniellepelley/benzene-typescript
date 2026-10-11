@@ -1,4 +1,5 @@
 /** Port of Benzene.Mesh.Aggregator.MeshAggregator. */
+import { BenzeneTopic } from '@benzenejs/abstractions';
 import { HealthCheckResponse } from '@benzenejs/health-checks-core';
 import {
   IMeshUsageSource,
@@ -226,7 +227,7 @@ export class MeshAggregator {
 
   /**
    * Derives the structural topology: for every domain topic a service declares it *sends* (the spec's
-   * `events`), an edge to every service that *handles* it (the spec's `requests`). Where the merged `usage`
+   * `events` and `sends`), an edge to every service that *handles* it (the spec's `requests`). Where the merged `usage`
    * feed can attribute a topic's observed traffic to a specific edge *unambiguously*, that edge also carries
    * a usage-derived req/min and (when the outcome is classifiable) error rate.
    */
@@ -235,7 +236,7 @@ export class MeshAggregator {
     results: ServiceResult[],
     usage: MeshUsage | undefined,
   ): MeshTopology {
-    // Consumers of a topic (spec `requests`, non-reserved) and producers of it (spec `events`).
+    // Consumers of a topic (spec `requests`, non-reserved) and producers of it (spec `events` ∪ `sends`).
     const consumersByTopic = new Map<string, string[]>();
     const producersByTopic = new Map<string, string[]>();
     for (let i = 0; i < entries.length; i++) {
@@ -797,7 +798,8 @@ function parseTopics(specJson: string | undefined): ServiceTopic[] {
     }
 
     const version = typeof request.version === 'string' ? request.version : '';
-    const reserved = request.reserved === true;
+    // A Contract Document never lists reserved topics; an older document may, so the prefix decides.
+    const reserved = request.reserved === true || BenzeneTopic.isReserved(request.topic);
 
     const mappings: MeshTopicHttpMapping[] = [];
     if (isArray(request.httpMappings)) {
@@ -824,23 +826,31 @@ function parseTopics(specJson: string | undefined): ServiceTopic[] {
 }
 
 /**
- * Extracts the topics a service declares it *sends* from its `benzene` spec (the `events` array).
- * Best-effort, same posture as {@link parseTopics}.
+ * Extracts the topics a service declares it puts on the wire from its Contract Document: its `events` (topics
+ * it publishes) and its `sends` (messages to topics others define) - both make it a provider of that topic
+ * (contract-document.md §3). Best-effort, same posture as {@link parseTopics}.
  */
 function parseOutboundTopics(specJson: string | undefined): ServiceOutboundTopic[] {
   const doc = tryParseSpec(specJson);
-  if (doc === undefined || !isArray(doc.events)) {
+  if (doc === undefined) {
     return [];
   }
 
   const components = readComponents(doc);
   const topics: ServiceOutboundTopic[] = [];
-  for (const event of doc.events) {
-    if (isObject(event) && typeof event.topic === 'string') {
-      const version = typeof event.version === 'string' ? event.version : '';
-      topics.push({ topic: event.topic, version, messageSchema: extractSchema(event, 'message', components) });
+  const read = (entries: unknown, schemaMember: string): void => {
+    if (!isArray(entries)) {
+      return;
     }
-  }
+    for (const entry of entries) {
+      if (isObject(entry) && typeof entry.topic === 'string' && !BenzeneTopic.isReserved(entry.topic)) {
+        const version = typeof entry.version === 'string' ? entry.version : '';
+        topics.push({ topic: entry.topic, version, messageSchema: extractSchema(entry, schemaMember, components) });
+      }
+    }
+  };
+  read(doc.events, 'message');
+  read(doc.sends, 'request');
 
   return topics;
 }

@@ -14,6 +14,7 @@ import { useAwsLambda } from '@benzenejs/aws-lambda-core';
 import { benzeneTestHost, httpBuilder, type BenzeneStartUp } from '@benzenejs/testing';
 import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { useApiGateway } from '@benzenejs/aws-lambda-api-gateway';
+import { MeshOutboundRegistry } from '@benzenejs/mesh-wire';
 import {
   CloudServicePaths,
   CloudServiceProfileReport,
@@ -148,6 +149,44 @@ describe('useBenzeneCloudService', () => {
     expect(response.body).toContain('payments:capture');
     // produces is no longer degraded once the service declares at least one outbound registration.
     expect(response.body).not.toContain('outbound-registry');
+  });
+
+  it('withOutbound declares events and sends: the spec lists each in its own list, the descriptor both', async () => {
+    const outbound = new MeshOutboundRegistry()
+      .register({ kind: 'event', topic: 'order:placed', message: OrderResponse })
+      .register({ kind: 'send', topic: 'payments:capture', request: OrderRequest });
+    const host = createHost((cloud) => cloud.withHandlers(ExampleMessageHandler).withOutbound(outbound));
+
+    const spec = await host.sendEventAsync<APIGatewayProxyResult>(
+      asApiGatewayRequest(httpBuilder('GET', CloudServicePaths.spec)),
+    );
+    expect(spec.statusCode).toBe(200);
+    const document = JSON.parse(spec.body) as {
+      schemaDialect: string;
+      service: string;
+      requests: { topic: string }[];
+      events: { topic: string }[];
+      sends: { topic: string }[];
+    };
+    expect(document.schemaDialect).toBe('openapi-3.0');
+    expect(document.service).toBe('orders');
+    expect(document.requests.map((r) => r.topic)).toEqual([domainTopic]);
+    expect(document.events.map((e) => e.topic)).toEqual(['order:placed']);
+    expect(document.sends.map((e) => e.topic)).toEqual(['payments:capture']);
+
+    const descriptor = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
+    expect(descriptor.body).toContain('order:placed');
+    expect(descriptor.body).toContain('payments:capture');
+  });
+
+  it('GET /benzene/spec copies type and format onto the request: an unsupported one is 501', async () => {
+    const host = createHost();
+    const event = asApiGatewayRequest(httpBuilder('GET', CloudServicePaths.spec));
+    event.queryStringParameters = { type: 'conformance-x' };
+
+    const response = await host.sendEventAsync<APIGatewayProxyResult>(event);
+
+    expect(response.statusCode).toBe(501);
   });
 
   it('withConsumes still works as a deprecated alias for withProduces', async () => {
