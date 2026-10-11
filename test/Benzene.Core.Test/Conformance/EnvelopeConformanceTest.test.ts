@@ -4,6 +4,9 @@
  * envelope contract (wire-contracts.md section 1). Port of the .NET EnvelopeConformanceTest
  * (Benzene.Conformance.Test/EnvelopeConformanceTest.cs).
  *
+ * The canonical `conformance:versioned` handler is registered at `v1` (declared default) and `v2`, so the
+ * version-selection cases (core-concepts §2) run through the real router and the `benzene-version` header.
+ *
  * Each case pushes a `BenzeneMessageRequest` (topic + headers + body) through the same
  * `addBenzene` + `addBenzeneMessage` + `useMessageHandlers` pipeline an adopter wires, and asserts the
  * response's `statusCode`, `isSuccessful`, body (subset match, plus `bodyExclude` absence checks) and
@@ -22,6 +25,10 @@ import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { findSubsetMismatch, load } from './ConformanceFixtures';
 import { GreetConformanceHandler } from './Handlers/GreetConformanceHandler';
 import { StatusConformanceHandler } from './Handlers/StatusConformanceHandler';
+import {
+  VersionedV1ConformanceHandler,
+  VersionedV2ConformanceHandler,
+} from './Handlers/VersionedConformanceHandler';
 
 interface EnvelopeCase {
   name: string;
@@ -62,7 +69,13 @@ async function runPipeline(request: BenzeneMessageRequest) {
   addBenzeneMessage(container);
 
   const builder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
-  useMessageHandlers(builder, GreetConformanceHandler, StatusConformanceHandler);
+  useMessageHandlers(
+    builder,
+    GreetConformanceHandler,
+    StatusConformanceHandler,
+    VersionedV1ConformanceHandler,
+    VersionedV2ConformanceHandler,
+  );
 
   const application = new BenzeneMessageApplication(builder.build());
   return application.handleAsync(request, container.createServiceResolverFactory());

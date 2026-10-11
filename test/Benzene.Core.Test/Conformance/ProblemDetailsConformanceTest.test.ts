@@ -10,25 +10,35 @@
  * - `envelopeCases` go through the real BenzeneMessage pipeline with the canonical
  *   `conformance:problem` handler registered, exactly as `EnvelopeConformanceTest` runs its own
  *   cases, including the `bodyExclude` absence checks.
+ * - `envelopeCases` marked `requires: validation` run `conformance:validate` through the Zod adapter,
+ *   asserting `errorFields` (JSON Pointers, wire-contracts §1.3) as a set.
  * - `httpRules` is conditional on a port shipping an HTTP binding, and needs a real HTTP response
  *   line rather than a wire envelope. This port ships several; API Gateway v1 stands in for all of
  *   them, being an in-process HTTP binding with a genuine status line and response headers (.NET
  *   runs the same group over a self-hosted ASP.NET listener). The status-line/body agreement it
  *   pins comes from `useHttpProblemDetailsStatus`, which fills the body's numeric `status` from the
- *   same `IHttpStatusCodeMapper` instance that writes the status line.
+ *   same `IHttpStatusCodeMapper` instance that writes the status line. Its `envelopeEndpoint` cases POST
+ *   to `useBenzeneMessage`'s default `/benzene/invoke` (every processed envelope is 200; a malformed one
+ *   400), and its `healthEndpoint` cases GET a route mapped to `benzene:healthcheck` with exactly the
+ *   case's checks registered (503 when `isHealthy` is false).
  */
 import { describe, expect, it } from 'vitest';
 import { APIGatewayProxyResult } from 'aws-lambda';
 import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
+import { BenzeneTopic } from '@benzenejs/abstractions';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
   useMessageHandlers,
+  useMessageHandlersWithRouter,
 } from '@benzenejs/core-message-handlers';
+import { useZodValidation } from '@benzenejs/zod';
+import { InlineHealthCheck, useHealthCheck } from '@benzenejs/health-checks';
+import { HealthCheckResult } from '@benzenejs/health-checks-core';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
-import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzenejs/http';
+import { HttpEndpointDefinition, IHttpEndpointDefinition, useBenzeneMessage } from '@benzenejs/http';
 import {
   addApiGateway,
   ApiGatewayApplication,
@@ -41,6 +51,7 @@ import { findSubsetMismatch, load } from './ConformanceFixtures';
 import { GreetConformanceHandler } from './Handlers/GreetConformanceHandler';
 import { ProblemConformanceHandler } from './Handlers/ProblemConformanceHandler';
 import { StatusConformanceHandler } from './Handlers/StatusConformanceHandler';
+import { ValidateConformanceHandler } from './Handlers/ValidateConformanceHandler';
 
 interface RegistryRow {
   benzeneStatus: string;
@@ -48,20 +59,41 @@ interface RegistryRow {
   httpStatus: number;
 }
 
+interface EnvelopeExpectation {
+  statusCode: string;
+  isSuccessful?: boolean;
+  body?: unknown;
+  bodyExclude?: string[];
+  /** The `field`s the problem document's `errors` must carry, compared as a set (README). */
+  errorFields?: string[];
+}
+
 interface ProblemEnvelopeCase {
   name: string;
+  /** `validation`: needs a validation integration that can run `conformance:validate`. */
+  requires?: string;
   request: { topic: string; headers: Record<string, string>; body: string };
-  expected: {
-    statusCode: string;
-    isSuccessful?: boolean;
-    body?: unknown;
-    bodyExclude?: string[];
-  };
+  expected: EnvelopeExpectation;
+}
+
+interface EnvelopeEndpointCase {
+  name: string;
+  request?: { topic: string; headers: Record<string, string>; body: string };
+  rawBody?: string;
+  expected: { httpStatus: number; envelope?: EnvelopeExpectation };
+}
+
+interface HealthEndpointCase {
+  name: string;
+  checks: { name: string; status: 'ok' | 'warning' | 'failed' }[];
+  expected: { httpStatus: number; body?: unknown };
 }
 
 interface HttpRules {
   failureCases: { benzeneStatus: string; httpStatus: number }[];
   successCase: { benzeneStatus: string; httpStatus: number; contentType: string };
+  envelopeEndpoint: { path: string; cases: EnvelopeEndpointCase[] };
+  healthEndpoint: { path: string; cases: HealthEndpointCase[] };
 }
 
 interface ProblemDetailsFixture {
@@ -77,16 +109,112 @@ async function runPipeline(request: BenzeneMessageRequest) {
   addBenzene(container);
   addBenzeneMessage(container);
 
+  // conformance:validate is validated by this port's own integration (the Zod adapter), wired the way an
+  // adopter wires it; the other canonical handlers have no schema and pass straight through.
   const builder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
-  useMessageHandlers(
+  useMessageHandlersWithRouter(
     builder,
+    (router) => useZodValidation(router),
     GreetConformanceHandler,
     StatusConformanceHandler,
     ProblemConformanceHandler,
+    ValidateConformanceHandler,
   );
 
   const application = new BenzeneMessageApplication(builder.build());
   return application.handleAsync(request, container.createServiceResolverFactory());
+}
+
+/** Asserts an envelope expectation (envelope-cases.json format, plus `errorFields`). */
+function assertEnvelope(
+  name: string,
+  response: { statusCode: string; isSuccessful?: boolean; body: string },
+  expected: EnvelopeExpectation,
+): void {
+  expect(response.statusCode, name).toBe(expected.statusCode);
+
+  if (expected.isSuccessful !== undefined) {
+    expect(response.isSuccessful, name).toBe(expected.isSuccessful);
+  }
+
+  if (expected.body !== undefined) {
+    expect(response.body, `${name}: expected a response body`).toBeTruthy();
+    const actualBody = JSON.parse(response.body) as unknown;
+    const mismatch = findSubsetMismatch(expected.body, actualBody);
+    expect(mismatch, mismatch ?? undefined).toBeNull();
+  }
+
+  if (expected.bodyExclude !== undefined) {
+    const actualBody = JSON.parse(response.body) as Record<string, unknown>;
+    for (const excludedMember of expected.bodyExclude) {
+      expect(excludedMember in actualBody, `${name}: body member '${excludedMember}' must be genuinely absent`).toBe(
+        false,
+      );
+    }
+  }
+
+  if (expected.errorFields !== undefined) {
+    const errors = (JSON.parse(response.body) as { errors?: { field?: string }[] }).errors ?? [];
+    for (const error of errors) {
+      expect(error.field, `${name}: every error carries a field`).toBeDefined();
+    }
+    expect(new Set(errors.map((error) => error.field))).toEqual(new Set(expected.errorFields));
+  }
+}
+
+/** Capabilities this port implements, for cases marked `requires`. */
+const capabilities = new Set(['validation']);
+
+/**
+ * POSTs a body to the envelope endpoint (`useBenzeneMessage`, default path) over API Gateway — an HTTP
+ * binding with a genuine status line — with the canonical handlers behind it.
+ */
+async function postEnvelopeAsync(path: string, body: string): Promise<APIGatewayProxyResult> {
+  const container = new DefaultBenzeneServiceContainer();
+  addBenzene(container);
+  addApiGateway(container);
+
+  const builder = new MiddlewarePipelineBuilder<ApiGatewayContext>(container);
+  useBenzeneMessage(builder, (envelope) =>
+    useMessageHandlers(envelope, GreetConformanceHandler, StatusConformanceHandler, ProblemConformanceHandler),
+  );
+
+  const event = asApiGatewayRequest(httpBuilder('POST', path));
+  event.body = body;
+  return new ApiGatewayApplication(builder.build()).handleAsync(event, container.createServiceResolverFactory());
+}
+
+/** GETs a health path mapped to `benzene:healthcheck`, with exactly the case's checks registered. */
+async function getHealthAsync(path: string, checks: HealthEndpointCase['checks']): Promise<APIGatewayProxyResult> {
+  const container = new DefaultBenzeneServiceContainer();
+  addBenzene(container);
+  addApiGateway(container);
+  container.addSingletonFactory(
+    IHttpEndpointDefinition,
+    () => new HttpEndpointDefinition('GET', path, BenzeneTopic.healthCheck),
+  );
+
+  const builder = new MiddlewarePipelineBuilder<ApiGatewayContext>(container);
+  useHealthCheck(
+    builder,
+    BenzeneTopic.healthCheck,
+    checks.map(
+      (check) =>
+        new InlineHealthCheck(check.name, () =>
+          Promise.resolve(
+            check.status === 'warning'
+              ? HealthCheckResult.createWarning(check.name)
+              : HealthCheckResult.createInstance(check.status === 'ok', check.name),
+          ),
+        ),
+    ),
+  );
+  useMessageHandlers(builder);
+
+  return new ApiGatewayApplication(builder.build()).handleAsync(
+    asApiGatewayRequest(httpBuilder('GET', path)),
+    container.createServiceResolverFactory(),
+  );
 }
 
 /**
@@ -161,32 +289,12 @@ describe('ProblemDetailsConformanceTest', () => {
 
   describe('envelopeCases (wire-contracts.md §1.3)', () => {
     for (const problemCase of fixture.envelopeCases) {
-      it(problemCase.name, async () => {
+      const run = problemCase.requires === undefined || capabilities.has(problemCase.requires) ? it : it.skip;
+      run(problemCase.name, async () => {
         const response = await runPipeline(toRequest(problemCase));
 
         expect(response).toBeDefined();
-        expect(response.statusCode).toBe(problemCase.expected.statusCode);
-
-        if (problemCase.expected.isSuccessful !== undefined) {
-          expect(response.isSuccessful).toBe(problemCase.expected.isSuccessful);
-        }
-
-        if (problemCase.expected.body !== undefined) {
-          expect(response.body, `${problemCase.name}: expected a response body`).toBeTruthy();
-          const actualBody = JSON.parse(response.body) as unknown;
-          const mismatch = findSubsetMismatch(problemCase.expected.body, actualBody);
-          expect(mismatch, mismatch ?? undefined).toBeNull();
-        }
-
-        if (problemCase.expected.bodyExclude !== undefined) {
-          const actualBody = JSON.parse(response.body) as Record<string, unknown>;
-          for (const excludedMember of problemCase.expected.bodyExclude) {
-            expect(
-              excludedMember in actualBody,
-              `${problemCase.name}: body member '${excludedMember}' must be genuinely absent`,
-            ).toBe(false);
-          }
-        }
+        assertEnvelope(problemCase.name, response, problemCase.expected);
       });
     }
   });
@@ -208,6 +316,39 @@ describe('ProblemDetailsConformanceTest', () => {
         expect(problem.status).toBe(failureCase.httpStatus);
       });
     }
+
+    describe('envelopeEndpoint (transport-bindings.md §1)', () => {
+      const { path, cases } = fixture.httpRules.envelopeEndpoint;
+      for (const endpointCase of cases) {
+        it(endpointCase.name, async () => {
+          const response = await postEnvelopeAsync(
+            path,
+            endpointCase.rawBody ?? JSON.stringify(endpointCase.request),
+          );
+
+          expect(response.statusCode).toBe(endpointCase.expected.httpStatus);
+          if (endpointCase.expected.envelope !== undefined) {
+            const envelope = JSON.parse(response.body) as { statusCode: string; isSuccessful?: boolean; body: string };
+            assertEnvelope(endpointCase.name, envelope, endpointCase.expected.envelope);
+          }
+        });
+      }
+    });
+
+    describe('healthEndpoint (transport-bindings.md §1, wire-contracts.md §5)', () => {
+      const { path, cases } = fixture.httpRules.healthEndpoint;
+      for (const healthCase of cases) {
+        it(healthCase.name, async () => {
+          const response = await getHealthAsync(path, healthCase.checks);
+
+          expect(response.statusCode).toBe(healthCase.expected.httpStatus);
+          if (healthCase.expected.body !== undefined) {
+            const mismatch = findSubsetMismatch(healthCase.expected.body, JSON.parse(response.body) as unknown);
+            expect(mismatch, mismatch ?? undefined).toBeNull();
+          }
+        });
+      }
+    });
 
     it('a success response is unaffected: no problem document, ordinary content type', async () => {
       const { successCase } = fixture.httpRules;
