@@ -19,6 +19,9 @@ import { join } from 'node:path';
  * embedded as an assembly resource.
  */
 let cachedHtml: string | undefined;
+// The injected pages, by injected URL(s): the middleware is scoped (it holds the scoped request/response adapters),
+// so it is constructed per invocation, and must not rebuild the page each time.
+const injected = new Map<string, string>();
 
 function html(): string {
   if (cachedHtml === undefined) {
@@ -42,6 +45,11 @@ export const MeshSpecUiPage = {
     if (manifestUrl === undefined || manifestUrl.trim() === '') {
       return html();
     }
-    return html().replace('<html lang="en">', `<html lang="en" data-manifest-url="${escapeAttribute(manifestUrl)}">`);
+    let page = injected.get(manifestUrl);
+    if (page === undefined) {
+      page = html().replace('<html lang="en">', `<html lang="en" data-manifest-url="${escapeAttribute(manifestUrl)}">`);
+      injected.set(manifestUrl, page);
+    }
+    return page;
   },
 } as const;

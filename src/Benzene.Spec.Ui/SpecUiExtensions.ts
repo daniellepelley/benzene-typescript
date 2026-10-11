@@ -30,7 +30,10 @@ export function useSpecUi<TContext extends IHttpContext>(
   specUrl: string = DefaultSpecUrl,
 ): IMiddlewarePipelineBuilder<TContext> {
   app.register((container) => {
-    container.addSingletonFactory(
+    // Scoped, not singleton: the middleware holds the transport's scoped request/response adapters, which a
+    // singleton would capture for the app's lifetime (the DI captive-dependency warning). The page itself is
+    // memoized, so per-invocation construction is cheap.
+    container.addScopedFactory(
       SpecUiMiddleware,
       (resolver) =>
         new SpecUiMiddleware<TContext>(

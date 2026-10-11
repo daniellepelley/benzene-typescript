@@ -20,6 +20,9 @@ import { join } from 'node:path';
  * C#'s `Lazy<string>` + embedded-resource read.
  */
 let cachedHtml: string | undefined;
+// The injected pages, by injected URL(s): the middleware is scoped (it holds the scoped request/response adapters),
+// so it is constructed per invocation, and must not rebuild the page each time.
+const injected = new Map<string, string>();
 
 function html(): string {
   if (cachedHtml === undefined) {
@@ -54,6 +57,11 @@ export const MeshUiPage = {
     if (attribute.length === 0) {
       return html();
     }
-    return html().replace('<html lang="en">', `<html lang="en"${attribute}>`);
+    let page = injected.get(attribute);
+    if (page === undefined) {
+      page = html().replace('<html lang="en">', `<html lang="en"${attribute}>`);
+      injected.set(attribute, page);
+    }
+    return page;
   },
 } as const;

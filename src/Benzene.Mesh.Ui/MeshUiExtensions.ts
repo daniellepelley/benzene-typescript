@@ -48,7 +48,10 @@ export function useMeshUi<TContext extends IHttpContext>(
   envelopeUrl?: string,
 ): IMiddlewarePipelineBuilder<TContext> {
   app.register((container) => {
-    container.addSingletonFactory(
+    // Scoped, not singleton: the middleware holds the transport's scoped request/response adapters, which a
+    // singleton would capture for the app's lifetime (the DI captive-dependency warning). The page itself
+    // is memoized, so per-invocation construction is cheap.
+    container.addScopedFactory(
       MeshUiMiddleware,
       (resolver) =>
         new MeshUiMiddleware<TContext>(
@@ -76,7 +79,8 @@ export function useMeshSpecUi<TContext extends IHttpContext>(
   manifestUrl: string = DefaultManifestUrl,
 ): IMiddlewarePipelineBuilder<TContext> {
   app.register((container) => {
-    container.addSingletonFactory(
+    // Scoped, for the same reason as `useMeshUi`.
+    container.addScopedFactory(
       MeshSpecUiMiddleware,
       (resolver) =>
         new MeshSpecUiMiddleware<TContext>(

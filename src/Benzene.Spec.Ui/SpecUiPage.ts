@@ -256,6 +256,10 @@ function escapeAttribute(value: string): string {
   return value.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 }
 
+// The injected pages, by injected URL(s): the middleware is scoped (it holds the scoped request/response adapters),
+// so it is constructed per invocation, and must not rebuild the page each time.
+const injected = new Map<string, string>();
+
 export const SpecUiPage = {
   /**
    * The viewer HTML, with `specUrl` injected as `data-spec-url` on the document root so the page fetches and
@@ -266,6 +270,11 @@ export const SpecUiPage = {
     if (specUrl === undefined || specUrl.trim() === '') {
       return HTML;
     }
-    return HTML.replace('<html lang="en">', `<html lang="en" data-spec-url="${escapeAttribute(specUrl)}">`);
+    let page = injected.get(specUrl);
+    if (page === undefined) {
+      page = HTML.replace('<html lang="en">', `<html lang="en" data-spec-url="${escapeAttribute(specUrl)}">`);
+      injected.set(specUrl, page);
+    }
+    return page;
   },
 } as const;
