@@ -59,12 +59,26 @@ export class HttpBenzeneMessageClient implements IBenzeneMessageClient {
       body: JSON.stringify(envelope),
     });
 
+    // The envelope endpoint answers 200 for every envelope it processed (transport-bindings §1), so the
+    // outcome is read from the envelope whatever the HTTP status; only a body that is not an envelope (a
+    // carrier failure) falls back to the status line.
     const text = await httpResponse.text();
-    const response = JSON.parse(text) as BenzeneMessageEnvelopeResponse;
+    const response = tryParseEnvelope(text);
+    if (response === undefined) {
+      return BenzeneResult.set<TResponse>(
+        httpResponse.status >= 200 && httpResponse.status < 300 ? 'ok' : 'service-unavailable',
+        undefined as TResponse,
+        httpResponse.status >= 200 && httpResponse.status < 300,
+      );
+    }
+    // isSuccessful is THE signal (wire-contracts §1.2): an envelope without it is unsuccessful.
+    const isSuccessful = response.isSuccessful === true;
     const payload =
-      response.body === undefined || response.body === '' ? undefined : (JSON.parse(response.body) as TResponse);
+      !isSuccessful || response.body === undefined || response.body === ''
+        ? undefined
+        : (JSON.parse(response.body) as TResponse);
 
-    return BenzeneResult.set<TResponse>(response.statusCode, payload as TResponse, response.isSuccessful);
+    return BenzeneResult.set<TResponse>(response.statusCode, payload as TResponse, isSuccessful);
   }
 
   dispose(): void {
@@ -78,6 +92,17 @@ export class HttpBenzeneMessageClient implements IBenzeneMessageClient {
  * `NullBenzeneMessageClient` — every send is accepted without a real next hop, so the chaining handlers
  * still resolve and run unchanged.
  */
+function tryParseEnvelope(text: string): BenzeneMessageEnvelopeResponse | undefined {
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    return typeof parsed === 'object' && parsed !== null && typeof (parsed as { statusCode?: unknown }).statusCode === 'string'
+      ? (parsed as BenzeneMessageEnvelopeResponse)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class NullBenzeneMessageClient implements IBenzeneMessageClient {
   sendMessageAsync<TRequest, TResponse>(
     _request: IBenzeneClientRequest<TRequest>,

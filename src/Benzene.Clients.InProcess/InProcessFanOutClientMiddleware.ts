@@ -9,7 +9,7 @@ import {
 import { IMiddleware, IMiddlewareApplicationWithResult, NextFunc } from '@benzenejs/abstractions-middleware';
 import { OutboundContext } from '@benzenejs/clients';
 import { IBenzeneMessageRequest, IBenzeneMessageResponse } from '@benzenejs/core-messages';
-import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { BenzeneResult } from '@benzenejs/results';
 import { buildInProcessRequest } from './InProcessRequestBuilder';
 import { InProcessDispatcherRegistry } from './InProcessDispatcherRegistry';
 import { InProcessFanOutTarget } from './InProcessFanOutTarget';
@@ -67,7 +67,8 @@ export class InProcessFanOutClientMiddleware implements IMiddleware<OutboundCont
   ): Promise<void> {
     try {
       const response = await dispatcher.handleAsync(request, this.serviceResolverFactory);
-      if (!BenzeneResultStatus.isSuccess(response.statusCode)) {
+      // isSuccessful is the signal (wire-contracts §1.2); never re-classify from the status text.
+      if (response.isSuccessful !== true) {
         // A baseline failure signal even when no logging middleware is wired on the consumer's own
         // pipeline. There is no in-process DLQ, so this is the only place the failure is visible.
         this.logger.logWarning(

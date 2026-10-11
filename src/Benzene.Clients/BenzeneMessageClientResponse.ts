@@ -17,10 +17,9 @@ export class BenzeneMessageClientResponse {
   readonly body: string;
 
   /**
-   * The sender's authoritative success/failure signal, when present (wire-contracts.md §1.2).
-   * `undefined` means the sender didn't write it — an older service, or a language port that hasn't
-   * picked up the `isSuccessful` field yet — in which case `asBenzeneResult` falls back to
-   * classifying {@link statusCode} against the known status vocabulary.
+   * The sender's success/failure signal (wire-contracts.md §1.2). `undefined` means the envelope is
+   * malformed — `asBenzeneResult` then treats it as unsuccessful; {@link statusCode} is never
+   * re-classified from its text.
    */
   readonly isSuccessful: boolean | undefined;
 

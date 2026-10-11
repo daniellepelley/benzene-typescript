@@ -92,11 +92,11 @@ describe('asBenzeneResult classification', () => {
     expect(asBenzeneResult(response, serializer).isSuccessful).toBe(false);
   });
 
-  it('falls back to the status vocabulary when the sender did not write isSuccessful', () => {
+  it('treats an envelope without isSuccessful as unsuccessful — never re-classified from status text (wire §1.2)', () => {
     expect(
       asBenzeneResult(new BenzeneMessageClientResponse(BenzeneResultStatus.ok, ''), serializer)
         .isSuccessful,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       asBenzeneResult(new BenzeneMessageClientResponse(BenzeneResultStatus.notFound, ''), serializer)
         .isSuccessful,
