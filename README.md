@@ -1042,6 +1042,11 @@ next to its C# counterpart:
     `z.date()` is `{"type":"string","format":"date-time"}`, and the `±MAX_SAFE_INTEGER` bounds Zod adds to
     every `.int()` are dropped (a property of JS numbers, not a declared rule). Joi (`.allow(null)`) and
     Yup (`.nullable()`) keep nullability in the same forms; Joi's `.pattern(string, V)` is a map.
+    `required` is every property the marshaled value always carries (§4.2): required on input, **or
+    with a declared default** — Zod `.default()`/`.prefault()`/`.catch()` (whose output is never absent;
+    `io: 'input'` alone would leave them optional), Joi `.default(...)`, Yup `.default(v)` (Yup's implicit
+    object default does not count). `io: 'input'` still decides each property's *schema*, so a transformed
+    field is described by the type it is written as.
   - **Declared names.** One optional hook on `ITypeJsonSchemaSource`, `getSchemaName(type)`, filled per
     library: Zod `.meta({ id })`, Joi `.id()`, Yup `.meta({ id })`,
     `MapTypeJsonSchemaSource.register(type, schema, { name })`; otherwise the class name. Bundlers rename

@@ -92,4 +92,45 @@ describe('zodToJsonSchema', () => {
     expect(props['maybe']).toEqual({ type: 'object', nullable: true, allOf: [{ $ref: '#/$defs/ZodTestChild' }] });
     expect(Object.keys(json['$defs'] as object)).toEqual(['ZodTestChild']);
   });
+
+  // contract-document.md §4.2 (ruled in benzene 9c7aa36d): a property the marshaler always emits is
+  // required even when the type declares a default. `io: 'input'` alone would leave these optional.
+  it('marks a defaulted property required: the value the service holds always carries it', () => {
+    const json = zodToJsonSchema(
+      z.object({
+        plain: z.string(),
+        defaulted: z.string().default('x'),
+        nullableDefaulted: z.string().nullable().default(null),
+        prefaulted: z.string().prefault('p'),
+        caught: z.string().catch('c'),
+        optional: z.string().optional(),
+        defaultedThenOptional: z.string().default('x').optional(),
+        nested: z.object({ inner: z.number().default(1), maybe: z.number().optional() }),
+      }),
+    );
+
+    expect(json['required']).toEqual(['plain', 'defaulted', 'nullableDefaulted', 'prefaulted', 'caught', 'nested']);
+    const props = json['properties'] as Record<string, Record<string, unknown>>;
+    expect(props['nested']!['required']).toEqual(['inner']);
+    // The default stays on the property; only its presence in `required` changed.
+    expect(props['defaulted']).toEqual({ type: 'string', default: 'x' });
+  });
+
+  it('marks a defaulted property required inside a named sub-schema too', () => {
+    const Child = z.object({ name: z.string().default('n'), note: z.string().optional() }).meta({ id: 'ZodDefaultedChild' });
+    const json = zodToJsonSchema(z.object({ child: Child }));
+    const defs = json['$defs'] as Record<string, Record<string, unknown>>;
+    expect(defs['ZodDefaultedChild']!['required']).toEqual(['name']);
+  });
+
+  it('keeps describing a transformed property by the type it is written as (io: input)', () => {
+    const json = zodToJsonSchema(z.object({ count: z.string().transform((value) => value.length) }));
+    expect((json['properties'] as Record<string, unknown>)['count']).toEqual({ type: 'string' });
+    expect(json['required']).toEqual(['count']);
+  });
+
+  it('omits required when every property may be absent', () => {
+    expect(zodToJsonSchema(z.object({ a: z.string().optional() }))['required']).toBeUndefined();
+  });
+
 });

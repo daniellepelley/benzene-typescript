@@ -16,14 +16,25 @@ import type { Schema } from 'yup';
  * string/date-time, `.nullable()` → nullable (contract-document.md §4.2's OpenAPI 3.0 forms). A constraint
  * with no JSON Schema keyword is left unrepresented (a valid, less-constrained payload — the spec's
  * unconstrained case). A field is `required` when Yup marks it non-optional
- * (`.required()`/`.defined()`).
+ * (`.required()`/`.defined()`) or it declares a default (`.default(v)`, contract-document.md §4.2).
  *
  * Yup names both bound tests `min`/`max` regardless of inclusivity and distinguishes them by which param is
  * present: `.min()`→`params.min`, `.moreThan()`→`params.more` (exclusive); `.max()`→`params.max`,
  * `.lessThan()`→`params.less` (exclusive) — so the mapping keys off the param, not the test name.
  */
 export function yupToJsonSchema(schema: Schema): Record<string, unknown> {
-  return convert(schema.describe() as unknown as YupDescription);
+  return convert(schema.describe() as unknown as YupDescription, schema as unknown as YupSchemaInternals);
+}
+
+/**
+ * The slice of a live Yup schema the derivation reads beside `describe()`: an object's field schemas, and
+ * the default a schema DECLARED (`spec.default`). `describe()` reports a default for every object - Yup
+ * builds one from the fields - so it cannot tell a declared default from that implicit one.
+ */
+interface YupSchemaInternals {
+  fields?: Record<string, YupSchemaInternals>;
+  innerType?: YupSchemaInternals;
+  spec?: { default?: unknown };
 }
 
 interface YupTest {
@@ -42,7 +53,7 @@ interface YupDescription {
   innerType?: YupDescription;
 }
 
-function convert(desc: YupDescription): Record<string, unknown> {
+function convert(desc: YupDescription, live?: YupSchemaInternals): Record<string, unknown> {
   const schema: Record<string, unknown> = {};
   const tests = desc.tests ?? [];
 
@@ -53,8 +64,12 @@ function convert(desc: YupDescription): Record<string, unknown> {
       const properties: Record<string, unknown> = {};
       const required: string[] = [];
       for (const [name, child] of Object.entries(fields)) {
-        properties[name] = convert(child);
-        if (child.optional === false) {
+        const liveChild = live?.fields?.[name];
+        properties[name] = convert(child, liveChild);
+        // contract-document.md §4.2: `required` describes the payload as written, defaults included. A
+        // field with a declared `.default(v)` is filled in by Yup when absent, so the value the service
+        // holds always carries it. Yup's implicit object default is not a declaration and does not count.
+        if (child.optional === false || liveChild?.spec?.default !== undefined) {
           required.push(name);
         }
       }
@@ -69,7 +84,7 @@ function convert(desc: YupDescription): Record<string, unknown> {
     case 'array': {
       schema['type'] = 'array';
       if (desc.innerType !== undefined) {
-        schema['items'] = convert(desc.innerType);
+        schema['items'] = convert(desc.innerType, live?.innerType);
       }
       setNumber(schema, 'minItems', paramNum(tests, 'min', 'min'));
       setNumber(schema, 'maxItems', paramNum(tests, 'max', 'max'));

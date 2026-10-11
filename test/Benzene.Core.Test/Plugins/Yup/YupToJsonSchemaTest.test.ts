@@ -71,4 +71,25 @@ describe('yupToJsonSchema', () => {
     expect(yupSchemaName(yup.object({}).meta({ id: 'OrderItem' }))).toBe('OrderItem');
     expect(yupSchemaName(yup.object({}))).toBeUndefined();
   });
+
+  // contract-document.md §4.2 (ruled in benzene 9c7aa36d): a property the marshaler always emits is
+  // required even when the type declares a default - Yup fills a defaulted field in when it is absent.
+  it('marks a field with a declared default required, but not an implicit object default', () => {
+    const json = yupToJsonSchema(
+      yup.object({
+        plain: yup.string(),
+        required: yup.string().required(),
+        defaulted: yup.string().default('x'),
+        defaultedByFunction: yup.string().default(() => 'fn'),
+        nullDefault: yup.string().nullable().default(null),
+        nested: yup.object({ inner: yup.number().default(1), maybe: yup.number() }),
+        lines: yup.array(yup.object({ sku: yup.string().default('s') })),
+      }),
+    );
+    expect(json['required']).toEqual(['required', 'defaulted', 'defaultedByFunction', 'nullDefault']);
+    const props = json['properties'] as Record<string, Record<string, unknown>>;
+    expect(props['nested']!['required']).toEqual(['inner']);
+    expect((props['lines']!['items'] as Record<string, unknown>)['required']).toEqual(['sku']);
+  });
+
 });

@@ -14,12 +14,19 @@ import { toJSONSchema, type ZodType } from 'zod';
  * Zod 4's native `z.toJSONSchema` does the conversion, with:
  * - `target: 'openapi-3.0'` — the dialect the document declares (`schemaDialect: "openapi-3.0"`): a nullable
  *   value is `nullable: true`, never a `type` array or an `anyOf` with `null`;
- * - `io: 'input'` — the shape a sender writes, which is what a request contract constrains;
+ * - `io: 'input'` — the shape a sender writes, which is what a request contract constrains: a transformed
+ *   field is described by the type it is written as, not the type a transform produces;
  * - `unrepresentable: 'any'` — a field Zod cannot express (e.g. `z.bigint()`) becomes `{}` rather than
  *   throwing, so one exotic field never fails a whole service's spec; a `z.date()` is described as the
  *   RFC 3339 string it marshals to (`{"type":"string","format":"date-time"}`).
  *
  * The output is then brought to the derivation table's exact shapes:
+ * - `required` lists every property the marshaled object always carries (contract-document.md §4.2): one
+ *   that is required on input, and also one with a declared default (`.default()`, `.prefault()`,
+ *   `.catch()`), because the type a service handles (`z.infer`, the output) always has it, so its JSON
+ *   always does. `io: 'input'` alone would leave a defaulted property optional - `required` describes the
+ *   payload as written, not what a sender may leave out. A property optional on both sides (`.optional()`,
+ *   `.default(v).optional()`) stays optional;
  * - named sub-schemas (`.meta({ id })`) are returned under `$defs`, referenced as `#/$defs/<id>`, and a
  *   recursive reference to the root stays `#` — `SchemaBuilder` hoists them into `components.schemas`;
  * - a nullable object or enum becomes the wrapper `{"type":<T's type>,"nullable":true,"allOf":[T]}`
@@ -35,9 +42,17 @@ export function zodToJsonSchema(schema: ZodType): Record<string, unknown> {
     io: 'input',
     unrepresentable: 'any',
     override: (context) => {
-      if ((context.zodSchema as { _zod?: { def?: { type?: string } } })._zod?.def?.type === 'date') {
+      const def = (context.zodSchema as unknown as ZodInternals)._zod?.def;
+      if (def?.type === 'date') {
         context.jsonSchema.type = 'string';
         context.jsonSchema.format = 'date-time';
+      } else if (def?.type === 'object' && def.shape !== undefined) {
+        const required = alwaysEmitted(def.shape);
+        if (required.length > 0) {
+          context.jsonSchema.required = required;
+        } else {
+          delete context.jsonSchema.required;
+        }
       }
     },
   }) as Record<string, unknown>;
@@ -63,6 +78,28 @@ export function zodToJsonSchema(schema: ZodType): Record<string, unknown> {
     result['$defs'] = hoisted;
   }
   return result;
+}
+
+/** The slice of Zod 4's internals the override reads: the node's kind, an object's shape, and optionality. */
+interface ZodInternals {
+  _zod?: {
+    def?: { type?: string; shape?: Record<string, ZodInternals> };
+    /** `'optional'` when the property may be absent from the input (`.optional()`, `.default()`, ...). */
+    optin?: 'optional';
+    /** `'optional'` when the property may be absent from the output - the parsed value the service holds. */
+    optout?: 'optional';
+  };
+}
+
+/**
+ * The properties of an object shape the marshaler always emits, in shape order (contract-document.md §4.2):
+ * required on input, or present on output whatever the input was (a declared default).
+ */
+function alwaysEmitted(shape: Record<string, ZodInternals>): string[] {
+  return Object.keys(shape).filter((name) => {
+    const property = shape[name]?._zod;
+    return property?.optin !== 'optional' || property?.optout !== 'optional';
+  });
 }
 
 const MaxSafe = Number.MAX_SAFE_INTEGER;

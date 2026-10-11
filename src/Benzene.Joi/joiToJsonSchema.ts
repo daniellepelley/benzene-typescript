@@ -32,7 +32,7 @@ interface JoiRule {
 
 interface JoiDescription {
   type?: string;
-  flags?: { presence?: string; only?: boolean; id?: string };
+  flags?: { presence?: string; only?: boolean; id?: string; default?: unknown };
   patterns?: { schema?: JoiDescription; rule?: JoiDescription }[];
   keys?: Record<string, JoiDescription>;
   items?: JoiDescription[];
@@ -52,7 +52,7 @@ function convert(desc: JoiDescription): Record<string, unknown> {
       const required: string[] = [];
       for (const [name, child] of Object.entries(keys)) {
         properties[name] = convert(child);
-        if (child.flags?.presence === 'required') {
+        if (isAlwaysEmitted(child)) {
           required.push(name);
         }
       }
@@ -119,6 +119,22 @@ function convert(desc: JoiDescription): Record<string, unknown> {
   }
 
   return schema;
+}
+
+/**
+ * Whether an object key is always present once Joi has validated the object, which makes it `required`
+ * (contract-document.md §4.2: `required` describes the payload as written, defaults included): a
+ * `.required()` key, or one with a declared `.default(...)` - Joi fills it in when it is absent, so the
+ * value the service holds always carries it. A `.forbidden()` key never appears.
+ */
+function isAlwaysEmitted(desc: JoiDescription): boolean {
+  const flags = desc.flags;
+  if (flags === undefined || flags.presence === 'forbidden') {
+    return false;
+  }
+  // `in`, not `!== undefined`: a function default (`.default(() => v)`) describes with no value, and Joi
+  // refuses `.default(undefined)`, so the key's presence is the declaration.
+  return flags.presence === 'required' || 'default' in flags;
 }
 
 /** The schema's declared name: its Joi `.id()` (contract-document.md §4.1 rule 5). */

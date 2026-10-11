@@ -72,4 +72,22 @@ describe('joiToJsonSchema', () => {
     expect(joiSchemaName(Joi.object({}).id('OrderItem'))).toBe('OrderItem');
     expect(joiSchemaName(Joi.object({}))).toBeUndefined();
   });
+
+  // contract-document.md §4.2 (ruled in benzene 9c7aa36d): a property the marshaler always emits is
+  // required even when the type declares a default - Joi fills a defaulted key in when it is absent.
+  it('marks a defaulted key required, and never a forbidden one', () => {
+    const json = joiToJsonSchema(
+      Joi.object({
+        plain: Joi.string(),
+        required: Joi.string().required(),
+        defaulted: Joi.string().default('x'),
+        defaultedByFunction: Joi.string().default(() => 'fn'),
+        nullDefault: Joi.string().allow(null).default(null),
+        optionalDefaulted: Joi.string().optional().default('q'),
+        forbidden: Joi.string().forbidden(),
+      }),
+    );
+    expect(json['required']).toEqual(['required', 'defaulted', 'defaultedByFunction', 'nullDefault', 'optionalDefaulted']);
+  });
+
 });
