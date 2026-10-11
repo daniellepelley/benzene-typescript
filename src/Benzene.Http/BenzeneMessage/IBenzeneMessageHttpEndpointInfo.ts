@@ -10,7 +10,7 @@ import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
  * for interfaces resolved via DI).
  */
 export interface IBenzeneMessageHttpEndpointInfo {
-  /** The path the endpoint listens on (for example `/benzene-message`). */
+  /** The path the endpoint listens on (by default `/benzene/invoke`). */
   readonly path: string;
 }
 

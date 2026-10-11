@@ -15,6 +15,7 @@ import { IMessageDefinition, IMessageDefinitionFinder, IMessageSendersFinder } f
 import { IHttpEndpointDefinition, IHttpEndpointFinder } from '@benzenejs/http';
 import { registerZodSchema, ZodJsonSchemaSource } from '@benzenejs/zod';
 import { AsyncApiSpecOptions, SpecBuilder, SpecMessageHandler, SpecRequest } from '@benzenejs/schema-openapi';
+import { BenzeneResultStatus } from '@benzenejs/results';
 import {
   FileSystemMeshArtifactStore,
   IMeshServiceSource,
@@ -154,6 +155,26 @@ describe('SpecBuilder (benzene document)', () => {
     const doc = JSON.parse(result.payload.content) as { requests: { topic: string }[] };
     expect(doc.requests[0]!.topic).toBe('orders:create');
   });
+
+  it.each([[undefined], [new SpecRequest()], [new SpecRequest('', '')], [new SpecRequest('BENZENE', 'JSON')]])(
+    'an absent, empty or case-variant request means the benzene contract document (%#)',
+    async (request) => {
+      const resolver = fakeResolver({ sources: [new ZodJsonSchemaSource()], handlers: [handlerDef('orders:create', CreateOrder, OrderConfirmation)] });
+      const result = await new SpecMessageHandler(resolver).handleAsync(request as unknown as SpecRequest);
+      expect(result.isSuccessful).toBe(true);
+      expect((JSON.parse(result.payload.content) as { requests: unknown[] }).requests).toHaveLength(1);
+    },
+  );
+
+  it.each([[new SpecRequest('graphql')], [new SpecRequest('benzene', 'yaml')]])(
+    'an unsupported type or format is not-implemented, never a different document (%#)',
+    async (request) => {
+      const resolver = fakeResolver({ sources: [new ZodJsonSchemaSource()], handlers: [] });
+      const result = await new SpecMessageHandler(resolver).handleAsync(request);
+      expect(result.status).toBe(BenzeneResultStatus.notImplemented);
+      expect(result.isSuccessful).toBe(false);
+    },
+  );
 });
 
 describe('SpecBuilder (openapi document)', () => {

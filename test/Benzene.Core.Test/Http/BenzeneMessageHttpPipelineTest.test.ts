@@ -75,7 +75,7 @@ describe('BenzeneMessageHttpPipeline', () => {
     const host = createHost();
 
     const response = await host.sendEventAsync<APIGatewayProxyResult>(
-      asApiGatewayRequest(httpBuilder('POST', '/benzene-message', createEnvelope('example-topic'))),
+      asApiGatewayRequest(httpBuilder('POST', '/benzene/invoke', createEnvelope('example-topic'))),
     );
 
     expect(response).not.toBeNull();
@@ -83,28 +83,30 @@ describe('BenzeneMessageHttpPipeline', () => {
     expect(response.body).toContain('"statusCode":"ok"');
   });
 
-  it('POST envelope with an unknown topic maps the envelope status to an HTTP status', async () => {
+  it('POST envelope with an unknown topic is a processed not-found envelope, HTTP 200', async () => {
     const host = createHost();
 
     const response = await host.sendEventAsync<APIGatewayProxyResult>(
-      asApiGatewayRequest(httpBuilder('POST', '/benzene-message', createEnvelope('no-such-topic'))),
+      asApiGatewayRequest(httpBuilder('POST', '/benzene/invoke', createEnvelope('no-such-topic'))),
     );
 
     expect(response).not.toBeNull();
-    expect(response.statusCode).not.toBe(200);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('"statusCode":"not-found"');
   });
 
-  it('POST envelope with a topic rejected by the filter responds not found', async () => {
+  it('POST envelope with a topic rejected by the filter is a processed not-found envelope', async () => {
     const options = new BenzeneMessageHttpOptions();
     options.topicFilter = (topic) => topic !== 'example-topic';
     const host = createHost(options);
 
     const response = await host.sendEventAsync<APIGatewayProxyResult>(
-      asApiGatewayRequest(httpBuilder('POST', '/benzene-message', createEnvelope('example-topic'))),
+      asApiGatewayRequest(httpBuilder('POST', '/benzene/invoke', createEnvelope('example-topic'))),
     );
 
     expect(response).not.toBeNull();
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('"statusCode":"not-found"');
   });
 
   it('other requests fall through to the HTTP message handlers', async () => {

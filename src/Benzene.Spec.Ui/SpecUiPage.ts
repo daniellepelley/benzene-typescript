@@ -209,7 +209,7 @@ const HTML = String.raw`<!doctype html>
     async function load() {
       var url = specUrl();
       if (!url) {
-        $('subtitle').innerHTML = '<span class="error">No spec URL configured.</span> Add <code>?url=/spec?type=benzene</code>.';
+        $('subtitle').innerHTML = '<span class="error">No spec URL configured.</span> Add <code>?url=/benzene/spec?type=benzene</code>.';
         return;
       }
       $('subtitle').textContent = 'Loading …';

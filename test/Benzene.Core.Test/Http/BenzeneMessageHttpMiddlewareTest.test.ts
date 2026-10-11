@@ -141,7 +141,7 @@ const envelope = '{"topic":"example","headers":{},"body":"{}"}';
 
 describe('BenzeneMessageHttpMiddleware', () => {
   it('POST to the matching path dispatches and short-circuits', async () => {
-    const h = createMiddleware('POST', '/benzene-message', envelope);
+    const h = createMiddleware('POST', '/benzene/invoke', envelope);
     let nextCalled = false;
 
     await h.middleware.handleAsync(new FakeHttpContext(), () => {
@@ -159,8 +159,8 @@ describe('BenzeneMessageHttpMiddleware', () => {
   });
 
   it.each([
-    ['GET', '/benzene-message'],
-    ['PUT', '/benzene-message'],
+    ['GET', '/benzene/invoke'],
+    ['PUT', '/benzene/invoke'],
     ['POST', '/something-else'],
   ])('non-matching request (%s %s) calls next instead', async (method, path) => {
     const h = createMiddleware(method, path, envelope);
@@ -175,37 +175,85 @@ describe('BenzeneMessageHttpMiddleware', () => {
     expect(h.bodies).toHaveLength(0);
   });
 
-  it.each([['not-json-at-all'], [undefined], [''], ['{"headers":{}}']])(
-    'invalid or topicless envelope (%s) responds bad request',
+  it.each([['not-json-at-all'], [undefined], [''], ['{"headers":{}}'], ['[]'], ['42']])(
+    'a malformed envelope (%s) is a carrier failure: 400 with a problem document',
     async (requestBody) => {
-      const h = createMiddleware('POST', '/benzene-message', requestBody as string | undefined);
+      const h = createMiddleware('POST', '/benzene/invoke', requestBody as string | undefined);
 
       await h.middleware.handleAsync(new FakeHttpContext(), () => Promise.resolve());
 
       expect(h.statusCodes).toEqual(['400']);
+      expect(h.contentTypes).toEqual(['application/problem+json; charset=utf-8']);
       expect(h.bodies).toHaveLength(1);
-      expect(h.bodies[0]).toContain(BenzeneResultStatus.badRequest);
+      const problem = JSON.parse(h.bodies[0]) as { benzeneStatus: string; status: number };
+      expect(problem.benzeneStatus).toBe(BenzeneResultStatus.badRequest);
+      expect(problem.status).toBe(400);
     },
   );
 
-  it('topic rejected by the filter responds not found', async () => {
+  it('a processed failure envelope is still HTTP 200 (transport-bindings §1, D17)', async () => {
+    const h = createMiddleware('POST', '/benzene/invoke', envelope);
+    const failing = new BenzeneMessageHttpMiddleware<FakeHttpContext>(
+      new BenzeneMessageHttpOptions(),
+      new MiddlewarePipeline<BenzeneMessageContext>([
+        () =>
+          new FuncWrapperMiddleware<BenzeneMessageContext>((context) => {
+            context.benzeneMessageResponse.statusCode = BenzeneResultStatus.unauthorized;
+            context.benzeneMessageResponse.isSuccessful = false;
+            return Promise.resolve();
+          }),
+      ]),
+      new FakeServiceResolverFactory(),
+      { map: () => Object.assign(new HttpRequest(), { method: 'POST', path: '/benzene/invoke', headers: {} }) },
+      { getBody: () => envelope },
+      {
+        setResponseHeader() {},
+        setContentType() {},
+        setStatusCode(_context, statusCode) {
+          h.statusCodes.push(statusCode);
+        },
+        setBody(_context: FakeHttpContext, body: string | Uint8Array) {
+          h.bodies.push(typeof body === 'string' ? body : new TextDecoder().decode(body));
+        },
+        getBody: () => '',
+        finalizeAsync: () => Promise.resolve(),
+      },
+      new DefaultHttpStatusCodeMapper(),
+    );
+
+    await failing.handleAsync(new FakeHttpContext(), () => Promise.resolve());
+
+    expect(h.statusCodes).toEqual(['200']);
+    expect(h.bodies[0]).toContain('"statusCode":"unauthorized"');
+  });
+
+  it('a topic outside the restriction is a processed not-found envelope, exactly as if no handler matched', async () => {
     const options = new BenzeneMessageHttpOptions();
     options.topicFilter = (topic) => topic !== 'example';
-    const h = createMiddleware('POST', '/benzene-message', envelope, options);
+    const h = createMiddleware('POST', '/benzene/invoke', envelope, options);
 
     await h.middleware.handleAsync(new FakeHttpContext(), () => Promise.resolve());
 
-    expect(h.statusCodes).toEqual(['404']);
+    expect(h.statusCodes).toEqual(['200']);
     expect(h.bodies).toHaveLength(1);
-    expect(h.bodies[0]).toContain(BenzeneResultStatus.notFound);
+    const response = JSON.parse(h.bodies[0]) as { statusCode: string; isSuccessful: boolean; body: string };
+    expect(response.statusCode).toBe(BenzeneResultStatus.notFound);
+    expect(response.isSuccessful).toBe(false);
+    const problem = JSON.parse(response.body) as Record<string, unknown>;
+    expect(problem.benzeneStatus).toBe(BenzeneResultStatus.notFound);
+    expect('status' in problem).toBe(false);
     expect(h.bodies[0]).not.toContain('echoTopic');
   });
 
+  it('defaults to the well-known /benzene/invoke path', () => {
+    expect(BenzeneMessageHttpOptions.defaultPath).toBe('/benzene/invoke');
+  });
+
   it.each([
-    ['/benzene-message', 'benzene-message'],
-    ['/benzene-message', '/BENZENE-MESSAGE'],
-    ['/benzene-message', '/benzene-message/'],
-    ['benzene-message', '/benzene-message'],
+    ['/benzene/invoke', 'benzene/invoke'],
+    ['/benzene/invoke', '/BENZENE/INVOKE'],
+    ['/benzene/invoke', '/benzene/invoke/'],
+    ['benzene/invoke', '/benzene/invoke'],
     ['/custom-path', '/custom-path'],
   ])(
     'path normalization matches regardless of case, trailing slash, or leading slash (%s vs %s)',

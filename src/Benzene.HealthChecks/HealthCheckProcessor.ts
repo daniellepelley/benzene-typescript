@@ -6,7 +6,7 @@ import {
   HealthCheckStatus,
   IHealthCheck,
 } from '@benzenejs/health-checks-core';
-import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
+import { BenzeneResult } from '@benzenejs/results';
 import { ExceptionHandlingHealthCheck } from './ExceptionHandlingHealthCheck';
 import { HealthCheckNamer } from './HealthCheckNamer';
 import { TimeOutHealthCheck } from './TimeOutHealthCheck';
@@ -27,10 +27,12 @@ export const HealthCheckProcessor = {
    * the resulting `healthChecks` record is assigned via `HealthCheckNamer` to stay unique even when
    * multiple checks share the same (or an empty) `type`.
    *
-   * Returns an `IBenzeneResult` whose payload is a `HealthCheckResponse`, with status `Ok` (HTTP 200)
-   * when healthy or `ServiceUnavailable` (HTTP 503, but explicitly successful so the body still
-   * renders the report) when not - making it usable by any consumer that inspects only the HTTP
-   * status code, such as a Kubernetes probe or a load-balancer target-health check.
+   * Returns an `IBenzeneResult` with status `ok` whenever the checks ran, whose payload is a
+   * `HealthCheckResponse`: `isHealthy` carries the verdict (wire-contracts §5). An unhealthy service is
+   * still a successful health query. A transport with a status of its own maps the verdict onto it — the
+   * HTTP binding answers a health route with 503 when `isHealthy` is false (`HttpStatusCodeResponseHandler`),
+   * so a Kubernetes probe or a load-balancer target-health check that reads only the status line still
+   * sees it.
    *
    * @param _topic The topic the checks were run for. Currently unused by this method itself, but
    * accepted for callers that need to correlate the run with a topic (matches the C# signature).
@@ -47,11 +49,8 @@ export const HealthCheckProcessor = {
 
     const message = new HealthCheckResponse(isHealthy, healthChecksRecord);
 
-    // Unhealthy: ServiceUnavailable so HTTP probes see a 503, but explicitly successful so the
-    // response body renders the health report payload rather than an error payload.
-    return isHealthy
-      ? BenzeneResult.ok(message)
-      : BenzeneResult.set(BenzeneResultStatus.serviceUnavailable, message, true);
+    // `ok` whenever the checks ran; the verdict is the payload's `isHealthy` (wire-contracts §5, D2).
+    return BenzeneResult.ok(message);
   },
 } as const;
 

@@ -147,17 +147,35 @@ describe('HttpMeshServiceDispatcher', () => {
     return { fetchFn, calls };
   }
 
-  it('derives the invoke URL from the specUrl origin as <origin>/benzene-message', async () => {
+  it('derives the invoke URL from the specUrl origin as <origin>/benzene/invoke', async () => {
     const { fetchFn, calls } = stubFetch(200, '{"ok":true}');
     const dispatcher = new HttpMeshServiceDispatcher(fetchFn);
     const entry = new MeshServiceRegistryEntry('orders', 'https://orders.example/some/spec?type=benzene', 'h');
 
     const result = await dispatcher.dispatchAsync(entry, new MeshDispatchEnvelope('order:create', {}, '{"a":1}'));
 
-    expect(calls[0]!.url).toBe('https://orders.example/benzene-message');
+    expect(calls[0]!.url).toBe('https://orders.example/benzene/invoke');
     expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ topic: 'order:create', headers: {}, body: '{"a":1}' });
+    // Not an envelope body: the status line is all there is to go on.
     expect(result.statusCode).toBe('200');
     expect(result.body).toBe('{"ok":true}');
+  });
+
+  it('reads the outcome from the response envelope whatever the HTTP status (D17)', async () => {
+    const envelope = JSON.stringify({
+      statusCode: 'validation-error',
+      isSuccessful: false,
+      headers: { 'content-type': 'application/problem+json' },
+      body: '{"benzeneStatus":"validation-error"}',
+    });
+    const dispatcher = new HttpMeshServiceDispatcher(stubFetch(200, envelope).fetchFn);
+    const entry = new MeshServiceRegistryEntry('orders', 'https://orders.example/spec', 'h');
+
+    const result = await dispatcher.dispatchAsync(entry, new MeshDispatchEnvelope('order:create', {}, '{}'));
+
+    expect(result.statusCode).toBe('validation-error');
+    expect(result.body).toBe('{"benzeneStatus":"validation-error"}');
+    expect(result.headers['content-type']).toBe('application/problem+json');
   });
 
   it('prefers an explicit invokeUrl from sourceOptions', async () => {

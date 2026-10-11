@@ -6,8 +6,11 @@ import { IHttpContext, IHttpRequestAdapter } from '@benzenejs/http';
 import { MeshUiMiddleware } from './MeshUiMiddleware';
 import { MeshSpecUiMiddleware } from './MeshSpecUiMiddleware';
 
-/** The default path the mesh UI is served from. */
-export const DefaultPath = '/mesh-ui';
+/**
+ * The default path the mesh UI is served from: `/benzene/mesh-ui`, the well-known framework surface
+ * (design-principles §5.2). Pass `path` to serve it elsewhere.
+ */
+export const DefaultPath = '/benzene/mesh-ui';
 
 /**
  * The default URL the UI fetches `manifest.json` from — a relative path, since the realistic case is the HTML
@@ -19,7 +22,7 @@ export const DefaultManifestUrl = 'manifest.json';
 /**
  * The default path the mesh-hosted Spec Explorer is served from. It ends in `.html` so the single relative link
  * `mesh-ui.html` builds (`mesh-spec-ui.html?service=…`) resolves correctly whether the mesh UI is a static file
- * next to the artifacts or served from this pipeline at `/mesh-ui`.
+ * next to the artifacts or served from this pipeline at `/benzene/mesh-ui`.
  */
 export const DefaultSpecUiPath = '/mesh-spec-ui.html';
 

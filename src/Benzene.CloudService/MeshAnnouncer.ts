@@ -123,7 +123,11 @@ export class MeshAnnouncer {
         body: envelope,
         signal: this.abortController.signal,
       });
-      return response.ok;
+      // The envelope endpoint answers 200 for every envelope it processed (transport-bindings §1, D17), so
+      // the collector's verdict is the envelope's isSuccessful; the status line decides only when the body
+      // is not an envelope (a carrier failure).
+      const responseBody = typeof response.text === 'function' ? await response.text() : '';
+      return envelopeSucceeded(responseBody, response.ok);
     } catch {
       return false; // collector down: reduced mesh, never a service failure (spec §6)
     }
@@ -173,4 +177,17 @@ export class MeshAnnouncer {
   dispose(): void {
     void this.disposeAsync();
   }
+}
+
+/** Reads `isSuccessful` from a response envelope, falling back to `fallback` when the body is not one. */
+function envelopeSucceeded(body: string, fallback: boolean): boolean {
+  try {
+    const parsed = JSON.parse(body) as { statusCode?: unknown; isSuccessful?: unknown } | null;
+    if (parsed !== null && typeof parsed === 'object' && typeof parsed.statusCode === 'string') {
+      return parsed.isSuccessful === true;
+    }
+  } catch {
+    // not JSON - not an envelope
+  }
+  return fallback;
 }

@@ -67,9 +67,9 @@ describe('HealthCheckProcessor', () => {
     )) as IBenzeneResultOf<HealthCheckResponse>;
     scope.dispose();
 
-    // One check failed -> overall unhealthy, mapped to ServiceUnavailable (HTTP 503) but still
-    // flagged successful so the report body renders.
-    expect(result.status).toBe(BenzeneResultStatus.serviceUnavailable);
+    // One check failed -> overall unhealthy. The health query itself still succeeded: status `ok`, with
+    // the verdict in `isHealthy` (wire-contracts §5); the HTTP binding maps it to 503.
+    expect(result.status).toBe(BenzeneResultStatus.ok);
     expect(result.isSuccessful).toBe(true);
 
     const response = result.payload;
@@ -166,7 +166,7 @@ describe('HealthCheckProcessor', () => {
       nonCriticalPersistent,
     ])) as IBenzeneResultOf<HealthCheckResponse>;
 
-    expect(result.status).toBe(BenzeneResultStatus.serviceUnavailable);
+    expect(result.status).toBe(BenzeneResultStatus.ok);
     expect(result.payload.isHealthy).toBe(false);
     expect(result.payload.healthChecks.Denied.status).toBe(HealthCheckStatus.failed);
     expect(result.payload.healthChecks.Denied.isPersistent).toBe(true);

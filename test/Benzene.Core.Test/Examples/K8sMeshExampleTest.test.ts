@@ -78,7 +78,8 @@ describe('K8sMeshExampleTest', () => {
         body: JSON.stringify({ orderId: 'o-9', amount: 30 }),
       }),
     });
-    expect(envelopeRes.status).toBe(201);
+    // The envelope endpoint answers 200 for every envelope it processed; the outcome is in the envelope.
+    expect(envelopeRes.status).toBe(200);
     const envelope = (await envelopeRes.json()) as { statusCode: string; body: string };
     expect(envelope.statusCode).toBe('created');
     expect(JSON.parse(envelope.body)).toMatchObject({ status: 'captured' });

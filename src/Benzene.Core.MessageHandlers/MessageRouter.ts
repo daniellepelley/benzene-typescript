@@ -1,4 +1,4 @@
-import { IBenzeneResult, ILogger, NullLogger } from '@benzenejs/abstractions';
+import { BenzeneTopic, IBenzeneResult, ILogger, NullLogger } from '@benzenejs/abstractions';
 import {
   IMessageGetter,
   IMessageHandlerDefinitionLookUp,
@@ -56,6 +56,18 @@ export class MessageRouter<TContext> implements IMiddleware<TContext> {
 
     this.logger.logDebug(`Finding message handler for ${topic.id}`);
     const messageHandlerDefinition = this.messageHandlerDefinitionLookUp.findHandler(topic);
+    if (messageHandlerDefinition === undefined && topic.id.toLowerCase() === BenzeneTopic.ping) {
+      // benzene:ping (wire-contracts §7): a reachability probe, answered `ok` with no payload, by topic id
+      // alone. Served by default so a probe sent into a one-way transport is acknowledged instead of being
+      // a not-found failure the transport redelivers until it dead-letters it. A handler the application
+      // registers for the topic takes precedence.
+      await this.messageHandlerResultSetter.setResultAsync(
+        context,
+        new MessageHandlerResult(topic, MessageHandlerDefinition.empty(), BenzeneResult.ok()),
+      );
+      return;
+    }
+
     if (messageHandlerDefinition === undefined) {
       // Names the topic and, when the message carried one, the version (core-concepts §2): a version no
       // handler serves is not-found, never silently another version's handler.

@@ -191,7 +191,9 @@ describe('useBenzeneCloudService', () => {
 
     const response = await postEnvelope(host, CloudServicePaths.invoke, 'benzene:mesh');
 
-    expect(response.statusCode).not.toBe(200);
+    // Processed envelopes are HTTP 200 whatever their status (D17); the envelope says not-found.
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('"statusCode":"not-found"');
   });
 
   it('keeps a relocated surface working and flags it in the profile self-assessment', async () => {

@@ -194,6 +194,17 @@ describe('MessageRouterTest', () => {
     ]);
   });
 
+  it('Route_BenzenePing_IsAnsweredOkWithNoPayload', async () => {
+    // wire-contracts §7: benzene:ping is a reachability probe, served by default (so a probe sent into a
+    // one-way transport is acknowledged, not redelivered as a not-found failure).
+    const { router, setter } = buildRouter(true);
+
+    await router.handleAsync(new TestContext('benzene:ping', new Order()), () => Promise.resolve());
+
+    expect(setter.result?.benzeneResult.status).toBe(BenzeneResultStatus.ok);
+    expect(setter.result?.benzeneResult.isSuccessful).toBe(true);
+  });
+
   it('Route_HandlerFactoryReturnsNothing_ShortCircuitsWithNotFound_PreservingTheDefinition', async () => {
     // A definition is found for the topic, but the factory can't create a handler (returns undefined).
     // The router must short-circuit with notFound — and this branch carries the actual definition, not

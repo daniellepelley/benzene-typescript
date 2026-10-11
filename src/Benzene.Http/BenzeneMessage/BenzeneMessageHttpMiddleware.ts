@@ -10,7 +10,7 @@ import {
   BenzeneMessageResponse,
   IBenzeneMessageResponse,
 } from '@benzenejs/core-messages';
-import { BenzeneResultStatus } from '@benzenejs/results';
+import { BenzeneResult, BenzeneResultStatus, ProblemTypes } from '@benzenejs/results';
 import { IHttpContext } from '../IHttpContext';
 import { IHttpRequestAdapter } from '../IHttpRequestAdapter';
 import { IHttpStatusCodeMapper } from '../IHttpStatusCodeMapper';
@@ -25,15 +25,27 @@ import { BenzeneMessageHttpOptions } from './BenzeneMessageHttpOptions';
  *
  * On a POST to its path it runs the envelope through the pipeline (topic routing, validation,
  * middleware, handler — the `"benzene"` transport) and writes the response envelope
- * (`{ "statusCode": ..., "headers": ..., "body": ... }`) as `application/json`, with the HTTP status
- * mapped from the envelope's status via {@link IHttpStatusCodeMapper}. Any other request falls through
- * to `next`. The envelope is always read and written with Benzene's default JSON serialization,
- * regardless of the payload formats the app's own serializer negotiates.
+ * (`{ "statusCode": ..., "isSuccessful": ..., "headers": ..., "body": ... }`) as `application/json`.
+ * Any other request falls through to `next`. The envelope is always read and written with Benzene's
+ * default JSON serialization, regardless of the payload formats the app's own serializer negotiates.
  *
- * Security: this endpoint exposes every topic the pipeline routes — including topics with no HTTP
- * mapping — so it is opt-in and intended for local development or protected/admin environments.
- * Restrict topics with {@link BenzeneMessageHttpOptions.topicFilter} and compose authentication
- * middleware in front of it; do not expose it unauthenticated in production.
+ * **Status line** (transport-bindings §1, D17): **200 for every envelope the endpoint processed**,
+ * whatever the result's status — the envelope carries the outcome, and a client reads it, never the
+ * status line. A `deleted` result is 200 with its envelope (not 204); an `unauthorized`/`forbidden`
+ * result from the pipeline's own auth middleware is a processed envelope, so 200 as well. Only a carrier
+ * failure is non-2xx: a malformed envelope (not JSON, not an object, or no topic) is **400**, answered
+ * with an `application/problem+json` document since no envelope was processed. A problem document inside
+ * a processed envelope omits `status` (wire-contracts §1.3).
+ *
+ * Security (D21): this endpoint exposes every topic the pipeline routes — including topics with no HTTP
+ * mapping. It runs the same pipeline (and so the same auth middleware) as the service's other transports;
+ * restrict the reachable topics with {@link BenzeneMessageHttpOptions.topicFilter} (a restricted topic is
+ * a processed `not-found`, exactly as if no handler matched) and do not expose it unauthenticated in
+ * production.
+ *
+ * DIVERGENCE from the pre-spec-0.2.0 behaviour (and .NET at the time of porting): the status line used to
+ * be mapped from the envelope's status via `IHttpStatusCodeMapper`; spec-0.2.0 (D17) made it 200 for
+ * every processed envelope. The mapper parameter is kept for the 400 carrier-failure document.
  *
  * C# `ITerminalMiddleware` has no marker equivalent in the TypeScript pipeline; the short-circuit is
  * expressed by simply not calling `next` on a match (exactly as the ported HTTP short-circuit
@@ -81,18 +93,31 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
       return;
     }
 
-    const response = await this.dispatchAsync(context);
+    const outcome = await this.dispatchAsync(context);
 
-    this.responseAdapter.setStatusCode(
-      context,
-      this.httpStatusCodeMapper.map(response.statusCode, response.isSuccessful),
-    );
+    if (outcome.kind === 'malformed') {
+      // A carrier failure: no envelope was processed, so the HTTP response is itself the problem
+      // document (wire-contracts §4.1), with its `status` member equal to the status line.
+      const statusCode = this.httpStatusCodeMapper.map(BenzeneResultStatus.badRequest, false);
+      const problem = ProblemTypes.from(BenzeneResult.badRequest(outcome.message));
+      problem.status = Number(statusCode);
+      this.responseAdapter.setStatusCode(context, statusCode);
+      this.responseAdapter.setContentType(context, 'application/problem+json; charset=utf-8');
+      this.responseAdapter.setBody(context, BenzeneMessageHttpMiddleware.serializer.serialize(problem));
+      await this.responseAdapter.finalizeAsync(context);
+      return;
+    }
+
+    // Every processed envelope is 200, whatever its status: the envelope carries the outcome (D17).
+    this.responseAdapter.setStatusCode(context, ProcessedEnvelopeStatusCode);
     this.responseAdapter.setContentType(context, 'application/json; charset=utf-8');
-    this.responseAdapter.setBody(context, BenzeneMessageHttpMiddleware.serializer.serialize(response));
+    this.responseAdapter.setBody(context, BenzeneMessageHttpMiddleware.serializer.serialize(outcome.response));
     await this.responseAdapter.finalizeAsync(context);
   }
 
-  private async dispatchAsync(context: TContext): Promise<IBenzeneMessageResponse> {
+  private async dispatchAsync(
+    context: TContext,
+  ): Promise<{ kind: 'processed'; response: IBenzeneMessageResponse } | { kind: 'malformed'; message: string }> {
     let request: BenzeneMessageRequest | undefined;
     try {
       const body = this.messageBodyGetter.getBody(context);
@@ -101,36 +126,40 @@ export class BenzeneMessageHttpMiddleware<TContext extends IHttpContext> impleme
           ? undefined
           : BenzeneMessageHttpMiddleware.serializer.deserialize<BenzeneMessageRequest>(body);
     } catch {
-      return errorResponse(
-        BenzeneResultStatus.badRequest,
-        'The request body is not a valid BenzeneMessage envelope',
-      );
+      return { kind: 'malformed', message: 'The request body is not a valid BenzeneMessage envelope' };
     }
 
-    if (request?.topic === undefined || request.topic.trim() === '') {
-      return errorResponse(
-        BenzeneResultStatus.badRequest,
-        'The request body must be a BenzeneMessage envelope with a topic',
-      );
+    if (
+      request === undefined ||
+      request === null ||
+      typeof request !== 'object' ||
+      typeof request.topic !== 'string' ||
+      request.topic.trim() === ''
+    ) {
+      return { kind: 'malformed', message: 'The request body must be a BenzeneMessage envelope with a topic' };
     }
 
     if (this.topicFilter !== undefined && !this.topicFilter(request.topic)) {
-      return errorResponse(
-        BenzeneResultStatus.notFound,
-        `Topic '${request.topic}' is not available on this endpoint`,
-      );
+      return { kind: 'processed', response: notFoundEnvelope(request.topic) };
     }
 
-    return this.application.handleAsync(request, this.serviceResolverFactory);
+    return { kind: 'processed', response: await this.application.handleAsync(request, this.serviceResolverFactory) };
   }
 }
 
-function errorResponse(statusCode: string, message: string): IBenzeneMessageResponse {
+/** The status line of every envelope the endpoint processed (transport-bindings §1, D17). */
+export const ProcessedEnvelopeStatusCode = '200';
+
+/**
+ * The answer for a topic outside the endpoint's restriction: a `not-found` envelope shaped exactly like
+ * the router's own (D21) — the problem document as the body, without the HTTP-only `status` member.
+ */
+function notFoundEnvelope(topic: string): IBenzeneMessageResponse {
   const response = new BenzeneMessageResponse();
-  response.statusCode = statusCode;
+  response.statusCode = BenzeneResultStatus.notFound;
   response.isSuccessful = false;
-  response.headers = {};
-  response.body = JSON.stringify({ message });
+  response.headers = { 'content-type': 'application/problem+json' };
+  response.body = JSON.stringify(ProblemTypes.from(BenzeneResult.notFound(`No handler found for topic ${topic}`)));
   return response;
 }
 
