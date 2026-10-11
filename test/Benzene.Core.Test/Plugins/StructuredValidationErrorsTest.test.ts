@@ -5,7 +5,7 @@ import { z } from 'zod';
 import * as yup from 'yup';
 import { formatValidationErrors, formatValidationMessages } from '@benzenejs/ajv';
 import { joiValidationErrors } from '@benzenejs/joi';
-import { yupValidationErrors } from '@benzenejs/yup';
+import { yupPathToJsonPointer, yupValidationErrors } from '@benzenejs/yup';
 import { zodValidationErrors } from '@benzenejs/zod';
 
 /**
@@ -93,9 +93,9 @@ describe('structured validation errors', () => {
 
     const errors = yupValidationErrors(thrown!);
     expect(errors).toHaveLength(1);
-    // yup reports a dotted path rather than a pointer, and it is emitted as yup gives it - the rule
-    // across every adapter is "the validator's own path, verbatim", not a re-derived one.
-    expect(errors[0].field).toBe('name');
+    // yup reports a dotted property path; every adapter emits an RFC 6901 JSON Pointer
+    // (wire-contracts §1.3, D8), so it is converted.
+    expect(errors[0].field).toBe('/name');
     expect(errors[0].code).toBe('max');
   });
 
@@ -112,6 +112,56 @@ describe('structured validation errors', () => {
 
     expect(zodErrors[0].field).toBe('/order/sku');
     expect(joiErrors[0].field).toBe('/order/sku');
+  });
+
+  it('every adapter addresses a missing array-element member as a JSON Pointer (/items/0/sku)', async () => {
+    const request = { name: '', items: [{}] };
+
+    const zodErrors = zodValidationErrors(
+      z
+        .object({ name: z.string().min(1), items: z.array(z.object({ sku: z.string().min(1) })) })
+        .safeParse(request).error!,
+    );
+    const joiErrors = joiValidationErrors(
+      Joi.object({
+        name: Joi.string().min(1).required(),
+        items: Joi.array().items(Joi.object({ sku: Joi.string().min(1).required() })),
+      }).validate(request, { abortEarly: false }).error!,
+    );
+    let yupError: yup.ValidationError | undefined;
+    try {
+      await yup
+        .object({
+          name: yup.string().min(1),
+          items: yup.array(yup.object({ sku: yup.string().required() })),
+        })
+        .validate(request, { abortEarly: false });
+    } catch (error) {
+      yupError = error as yup.ValidationError;
+    }
+    const ajv = new Ajv({ allErrors: true });
+    const validate = ajv.compile({
+      type: 'object',
+      properties: {
+        name: { type: 'string', minLength: 1 },
+        items: { type: 'array', items: { type: 'object', required: ['sku'], properties: { sku: { type: 'string', minLength: 1 } } } },
+      },
+    });
+    validate(request);
+    const ajvErrors = formatValidationErrors(validate.errors);
+
+    const fields = (errors: { field?: string }[]) => new Set(errors.map((e) => e.field));
+    expect(fields(zodErrors)).toEqual(new Set(['/name', '/items/0/sku']));
+    expect(fields(joiErrors)).toEqual(new Set(['/name', '/items/0/sku']));
+    expect(fields(yupValidationErrors(yupError!))).toEqual(new Set(['/name', '/items/0/sku']));
+    expect(fields(ajvErrors)).toEqual(new Set(['/name', '/items/0/sku']));
+  });
+
+  it('yup paths with quoted keys and indexes convert to escaped pointers', () => {
+    expect(yupPathToJsonPointer('items[0].sku')).toBe('/items/0/sku');
+    expect(yupPathToJsonPointer('meta["a.b"].c')).toBe('/meta/a.b/c');
+    expect(yupPathToJsonPointer('weird["x/y~z"]')).toBe('/weird/x~1y~0z');
+    expect(yupPathToJsonPointer('')).toBeUndefined();
   });
 
   it('a root-level failure carries no field at all', () => {

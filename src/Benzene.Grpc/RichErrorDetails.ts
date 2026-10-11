@@ -12,7 +12,11 @@ import { BenzeneError } from '@benzenejs/abstractions';
  * survives an HTTP one.
  *
  * **The mapping is pinned, and narrow.** `BenzeneError.message` → `FieldViolation.description`,
- * `BenzeneError.field` → `FieldViolation.field`. `BenzeneError.code` is deliberately carried NOWHERE:
+ * `BenzeneError.field` → `FieldViolation.field`, converted from the §1.3 JSON Pointer to gRPC's dotted
+ * path (wire-contracts §4.2, D8): segments unescaped per RFC 6901, joined with `.`, a segment made only of
+ * decimal digits written `[n]` — `/items/0/sku` → `items[0].sku` ({@link jsonPointerToFieldPath}). The
+ * reader converts back ({@link fieldPathToJsonPointer}), so `BenzeneError.field` is a pointer in-process
+ * whichever transport carried it. `BenzeneError.code` is deliberately carried NOWHERE:
  * the spec sentence does not say where it goes, and three ports each inventing a home for it is
  * precisely the divergence the spec exists to prevent. (`FieldViolation` *does* have a third string
  * field, `reason` (field 3), added to `google/rpc/error_details.proto` in 2022 and documented as "a
@@ -82,10 +86,66 @@ function encodeFieldViolation(error: BenzeneError): Buffer {
   const out: number[] = [];
   // `field` is left UNSET (not empty-string) when the error isn't scoped to a field, per proto3's
   // default-value omission - the same distinction .NET draws.
-  writeString(out, 1, error.field ?? '');
+  writeString(out, 1, jsonPointerToFieldPath(error.field) ?? '');
   writeString(out, 2, error.message ?? '');
   // Field 3 (`reason`) is deliberately not written - see the module note on `BenzeneError.code`.
   return Buffer.from(out);
+}
+
+/**
+ * Converts a §1.3 JSON Pointer to the dotted path `FieldViolation.field` carries (wire-contracts §4.2):
+ * segments unescaped per RFC 6901 and joined with `.`, a segment made only of decimal digits written
+ * `[n]` — `/items/0/sku` → `items[0].sku`. A value that is not a pointer (no leading `/`) is passed through
+ * unchanged; `undefined`/empty stays `undefined`.
+ */
+export function jsonPointerToFieldPath(pointer: string | undefined): string | undefined {
+  if (pointer === undefined || pointer === '') {
+    return undefined;
+  }
+  if (!pointer.startsWith('/')) {
+    return pointer;
+  }
+
+  let path = '';
+  for (const raw of pointer.substring(1).split('/')) {
+    const segment = raw.replace(/~1/g, '/').replace(/~0/g, '~');
+    if (/^[0-9]+$/.test(segment)) {
+      path += `[${segment}]`;
+    } else {
+      path += path === '' ? segment : `.${segment}`;
+    }
+  }
+  return path;
+}
+
+/**
+ * The reverse of {@link jsonPointerToFieldPath}: a dotted `FieldViolation.field` (`items[0].sku`) as a JSON
+ * Pointer (`/items/0/sku`). A value already in pointer form (leading `/`) is returned unchanged; empty is
+ * `undefined`.
+ */
+export function fieldPathToJsonPointer(fieldPath: string | undefined): string | undefined {
+  if (fieldPath === undefined || fieldPath === '') {
+    return undefined;
+  }
+  if (fieldPath.startsWith('/')) {
+    return fieldPath;
+  }
+
+  const segments: string[] = [];
+  for (const part of fieldPath.split('.')) {
+    const match = /^([^[]*)((?:\[[0-9]+\])*)$/.exec(part);
+    if (match === null) {
+      segments.push(part);
+      continue;
+    }
+    if (match[1] !== '') {
+      segments.push(match[1]);
+    }
+    for (const index of match[2].matchAll(/\[([0-9]+)\]/g)) {
+      segments.push(index[1]);
+    }
+  }
+  return segments.map((segment) => `/${segment.replace(/~/g, '~0').replace(/\//g, '~1')}`).join('');
 }
 
 function encodeAny(typeUrl: string, value: Buffer): Buffer {
@@ -238,7 +298,8 @@ function readFieldViolation(violationBytes: Buffer): BenzeneError {
     }
   }
 
-  return fieldPath === '' ? { message: description } : { message: description, field: fieldPath };
+  const field = fieldPathToJsonPointer(fieldPath);
+  return field === undefined ? { message: description } : { message: description, field };
 }
 
 /** A minimal proto3 wire-format reader — enough to walk the four messages above and skip the rest. */

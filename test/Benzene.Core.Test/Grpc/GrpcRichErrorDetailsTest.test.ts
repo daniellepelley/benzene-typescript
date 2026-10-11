@@ -15,6 +15,8 @@ import {
   BAD_REQUEST_TYPE_URL,
   decodeFieldViolations,
   encodeRichStatus,
+  fieldPathToJsonPointer,
+  jsonPointerToFieldPath,
   grpcMethod,
   GRPC_STATUS_DETAILS_TRAILER,
   useGrpc,
@@ -254,6 +256,36 @@ describe('the google.rpc codec', () => {
       { message: 'scoped', field: '/a' },
       { message: 'unscoped' },
     ]);
+  });
+
+  it('writes FieldViolation.field as the dotted path converted from the JSON Pointer (§4.2, D8)', () => {
+    const encoded = encodeRichStatus(3, 'invalid', [{ message: 'sku required', field: '/items/0/sku' }]);
+
+    // On the wire: the dotted form gRPC tooling expects, never the pointer.
+    expect(encoded.includes(Buffer.from('items[0].sku'))).toBe(true);
+    expect(encoded.includes(Buffer.from('/items/0/sku'))).toBe(false);
+    // Read back: a pointer again, so errors[].field is one shape in-process whatever the transport.
+    expect(decodeFieldViolations(encoded)).toEqual([{ message: 'sku required', field: '/items/0/sku' }]);
+  });
+
+  it.each([
+    ['/items/0/sku', 'items[0].sku'],
+    ['/name', 'name'],
+    ['/a/b/c', 'a.b.c'],
+    ['/matrix/0/1', 'matrix[0][1]'],
+    ['/x~1y/z~0w', 'x/y.z~w'],
+    ['/0/a', '[0].a'],
+  ])('converts the pointer %s to the dotted path %s', (pointer, dotted) => {
+    expect(jsonPointerToFieldPath(pointer)).toBe(dotted);
+  });
+
+  it.each([
+    ['items[0].sku', '/items/0/sku'],
+    ['name', '/name'],
+    ['matrix[0][1]', '/matrix/0/1'],
+    ['/already/a/pointer', '/already/a/pointer'],
+  ])('reads the dotted path %s back as the pointer %s', (dotted, pointer) => {
+    expect(fieldPathToJsonPointer(dotted)).toBe(pointer);
   });
 
   it('carries `code` nowhere - the spec does not say where it goes', () => {
