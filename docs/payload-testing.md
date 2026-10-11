@@ -213,14 +213,14 @@ These two answer different questions, and it is worth being deliberate about whi
 service over HTTP is the Cloud Service conformance probe (`@benzenejs/cloud-service-probe`) — but note that
 it is **not** a general topic-dispatch tool. It POSTs a small set of fixed synthetic envelopes (its own
 `benzene:healthcheck` and `benzene:spec` envelopes) at a service's `/benzene/*` surfaces to assess black-box conformance to
-the Cloud Service Profile (R1–R8), and reports a tri-state verdict built only from what it observed:
+the Cloud Service Profile (R1–R5, R7), and reports a tri-state verdict built only from what it observed:
 
 ```ts
 import { CloudServiceProbe } from '@benzenejs/cloud-service-probe';
 
 const report = await CloudServiceProbe.runAsync('https://my-service.example.com');
 console.log(report.notSatisfied);      // ids observed as unmet, e.g. []
-console.log(report.inconclusive);      // ids unobservable from outside, e.g. ['R8']
+console.log(report.inconclusive);      // ids it could not determine, e.g. ['R2']
 console.log(report.isFullyConformant); // boolean
 ```
 

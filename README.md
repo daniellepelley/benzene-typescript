@@ -1069,8 +1069,9 @@ byte-identical to .NET so the two interoperate:
 
 - **Reserved topic ids.** `BenzeneTopic` (`@benzenejs/abstractions`) is the port's single source of truth
   for the framework-owned topic namespace, and every reserved id carries its `benzene:` marker:
-  `benzene:healthcheck` (Cloud Service Profile R3), `benzene:spec` (R5, and R6's self-description), and
-  `benzene:mesh:register`/`:heartbeat`/`:traces`/`:issues` (R6, `mesh.md` §4), plus the mesh host's own
+  `benzene:healthcheck` (Cloud Service Profile R3), `benzene:spec` (R5), and
+  `benzene:mesh:register`/`:heartbeat`/`:traces`/`:issues` (`mesh.md` §4; the first three are the
+  meshed-service claim's M1, §7.1), plus the mesh host's own
   `benzene:mesh:query:*`, `benzene:mesh:aggregate`, `benzene:mesh:dispatch` and friends. The ids are the
   wire contract, not decoration: a service binding the bare forms cannot register with, heartbeat to, or be
   health-probed by a collector written in any other language.
@@ -1113,7 +1114,7 @@ byte-identical to .NET so the two interoperate:
   *reflecting* over the handler's CLR types, TypeScript's erased types can't, so schemas come from the
   `ITypeJsonSchemaSource` seam (Zod/Joi/Yup, or `MapTypeJsonSchemaSource` for bring-your-own — see the
   "Type → JSON Schema" porting convention); a service that validates automatically publishes its payload
-  schemas, rules included. `useBenzeneCloudService` answers `benzene:spec` on every surface, registers the
+  schemas, rules included. `useBenzeneCloudService` answers `benzene:spec` on every surface that carries a reply, registers the
   document with a collector at boot and heartbeats its `registrationHash` (see `@benzenejs/cloud-service`).
 - **The mesh trace feed** (`mesh.md` §3) is also ported in `@benzenejs/mesh-wire`: `MeshTraceEvent` /
   `MeshTraceBatch` / `MeshHeartbeat`, the ambient `MeshSpan` (W3C trace-context propagation over Node's
@@ -1122,7 +1123,10 @@ byte-identical to .NET so the two interoperate:
   `HttpMeshTraceExporter` (C#'s `System.Threading.Channels` pump → a bounded buffer drained by an
   `unref`'d timer loop; JS can't block a thread on a promise, so the C# synchronous `Dispose` bridge
   becomes a fire-and-forget `dispose()`, with `disposeAsync()` for a guaranteed tail flush), and the
-  `useMeshTrace` middleware. `docs/specification/conformance/mesh-trace-cases.json` is ported and pins the
+  `useMeshTrace` middleware, plus `useMeshTraceContext` (TypeScript-only: put it on an outbound route to forward
+  the invocation's `traceparent`/`tracestate` on sends and published events — M2's outbound half, `mesh.md`
+  §3/§7.1; it reads `MeshSpan` where `@benzenejs/clients`' `useW3CTraceContext` reads OpenTelemetry).
+  `docs/specification/conformance/mesh-trace-cases.json` is ported and pins the
   traceparent rules and the invocation → semantic-status mapping (including a handler exception traced as
   `service-unavailable`). The collector side that consumes these feeds is `@benzenejs/mesh-collector`.
 - **Code generation from a Contract Document.** `@benzenejs/codegen-client` generates from a
@@ -1720,9 +1724,10 @@ Ported (with tests):
 - Cloud Service conformance probe (`@benzenejs/cloud-service-probe`): a self-contained (no Benzene package
   deps) external, black-box HTTP probe of the Cloud Service Profile — `CloudServiceProbe.runAsync` hits a
   live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and the reserved `benzene:spec` topic over the
-  envelope (R6's self-description since spec 3b; it probed `benzene:mesh` before) and returns
-  a tri-state (`Satisfied`/`NotSatisfied`/`Inconclusive`) assessment of R1–R8 built only from what it
-  observed, never trusting the service's own claims. `HttpClient` + `BaseAddress` → an injectable `fetch`
+  envelope (R5's topic half since spec 4) and returns a tri-state (`Satisfied`/`NotSatisfied`/`Inconclusive`)
+  assessment of the profile (R1–R5, R7) built only from what it observed, never trusting the service's own
+  claims; the meshed-service claim (M1, M2 — not observable from outside one service) is reported separately,
+  on the report's `mesh`. `HttpClient` + `BaseAddress` → an injectable `fetch`
   (`@benzenejs/health-checks-http`'s adaptation) + `baseUrl`; `System.Text.Json.Nodes` shape checks →
   `JSON.parse` + type guards; `RandomNumberGenerator` → Web-Crypto `getRandomValues` for the synthetic
   W3C `traceparent`. The 7-case unit test runs against a real `node:http` loopback server (mirroring the
@@ -1744,12 +1749,13 @@ Ported (with tests):
   they're deliberately dropped rather than shipped silently wrong — configure the inner pipeline inline.
   `ITerminalMiddleware` marker → none (the port's short-circuit is "don't call `next` on a match").
 - Cloud Service bundle (`@benzenejs/cloud-service`): port of `Benzene.CloudService` — the batteries-included
-  `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R8) in one
+  `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R5, R7) in one
   call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `benzene:healthcheck`
   topic, the `benzene:spec` Contract Document on the envelope surface too, and outbound mesh
   register (that same document, since spec 3b)/heartbeat/trace — over the same `use*` builders, with a
-  wiring-time `CloudServiceProfileReport` (R1–R8 self-assessment) stamped on the document's `profile` field and
-  honestly reflecting any override (`withoutMesh()`, relocated paths).
+  wiring-time `CloudServiceProfileReport` (R1–R5, R7 self-assessment) stamped on the document's `profile` field and
+  honestly reflecting any override (relocated paths); the meshed-service claim (M1 feeds, M2 trace context — the
+  former R6/R8, mesh.md §7.1) is assessed separately on its `mesh` (`MeshedServiceReport`), never in `missing`.
   **Divergences:** `MeshAnnouncer` uses the global `fetch` (Node 22) instead of `HttpClient.PostAsync` (no
   new dependency, same adaptation as `HttpMeshTraceExporter`; `CancellationTokenSource` → `AbortController`;
   the spec §6 "swallow every failure, never block an invocation" rule ports verbatim); `IAsyncDisposable` +

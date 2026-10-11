@@ -17,7 +17,7 @@ The TypeScript port gives you two complementary mechanisms:
 - **Runtime contract-drift detection** — the provider publishes a hash of its current contract; a consumer
   compares it against the hash its client was generated with and reports drift on a diagnostic topic.
 - **A deploy-time black-box conformance probe** — `CloudServiceProbe` hits a running service's `/benzene/*`
-  surfaces and reports a tri-state verdict against the Cloud Service Profile (R1–R8).
+  surfaces and reports a tri-state verdict against the Cloud Service Profile (R1–R5, R7).
 
 > **Port note.** The .NET original of this cookbook also ships a build-time compatibility gate
 > (`SchemaCompatibility.EnsureBackwardCompatible`, from `Benzene.Schema.OpenApi.Compatibility`) that
@@ -163,8 +163,8 @@ useHealthCheck(api, 'contracts', (health) => {
 
 `CloudServiceProbe` (`@benzenejs/cloud-service-probe`) is an external, black-box auditor: it POSTs a small set
 of fixed synthetic envelopes at a live service's `/benzene/*` surfaces and returns a **tri-state**
-assessment of the Cloud Service Profile's R1–R8, built only from what it observed — it never trusts what the
-service claims about itself. Run it against a freshly-deployed service (a smoke/gate step in CI) to confirm
+assessment of the [Cloud Service Profile](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/cloud-service-profile.md)
+(R1–R5, R7), built only from what it observed — it never trusts what the service claims about itself. Run it against a freshly-deployed service (a smoke/gate step in CI) to confirm
 it is reachable and wire-conformant before promoting it:
 
 ```bash
@@ -183,8 +183,8 @@ describe('deployed OrderService conformance', () => {
     // Ids the probe positively observed as UNMET must be empty.
     expect(report.notSatisfied).toEqual([]);
 
-    // Ids it structurally cannot observe from outside (e.g. R8, half of R6) — treat as "unknown",
-    // never as a pass. `runAsync` never throws for an unreachable service; it reports a verdict.
+    // Ids it could not determine from outside (e.g. R2 when no handlers are listed yet) — treat as
+    // "unknown", never as a pass. `runAsync` never throws for an unreachable service; it reports a verdict.
     console.log('inconclusive:', report.inconclusive);
   });
 });
@@ -192,12 +192,15 @@ describe('deployed OrderService conformance', () => {
 
 `runAsync(baseUrl, options?, fetchFn?, signal?)` returns a `CloudServiceProbeReport` with:
 
-- `notSatisfied` — requirement ids observed as unmet (assert this is empty);
-- `inconclusive` — ids unobservable from a single external HTTP vantage point (never treat as a pass);
-- `isFullyConformant` — true only when *every* requirement was observed as satisfied. Because R8 (and half
-  of R6) are structurally unobservable from outside, this is essentially never `true` for a real service —
-  that is the honest ceiling of a black-box probe, so gate on `notSatisfied` being empty, not on
-  `isFullyConformant`.
+- `requirements` — R1–R5 and R7, each with a `verdict` and a `reason`. R5 checks both halves:
+  `GET /benzene/spec` and the reserved `benzene:spec` topic POSTed over `/benzene/invoke`;
+- `notSatisfied` — profile ids observed as unmet (assert this is empty);
+- `inconclusive` — profile ids the probe could not determine (never treat as a pass);
+- `isFullyConformant` — true when every profile requirement was observed as satisfied;
+- `mesh` — the meshed-service claim ([mesh.md §7.1](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/mesh.md)),
+  reported separately: M1 (registration, heartbeats, traces) and M2 (trace context propagation). Both are
+  always `Inconclusive` — the feeds go to a collector and propagation shows only downstream, so neither is
+  observable from outside one service. Ask the collector whether the service registered.
 
 Point it at non-default paths with `CloudServiceProbeOptions` (`invokePath`, `specPath`, `healthPath`,
 `sendTraceParentProbe`).
@@ -230,11 +233,12 @@ confirm the provider registered `addSchemaHealthCheck` and that the consumer is 
 `benzene:healthcheck` response. If the provider has no `schema` check, there is no hash to compare and the check
 stays `ok` (it never invents drift).
 
-### The probe reports lots of `inconclusive` ids
+### The probe reports `inconclusive` ids
 
-That is expected and honest — a single external HTTP probe genuinely cannot observe R8 (and half of R6).
+Check each one's `reason`: R2 is inferred from the contract document's requests, so a service with no
+handlers yet stays inconclusive, and R7 is inconclusive whenever you point the probe at non-default paths.
 Gate on `report.notSatisfied` being empty, and treat `inconclusive` as "verify by other means", never as a
-pass.
+pass. The mesh claim's M1 and M2 (on `report.mesh`) are always inconclusive from outside.
 
 ### `CloudServiceProbe.runAsync` returns instead of throwing for a dead service
 

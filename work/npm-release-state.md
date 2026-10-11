@@ -192,14 +192,14 @@ notes must list them too.
 - **Traces.** `HttpMeshTraceExporter` sends `startedAt` as ISO-8601 (was epoch ms, which the .NET and Go
   collectors could not parse). `MeshTraceEvent.startedAt` stays epoch ms in memory; new `MeshTime` converts.
 - **Cloud service.** `useBenzeneCloudService` answers `benzene:spec` over `/benzene/invoke` as well as
-  `GET /benzene/spec` (R6), registers at host boot through a `cloud-service-registration` start-up check (or the
+  `GET /benzene/spec` (then R6; R5 since Phase 4), registers at host boot through a `cloud-service-registration` start-up check (or the
   first invocation), and no longer intercepts `benzene:mesh`. `withServiceVersion(version, versionScheme?)` now
   reaches the document (it only reached the descriptor before). `withPlacement` takes the same arguments but
   stores a `ServicePlacement`. An empty `withOutbound(new MeshOutboundRegistry())` asserts "no events, no
   sends". `CloudServiceDescriptorSource` → `CloudServiceContractDocumentSource`;
   `CloudServiceProfileReport.toMeshProfile()` → `toProfile()`; `MeshAnnouncer` takes the document source
   and `ensureStarted()` takes no argument.
-- **Probe.** `CloudServiceProbe` evidences R6 with a `benzene:spec` envelope (was `benzene:mesh`) and reads R2
+- **Probe.** `CloudServiceProbe` evidences R6 (R5 since Phase 4) with a `benzene:spec` envelope (was `benzene:mesh`) and reads R2
   from the document's `requests`.
 - **Collector.** `RegisterMessageHandler` takes a `MeshRegistration` (the Contract Document as received): only
   `service` is required; providers are `events` ∪ `sends`, consumers `requests`; `benzene:` entries ignored; an
@@ -216,6 +216,35 @@ notes must list them too.
   response is declared.
 - **Example.** `examples/mesh-service` serves its Contract Document through `useSpec`; `/benzene/descriptor`
   and `buildDescriptor`/`buildBenzeneSpec` are gone (`useOrderService` replaces them).
+
+## Migration notes for the next publish (spec-0.5.0 / Phase 4, the profile)
+
+Breaking changes in public API and in the served `profile` field (pre-1.0, no compatibility shims); the next
+release notes must list them too.
+
+- **The Cloud Service Profile is R1–R5 and R7.** R6 and R8 are gone and their ids are not reused: they are now
+  the meshed-service claim's M1 (registration, heartbeats, traces) and M2 (trace context join and propagation,
+  mesh.md §7.1). The Contract Document's `profile.missing` lists R1–R5/R7 ids only, so a service without a
+  collector, or with `withoutMesh()`, now serves `{ "name": "cloud-service" }` (it served `missing: ["R6"]` /
+  `["R6", "R8"]`). R5 now includes answering `benzene:spec` wherever the transport carries a reply.
+- **Self-check.** `CloudServiceProfileReport.requirements` holds R1–R5 and R7; `missing`, `isConformant` and
+  `toProfile()` are about those alone. New `CloudServiceProfileReport.mesh` (`MeshedServiceReport`: M1 and M2,
+  `missing`, `isMeshed`, `profileConformant`) and `CloudServiceProfileReport.isMeshed` (the profile and M1 and
+  M2). The constructor takes the mesh report as an optional second argument. M2 is now reported missing when no
+  collector and no trace exporter is configured (the trace middleware is not wired then); R8 used to read only
+  `withoutMesh()`.
+- **Probe.** `CloudServiceProbeReport.requirements` holds R1–R5 and R7; R5 now needs both `GET /benzene/spec`
+  and the `benzene:spec` topic over `/benzene/invoke` (the latter was R6). New `CloudServiceProbeReport.mesh`
+  holds M1 and M2, always `Inconclusive`; `notSatisfied`, `inconclusive` and `isFullyConformant` cover the
+  profile only, so `isFullyConformant` can now be true.
+- **Trace context (M2).** New `useMeshTraceContext` (`@benzenejs/mesh-wire`): on an outbound route it forwards
+  `traceparent` and `tracestate` from `MeshSpan.current` on sends and published events. `MeshSpan` gains an
+  optional third constructor argument, `traceState`, which `useMeshTrace` fills from a joined caller.
+- **UI middleware lifetimes.** `SpecUiMiddleware`, `MeshUiMiddleware` and `MeshSpecUiMiddleware` are registered
+  scoped (were singleton, which captured the scoped request/response adapters). `SpecUiPage.getHtml`,
+  `MeshUiPage.getHtml` and `MeshSpecUiPage.getHtml` memoize the injected page.
+- **Example.** `examples/k8s-mesh` declares its sends (`withOutbound`) and no longer reports a guessed
+  `placement.region` (`in-cluster`).
 
 ## What is left to do
 
