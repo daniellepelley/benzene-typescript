@@ -97,6 +97,16 @@ function reasonOf(report: CloudServiceProbeReport, id: string): string {
   return report.requirements.find((x) => x.id === id)!.reason.toLowerCase();
 }
 
+function meshVerdictOf(report: CloudServiceProbeReport, id: string): CloudServiceProbeVerdict {
+  const requirement = report.mesh.find((x) => x.id === id);
+  expect(requirement, `mesh requirement ${id} present`).toBeDefined();
+  return requirement!.verdict;
+}
+
+function meshReasonOf(report: CloudServiceProbeReport, id: string): string {
+  return report.mesh.find((x) => x.id === id)!.reason.toLowerCase();
+}
+
 const defaultPaths = {
   health: CloudServiceProbePaths.health,
   spec: CloudServiceProbePaths.spec,
@@ -104,7 +114,7 @@ const defaultPaths = {
 };
 
 describe('CloudServiceProbe', () => {
-  it('FullyConformantService_ReportsSatisfiedForEverythingExceptR8AndTheRegistrationHalfOfR6', async () => {
+  it('FullyConformantService_ReportsTheProfileSatisfied_AndTheMeshClaimInconclusiveSeparately', async () => {
     const baseUrl = await startFake(defaultPaths, {
       onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
@@ -122,17 +132,42 @@ describe('CloudServiceProbe', () => {
     expect(verdictOf(report, 'R3')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R4')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R5')).toBe(CloudServiceProbeVerdict.Satisfied);
-    expect(verdictOf(report, 'R6')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R7')).toBe(CloudServiceProbeVerdict.Satisfied);
-    expect(verdictOf(report, 'R8')).toBe(CloudServiceProbeVerdict.Inconclusive);
 
-    // R6's reason must still say the registration/heartbeat half was never verified.
-    expect(reasonOf(report, 'R6')).toContain('registration');
-    expect(reasonOf(report, 'R6')).toContain('cannot be observed');
-    // R8 is never observable from one service.
-    expect(reasonOf(report, 'R8')).toContain('cannot be verified');
+    // The profile is R1-R5 and R7 (spec 4): R6/R8 are gone, their ids not reused.
+    expect(report.requirements.map((x) => x.id)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R7']);
+    expect(report.notSatisfied).toEqual([]);
+    expect(report.inconclusive).toEqual([]);
+    expect(report.isFullyConformant).toBe(true);
 
-    report.requirements.forEach((x) => expect(x.reason.trim()).not.toBe(''));
+    // The meshed-service claim (mesh.md §7.1) is reported separately, and neither half is observable from outside.
+    expect(report.mesh.map((x) => x.id)).toEqual(['M1', 'M2']);
+    expect(meshVerdictOf(report, 'M1')).toBe(CloudServiceProbeVerdict.Inconclusive);
+    expect(meshVerdictOf(report, 'M2')).toBe(CloudServiceProbeVerdict.Inconclusive);
+    expect(meshReasonOf(report, 'M1')).toContain('registration');
+    expect(meshReasonOf(report, 'M1')).toContain('not observable from outside');
+    expect(meshReasonOf(report, 'M2')).toContain('cannot be verified');
+
+    [...report.requirements, ...report.mesh].forEach((x) => expect(x.reason.trim()).not.toBe(''));
+  });
+
+  it('SpecServedOverHttpButNotOnTheTopic_R5IsNotSatisfied', async () => {
+    const baseUrl = await startFake(defaultPaths, {
+      onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
+      onSpec: () => ({ status: 200, json: '{"service":"orders","requests":[{"topic":"order:create"}]}' }),
+      onInvoke: (topic) =>
+        topic === 'benzene:healthcheck' ? { status: 200, json: envelope('{"isHealthy":true}') } : { status: 404, json: '{}' },
+    });
+
+    const report = await CloudServiceProbe.runAsync(baseUrl);
+
+    // R5 includes answering benzene:spec on every transport (spec 4), not only GET /benzene/spec.
+    expect(verdictOf(report, 'R5')).toBe(CloudServiceProbeVerdict.NotSatisfied);
+    expect(reasonOf(report, 'R5')).toContain("topic 'benzene:spec' returned 404");
+    expect(verdictOf(report, 'R7')).toBe(CloudServiceProbeVerdict.NotSatisfied);
+    // R2 still reads the requests from the HTTP surface's document.
+    expect(verdictOf(report, 'R2')).toBe(CloudServiceProbeVerdict.Satisfied);
+    expect(report.notSatisfied).toEqual(['R5', 'R7']);
   });
 
   it('HealthEndpointReturns503WithValidBody_R3IsSatisfied', async () => {
@@ -169,10 +204,10 @@ describe('CloudServiceProbe', () => {
     expect(verdictOf(report, 'R3')).toBe(CloudServiceProbeVerdict.NotSatisfied);
     expect(verdictOf(report, 'R4')).toBe(CloudServiceProbeVerdict.NotSatisfied);
     expect(verdictOf(report, 'R5')).toBe(CloudServiceProbeVerdict.NotSatisfied);
-    expect(verdictOf(report, 'R6')).toBe(CloudServiceProbeVerdict.NotSatisfied);
     expect(verdictOf(report, 'R2')).toBe(CloudServiceProbeVerdict.Inconclusive);
     expect(verdictOf(report, 'R7')).toBe(CloudServiceProbeVerdict.NotSatisfied);
-    expect(verdictOf(report, 'R8')).toBe(CloudServiceProbeVerdict.Inconclusive);
+    expect(meshVerdictOf(report, 'M1')).toBe(CloudServiceProbeVerdict.Inconclusive);
+    expect(meshVerdictOf(report, 'M2')).toBe(CloudServiceProbeVerdict.Inconclusive);
   });
 
   it('SpecMissing_R5FailsWhileHealthAndInvokePass_AndR2DegradesToInconclusive', async () => {
@@ -188,7 +223,6 @@ describe('CloudServiceProbe', () => {
     expect(verdictOf(report, 'R3')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R4')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R5')).toBe(CloudServiceProbeVerdict.NotSatisfied);
-    expect(verdictOf(report, 'R6')).toBe(CloudServiceProbeVerdict.NotSatisfied);
     expect(verdictOf(report, 'R2')).toBe(CloudServiceProbeVerdict.Inconclusive);
     expect(verdictOf(report, 'R7')).toBe(CloudServiceProbeVerdict.NotSatisfied);
   });
@@ -215,12 +249,11 @@ describe('CloudServiceProbe', () => {
     expect(verdictOf(report, 'R3')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R4')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R5')).toBe(CloudServiceProbeVerdict.Satisfied);
-    expect(verdictOf(report, 'R6')).toBe(CloudServiceProbeVerdict.Satisfied);
     expect(verdictOf(report, 'R7')).toBe(CloudServiceProbeVerdict.Inconclusive);
     expect(reasonOf(report, 'R7')).toContain('non-default');
   });
 
-  it('SendTraceParentProbeDisabled_R8StaysInconclusiveWithoutTheBonusSignal', async () => {
+  it('SendTraceParentProbeDisabled_M2StaysInconclusiveWithoutTheBonusSignal', async () => {
     const baseUrl = await startFake(defaultPaths, {
       onHealth: () => ({ status: 200, json: '{"isHealthy":true}' }),
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
@@ -235,7 +268,7 @@ describe('CloudServiceProbe', () => {
     options.sendTraceParentProbe = false;
     const report = await CloudServiceProbe.runAsync(baseUrl, options);
 
-    expect(verdictOf(report, 'R8')).toBe(CloudServiceProbeVerdict.Inconclusive);
-    expect(reasonOf(report, 'R8')).not.toContain('bonus signal');
+    expect(meshVerdictOf(report, 'M2')).toBe(CloudServiceProbeVerdict.Inconclusive);
+    expect(meshReasonOf(report, 'M2')).not.toContain('bonus signal');
   });
 });

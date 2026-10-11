@@ -1,8 +1,8 @@
 /**
  * Port of Benzene.CloudService.Probe - an external, black-box HTTP conformance probe for the Cloud Service
- * Profile (R1-R8): it hits a live service's `/benzene/*` surfaces and returns a tri-state
+ * Profile (R1–R5, R7): it hits a live service's `/benzene/*` surfaces and returns a tri-state
  * (Satisfied/NotSatisfied/Inconclusive) assessment built only from what it observed, never trusting the
- * service's own claims. Self-contained (no Benzene package deps); `HttpClient` -> an injectable `fetch`
+ * service's own claims, and reports the meshed-service claim (M1, M2 - not observable from outside) separately. Self-contained (no Benzene package deps); `HttpClient` -> an injectable `fetch`
  * (`@benzenejs/health-checks-http`'s adaptation) with a `baseUrl`.
  */
 export * from './CloudServiceProbePaths';

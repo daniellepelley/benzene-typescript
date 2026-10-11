@@ -2,8 +2,9 @@
 
 /**
  * The three verdicts an external, black-box probe can honestly reach for one requirement of the Cloud
- * Service Profile. A probe run from outside the service genuinely cannot always tell "yes" from "no" -
- * some requirements (R8 in full, half of R6) are not observable over HTTP from a single service at all.
+ * Service Profile (or of the meshed-service claim). A probe run from outside the service genuinely cannot always
+ * tell "yes" from "no" - the meshed-service requirements (M1, M2) are not observable over HTTP from a single
+ * service at all.
  * `Inconclusive` exists so the probe can say "I don't know, and here is exactly why" instead of guessing.
  */
 export enum CloudServiceProbeVerdict {
@@ -17,10 +18,10 @@ export enum CloudServiceProbeVerdict {
   Inconclusive,
 }
 
-/** One profile requirement as independently assessed by an external `CloudServiceProbe` run. */
+/** One requirement (R1–R5, R7, or M1/M2) as independently assessed by an external `CloudServiceProbe` run. */
 export class CloudServiceProbeRequirement {
   constructor(
-    /** The requirement id (R1-R8). */
+    /** The requirement id: R1–R5 or R7 for the profile, M1 or M2 for the meshed-service claim. */
     readonly id: string,
     /** What the requirement mandates, in one line. */
     readonly description: string,
@@ -33,23 +34,30 @@ export class CloudServiceProbeRequirement {
 
 /**
  * The result of one `CloudServiceProbe` run against a live service: an external, black-box, tri-state
- * assessment of R1-R8 built entirely from what the probe itself observed over real HTTP - it never trusts
- * anything the target service claims about itself.
+ * assessment of the Cloud Service Profile (R1–R5, R7) built entirely from what the probe itself observed over
+ * real HTTP - it never trusts anything the target service claims about itself - plus, separately, what it can say
+ * of the meshed-service claim (mesh.md §7.1, M1 and M2).
  */
 export class CloudServiceProbeReport {
   constructor(
-    /** Every profile requirement with its independently-observed assessment, in R1-R8 order. */
+    /** Every profile requirement with its independently-observed assessment: R1–R5 and R7, in that order. */
     readonly requirements: readonly CloudServiceProbeRequirement[],
+    /**
+     * The meshed-service claim (mesh.md §7.1): M1 (registration, heartbeats, traces) and M2 (trace context
+     * propagation). Neither is observable from outside one service, so both are `Inconclusive`; they never feed
+     * {@link notSatisfied}, {@link inconclusive} or {@link isFullyConformant}, which are about the profile.
+     */
+    readonly mesh: readonly CloudServiceProbeRequirement[] = [],
   ) {}
 
-  /** The ids the probe positively observed as unmet. */
+  /** The profile ids (R1–R5, R7) the probe positively observed as unmet. */
   get notSatisfied(): string[] {
     return this.requirements
       .filter((x) => x.verdict === CloudServiceProbeVerdict.NotSatisfied)
       .map((x) => x.id);
   }
 
-  /** The ids the probe could not determine from outside the service. */
+  /** The profile ids (R1–R5, R7) the probe could not determine from outside the service. */
   get inconclusive(): string[] {
     return this.requirements
       .filter((x) => x.verdict === CloudServiceProbeVerdict.Inconclusive)
@@ -57,9 +65,9 @@ export class CloudServiceProbeReport {
   }
 
   /**
-   * True when every requirement was independently observed as `Satisfied`. Given R8 (and half of R6) are
-   * structurally unobservable by a single-service probe, this will essentially never be true for a real
-   * service - that's the honest ceiling of what an external HTTP probe can claim.
+   * True when every profile requirement (R1–R5, R7) was independently observed as `Satisfied`. R2 is inferred
+   * from the contract document's requests, so a service with no handlers yet stays `Inconclusive` there. Says
+   * nothing about the meshed-service claim (see {@link mesh}).
    */
   get isFullyConformant(): boolean {
     return this.requirements.every((x) => x.verdict === CloudServiceProbeVerdict.Satisfied);

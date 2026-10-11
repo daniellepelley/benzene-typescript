@@ -6,7 +6,7 @@ import { CloudServiceProbePaths } from './CloudServiceProbePaths';
  * target service itself is the `baseUrl` passed to `CloudServiceProbe.runAsync`.
  */
 export class CloudServiceProbeOptions {
-  /** The wire-envelope endpoint to probe for R4/R6. Defaults to `CloudServiceProbePaths.invoke`. */
+  /** The wire-envelope endpoint to probe for R4 and R5's `benzene:spec` topic. Defaults to `CloudServiceProbePaths.invoke`. */
   invokePath: string = CloudServiceProbePaths.invoke;
 
   /** The derived spec endpoint to probe for R5. Defaults to `CloudServiceProbePaths.spec`. */
@@ -16,10 +16,10 @@ export class CloudServiceProbeOptions {
   healthPath: string = CloudServiceProbePaths.health;
 
   /**
-   * When true (the default), the R4 and R6 probe requests carry a synthetic W3C `traceparent` header, and
-   * R8's reason notes whether the service still responded correctly with it attached. A weak,
-   * explicitly-labeled non-breakage signal only - it never upgrades R8 past `Inconclusive`. Set false to
-   * skip sending it.
+   * When true (the default), the envelope probe requests (R4, and R5's `benzene:spec` topic) carry a synthetic
+   * W3C `traceparent` header, and M2's reason notes whether the service still responded correctly with it
+   * attached. A weak, explicitly-labeled non-breakage signal only - it never upgrades M2 past `Inconclusive`.
+   * Set false to skip sending it.
    */
   sendTraceParentProbe = true;
 

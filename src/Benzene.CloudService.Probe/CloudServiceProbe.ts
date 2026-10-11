@@ -14,15 +14,16 @@ export type ProbeFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 const HealthDescription = 'Health checks';
 const InvokeDescription = 'Wire-envelope invocability';
-const SpecDescription = 'Derived spec';
-const MeshDescription = 'Mesh service-side feeds (observable half - see reason)';
+const SpecDescription = 'Derived spec (HTTP surface + benzene:spec on the envelope)';
+const FeedsDescription = 'Mesh service-side feeds (registration, heartbeats, traces)';
+const PropagationDescription = 'Trace context join and propagation';
 
-// The reserved topic ids of cloud-service-profile.md R3/R6, spelled out rather than imported: this
+// The reserved topic ids of cloud-service-profile.md R3/R5, spelled out rather than imported: this
 // package deliberately has no dependencies (it is a black-box probe, and must be able to probe a
 // service built on any Benzene version). `BenzeneTopic` in `@benzenejs/abstractions` is the in-process
 // source of truth for the same strings.
 const HealthcheckEnvelope = '{"topic":"benzene:healthcheck","headers":{},"body":"{}"}';
-// R6's self-description: the R5 contract document on the reserved `benzene:spec` topic, over the envelope.
+// R5's topic half: the contract document on the reserved `benzene:spec` topic, over the envelope.
 const SpecEnvelope = '{"topic":"benzene:spec","headers":{},"body":"{}"}';
 
 interface HttpResult {
@@ -35,20 +36,30 @@ interface HttpResult {
 interface ProbeOutcome {
   requirement: CloudServiceProbeRequirement;
   reached: boolean;
+}
+
+/** One half of R5: whether it checked out, why, and the contract document's `requests` when it parsed. */
+interface SpecHalf {
+  ok: boolean;
+  reached: boolean;
+  reason: string;
   requests?: unknown[];
 }
 
 /**
- * Runs an external, black-box conformance probe against a live Benzene Cloud Service, asserting R1-R8's
- * observable surfaces from outside - health response shape, envelope round-trip, the spec over HTTP and on the
- * `benzene:spec` topic, default paths - over real HTTP, without relying on anything the service says about itself.
+ * Runs an external, black-box conformance probe against a live Benzene Cloud Service, asserting the profile's
+ * observable surfaces (R1–R5, R7) from outside - health response shape, envelope round-trip, the spec over HTTP
+ * and on the `benzene:spec` topic, default paths - over real HTTP, without relying on anything the service says
+ * about itself. The meshed-service claim (mesh.md §7.1, M1 and M2) is reported separately, on the report's
+ * `mesh`: neither is observable from outside one service, so both are always `Inconclusive`.
  * Port of Benzene.CloudService.Probe.CloudServiceProbe (a static class -> a const object).
  */
 export const CloudServiceProbe = {
   /**
-   * Probes the service at `baseUrl` and returns a tri-state assessment of R1-R8. Never throws for an
-   * unreachable or non-conformant service - unreachability and shape mismatches are reported as verdicts,
-   * not exceptions. (An externally-requested `signal` abort does propagate, matching the C# `ct` behaviour.)
+   * Probes the service at `baseUrl` and returns a tri-state assessment of R1–R5 and R7, plus what can be said of
+   * M1 and M2. Never throws for an unreachable or non-conformant service - unreachability and shape mismatches
+   * are reported as verdicts, not exceptions. (An externally-requested `signal` abort does propagate, matching
+   * the C# `ct` behaviour.)
    */
   async runAsync(
     baseUrl: string,
@@ -58,21 +69,20 @@ export const CloudServiceProbe = {
   ): Promise<CloudServiceProbeReport> {
     const health = await probeHealthAsync(baseUrl, options, fetchFn, signal);
     const invoke = await probeInvokeAsync(baseUrl, options, fetchFn, signal);
-    const spec = await probeSpecAsync(baseUrl, options, fetchFn, signal);
-    const mesh = await probeMeshAsync(baseUrl, options, fetchFn, signal);
+    const specHttp = await probeSpecHttpAsync(baseUrl, options, fetchFn, signal);
+    const specTopic = await probeSpecTopicAsync(baseUrl, options, fetchFn, signal);
+    const spec = evaluateR5(specHttp, specTopic);
 
     const requirements: CloudServiceProbeRequirement[] = [
-      evaluateR1(health, invoke, spec, mesh),
-      evaluateR2(mesh),
+      evaluateR1(health, invoke, spec),
+      evaluateR2(specTopic, specHttp),
       health.requirement,
       invoke.requirement,
       spec.requirement,
-      mesh.requirement,
-      evaluateR7(options, health, invoke, spec, mesh),
-      evaluateR8(options, invoke, mesh),
+      evaluateR7(options, health, invoke, spec),
     ];
 
-    return new CloudServiceProbeReport(requirements);
+    return new CloudServiceProbeReport(requirements, [evaluateM1(), evaluateM2(options, invoke, specTopic)]);
   },
 };
 
@@ -127,77 +137,80 @@ async function probeInvokeAsync(
     `POST ${options.invokePath} with a synthetic envelope round-tripped a valid {statusCode, headers, body} response`, true);
 }
 
-// ---- R5: GET the spec path; satisfied iff 200 with a non-empty JSON object. ----
-async function probeSpecAsync(
+// ---- R5, HTTP half: GET the spec path; ok iff 200 with a non-empty JSON object. ----
+async function probeSpecHttpAsync(
   baseUrl: string,
   options: CloudServiceProbeOptions,
   fetchFn: ProbeFetch,
   signal: AbortSignal | undefined,
-): Promise<ProbeOutcome> {
+): Promise<SpecHalf> {
   const r = await getAsync(baseUrl, options.specPath, fetchFn, signal);
   if (!r.reached) {
-    return outcome('R5', SpecDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `GET ${options.specPath} did not reach the service: ${r.failureReason}`, false);
+    return { ok: false, reached: false, reason: `GET ${options.specPath} did not reach the service: ${r.failureReason}` };
   }
   if (r.status !== 200) {
-    return outcome('R5', SpecDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `GET ${options.specPath} returned ${r.status}, expected 200`, true);
+    return { ok: false, reached: true, reason: `GET ${options.specPath} returned ${r.status}, expected 200` };
   }
   if (!tryParseNonEmptyObject(r.body)) {
-    return outcome('R5', SpecDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response at ${options.specPath} did not parse as a non-empty JSON object. The profile does not mandate a specific spec format (OpenAPI, AsyncAPI, or Benzene's own), only that a real derived document is there`, true);
+    return { ok: false, reached: true,
+      reason: `200 response at ${options.specPath} did not parse as a non-empty JSON object - a real derived document is expected there` };
   }
-  return outcome('R5', SpecDescription, CloudServiceProbeVerdict.Satisfied,
-    `GET ${options.specPath} returned 200 with a non-empty JSON object body`, true);
-}
-
-// ---- R6 (observable half only): POST topic "benzene:spec"; satisfied iff the 200 envelope wraps the contract
-// document (a non-empty "service"). R6 keeps the self-description: the R5 document on the reserved topic, on every
-// transport, plus the three feeds (cloud-service-profile.md R6). ----
-async function probeMeshAsync(
-  baseUrl: string,
-  options: CloudServiceProbeOptions,
-  fetchFn: ProbeFetch,
-  signal: AbortSignal | undefined,
-): Promise<ProbeOutcome> {
-  const caveat =
-    'Registration (benzene:mesh:register), heartbeat (benzene:mesh:heartbeat) and trace (benzene:mesh:traces) delivery ' +
-    'to a collector cannot be observed by probing the service alone, so that half of R6 stays unverified even when ' +
-    'the benzene:spec self-description checks out - a passing check does not imply the whole of R6.';
-
-  const r = await postAsync(baseUrl, options.invokePath, SpecEnvelope, options.sendTraceParentProbe, fetchFn, signal);
-  if (!r.reached) {
-    return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `POST ${options.invokePath} with topic 'benzene:spec' did not reach the service: ${r.failureReason}. ${caveat}`, false);
-  }
-  if (r.status !== 200) {
-    return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `POST ${options.invokePath} with topic 'benzene:spec' returned ${r.status}, expected 200 (the reserved spec topic does not appear to be served over the envelope). ${caveat}`, true);
-  }
-  const envelope = tryParseEnvelopeResponse(r.body);
-  if (!envelope.ok) {
-    return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response to the 'benzene:spec' topic did not have the {statusCode, headers, body} envelope shape (wire-contracts.md §1.2): ${envelope.reason}. ${caveat}`, true);
-  }
-  const document = tryParseContractDocument(envelope.innerBody);
-  if (!document.ok) {
-    return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response to the 'benzene:spec' topic did not parse as a contract document with a non-empty 'service' field (contract-document.md §1): ${document.reason}. ${caveat}`, true);
-  }
-
-  const requests = Array.isArray(document.document.requests) ? (document.document.requests as unknown[]) : undefined;
+  const document = tryParseContractDocument(r.body);
   return {
-    requirement: new CloudServiceProbeRequirement('R6', MeshDescription, CloudServiceProbeVerdict.Satisfied,
-      `the reserved 'benzene:spec' topic served the contract document for service '${String(document.document.service)}' over the envelope - the observable half of R6 checks out. ${caveat}`),
+    ok: true,
     reached: true,
-    requests,
+    reason: `GET ${options.specPath} returned 200 with a non-empty JSON object body`,
+    requests: document.ok ? requestsOf(document.document) : undefined,
   };
 }
 
+// ---- R5, topic half: POST topic "benzene:spec" over the envelope; ok iff the 200 envelope wraps the contract
+// document (a non-empty "service"). R5 requires the reserved topic answered wherever the transport carries a
+// reply; the HTTP envelope does, and is the one a probe can reach. ----
+async function probeSpecTopicAsync(
+  baseUrl: string,
+  options: CloudServiceProbeOptions,
+  fetchFn: ProbeFetch,
+  signal: AbortSignal | undefined,
+): Promise<SpecHalf> {
+  const r = await postAsync(baseUrl, options.invokePath, SpecEnvelope, options.sendTraceParentProbe, fetchFn, signal);
+  if (!r.reached) {
+    return { ok: false, reached: false,
+      reason: `POST ${options.invokePath} with topic 'benzene:spec' did not reach the service: ${r.failureReason}` };
+  }
+  if (r.status !== 200) {
+    return { ok: false, reached: true,
+      reason: `POST ${options.invokePath} with topic 'benzene:spec' returned ${r.status}, expected 200 (the reserved spec topic does not appear to be served over the envelope)` };
+  }
+  const envelope = tryParseEnvelopeResponse(r.body);
+  if (!envelope.ok) {
+    return { ok: false, reached: true,
+      reason: `200 response to the 'benzene:spec' topic did not have the {statusCode, headers, body} envelope shape (wire-contracts.md §1.2): ${envelope.reason}` };
+  }
+  const document = tryParseContractDocument(envelope.innerBody);
+  if (!document.ok) {
+    return { ok: false, reached: true,
+      reason: `200 response to the 'benzene:spec' topic did not parse as a contract document with a non-empty 'service' field (contract-document.md §1): ${document.reason}` };
+  }
+  return {
+    ok: true,
+    reached: true,
+    reason: `the reserved 'benzene:spec' topic served the contract document for service '${String(document.document.service)}' over the envelope`,
+    requests: requestsOf(document.document),
+  };
+}
+
+// ---- R5: both halves must check out - the HTTP surface and the reserved topic over the envelope. ----
+function evaluateR5(http: SpecHalf, topic: SpecHalf): ProbeOutcome {
+  const reason = `${http.reason}; ${topic.reason}`;
+  const verdict = http.ok && topic.ok ? CloudServiceProbeVerdict.Satisfied : CloudServiceProbeVerdict.NotSatisfied;
+  return outcome('R5', SpecDescription, verdict, reason, http.reached || topic.reached);
+}
+
 // ---- R1: inferential - satisfied iff anything responded at all. ----
-function evaluateR1(health: ProbeOutcome, invoke: ProbeOutcome, spec: ProbeOutcome, mesh: ProbeOutcome): CloudServiceProbeRequirement {
+function evaluateR1(health: ProbeOutcome, invoke: ProbeOutcome, spec: ProbeOutcome): CloudServiceProbeRequirement {
   const description = 'Hosted middleware pipeline';
-  const anyReached = health.reached || invoke.reached || spec.reached || mesh.reached;
+  const anyReached = health.reached || invoke.reached || spec.reached;
   return anyReached
     ? new CloudServiceProbeRequirement('R1', description, CloudServiceProbeVerdict.Satisfied,
         'at least one probed surface responded over HTTP, which proves a hosted pipeline exists behind a transport binding - an in-process-only pipeline would have nothing for this probe to reach')
@@ -205,16 +218,17 @@ function evaluateR1(health: ProbeOutcome, invoke: ProbeOutcome, spec: ProbeOutco
         'none of the health, invoke, spec, or benzene:spec surfaces responded at all; no hosted pipeline was reachable at the configured base address');
 }
 
-// ---- R2: inferential from the benzene:spec contract document's requests only. ----
-function evaluateR2(mesh: ProbeOutcome): CloudServiceProbeRequirement {
+// ---- R2: inferential from the contract document's requests (the benzene:spec topic's, else the HTTP surface's). ----
+function evaluateR2(topic: SpecHalf, http: SpecHalf): CloudServiceProbeRequirement {
   const description = 'Message handlers via the registry';
-  if (mesh.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) {
+  const requests = topic.requests ?? http.requests;
+  if (requests === undefined) {
     return new CloudServiceProbeRequirement('R2', description, CloudServiceProbeVerdict.Inconclusive,
-      'no contract document reachable on the benzene:spec topic to read registered requests from - absence of evidence isn\'t evidence of absence');
+      'no contract document reachable (on the benzene:spec topic or the spec path) to read registered requests from - absence of evidence isn\'t evidence of absence');
   }
-  if (mesh.requests !== undefined && mesh.requests.length > 0) {
+  if (requests.length > 0) {
     return new CloudServiceProbeRequirement('R2', description, CloudServiceProbeVerdict.Satisfied,
-      `the contract document lists ${mesh.requests.length} request(s) (contract-document.md §2), which can only be populated from the handler registry`);
+      `the contract document lists ${requests.length} request(s) (contract-document.md §2), which can only be populated from the handler registry`);
   }
   return new CloudServiceProbeRequirement('R2', description, CloudServiceProbeVerdict.Inconclusive,
     'the contract document is reachable but lists no requests; a service can legitimately have zero handlers registered so far - absence of evidence isn\'t evidence of absence');
@@ -226,7 +240,6 @@ function evaluateR7(
   health: ProbeOutcome,
   invoke: ProbeOutcome,
   spec: ProbeOutcome,
-  mesh: ProbeOutcome,
 ): CloudServiceProbeRequirement {
   const description = 'Default service standard paths';
   if (!options.usesDefaultPaths) {
@@ -238,37 +251,46 @@ function evaluateR7(
   if (health.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R3 (health)');
   if (invoke.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R4 (invoke)');
   if (spec.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R5 (spec)');
-  if (mesh.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R6 (benzene:spec)');
 
   if (failing.length === 0) {
     return new CloudServiceProbeRequirement('R7', description, CloudServiceProbeVerdict.Satisfied,
-      'the probe used the spec\'s /benzene/* default paths and R3-R6 all checked out there');
+      'the probe used the spec\'s /benzene/* default paths and R3-R5 all checked out there');
   }
   return new CloudServiceProbeRequirement('R7', description, CloudServiceProbeVerdict.NotSatisfied,
     `the probe used the spec's /benzene/* default paths, but ${failing.join(', ')} did not check out there`);
 }
 
-// ---- R8: never observable by a single-service black-box probe; always Inconclusive, with an optional labeled bonus signal. ----
-function evaluateR8(options: CloudServiceProbeOptions, invoke: ProbeOutcome, mesh: ProbeOutcome): CloudServiceProbeRequirement {
-  const description = 'Trace context join and propagation';
+// ---- M1 (mesh.md §7.1, formerly R6): the feeds go to a collector, never to the prober - always Inconclusive. ----
+function evaluateM1(): CloudServiceProbeRequirement {
+  return new CloudServiceProbeRequirement('M1', FeedsDescription, CloudServiceProbeVerdict.Inconclusive,
+    'not observable from outside: registration (benzene:mesh:register), heartbeat (benzene:mesh:heartbeat) and trace ' +
+    '(benzene:mesh:traces) delivery go to a collector, not to the caller, so probing the service alone cannot see them - ' +
+    'ask the collector whether the service registered');
+}
+
+// ---- M2 (mesh.md §7.1, formerly R8): never observable by a single-service black-box probe; always Inconclusive,
+// with an optional labeled bonus signal. ----
+function evaluateM2(options: CloudServiceProbeOptions, invoke: ProbeOutcome, specTopic: SpecHalf): CloudServiceProbeRequirement {
   const baseReason =
-    'trace context propagation cannot be verified by a single-service black-box HTTP probe; proving it ' +
-    'requires either a second service to observe forwarded traceparent headers, or a mesh collector ' +
-    'observing trace parentage as the additive, observed-only liveness/drift signal it feeds (never the ' +
+    'not observable from outside: trace context propagation cannot be verified by a single-service black-box HTTP ' +
+    'probe; proving it requires either a second service to observe forwarded traceparent headers, or a mesh ' +
+    'collector observing trace parentage as the additive, observed-only liveness/drift signal it feeds (never the ' +
     'producer/consumer graph itself, which is declared from the registered contract document alone - mesh.md §3-4, §4.2)';
 
   if (!options.sendTraceParentProbe) {
-    return new CloudServiceProbeRequirement('R8', description, CloudServiceProbeVerdict.Inconclusive, baseReason);
+    return new CloudServiceProbeRequirement('M2', PropagationDescription, CloudServiceProbeVerdict.Inconclusive, baseReason);
   }
 
-  const nonBreaking =
-    invoke.requirement.verdict === CloudServiceProbeVerdict.Satisfied &&
-    mesh.requirement.verdict === CloudServiceProbeVerdict.Satisfied;
+  const nonBreaking = invoke.requirement.verdict === CloudServiceProbeVerdict.Satisfied && specTopic.ok;
   const bonus = nonBreaking
-    ? ' (weak bonus signal: the service still responded correctly with a synthetic traceparent header attached to the R4/R6 calls - this is non-breakage only, not proof of propagation, and does not upgrade this verdict)'
-    : ' (a bonus traceparent header was attached to the R4/R6 calls, but at least one of those calls did not succeed, so even the weak non-breakage signal is absent)';
+    ? ' (weak bonus signal: the service still responded correctly with a synthetic traceparent header attached to the envelope calls - this is non-breakage only, not proof of propagation, and does not upgrade this verdict)'
+    : ' (a bonus traceparent header was attached to the envelope calls, but at least one of those calls did not succeed, so even the weak non-breakage signal is absent)';
 
-  return new CloudServiceProbeRequirement('R8', description, CloudServiceProbeVerdict.Inconclusive, baseReason + bonus);
+  return new CloudServiceProbeRequirement('M2', PropagationDescription, CloudServiceProbeVerdict.Inconclusive, baseReason + bonus);
+}
+
+function requestsOf(document: Record<string, unknown>): unknown[] | undefined {
+  return Array.isArray(document.requests) ? (document.requests as unknown[]) : undefined;
 }
 
 function outcome(
@@ -326,7 +348,7 @@ async function postAsync(
   }
 }
 
-/** A syntactically-valid, random W3C traceparent for the R8 bonus probe. */
+/** A syntactically-valid, random W3C traceparent for the M2 bonus probe. */
 function generateSyntheticTraceParent(): string {
   const traceId = crypto.getRandomValues(new Uint8Array(16));
   const spanId = crypto.getRandomValues(new Uint8Array(8));
