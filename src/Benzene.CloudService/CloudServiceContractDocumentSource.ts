@@ -7,7 +7,7 @@ import { deriveContractDocument, SpecMessageHandler, SpecRequest } from '@benzen
 /**
  * One document, served and registered (mesh.md §1-§2): the Contract Document the host's `benzene:spec` serves
  * is the document the announcer registers with a collector, and the one the wire-envelope pipeline answers
- * `benzene:spec` with (Cloud Service Profile R6: the self-description on every transport).
+ * `benzene:spec` with (Cloud Service Profile R5: `benzene:spec` wherever a reply is carried).
  *
  * It is derived from the HOST (outer) container - where the handlers, the schema sources, the outbound
  * declarations, the application info and the deployment info are registered - through that container's

@@ -40,9 +40,10 @@ import { MeshAnnouncer } from './MeshAnnouncer';
  * the service works with the mesh, the Spec UI, and fleet tooling out of the box:
  *
  * - the wire-envelope endpoint at `/benzene/invoke` (R4)
- * - the derived Contract Document at `/benzene/spec` and on the `benzene:spec` topic of every surface (R5, R6)
+ * - the derived Contract Document at `/benzene/spec` and on the `benzene:spec` topic of every surface (R5)
  * - health checks on the reserved topic and at `/benzene/health` (R3)
- * - the trace feed, and registration of that same Contract Document plus heartbeats with a collector (R6, R8)
+ * - the trace feed, and registration of that same Contract Document plus heartbeats with a collector — the
+ *   meshed-service claim's M1 and M2 (mesh.md §7.1), reported separately from the profile
  * - message handlers via the registry, routed on both the HTTP and envelope pipelines (R1, R2)
  *
  * This is syntactic sugar over the same pipeline builders Benzene Core setup uses — nothing here is a new
@@ -153,7 +154,7 @@ export function useBenzeneCloudService<TContext extends IHttpContext>(
   realizeMeshDisposables(app);
   useAttachHost(app, documentSource, announcer);
 
-  // The wire-envelope surface (R4) and, inside it, the mesh feeds (R6/R8): trace outermost so it sees every
+  // The wire-envelope surface (R4) and, inside it, the mesh feeds (M1/M2): trace outermost so it sees every
   // invocation, then health interception and the `benzene:spec` self-description, then the app's own
   // middleware, then the router.
   const options = new BenzeneMessageHttpOptions();
@@ -191,7 +192,7 @@ function useHandlers<TContext>(
 }
 
 /**
- * The envelope pipeline's `benzene:spec` (Cloud Service Profile R6: the self-description on every transport):
+ * The envelope pipeline's `benzene:spec` (Cloud Service Profile R5: `benzene:spec` wherever a reply is carried):
  * a handler run on a scope of the host container, answering exactly what `GET /benzene/spec` does.
  */
 function useEnvelopeSpec(

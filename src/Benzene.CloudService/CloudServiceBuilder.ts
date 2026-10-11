@@ -33,10 +33,12 @@ export interface ICloudServiceBuilder {
   withPlacement(cloud: string, region?: string): ICloudServiceBuilder;
 
   /**
-   * Sets the collector's envelope URL, enabling the outbound mesh feeds (profile R6): `benzene:mesh:register` on
+   * Sets the collector's envelope URL, enabling the outbound mesh feeds (the meshed-service claim's M1, mesh.md
+   * §7.1): `benzene:mesh:register` on
    * startup (its body the Contract Document `benzene:spec` serves), `benzene:mesh:heartbeat`, and the
    * `benzene:mesh:traces` feed. Without a collector the service still answers `benzene:spec`, but the outbound
-   * feeds have nowhere to go and R6 is reported as missing.
+   * feeds have nowhere to go and the report's mesh section marks M1 (and, with no trace exporter, M2) missing;
+   * the profile itself (R1–R5, R7) is unaffected.
    */
   withCollector(collectorEnvelopeUrl: string): ICloudServiceBuilder;
 
@@ -122,8 +124,8 @@ export interface ICloudServiceBuilder {
 
   /**
    * Declines the mesh feeds entirely: no trace middleware, no registration or heartbeats (`benzene:spec` is still
-   * served - it is the R5 document). The service remains a working Benzene Core service and the profile report
-   * marks R6 and R8 as missing — use this for a deliberate opt-out, not as a substitute for simply not
+   * served - it is the R5 document). The service still claims the profile (R1–R5, R7); the report's mesh section
+   * marks M1 and M2 as missing (mesh.md §7.1) — use this for a deliberate opt-out, not as a substitute for simply not
    * configuring a collector.
    */
   withoutMesh(): ICloudServiceBuilder;

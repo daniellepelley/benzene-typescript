@@ -135,8 +135,9 @@ describe('useBenzeneCloudService', () => {
     expect(document['service']).toBe('orders');
     expect(document['runtime']).toBe('typescript');
     expect(document['placement']).toEqual({ cloud: 'self-hosted' });
-    // No collector configured: the outbound feeds have no destination, so R6 is honestly reported missing.
-    expect(document['profile']).toEqual({ name: CloudServiceProfileReport.profileName, missing: ['R6'] });
+    // No collector configured: the mesh feeds have no destination, but those are the meshed-service claim's M1/M2
+    // (mesh.md §7.1), never the profile's - the profile itself (R1-R5, R7) is met, so `missing` is omitted.
+    expect(document['profile']).toEqual({ name: CloudServiceProfileReport.profileName });
   });
 
   it('answers benzene:spec over the envelope with exactly the document GET /benzene/spec serves', async () => {
@@ -247,12 +248,13 @@ describe('useBenzeneCloudService', () => {
     expect(document['profile']).toEqual({ name: CloudServiceProfileReport.profileName });
   });
 
-  it('still answers benzene:spec when mesh is declined, reporting R6 and R8 missing', async () => {
+  it('still answers benzene:spec when mesh is declined, and still claims the profile', async () => {
     const host = createHost((cloud) => cloud.withoutMesh());
 
     const document = await specOverEnvelope(host);
 
-    expect(document['profile']).toEqual({ name: CloudServiceProfileReport.profileName, missing: ['R6', 'R8'] });
+    // Declining the mesh withdraws the meshed-service claim (M1, M2), which never appears in `profile.missing`.
+    expect(document['profile']).toEqual({ name: CloudServiceProfileReport.profileName });
   });
 
   it('no longer answers the removed benzene:mesh topic', async () => {
@@ -370,20 +372,41 @@ describe('useBenzeneCloudService', () => {
 
   it('evaluates the wiring honestly in the profile report', () => {
     const report = buildReport((cloud) => cloud.withCollector('http://collector/benzene/invoke'));
+    expect(report.requirements.map((x) => x.id)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R7']);
     expect(report.isConformant).toBe(true);
     expect(report.missing).toEqual([]);
+    expect(report.mesh.requirements.map((x) => x.id)).toEqual(['M1', 'M2']);
+    expect(report.mesh.missing).toEqual([]);
+    expect(report.isMeshed).toBe(true);
 
+    // No collector: the profile is met; the meshed-service claim is not (no feeds, and no trace exporter to join
+    // traceparent for).
     const noCollector = buildReport();
-    expect(noCollector.isConformant).toBe(false);
-    expect(noCollector.missing).toEqual(['R6']);
+    expect(noCollector.isConformant).toBe(true);
+    expect(noCollector.missing).toEqual([]);
+    expect(noCollector.mesh.missing).toEqual(['M1', 'M2']);
+    expect(noCollector.isMeshed).toBe(false);
+    expect(noCollector.mesh.isMeshed).toBe(false);
 
-    const withoutMesh = buildReport((cloud) => cloud.withoutMesh());
-    expect(withoutMesh.missing).toEqual(['R6', 'R8']);
+    // A custom trace exporter without a collector wires the trace middleware (M2) but still has no feeds (M1).
+    const exporterOnly = buildReport((cloud) =>
+      cloud.withTraceExporter({ export: () => undefined }),
+    );
+    expect(exporterOnly.mesh.missing).toEqual(['M1']);
+
+    const withoutMesh = buildReport((cloud) => cloud.withCollector('http://collector/benzene/invoke').withoutMesh());
+    expect(withoutMesh.missing).toEqual([]);
+    expect(withoutMesh.mesh.missing).toEqual(['M1', 'M2']);
+    expect(withoutMesh.toProfile()).toEqual({ name: CloudServiceProfileReport.profileName });
 
     const relocated = buildReport((cloud) =>
       cloud.withCollector('http://collector/benzene/invoke').withSpecPath('/spec'),
     );
     expect(relocated.missing).toEqual(['R7']);
+    // M1 and M2 are met, but a meshed service must be a Cloud Service first (mesh.md §7.1).
+    expect(relocated.mesh.missing).toEqual([]);
+    expect(relocated.isMeshed).toBe(false);
+    expect(relocated.toProfile()).toEqual({ name: CloudServiceProfileReport.profileName, missing: ['R7'] });
   });
 });
 

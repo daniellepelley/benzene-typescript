@@ -222,7 +222,7 @@ describe('SpecBuilder (benzene document)', () => {
         fakeResolver({
           ...base,
           versionScheme: 'semver',
-          deployment: { placement: { cloud: 'aws', region: 'eu-west-1' }, profile: { name: 'cloud-service', missing: ['R6'] } },
+          deployment: { placement: { cloud: 'aws', region: 'eu-west-1' }, profile: { name: 'cloud-service', missing: ['R3'] } },
         }),
         new SpecRequest(),
       ),
@@ -234,7 +234,7 @@ describe('SpecBuilder (benzene document)', () => {
     expect(deployed['versionScheme']).toBe('semver');
     expect(deployed['runtime']).toBe('typescript');
     expect(deployed['placement']).toEqual({ cloud: 'aws', region: 'eu-west-1' });
-    expect(deployed['profile']).toEqual({ name: 'cloud-service', missing: ['R6'] });
+    expect(deployed['profile']).toEqual({ name: 'cloud-service', missing: ['R3'] });
     // Identity and placement never move either hash (contract-document.md §6.2).
     expect(deployed['contractHash']).toBe(plain['contractHash']);
     expect(deployed['registrationHash']).toBe(plain['registrationHash']);

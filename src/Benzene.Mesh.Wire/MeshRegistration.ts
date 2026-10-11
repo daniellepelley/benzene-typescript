@@ -58,8 +58,10 @@ export class MeshPlacement {
 }
 
 /**
- * A named conformance-profile claim (contract-document.md §1 `profile`). `missing` lists the profile's
- * requirement ids the service knows it does not satisfy; undefined or empty means fully conformant to `name`.
+ * A Cloud Service Profile self-assessment (contract-document.md §1 `profile`; `name` is `cloud-service`).
+ * `missing` lists the profile's requirement ids (R1–R5, R7) the service knows it does not satisfy; undefined or
+ * empty means fully conformant to `name`. Carried as sent: a reader ignores an id it does not recognise, such as
+ * a stale `R6` or `R8` from a service built before spec 4 (cloud-service-profile.md §5).
  */
 export class MeshProfile {
   name = '';

@@ -41,7 +41,7 @@
  */
 const prefix = 'benzene:';
 
-/** The service's own contract document (Cloud Service Profile R5) - also its mesh registration (R6). */
+/** The service's own contract document (Cloud Service Profile R5) - also its mesh registration (mesh.md §2, M1). */
 const spec = 'benzene:spec';
 
 /** Example payloads a caller can use to exercise the service's topics. */

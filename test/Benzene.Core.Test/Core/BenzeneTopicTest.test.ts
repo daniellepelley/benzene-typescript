@@ -3,9 +3,9 @@
  * framework-owned topic ids, and every reserved id the port binds MUST carry its `benzene:` marker.
  *
  * This is an interop test, not a style test. `docs/specification/cloud-service-profile.md` R3 requires
- * `benzene:healthcheck` and R6 requires `benzene:mesh` / `benzene:mesh:register` /
- * `benzene:mesh:heartbeat` / `benzene:mesh:traces` **by id**; `mesh.md` §§1/4 pins the same ids on the
- * wire. A port that binds the bare forms cannot register with, heartbeat to, or be health-probed by a
+ * `benzene:healthcheck` and R5 `benzene:spec`, and the meshed-service claim's M1 (`mesh.md` §7.1) requires
+ * `benzene:mesh:register` / `benzene:mesh:heartbeat` / `benzene:mesh:traces` **by id**; `mesh.md` §§1/4 pins
+ * the same ids on the wire. A port that binds the bare forms cannot register with, heartbeat to, or be health-probed by a
  * collector written in any other language, which is exactly the state this port was in until the ids
  * were prefixed. The literals below are therefore spelled out rather than derived from the constants:
  * the point is to fail loudly if a constant's VALUE ever drifts.
@@ -71,7 +71,7 @@ describe('reserved topic ids across the port', () => {
     expect(SchemaConstants.DefaultSpecTopic).toBe('benzene:spec');
   });
 
-  it('binds the profile R6 mesh feed ids (mesh.md §4)', () => {
+  it('binds the M1 mesh feed ids (mesh.md §4, §7.1)', () => {
     expect(Object.values(MeshTopics)).not.toContain('benzene:mesh');
     expect(MeshTopics.register).toBe('benzene:mesh:register');
     expect(MeshTopics.heartbeat).toBe('benzene:mesh:heartbeat');

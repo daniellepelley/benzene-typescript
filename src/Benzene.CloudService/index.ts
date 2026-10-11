@@ -1,11 +1,11 @@
 /**
  * Port of Benzene.CloudService — the batteries-included setup for a Benzene Cloud Service (the code-level
  * counterpart of docs/specification/cloud-service-profile.md). One call, `useBenzeneCloudService("name", …)`,
- * on a hosted HTTP pipeline wires every operational surface the profile requires (R1–R8) at the default
- * service standard paths: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` +
- * reserved `benzene:healthcheck` topic, the `benzene:spec` Contract Document on every surface, the trace feed,
- * and collector registration (of that same document) + heartbeats. Syntactic sugar over the same pipeline
- * builders Benzene Core setup uses.
+ * on a hosted HTTP pipeline wires every operational surface the profile requires (R1–R5, R7) — and, with a
+ * collector, the meshed-service claim's feeds (M1, M2; mesh.md §7.1) — at the default service standard paths:
+ * the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `benzene:healthcheck`
+ * topic, the `benzene:spec` Contract Document on every surface, the trace feed, and collector registration (of
+ * that same document) + heartbeats. Syntactic sugar over the same pipeline builders Benzene Core setup uses.
  *
  * Key TypeScript-port divergences (see the individual files): the outbound `MeshAnnouncer` posts the wire
  * envelope with the global `fetch` (no new dependency); the envelope pipeline nests via `useBenzeneMessage`,
