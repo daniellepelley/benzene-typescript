@@ -83,6 +83,27 @@ and `@benzenejs/abstractions` has changed since (`BenzeneError` moved into it an
 old abstractions against new dependents. The next bump to `0.1.0-beta.2` publishes all 129 as one
 consistent set and supersedes it under the `beta` tag.
 
+## A release-notes condition on the next publish
+
+The cross-port spec plan (benzene `work/spec-simplification-plan.md`, rule 3 and decision D16) makes
+settlement safe by default on every one-way binding: a failed result, a missing result or an
+uncaught error is redelivered, not acknowledged. This port does not do that yet — the per-binding
+breakdown in [`docs/capability-matrix.md`](../docs/capability-matrix.md#returned-failure-result-settlement--the-per-transport-breakdown)
+is the audited record (2026-10-11).
+
+So whichever publish comes next — finishing `0.1.0-beta.1` or a `0.1.0-beta.2` — either follows the
+port's Phase 1 settlement work, or its release notes say, in these words or plainer, that **on these
+bindings a returned failure can be acknowledged and lost by default**:
+
+- the escalation knob defaults **off**: Lambda SNS (`raiseOnFailureStatus`), the Functions Service
+  Bus trigger, the Functions Kafka trigger;
+- **no knob** at all: Lambda EventBridge, S3, Kinesis and MSK, the Functions Event Hub and Timer
+  triggers, and the self-hosted Kafka worker;
+- a **missing result** is acknowledged on ten bindings where .NET redelivers it (listed in the
+  breakdown).
+
+Publishing either way is fine. Publishing without saying so is not.
+
 ## What is left to do
 
 1. Create a granular access token on npmjs.com with **read and write** on the `@benzenejs` scope,
