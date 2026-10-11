@@ -66,6 +66,7 @@ export const workspaceAliases = {
   '@benzenejs/cloud-service-probe': join(repoRoot, "./src/Benzene.CloudService.Probe/index.ts"),
   '@benzenejs/cockatiel': join(repoRoot, "./src/Benzene.Cockatiel/index.ts"),
   '@benzenejs/codegen-client': join(repoRoot, "./src/Benzene.CodeGen.Client/index.ts"),
+  '@benzenejs/codegen-core': join(repoRoot, "./src/Benzene.CodeGen.Core/index.ts"),
   '@benzenejs/configuration-core': join(repoRoot, "./src/Benzene.Configuration.Core/index.ts"),
   '@benzenejs/core': join(repoRoot, "./src/Benzene.Core/index.ts"),
   '@benzenejs/core-message-handlers': join(repoRoot, "./src/Benzene.Core.MessageHandlers/index.ts"),

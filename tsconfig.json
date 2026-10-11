@@ -198,6 +198,9 @@
       "@benzenejs/codegen-client": [
         "./src/Benzene.CodeGen.Client/index.ts"
       ],
+      "@benzenejs/codegen-core": [
+        "./src/Benzene.CodeGen.Core/index.ts"
+      ],
       "@benzenejs/configuration-core": [
         "./src/Benzene.Configuration.Core/index.ts"
       ],

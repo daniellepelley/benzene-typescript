@@ -1,6 +1,6 @@
 name: Release
 
-# Builds all 129 Benzene TypeScript packages to CommonJS and publishes them to npm. Fires on a
+# Builds all 130 Benzene TypeScript packages to CommonJS and publishes them to npm. Fires on a
 # version tag (e.g. `v0.1.0-beta.1`) and is also runnable on demand via the Actions tab. Publishes
 # under the `beta` npm dist-tag, so a plain `npm install @benzenejs/<pkg>` (no tag) never resolves
 # to it.

@@ -81,7 +81,7 @@ function publish(pkg) {
 /**
  * A 404 on PUT means npm did not accept our identity — it is what the registry returns for a
  * package you may not write to, including one you aren't authenticated for at all. It is NOT a
- * transient error and it will be identical for all 129 packages, so stop on the first one and
+ * transient error and it will be identical for all 130 packages, so stop on the first one and
  * say what to check, rather than grinding through a hundred copies of the same failure.
  */
 function isAuthFailure(message) {
