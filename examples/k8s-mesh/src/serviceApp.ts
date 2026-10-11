@@ -18,7 +18,7 @@ import { HttpEndpointDefinition, IHttpEndpointDefinition, useBenzeneMessage } fr
 import { useSpecUi } from '@benzenejs/spec-ui';
 import { useBenzeneCloudService } from '@benzenejs/cloud-service';
 import { useMessageHandlers } from '@benzenejs/core-message-handlers';
-import { handlersFor } from './domain';
+import { handlersFor, outboundFor } from './domain';
 import { HttpBenzeneMessageClient, NullBenzeneMessageClient } from './httpBenzeneMessageClient';
 
 /** The chain-ingress endpoint every service exposes (K8sMesh README's "one route serves every topic"). */
@@ -96,13 +96,18 @@ export function createServiceApp(serviceName: string): Express {
         cloud
           .withServiceVersion('1.0.0')
           .withInstanceId(serviceName)
-          .withPlacement('kubernetes', 'in-cluster')
+          // No region: a pod has no documented way to know its cloud region, and a producer MUST NOT guess one
+          // (contract-document.md §1). Set it here only from configuration that actually knows it.
+          .withPlacement('kubernetes')
           .withHealthChecks(
             new InlineHealthCheck('self', () =>
               Promise.resolve(HealthCheckResult.createInstance(true, 'self', { service: serviceName })),
             ),
           )
           .withHandlers(...handlerTypes)
+          // The cross-service sends this service makes (orders -> payment:take, payments -> shipment:book):
+          // declared, they are the mesh graph's edges (mesh.md §4).
+          .withOutbound(outboundFor(serviceName))
           // The envelope pipeline gets its own DI container (TypeScript generic-erasure isolation — see
           // useBenzeneMessage's own remarks), so the client needs registering here too, not just above.
           .withMiddleware((envelope) => registerClient(envelope, client));

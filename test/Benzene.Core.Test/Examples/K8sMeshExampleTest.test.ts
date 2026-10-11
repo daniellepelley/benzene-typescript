@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { AddressInfo } from 'node:net';
 import { rm } from 'node:fs/promises';
 import { createServiceApp } from '../../../examples/k8s-mesh/src/serviceApp';
@@ -34,8 +34,19 @@ function listen(app: ReturnType<typeof createServiceApp>): Promise<RunningApp> {
 describe('K8sMeshExampleTest', () => {
   const closers: (() => Promise<void>)[] = [];
   const artifactDirs: string[] = [];
+  const warnings: string[] = [];
+
+  beforeAll(() => {
+    // Collected for the last case: the UI middlewares must not capture scoped adapters in a singleton.
+    const warn = console.warn.bind(console);
+    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      warnings.push(args.map(String).join(' '));
+      warn(...args);
+    });
+  });
 
   afterAll(async () => {
+    vi.restoreAllMocks();
     await Promise.all(closers.map((c) => c()));
     await Promise.all(artifactDirs.map((dir) => rm(dir, { recursive: true, force: true })));
   });
@@ -94,6 +105,24 @@ describe('K8sMeshExampleTest', () => {
       body: JSON.stringify({ topic: 'benzene:healthcheck', headers: {}, body: '' }),
     });
     expect(invokeRes.status).toBe(200);
+
+    // Each hop is declared as a send, so the mesh graph shows the chain's edges (mesh.md §4); placement names
+    // no region, because a pod cannot know one and a producer MUST NOT guess (contract-document.md §1).
+    const documentOf = async (url: string) =>
+      (await (await fetch(`${url}/benzene/spec`)).json()) as {
+        sends: { topic: string }[];
+        placement: Record<string, unknown>;
+        degraded?: string[];
+        profile: Record<string, unknown>;
+      };
+    const ordersDocument = await documentOf(ordersHost.url);
+    expect(ordersDocument.sends.map((x) => x.topic)).toEqual(['payment:take']);
+    expect(ordersDocument.placement).toEqual({ cloud: 'kubernetes' });
+    expect(ordersDocument.degraded ?? []).not.toContain('sends');
+    // No collector in this run: the meshed-service claim (M1/M2) is unmet, but the profile itself is.
+    expect(ordersDocument.profile).toEqual({ name: 'cloud-service' });
+    expect((await documentOf(paymentsHost.url)).sends.map((x) => x.topic)).toEqual(['shipment:book']);
+    expect((await documentOf(shippingHost.url)).sends).toEqual([]);
   });
 
   it('serves the Mesh UI, artifacts, and /mesh/refresh, degrading gracefully with no in-cluster Kubernetes API', async () => {
@@ -120,5 +149,9 @@ describe('K8sMeshExampleTest', () => {
 
     // The published catalog is also reachable as a plain static file (see meshApp.ts's module comment).
     expect((await fetch(`${meshHost.url}/manifest.json`)).status).toBe(200);
+  });
+
+  it('wires the Spec UI and Mesh UI middlewares without a captive dependency (they hold scoped adapters)', () => {
+    expect(warnings.filter((w) => w.includes('captive dependency'))).toEqual([]);
   });
 });

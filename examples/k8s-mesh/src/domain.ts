@@ -22,6 +22,7 @@ import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
 import { IBenzeneMessageClient, sendMessageAsync } from '@benzenejs/clients';
 import { message } from '@benzenejs/core-message-handlers';
 import { httpEndpoint } from '@benzenejs/http';
+import { MeshOutboundRegistry } from '@benzenejs/mesh-wire';
 import { BenzeneResult } from '@benzenejs/results';
 
 /** Maps a service name to the domain handler type this service exposes. */
@@ -33,6 +34,34 @@ export function handlersFor(service: string): Constructor<unknown>[] {
       return [BookShipmentHandler];
     default:
       return [CreateOrderHandler];
+  }
+}
+
+/**
+ * What each service puts on the wire (contract-document.md §3.3): orders sends `payment:take` and payments
+ * sends `shipment:book` - topics the next service defines - and shipping sends nothing. Handed to the cloud
+ * service's `withOutbound`, the declarations become the Contract Document's `sends`, which make each hop a
+ * provider edge in the mesh graph (mesh.md §4); undeclared, the chain's edges would be invisible however much
+ * traffic flowed. The empty registry for shipping still asserts "no sends" (rather than unknown).
+ */
+export function outboundFor(service: string): MeshOutboundRegistry {
+  switch (service) {
+    case 'payments':
+      return new MeshOutboundRegistry().register({
+        kind: 'send',
+        topic: 'shipment:book',
+        request: BookShipmentRequest,
+        response: ShipmentBooked,
+      });
+    case 'shipping':
+      return new MeshOutboundRegistry();
+    default:
+      return new MeshOutboundRegistry().register({
+        kind: 'send',
+        topic: 'payment:take',
+        request: TakePaymentRequest,
+        response: PaymentTaken,
+      });
   }
 }
 
