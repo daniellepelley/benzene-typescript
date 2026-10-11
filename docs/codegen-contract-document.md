@@ -1,10 +1,11 @@
 # Generating a client from a Contract Document
 
 `@benzenejs/codegen-client` can generate a typed, topic-scoped TypeScript client from a **Contract
-Document** — a service's committed `{Service}.spec.json` build artifact
+Document** — the document a service serves on `benzene:spec` / `GET /benzene/spec`, usually also committed
+as a `{service}.spec.json` build artifact
 ([contract-document.md](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/contract-document.md)
-in the cross-language spec repo). This is the file the .NET `Benzene.Descriptor` tool emits today, and
-every language's generator parses the same way — so a Node consumer of **any** Benzene service,
+in the cross-language spec repo). Every language's producer emits it and every language's generator
+parses it the same way — so a Node consumer of **any** Benzene service,
 including one written in .NET, Go, or Python, gets a fully typed client with no other language's SDK
 involved.
 
@@ -53,17 +54,17 @@ unmodified regardless.
 | `--namespace <dir>` | Output directory the generated file(s) land under, used exactly. Required. |
 | `--service-name <name>` | Names the service-level client's class/interface (`--output client`), or the aggregate registration for `--output topic-client`. |
 | `--topics <a,b,c>` | Comma-separated topic include-list. Only these topics are generated. Naming a topic the document doesn't have **fails loud** — the error lists every valid topic id. |
-| `--include-reserved` | Also generate reserved Benzene utility topics (`benzene:spec`, `benzene:healthcheck`, …), which are excluded by default. Ignored once `--topics` names one explicitly — an explicit ask always wins. |
 | `--out <dir>` | Where to write the generated file(s). Defaults to the current directory. |
 
-The CLI exits non-zero (with a message on stderr) on an unknown flag, an unparseable/invalid document,
-or an unknown `--topics` entry.
+The CLI exits non-zero (with a message on stderr) on an unknown flag, an unparseable/invalid document
+— including one whose `schemaDialect` isn't `openapi-3.0`, which the generator rejects rather than
+guesses at — or an unknown `--topics` entry.
 
 ## Service-level vs. topic-scoped
 
 - **`--output client`** (mirrors `buildMessageClientSdk`) generates one client covering every topic in
-  scope — every domain topic by default, or exactly the `--topics` include-list. `events[]` and
-  `components.schemas` pass through **unnarrowed**.
+  scope — every topic in `requests[]` by default, or exactly the `--topics` include-list. `events[]`,
+  `sends[]` and `components.schemas` pass through **unnarrowed**.
 - **`--output topic-client`** (mirrors `buildAtomicClientSdk`) generates one **self-contained** client
   per in-scope topic: only that topic's own request/response interfaces, computed by walking
   `$ref`/`items`/`additionalProperties`/`properties`/`allOf`/`anyOf`/`oneOf` from its request and
@@ -72,17 +73,28 @@ or an unknown `--topics` entry.
   cover only that topic's contract — an unrelated change elsewhere on the producing service neither
   drags in unused surface nor invalidates the client.
 
-Reserved Benzene utility topics (`benzene:` prefix, or an explicit `reserved: true` flag) are excluded
-from the domain-only default in both shapes, per contract-document.md §5.1.
+A Contract Document never lists Benzene's own `benzene:` topics; if one turns up anyway, the parser
+ignores it (contract-document.md §1, §5.1), so a generated client only ever covers the service's own
+topics. A topic whose `response` is absent returns no payload, and its method is typed
+`Promise<IBenzeneResultOf<void>>`.
 
 ## The embedded `contractHash`
 
-Every generated client carries a static `contractHash` — `"sha256:" + lowercase-hex(sha256(canonicalJSON(normalize(document))))`
-(contract-document.md §6), computed over exactly the projection that client was generated from (the
-whole document, the `--topics` projection, or a topic-scoped one). Compare it against the same
-projection's hash served or recomputed by the producing service to detect drift between the client you
-hold and the contract it was generated from — two different projections' hashes are never comparable to
-each other (§6.4).
+Every generated client carries a static `contractHash` (contract-document.md §6): the SHA-256 of the
+RFC 8785 canonical form of the document's `requests` and `events`, dereferenced and stripped of
+documentation, so component names, entry order and schema descriptions never change it. It is
+recomputed over exactly the projection that client was generated from — the whole document, the
+`--topics` projection, or a topic-scoped one.
+
+A **default** client (no `--topics`) embeds the same value the service serves as its own
+`contractHash`, so drift detection is a string comparison: the producer's `addSchemaHealthCheck`
+(`@benzenejs/health-checks-schema`) publishes the served value, and
+`ClientHealthCheckProcessor` (`@benzenejs/clients-health-checks`) compares it with the client's. A
+`--topics` or topic-scoped client must be compared with the same projection recomputed over the
+provider's current document — two different projections' hashes are never comparable (§6.4).
+
+The hash itself lives in `@benzenejs/codegen-core` (`ContractHash.compute(document)` returns both
+`contractHash` and `registrationHash`), shared with the runtime that stamps them on the served document.
 
 ## Programmatic API
 
@@ -107,12 +119,12 @@ console.log(captureClient.fileName, captureClient.source);
 ```
 
 `parseContractDocument` throws `ContractDocumentParseError` on invalid JSON or a structurally invalid
-document; `applyTopicScope`/`buildMessageClientSdk`/`buildAtomicClientSdk` throw `UnknownTopicsError`
+document, and its subclass `UnknownSchemaDialectError` for a `schemaDialect` other than `openapi-3.0`; `applyTopicScope`/`buildMessageClientSdk`/`buildAtomicClientSdk` throw `UnknownTopicsError`
 (carrying `.unknownTopics`/`.validTopics`) when `topics` names something the document doesn't have.
 
 ## A worked example
 
 [`examples/payments-client`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples/payments-client)
-generates a `payments:capture` topic client from a **real, unedited** `.spec.json` copied from the .NET
-port's own example service — proving this generator parses exactly what another language's tooling
-actually emits, not a shape chosen to make the parser's life easy.
+generates a `payments:capture` topic client from the `.spec.json` of the .NET port's own example
+payments service — proving this generator reads what another language's tooling emits, not a shape
+chosen to make the parser's life easy.

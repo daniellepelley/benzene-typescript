@@ -134,6 +134,37 @@ notes must list them.
   `BenzeneMessageLambdaOptions.invocationType` distinguishes `Event` (one-way: a failure throws) from
   `RequestResponse`.
 
+## Migration notes for the next publish (spec-0.3.0 / Phase 3a, one self-description)
+
+Breaking changes in the served document and in public API; the next release notes must list them too.
+
+- **The `benzene` spec document is the spec-0.3.0 Contract Document.** `openapi`/`info` became
+  `schemaDialect: "openapi-3.0"` and `service`/`serviceVersion`/`description`; every document carries
+  `contractHash` and `registrationHash`; `benzene:` topics and the `reserved` flag are gone; a handler that
+  returns no payload has no `response` (was `{}`); sender definitions are `sends`, no longer `events`.
+- **Outbound declarations.** New `MeshOutboundRegistry` (`@benzenejs/mesh-wire`) with
+  `{ kind: 'event' | 'send' }` and `ICloudServiceBuilder.withOutbound(registry)`; `withProduces` /
+  `withConsumes` are deprecated aliases that declare a send. `CloudServiceBuilder.producesDefinitions` is
+  replaced by `outbound`. A topic declared both as an event and a send throws.
+- **Schemas.** Zod converts to the OpenAPI 3.0 dialect (`nullable: true`, the `allOf` wrapper for a
+  nullable object, `date` as a date-time string, no implicit safe-integer bounds); Joi and Yup keep
+  nullability. A component-name collision now fails derivation (`ComponentNameCollisionError`) at
+  start-up instead of the first registration winning; declare names with Zod `.meta({ id })`, Joi `.id()`,
+  Yup `.meta({ id })` or `MapTypeJsonSchemaSource.register(type, schema, { name })`. `useSpec` adds a
+  start-up check. `ISchemaBuilder.addSchema`/`addNamedSchema` take an optional `usage`.
+- **Hashes.** New package `@benzenejs/codegen-core`. `MeshHashing` (mesh-contracts) is removed; the
+  aggregator's drift flag and `SchemaHealthCheck` read the served `contractHash` — every TS contract hash
+  changes value, and now matches the other ports'. `new SchemaHealthCheck(resolver)` (was
+  `(lookUp, sources)`). `computeContractHash` lost its `topicScoped` option; `computeRegistrationHash` and
+  `withRecomputedHashes` are new.
+- **Codegen.** `parseContractDocument` rejects an unknown `schemaDialect` (`UnknownSchemaDialectError`) and
+  ignores `benzene:` entries; `ContractDocument` lost `openapi`/`info`, gained the new fields and `sends`;
+  `ContractRequestResponse.reserved` and `ContractReservedTopics` are removed; `includeReserved` /
+  `--include-reserved` are removed; an absent response is generated as `void`. Regenerate every client —
+  every embedded hash changes once.
+- **HTTP.** `IHttpEndpointDefinition` gained an optional `version`; a bodyless request is now populated
+  from its enrichers (query string, route parameters, mapped headers) instead of staying `{}`.
+
 ## What is left to do
 
 1. Create a granular access token on npmjs.com with **read and write** on the `@benzenejs` scope,

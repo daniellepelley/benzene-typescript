@@ -93,7 +93,7 @@ Mirrors the .NET repository:
 | `src/Benzene.HealthChecks.Disk` | `@benzenejs/health-checks-disk` | `Benzene.HealthChecks.Disk` (over `node:fs`) |
 | `src/Benzene.HealthChecks.DynamoDb` | `@benzenejs/health-checks-dynamodb` | `Benzene.HealthChecks.DynamoDb` (`DescribeTable` reachability check over `@aws-sdk/client-dynamodb`) |
 | `src/Benzene.HealthChecks.Azure.ServiceBus` | `@benzenejs/health-checks-azure-service-bus` | `Benzene.HealthChecks.Azure.ServiceBus` (`peekMessages` reachability check over `@azure/service-bus`) |
-| `src/Benzene.HealthChecks.Schema` | `@benzenejs/health-checks-schema` | `Benzene.HealthChecks.Schema` (provider-side contract-drift hash; `CodeGen.Core` hashing → `MeshHashing` over the schema-openapi doc) |
+| `src/Benzene.HealthChecks.Schema` | `@benzenejs/health-checks-schema` | `Benzene.HealthChecks.Schema` (provider-side contract drift: publishes the served Contract Document's `contractHash`) |
 | `src/Benzene.HealthChecks.TypeOrm` | `@benzenejs/health-checks-typeorm` | `Benzene.HealthChecks.EntityFramework` (TypeORM adapter — `DbContext` → `DataSource`; `CanConnectAsync`/`GetAppliedMigrationsAsync` → a `SELECT 1` probe + `MigrationExecutor`) |
 | `src/Benzene.Clients.HealthChecks` | `@benzenejs/clients-health-checks` | `Benzene.Clients.HealthChecks` |
 | `src/Benzene.Avro` | `@benzenejs/avro` | `Benzene.Avro`† (avsc adapter) |
@@ -374,16 +374,14 @@ header. Three deliberate divergences from the C# reference, each recorded where 
   right there and compile-time narrowable - `OpenApiPayloadBuilder.ts` emits `export type D = E | F;`
   instead of C#'s single base-class type. Not a conformance concern (contract-document.md §5.5: type
   emission shape is idiom, not pinned).
-- **A dedicated `ContractReservedTopics.ts`, not `@benzenejs/schema-openapi`'s `ReservedTopics`.**
-  Both now apply the same rule — `BenzeneTopic.isReserved`'s `benzene:` prefix test
-  (contract-document.md §5.1, matching .NET's `BenzeneTopic.IsReserved`) — but they answer different
-  questions: `ReservedTopics` classifies a *registry* definition while a document is being derived,
-  `ContractReservedTopics` classifies a *document* entry that may also carry an explicit `reserved`
-  flag from an older producer build. Keeping them separate keeps `@benzenejs/codegen-client` off the
-  schema package.
-- **No `Benzene.CodeGen.Core` package.** That C# project holds the portable `ContractHash` (and
-  reflection plumbing this port never needed). Since no TS package maps to it, `ContractHash.ts` lives
-  directly in `Benzene.CodeGen.Client` instead - its only consumer here.
+- **No reserved-topic option.** A Contract Document never lists `benzene:` topics and the parser ignores
+  any it meets (contract-document.md §1, §5.1), so the generator has no `includeReserved` /
+  `--include-reserved` and no `ContractReservedTopics` (both removed in spec-0.3.0).
+- **`Benzene.CodeGen.Core` → `@benzenejs/codegen-core`, holding only the hash.** The C# project also
+  carries reflection plumbing this port never needed; the TS package holds `ContractHash` (the §6.2
+  projection, RFC 8785 and SHA-256) and `JsonCanonicalizer`, with no Benzene dependency, so the runtime
+  (`@benzenejs/schema-openapi`, which stamps both hashes on the served document) and the generator share
+  one implementation and a deployed service never ships the generator.
 - The `codegen-client` CLI (`Cli.ts`, this package's `bin`) ships as TypeScript source with no build
   step (matching `examples/*`'s `tsx`-run convention): its `bin/generate.mjs` shim spawns the `tsx`
   devDependency's own CLI against `Cli.ts` rather than requiring a compiled JS entry point.
@@ -966,13 +964,14 @@ next to its C# counterpart:
     `BenzeneWireNames.DefaultTopic` alias), so a published message round-trips to the port's own inbound
     getters and any conformant peer. Every inbound and outbound topic key is now pinned to the fixture
     default.
-  - **`contract-document-cases.json` / `contract-hash-cases.json` — client-generation conformance.**
-    Required only for a port that ships a client generator (`conformance/README.md`'s conditional
-    shape, same as the collector fixtures); `@benzenejs/codegen-client`'s Contract Document input path
-    (contract-document.md) makes this port one, so both are vendored and run by
-    `ContractDocumentConformanceTest` against `parseContractDocument`/`applyTopicScope`/
-    `reachableSchemaNames`/`computeContractHash` directly (no live handler pipeline needed - unlike
-    `envelope-cases`, these fixtures pin a pure document transform, not routed behavior).
+  - **`contract-document-cases.json` / `contract-hash-cases.json` — producer and client generator.**
+    This port is both a contract-document producer (R5) and a client generator, so every group runs.
+    `ContractDocumentProducerConformanceTest` derives the canonical document through the real DI wiring
+    and `ZodJsonSchemaSource` (`derivationCases`, `namingCases` via the start-up checks), and sends
+    `benzene:spec` over the envelope and `GET /benzene/spec` over API Gateway (`specTopicCases`,
+    `specHttpCases`). `ContractDocumentConformanceTest` runs `parseCases`/`topicScopeCases`/
+    `schemaClosureCases` against `parseContractDocument`/`applyTopicScope`/`reachableSchemaNames`, and the
+    hash cases through both the runtime hash (`@benzenejs/codegen-core`) and the generator's projections.
 - **spec-0.2.0 (Phase 1) — where the port bends, and why.** The spec rulings are followed exactly; these
   are the TypeScript shapes chosen for them where .NET (at the time of porting) had no counterpart or a
   different one.
@@ -1026,6 +1025,38 @@ next to its C# counterpart:
     application's handler wins), so every pipeline serves the probe with no wiring.
   - **gRPC `FieldViolation.field`.** Written dotted per wire §4.2; the reader converts it back to a JSON
     Pointer (`fieldPathToJsonPointer`) so `BenzeneError.field` is one shape in-process whatever the transport.
+- **spec-0.3.0 (Phase 3a, one self-description) — where the port bends, and why.**
+  - **Outbound declarations — `MeshOutboundRegistry` with `{ kind: 'event' | 'send' }`.** .NET's
+    `Register<TRequest[, TResponse]>` cannot tell an event (a topic this service defines) from a send (a
+    topic another party defines); the port takes one discriminated declaration instead
+    (`register({ kind: 'send', topic, request, response? })`), and a (topic, version) declared both ways
+    throws at registration. The class lives in `@benzenejs/mesh-wire` as in .NET, but its lookup interface
+    `IMeshOutboundDefinitionLookUp` (and the declaration types) lives in `@benzenejs/abstractions-messages`
+    so the spec builder reads it without depending on the mesh. `ICloudServiceBuilder.withOutbound(registry)`
+    is the cloud-service entry; `withProduces`/`withConsumes` remain as deprecated aliases that declare a
+    send. Sender definitions (`IMessageSendersFinder`) are sends; response-event definitions are events.
+  - **Schemas from validators, in the OpenAPI 3.0 dialect.** Zod converts with
+    `{ target: 'openapi-3.0', io: 'input' }`; named sub-schemas (`.meta({ id })`) come back under `$defs`
+    and `SchemaBuilder` hoists them (and a recursive root's `#`) into `components.schemas`. Zod's nullable
+    reference gets its missing `type`, a nullable object or enum becomes the §4.2 `allOf` wrapper, a
+    `z.date()` is `{"type":"string","format":"date-time"}`, and the `±MAX_SAFE_INTEGER` bounds Zod adds to
+    every `.int()` are dropped (a property of JS numbers, not a declared rule). Joi (`.allow(null)`) and
+    Yup (`.nullable()`) keep nullability in the same forms; Joi's `.pattern(string, V)` is a map.
+  - **Declared names.** One optional hook on `ITypeJsonSchemaSource`, `getSchemaName(type)`, filled per
+    library: Zod `.meta({ id })`, Joi `.id()`, Yup `.meta({ id })`,
+    `MapTypeJsonSchemaSource.register(type, schema, { name })`; otherwise the class name. Bundlers rename
+    classes (esbuild renames a clash `Item2`; `--minify` renames everything), so a service that bundles
+    should declare names or set `keepNames: true`.
+  - **Collisions fail at start-up.** `useSpec` registers `ContractDocumentStartUpCheck`, which derives the
+    document through the start-up checks every host runs, so a `ComponentNameCollisionError` (two different
+    schemas under one name — no suffixing, no first-wins) or an event/send clash fails before any message.
+  - **Bodyless requests take their enrichment.** `EnrichingRequestMapper` fills only properties a request
+    already has (the port of C#'s reflection over `TRequest`'s properties); a bodyless request has none, so
+    the enrichment (query string, route parameters, mapped headers) now *is* the request. That is what
+    makes `GET /benzene/spec?type=…` reach the `benzene:spec` handler as `{ type }` through the pipeline.
+  - **`httpMappings` by (topic, version).** `IHttpEndpointDefinition` gains an optional `version`
+    (`@httpEndpoint` routes carry their handler's); a route on a bare topic attaches to the entry a request
+    without a version reaches (the unversioned handler, else the declared default).
 
 ## Multi-language interoperability
 
@@ -1116,23 +1147,22 @@ byte-identical to .NET so the two interoperate:
   from `examples/mesh-service`'s live descriptor (asserting byte-for-byte match, so the checked-in client
   `tsc` compiles is exactly what the generator emits) and exercises it over a fake sender.
 - **Code generation from a Contract Document.** The same package's second input path generates from a
-  service's **committed** `{Service}.spec.json` (`docs/specification/contract-document.md`) instead of
-  a running service's descriptor - the file `Benzene.Descriptor` emits on the .NET side today, and every
-  language's generator parses identically. `buildMessageClientSdk` emits one service-level client
-  (topic include-list + reserved-topic scoping, contract-document.md §5.1-§5.2); `buildAtomicClientSdk`
-  emits one self-contained client **per topic**, narrowed to just that topic's reachable
-  `components.schemas` via the §5.3 schema-closure walk (`reachableSchemaNames`/`reachableSchemas`), and
-  embeds a spec-pinned `contractHash` (§6: RFC 8785/JCS canonicalization via the `canonicalize` package,
-  then SHA-256) so a consumer can detect drift between the client it holds and the contract it was
-  generated from. `examples/payments-client` dogfoods this against a **real, unedited** `.spec.json`
-  copied from the .NET port's own example (`benzene-dotnet/examples/AwsMesh/Orders/contracts/payments.spec.json`)
-  — proving a Node consumer gets a typed client for a .NET service with no .NET SDK involved;
-  `test/Benzene.Core.Test/CodeGen/PaymentsClientDogfoodTest.test.ts` regenerates it, asserts byte-for-byte
-  match against the committed client, asserts no `benzene:*` reserved topic leaks into the output even
-  though the source document has one, and independently re-derives the topic-scoped `contractHash` to
-  check the embedded value against it. `ContractDocumentConformanceTest.test.ts` runs
-  `docs/specification/conformance/contract-document-cases.json` and `contract-hash-cases.json`
-  end-to-end. See `docs/codegen-contract-document.md` for the consumer-facing guide.
+  service's Contract Document (`docs/specification/contract-document.md`) - the document every port
+  serves on `benzene:spec`, often committed as `{service}.spec.json` - instead of a running service's
+  descriptor. The parser rejects a `schemaDialect` other than `openapi-3.0` and ignores `benzene:`
+  entries. `buildMessageClientSdk` emits one service-level client (topic include-list,
+  contract-document.md §5.2); `buildAtomicClientSdk` emits one self-contained client **per topic**,
+  narrowed to just that topic's reachable `components.schemas` via the §5.3 schema-closure walk
+  (`reachableSchemaNames`/`reachableSchemas`). Each embeds the `contractHash` recomputed over its own
+  projection (`@benzenejs/codegen-core`), so a default client's hash equals the service's served one.
+  `examples/payments-client` dogfoods this against the .NET port's example `payments.spec.json` (migrated
+  to the spec-0.3.0 shape until .NET re-emits it) — proving a Node consumer gets a typed client for a
+  .NET service with no .NET SDK involved; `test/Benzene.Core.Test/CodeGen/PaymentsClientDogfoodTest.test.ts`
+  regenerates it, asserts byte-for-byte match against the committed client, and independently re-derives
+  the topic-scoped `contractHash` to check the embedded value against it.
+  `ContractDocumentConformanceTest.test.ts` and `ContractDocumentProducerConformanceTest.test.ts` run
+  `contract-document-cases.json` and `contract-hash-cases.json` end-to-end. See
+  `docs/codegen-contract-document.md` for the consumer-facing guide.
 
 ## Porting status and roadmap
 
@@ -1337,13 +1367,10 @@ Ported (with tests):
   softened by the non-critical downgrade rather than surfacing as a persistent failure. Tracked for an
   upstream fix to the .NET check; if that lands, the port would re-converge on `HealthCheckError`.**
   `@benzenejs/health-checks-schema` is the **provider** side of the contract-drift loop
-  above: it hashes the service's handlers-only message contract and publishes it under the `schema`
-  check for the consumer's `ClientHealthCheckProcessor` to compare. C#'s `CodeGenHelpers.GenerateHash`
-  isn't portable (`CodeGen.Core` isn't ported), so it reuses `@benzenejs/schema-openapi`'s
-  `EventServiceDocumentBuilder.generateJson()` (already the example/`messageEndpoint`-free normalized
-  form) + `MeshHashing.computeHash`; DIVERGENCE: C#'s `SchemaBuilder` reflects the CLR type, the TS one
-  sources schemas from the registered `ITypeJsonSchemaSource`s, so the check additionally takes them
-  (resolved from DI by `addSchemaHealthCheck`, the same seam `SpecBuilder`/the mesh use).
+  above: it publishes the `contractHash` of the Contract Document the service **serves** (built by the
+  same `SpecBuilder`, through the `SpecCache`) under the `schema` check for the consumer's
+  `ClientHealthCheckProcessor` to compare - no private hash (spec-0.3.0, design §10.2.8). Its constructor
+  takes the `IServiceResolver` the spec feeds are resolved from (`addSchemaHealthCheck` passes it).
 - Database health checks (`@benzenejs/health-checks-typeorm`): ports `Benzene.HealthChecks.EntityFramework`
   adapted to **TypeORM** — the structural EF Core analog (a `DataSource` in place of a `DbContext`, a
   migrations table, a DB-agnostic applied-migrations API). `addDatabaseConnectionHealthCheck(builder,
@@ -1780,15 +1807,14 @@ Ported (with tests):
   Benzene mesh — the artifacts an aggregator publishes (`MeshManifest`, `MeshTopicCatalog` + `MeshTopicEntry`,
   `MeshUsage`, `MeshTopology` + `TopologyEdge`, `MeshAnnotationLog`, per-service `MeshServiceSnapshot`), the
   `mesh.json` registry with its `MeshRegistryJson` (de)serializer and `MeshDiscoveryRunner`/
-  `MeshDiscoveryFilter`, the `MeshHashing` contract-drift hash, and the adapter seams
+  `MeshDiscoveryFilter`, and the adapter seams
   (`IMeshDiscoveryProvider`/`IMeshUsageSource`/`IMeshReportPublisher`). Depends only on
   `@benzenejs/health-checks-core`, so it's the foundation the rest of the mesh (aggregator, wire, collector,
   discovery/usage adapters) builds on. Conventions applied throughout: `DateTimeOffset` → epoch-millisecond
   `number`, `System.Text.Json.Nodes.JsonObject` (inlined schemas) → arbitrary `Record<string, unknown>`,
-  `CancellationToken` → optional `AbortSignal`, `HMACSHA256` (empty key) → `node:crypto`, and the static
-  const-string classes → frozen objects. Two Mesh.Contracts-scoped test files ported (discovery runner +
-  registry JSON round-trip + filter matching, and the hashing test — its cross-check against the unported
-  `Benzene.CodeGen.Core` replaced by pinned known-answer HMAC digests).
+  `CancellationToken` → optional `AbortSignal`, and the static const-string classes → frozen objects.
+  `MeshHashing` (an HMAC of the raw spec JSON) is gone in spec-0.3.0: the aggregator's drift flag reads
+  each service's served `contractHash` instead (contract-document.md §6.1).
 - Mesh dispatch (`@benzenejs/mesh-dispatch`): the opt-in, environment-gated `benzene:mesh:dispatch` handler that
   invokes ONE registered service's real handler with a caller-supplied payload (the direct-to-consumer test
   path) — `MeshDispatchMessageHandler` + `MeshDispatchGate` (refused in Production unless

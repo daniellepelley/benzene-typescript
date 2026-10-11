@@ -33,7 +33,7 @@ endpoint. For the Kubernetes liveness/readiness split built on top of this, see
 | `@benzenejs/health-checks-typeorm` | `DatabaseConnectionHealthCheck` / `addDatabaseConnectionHealthCheck` and `DatabaseHealthCheck` / `addDatabaseHealthCheck` — connectivity (and applied-migration) checks over a TypeORM `DataSource`. |
 | `@benzenejs/health-checks-dynamodb` | `DynamoDbHealthCheck` / `addDynamoDbHealthCheck` — a read-only `DescribeTable` reachability probe for a DynamoDB table. |
 | `@benzenejs/health-checks-azure-service-bus` | `ServiceBusHealthCheck` / `addServiceBusQueueHealthCheck` / `addServiceBusSubscriptionHealthCheck` — a read-only `peekMessages` reachability probe for a queue or a topic subscription. |
-| `@benzenejs/health-checks-schema` | `SchemaHealthCheck` / `addSchemaHealthCheck` — publishes a hash of the service's own message contract under the `schema` check, so a consumer can detect contract drift. |
+| `@benzenejs/health-checks-schema` | `SchemaHealthCheck` / `addSchemaHealthCheck` — publishes the `contractHash` of the Contract Document the service serves under the `schema` check, so a consumer can detect contract drift. |
 | `@benzenejs/clients-health-checks` | `ClientHealthCheck` / `addContractCheck` — the consumer-side companion: probes a downstream provider via its generated client and reports whether its contract has drifted. |
 
 ```bash

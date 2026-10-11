@@ -69,7 +69,7 @@ export class OrderServiceStartUp implements BenzeneStartUp {
       useApiGateway(aws, (api) => {
         useMessageHandlers(api, CreateOrderHandler);
         useHealthCheck(api, 'benzene:healthcheck', (health) => {
-          addSchemaHealthCheck(health); // publishes the live contract hash under "schema"
+          addSchemaHealthCheck(health); // publishes the served contractHash under "schema"
         });
       }),
     );
@@ -77,11 +77,13 @@ export class OrderServiceStartUp implements BenzeneStartUp {
 }
 ```
 
-> The hash `@benzenejs/health-checks-schema` publishes is stable across every TypeScript component that hashes
-> a contract (the mesh descriptor, the `/benzene/spec` endpoint, and this check), which is exactly what the
-> drift loop needs. Its **value** differs from the .NET port's — the two serialize the spec document
-> differently — so this loop is TypeScript-provider ↔ TypeScript-consumer; a cross-language drift check is
-> not something the current hashes support.
+> The hash `@benzenejs/health-checks-schema` publishes is the `contractHash` of the Contract Document the
+> service serves on `/benzene/spec` ([contract-document.md §6](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/contract-document.md#6-hashes)).
+> It is a cross-port value: every Benzene port computes it with the same projection, RFC 8785 and
+> SHA-256, so a TypeScript client generated from a .NET, Go or Python service's document compares
+> directly with that service's served hash, and the other way round. A default (no `--topics`) generated
+> client embeds exactly that value; a `--topics` or topic-scoped client embeds the hash of its own
+> projection, which only compares with the same projection of the provider's current document.
 
 ### Consumer — compare the provider's hash with the client's
 

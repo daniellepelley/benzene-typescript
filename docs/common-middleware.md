@@ -663,10 +663,17 @@ A few transport-agnostic .NET middleware have no TypeScript port today:
 - **`UseCors`** (`Benzene.Http`) — CORS handling for HTTP transports is not yet ported.
 - **`UseJsonSchema`** (`Benzene.JsonSchema`) — superseded by the [validation](#validation) adapters.
 
-The spec endpoint **is** ported: **`useSpec`** (`@benzenejs/schema-openapi`) serves the service's spec
-document (topics + payload JSON Schemas) on the reserved `benzene:spec` topic in three formats — the default
-`benzene` event-service document, real `openapi` (OpenAPI 3.0), and real `asyncapi` (AsyncAPI 3.0),
-selected by the spec request's `type` — and **`useSpecUi`** (`@benzenejs/spec-ui`) renders it in-browser,
+The spec endpoint **is** ported: **`useSpec`** (`@benzenejs/schema-openapi`) serves the service's
+[Contract Document](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/contract-document.md)
+on the reserved `benzene:spec` topic — and derives it once at start-up, so a component-name collision or a
+topic declared both as an event and as a send fails before the first message. The request's `type` selects
+the default `benzene` document or this port's extensions `openapi` (OpenAPI 3.0) and `asyncapi`
+(AsyncAPI 3.0); an unsupported `type` or `format` is answered `not-implemented` (HTTP 501). Payload
+schemas come from your validators (Zod/Joi/Yup) or a `MapTypeJsonSchemaSource`; name a payload type's
+component with Zod `.meta({ id })`, Joi `.id()`, Yup `.meta({ id })` or
+`MapTypeJsonSchemaSource.register(type, schema, { name })`. Declare what the service publishes and sends
+with a `MeshOutboundRegistry` (`@benzenejs/mesh-wire`): `{ kind: 'event', ... }` for a topic it defines,
+`{ kind: 'send', ... }` for one another service defines — and **`useSpecUi`** (`@benzenejs/spec-ui`) renders it in-browser,
 Swagger-UI style. Every format is emitted as JSON (the C# YAML output is not ported; see that package's
 `index.ts` divergence note). The mesh-descriptor surface —
 `useMeshDescriptor(app, descriptor)` (`@benzenejs/mesh-wire`), consumed by `@benzenejs/codegen-client` and
