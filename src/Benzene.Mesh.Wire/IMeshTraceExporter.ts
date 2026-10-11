@@ -1,8 +1,9 @@
 /** Port of Benzene.Mesh.Wire.IMeshTraceExporter (and HttpMeshTraceExporter). */
 import { ServiceToken, serviceToken } from '@benzenejs/abstractions';
 import { MeshJson } from './MeshJson';
+import { MeshTime } from './MeshTime';
 import { MeshTopics } from './MeshTopics';
-import { MeshTraceBatch, MeshTraceEvent } from './MeshTraceEvent';
+import { MeshTraceEvent } from './MeshTraceEvent';
 
 /**
  * Receives every trace event the mesh trace middleware produces. Implementations MUST be
@@ -114,8 +115,8 @@ export class HttpMeshTraceExporter implements IMeshTraceExporter {
       return;
     }
     try {
-      const traceBatch = new MeshTraceBatch();
-      traceBatch.events = batch;
+      // `startedAt` goes on the wire as ISO-8601 (mesh.md §3), which every port's collector reads.
+      const traceBatch = { events: batch.map((x) => ({ ...x, startedAt: MeshTime.toWire(x.startedAt) })) };
       const envelope = {
         topic: MeshTopics.traces,
         headers: {} as Record<string, string>,

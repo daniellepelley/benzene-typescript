@@ -12,6 +12,7 @@
  */
 export * from './MeshTopics';
 export * from './MeshJson';
+export * from './MeshTime';
 export * from './MeshRegistration';
 export * from './MeshServiceInfo';
 export * from './MeshOutboundRegistry';

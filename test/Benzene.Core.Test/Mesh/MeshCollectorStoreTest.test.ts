@@ -365,6 +365,23 @@ describe('MeshCollectorStore', () => {
     expect(store.fleet().issues.filter((x) => x.service === 'orders')).toHaveLength(0);
   });
 
+  it('WireTimestamps_IsoOrEpochMs_BothIngest', () => {
+    // .NET and Go send ISO-8601 (mesh.md §3, §4.1); epoch milliseconds still ingest.
+    const store = new MeshCollectorStore();
+    const iso = event('trace-1', 'span-1', 'orders', 'order:create', 0);
+    (iso as unknown as { startedAt: string }).startedAt = '2026-07-16T09:00:00Z';
+    store.addEvents([iso, event('trace-2', 'span-2', 'orders', 'order:create', Date.UTC(2026, 6, 16, 9, 0, 1))]);
+    expect(store.trace('trace-1')!.events[0]!.startedAt).toBe(Date.UTC(2026, 6, 16, 9));
+
+    const wireIssue = issue('dddd4444dddd4444dddd4444dddd4444', 'order:create', 1, 0, 0);
+    (wireIssue as unknown as { firstSeen: string; lastSeen: string }).firstSeen = '2026-07-16T09:00:00Z';
+    (wireIssue as unknown as { firstSeen: string; lastSeen: string }).lastSeen = '2026-07-16T09:05:00Z';
+    store.addIssues(batch('orders', [wireIssue]));
+    const merged = store.fleet().issues[0]!;
+    expect(merged.firstSeen).toBe(Date.UTC(2026, 6, 16, 9));
+    expect(merged.lastSeen).toBe(Date.UTC(2026, 6, 16, 9, 5));
+  });
+
   it('ReservedTopics_AreNeverUndeclaredEdges', () => {
     // mesh.md §4.2: no document lists a benzene: topic, so traces of benzene:spec, benzene:healthcheck and the
     // like - handled or sent by a registered service - never file contract-drift.

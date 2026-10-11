@@ -53,6 +53,22 @@ describe('HttpMeshTraceExporter', () => {
     await exporter.disposeAsync();
   });
 
+  it('puts startedAt on the wire as ISO-8601, the form every port reads (mesh.md §3)', async () => {
+    const calls: Call[] = [];
+    const exporter = new HttpMeshTraceExporter(recordingFetch(calls), 'http://collector/envelope', 64, NEVER);
+    const traceEvent = event('a');
+    traceEvent.startedAt = Date.UTC(2026, 6, 16, 9, 14, 3, 120);
+
+    exporter.export(traceEvent);
+    await exporter.flushAsync();
+
+    const envelope = JSON.parse(calls[0]!.body) as { body: string };
+    const batch = JSON.parse(envelope.body) as { events: { startedAt: unknown }[] };
+    expect(batch.events[0]!.startedAt).toBe('2026-07-16T09:14:03.120Z');
+    expect(traceEvent.startedAt).toBe(Date.UTC(2026, 6, 16, 9, 14, 3, 120)); // the in-memory event is untouched
+    await exporter.disposeAsync();
+  });
+
   it('is a no-op flush when nothing is buffered', async () => {
     const calls: Call[] = [];
     const exporter = new HttpMeshTraceExporter(recordingFetch(calls), 'http://collector/envelope', 64, NEVER);

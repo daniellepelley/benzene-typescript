@@ -47,6 +47,7 @@ import {
   MeshRegistrationEntry,
   MeshRegistrationMember,
   MeshRegistrations,
+  MeshTime,
   MeshTraceEvent,
 } from '@benzenejs/mesh-wire';
 import { BenzeneResultStatus } from '@benzenejs/results';
@@ -185,6 +186,8 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
    */
   addEvents(events: readonly MeshTraceEvent[]): number {
     for (const traceEvent of events) {
+      // ISO-8601 on the wire (mesh.md §3, what .NET and Go send); epoch ms in memory. A number still ingests.
+      traceEvent.startedAt = MeshTime.fromWire(traceEvent.startedAt as unknown, Date.now());
       // The caller (if any) is whoever currently owns the parent span in the ring window - looked up BEFORE
       // this event's own span joins the index, so an event never resolves itself as its own caller.
       const callerService =
@@ -299,6 +302,9 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       if ((incoming.fingerprint ?? '').length === 0 || (incoming.topic ?? '').length === 0) {
         continue; // skipped, never rejected (§6: no feed fails ingestion)
       }
+      // ISO-8601 on the wire (mesh.md §4.1); epoch ms in memory. A number still ingests.
+      incoming.firstSeen = MeshTime.fromWire(incoming.firstSeen as unknown);
+      incoming.lastSeen = MeshTime.fromWire(incoming.lastSeen as unknown, incoming.firstSeen);
       this.mergeIssue(incoming);
       accepted++;
     }
