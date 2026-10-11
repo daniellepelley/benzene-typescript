@@ -27,12 +27,15 @@ const testRoot = resolve(fixturesDir, '..', '..', '..');
  * (and writing the runner) is always the preferred way off this list.
  */
 const notClaimed: Readonly<Record<string, string>> = {
-  // Cross-port claim-or-drop decision still open: no port has claimed the service-version feed, and
-  // this port has no `MeshServiceVersion` type to run it against (see the missing mesh-contracts
-  // types noted in `src/Benzene.Mesh.Collector/index.ts`). Vendored so the decision stays visible.
-  'mesh-service-version-cases.json': 'awaits a cross-port claim-or-drop decision',
-  // Same decision, same feed: version ORDERING over those same absent types.
-  'mesh-version-order-cases.json': 'awaits a cross-port claim-or-drop decision',
+  // Conditional (conformance/README.md): required only of a collector claiming the Provisional Service
+  // Versions module. This port does not implement it: `@benzenejs/mesh-collector` keys its catalog by
+  // `service` alone and compares a heartbeat with the service's one registration (mesh.md §5's non-module
+  // rule), so it stays collector-conformant without the module. The entry goes when the module lands.
+  'mesh-service-version-cases.json':
+    'service-versions §1 identity: the collector keys by service; the module is not implemented',
+  // Same module: version ORDERING (service-versions.md §2). This port ships no version comparator.
+  'mesh-version-order-cases.json':
+    'service-versions §2 order: no version comparator; the module is not implemented',
 };
 
 function vendoredFixtureNames(): string[] {
