@@ -675,10 +675,10 @@ component with Zod `.meta({ id })`, Joi `.id()`, Yup `.meta({ id })` or
 with a `MeshOutboundRegistry` (`@benzenejs/mesh-wire`): `{ kind: 'event', ... }` for a topic it defines,
 `{ kind: 'send', ... }` for one another service defines — and **`useSpecUi`** (`@benzenejs/spec-ui`) renders it in-browser,
 Swagger-UI style. Every format is emitted as JSON (the C# YAML output is not ported; see that package's
-`index.ts` divergence note). The mesh-descriptor surface —
-`useMeshDescriptor(app, descriptor)` (`@benzenejs/mesh-wire`), consumed by `@benzenejs/codegen-client` and
-the mesh aggregator — is a related but distinct language-neutral descriptor; see the README's
-[Multi-language interoperability](../README.md#multi-language-interoperability) section.
+`index.ts` divergence note). The Contract Document is the service's one self-description: it is what
+`@benzenejs/codegen-client` and the mesh aggregator read, and — with `runtime`, `placement` and `profile`
+from `setServiceDeploymentInfo` — the body a mesh-enabled service registers with a collector; see the
+README's [Multi-language interoperability](../README.md#multi-language-interoperability) section.
 
 The vendor-specific tracing packages `Benzene.Datadog` and `Benzene.Zipkin` have no port —
 `@benzenejs/diagnostics` is built on `@opentelemetry/api`, so `useTimer(name)`, `useBenzeneMetrics`, and

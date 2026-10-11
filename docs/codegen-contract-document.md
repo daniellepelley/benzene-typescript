@@ -9,11 +9,12 @@ parses it the same way — so a Node consumer of **any** Benzene service,
 including one written in .NET, Go, or Python, gets a fully typed client with no other language's SDK
 involved.
 
-This is a separate input path from `buildBenzeneClient`/`generateBenzeneClientSource` (which generate
-from a *running* service's mesh ServiceDescriptor instead — see
+The document can come from a `.spec.json` file — typically checked into the producing service's repo, or
+downloaded from its CI artifacts — or live, from a running service's `GET /benzene/spec` (the same document it
+registers with a mesh collector; see
 [`examples/mesh-service`](https://github.com/daniellepelley/benzene-typescript/tree/main/examples/mesh-service)).
-Use this page's path when you have a `.spec.json` file — typically checked into the producing service's
-repo, or downloaded from its CI artifacts — rather than a live service to poll.
+(The older generator over the mesh ServiceDescriptor, `buildBenzeneClient`, was removed with the descriptor
+in spec-0.4.0.)
 
 ## Quick start
 

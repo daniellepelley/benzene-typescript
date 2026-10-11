@@ -165,6 +165,58 @@ Breaking changes in the served document and in public API; the next release note
 - **HTTP.** `IHttpEndpointDefinition` gained an optional `version`; a bodyless request is now populated
   from its enrichers (query string, route parameters, mapped headers) instead of staying `{}`.
 
+## Migration notes for the next publish (spec-0.4.0 / Phase 3b, the Contract Document is the register body)
+
+Breaking changes on the mesh wire and in public API (pre-1.0, no compatibility shims); the next release
+notes must list them too.
+
+- **No `benzene:mesh`, no ServiceDescriptor.** The reserved `benzene:mesh` topic, `BenzeneTopic.mesh`,
+  `MeshTopics.descriptor`, `useMeshDescriptor`, `MeshServiceDescriptor`/`MeshTopicDescriptor`,
+  `MeshDescriptorFactory`, `MeshDescriptorHashing` (`descriptorHash`), `IMeshSchemaProvider`/
+  `NoMeshSchemaProvider`/`MapMeshSchemaProvider` and `ValidationMeshSchemaProvider` are removed from
+  `@benzenejs/mesh-wire`. A service's self-description is its Contract Document at `benzene:spec`; read that
+  (or `GET /benzene/spec`) instead. `MeshPlacement`/`MeshProfile` stay (in `MeshRegistration.ts`).
+  `MeshServiceInfo` is `(service, serviceVersion?, instanceId?)` — the `binding` and `placement` parameters
+  are gone.
+- **Registration.** The `benzene:mesh:register` body is the Contract Document `benzene:spec` serves, byte for
+  byte, with `runtime: "typescript"` (was `"node"`), `placement`, `profile` and `degraded` (member names
+  `requests`/`events`/`sends`, was `registry`/`outbound-registry`); no `instanceId`, `binding`, `topics` or
+  `produces`. New in `@benzenejs/schema-openapi`: `IServiceDeploymentInfo`/`setServiceDeploymentInfo`,
+  `ContractDocumentRuntime`, `deriveContractDocument`. `IApplicationInfo` gains optional `versionScheme`
+  (`setApplicationInfo(..., versionScheme?)`), carried onto the document. Every served document now carries
+  `runtime`, and `degraded: ["events", "sends"]` when no outbound registry or event/send feed is registered —
+  register a `MeshOutboundRegistry` (even empty) to assert "none".
+- **Heartbeat.** `MeshHeartbeat` is `{ service, serviceVersion?, instanceId, registrationHash, sentAt, health }`:
+  `descriptorHash` → `registrationHash`, `serviceVersion` added, `sentAt` is an ISO-8601 string (was epoch ms)
+  — the .NET and Go collectors parse it as a timestamp.
+- **Traces.** `HttpMeshTraceExporter` sends `startedAt` as ISO-8601 (was epoch ms, which the .NET and Go
+  collectors could not parse). `MeshTraceEvent.startedAt` stays epoch ms in memory; new `MeshTime` converts.
+- **Cloud service.** `useBenzeneCloudService` answers `benzene:spec` over `/benzene/invoke` as well as
+  `GET /benzene/spec` (R6), registers at host boot through a `cloud-service-registration` start-up check (or the
+  first invocation), and no longer intercepts `benzene:mesh`. `withServiceVersion(version, versionScheme?)` now
+  reaches the document (it only reached the descriptor before). `withPlacement` takes the same arguments but
+  stores a `ServicePlacement`. An empty `withOutbound(new MeshOutboundRegistry())` asserts "no events, no
+  sends". `CloudServiceDescriptorSource` → `CloudServiceContractDocumentSource`;
+  `CloudServiceProfileReport.toMeshProfile()` → `toProfile()`; `MeshAnnouncer` takes the document source
+  and `ensureStarted()` takes no argument.
+- **Probe.** `CloudServiceProbe` evidences R6 with a `benzene:spec` envelope (was `benzene:mesh`) and reads R2
+  from the document's `requests`.
+- **Collector.** `RegisterMessageHandler` takes a `MeshRegistration` (the Contract Document as received): only
+  `service` is required; providers are `events` ∪ `sends`, consumers `requests`; `benzene:` entries ignored; an
+  absent or `degraded` member is unknown (no edges, no undeclared-edge drift). Read models: `ServiceSummary`/
+  `ServiceView.binding` → `transports`; `InstanceView.descriptorHash` → `registrationHash` (+ `serviceVersion`);
+  `ServiceView.descriptor` keeps its name and holds the registration. Trace `startedAt` and issue
+  `firstSeen`/`lastSeen` ingest as ISO-8601 or epoch ms. A legacy `topics`/`produces` body is not read.
+- **Codegen.** The descriptor-path client generator is removed from `@benzenejs/codegen-client`:
+  `buildBenzeneClient`, `generateBenzeneClientSource`, `BenzeneClientOptions`, `JsonSchema`/`asJsonSchema`,
+  the `TypeScriptTypeName` and `TypeScriptPayloadBuilder` helpers. Generate from the Contract Document
+  (`buildMessageClientSdk` / `buildAtomicClientSdk`) — read it from `GET /benzene/spec` for a live service.
+- **AsyncAPI.** The `asyncapi` document now includes the `MeshOutboundRegistry` declarations: events as `send`
+  operations on their own channels, sends as `send` operations on the target's channel with a `reply` when a
+  response is declared.
+- **Example.** `examples/mesh-service` serves its Contract Document through `useSpec`; `/benzene/descriptor`
+  and `buildDescriptor`/`buildBenzeneSpec` are gone (`useOrderService` replaces them).
+
 ## What is left to do
 
 1. Create a granular access token on npmjs.com with **read and write** on the `@benzenejs` scope,

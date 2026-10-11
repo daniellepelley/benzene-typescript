@@ -154,15 +154,16 @@ so `@benzenejs/dependencies` ships a first-party `ServiceCollection` /
 `DefaultBenzeneServiceContainer` / `DefaultServiceResolverFactory` with the same
 singleton/scoped/transient semantics.
 
-† `@benzenejs/mesh-wire` ports both wire feeds of `Benzene.Mesh.Wire`. The **ServiceDescriptor path**
-(`mesh.md` §2): the descriptor types, `MeshDescriptorFactory` + §2.2 `descriptorHash`, the pluggable
-`IMeshSchemaProvider` (replacing C#'s CLR-reflection schema generator — TypeScript erases the
-request/response types), and `useMeshDescriptor`; `runtime` is `"node"`. And the **trace feed** (§3):
-`MeshTraceEvent` / `MeshTraceBatch` / `MeshHeartbeat`, the ambient `MeshSpan` (over `AsyncLocalStorage`),
-the `Traceparent` parser, `IMeshStatusReader`, the lossy `HttpMeshTraceExporter`, and `useMeshTrace`. Two
-adaptations are documented in "Multi-language interoperability": C#'s reflection schema generator →
-injected schema provider, and C#'s `System.Threading.Channels` exporter pump → a bounded buffer + timer
-loop with a fire-and-forget sync `dispose()`.
+† `@benzenejs/mesh-wire` ports the service-side wire shapes of `Benzene.Mesh.Wire`. Since spec 3b
+(`spec-0.4.0`) a service has one self-description — its Contract Document, built by
+`@benzenejs/schema-openapi`, served at `benzene:spec` and registered as the body of `benzene:mesh:register`
+(`mesh.md` §1–§2) — so the package holds no descriptor: it has `MeshRegistration` (a collector's reading of
+that body), the `MeshOutboundRegistry` event/send declarations, `MeshHeartbeat`
+(`{ service, serviceVersion?, instanceId, registrationHash, sentAt, health }`), and the **trace feed** (§3):
+`MeshTraceEvent` / `MeshTraceBatch`, the ambient `MeshSpan` (over `AsyncLocalStorage`), the `Traceparent`
+parser, `IMeshStatusReader`, the lossy `HttpMeshTraceExporter`, and `useMeshTrace`; plus the issue feed
+(§4.1). One adaptation is documented in "Multi-language interoperability": C#'s `System.Threading.Channels`
+exporter pump → a bounded buffer + timer loop with a fire-and-forget sync `dispose()`.
 
 ‡ `Benzene.Azure.Function.AspNet` routes Azure Functions HTTP through the .NET-only ASP.NET Core
 stack (`HttpRequest`/`IActionResult`). Per the "Third-party library integrations" convention it is
@@ -341,13 +342,12 @@ faithful to its C# `.csproj`, which ships no worker host). The `KafkaBenzeneTest
 `EachMessagePayload`), matching the erasure already documented on `useKafka`.
 
 §§ `@benzenejs/codegen-client` realizes `Benzene.CodeGen.Client`'s **client SDK generator**, pivoted
-from CLR reflection to **JSON Schema** — see "Code generation" below. The .NET generator derives client
-types by reflecting over the service's CLR request/response types, which cannot cross a language
-boundary; this port generates the client from the service's mesh **ServiceDescriptor** (`mesh.md` §2),
-whose per-topic schemas are language-neutral JSON Schema (§2.1). So a C# service's descriptor and a
-TypeScript service's descriptor generate an identical, fully typed client. A bespoke emitter covers the
-§2.1 subset (keeping the zero-runtime-deps rule; `json-schema-to-typescript` is the drop-in for arbitrary
-schemas). `Benzene.Schema.OpenApi`'s **`benzene` spec document** IS ported (`@benzenejs/schema-openapi`:
+from CLR reflection to the language-neutral **Contract Document** — see "Code generation" below. The .NET
+generator derives client types by reflecting over the service's CLR request/response types, which cannot
+cross a language boundary; this port generates the client from the service's Contract Document, whose
+schemas are language-neutral, so a C# service's document and a TypeScript service's document generate an
+identical, fully typed client. (The earlier generator over the mesh ServiceDescriptor was removed with the
+descriptor in spec 3b.) `Benzene.Schema.OpenApi`'s **`benzene` spec document** IS ported (`@benzenejs/schema-openapi`:
 `useSpec` serves `{ requests, events, transports?, components.schemas }` with payload schemas stored once and
 referenced by `$ref`, sourced from the `ITypeJsonSchemaSource` validators rather than CLR reflection — see
 the "Type → JSON Schema" convention). The **`openapi`** (OpenAPI 3.0) and **`asyncapi`** (AsyncAPI 3.0)
@@ -357,12 +357,12 @@ and the test-payloads handler; the `Benzene.CodeGen.Core`
 reflection plumbing, `Microsoft.OpenApi`, the C#-target type builder, and the generated health-check/hash/
 outbound-routing-contract extras, which are .NET-client-infrastructure specific.
 
-`@benzenejs/codegen-client` additionally realizes a **second, additional** input path -
+`@benzenejs/codegen-client`'s input path is
 `Benzene.CodeGen.Client`'s `MessageClientSdkBuilder`/`AtomicClientSdkBuilder`/`ClientSdkOptions`/
 `TopicScope`/`SchemaClosure`, retargeted from `Microsoft.OpenApi.Models.OpenApiSchema`/C# to a
 hand-rolled `OpenApiSchemaObject`/TypeScript - parsing a service's committed **Contract Document**
-(`{Service}.spec.json`, `docs/specification/contract-document.md`, promoted 2026-08-14) rather than a
-running service's mesh descriptor, so a Node consumer of *any* Benzene service (including a .NET one)
+(`{Service}.spec.json`, `docs/specification/contract-document.md`, promoted 2026-08-14), or the same
+document read live from `benzene:spec`, so a Node consumer of *any* Benzene service (including a .NET one)
 gets a typed, topic-scoped client with no .NET SDK involved; see the "Code generation" note below and
 `docs/codegen-contract-document.md`. `EventServiceDocumentDeserializer`'s read side is ported as
 `ContractDocumentParser.ts`, deliberately reading into a plain, JSON-shaped `ContractDocument`
@@ -910,9 +910,9 @@ next to its C# counterpart:
   mapping their `.describe()` introspection (no third-party converter). Because a validation schema
   encodes shape **and** rules, one conversion yields both — `required`, `minLength`/`maxLength`,
   `minimum`/`maximum`, `enum`, `format`, `pattern`, nested objects, arrays — so .NET's two-step
-  (reflect + enrich) collapses into a single pass. `ValidationMeshSchemaProvider` composes the topic →
-  request/response-type lookup with the registered sources to feed the mesh descriptor and the
-  `benzene:spec` topic catalog; `MapTypeJsonSchemaSource` is the bring-your-own path (the runtime
+  (reflect + enrich) collapses into a single pass. The spec builder's `SchemaBuilder` asks the registered
+  sources for each handler's, event's and send's types to build the Contract Document (`benzene:spec`, and
+  the mesh registration, which is the same document); `MapTypeJsonSchemaSource` is the bring-your-own path (the runtime
   equivalent of .NET's `SuppliedSchemaCatalog`), and it composes with the validator sources. A type with
   no source stays unconstrained (`{}`) — the spec's documented no-schema case.
 - **Embedded UI assets → inlined string constants.** .NET packages that serve a self-contained HTML page
@@ -1064,23 +1064,23 @@ The point of the port is that a TypeScript Benzene service and a .NET Benzene se
 mesh** and call each other — the runtime language is invisible on the wire. Everything that crosses a
 process boundary is a language-neutral contract (`docs/specification/wire-contracts.md` and `mesh.md` in the
 .NET repo): the message envelope (`{ topic, headers, body }`), the response envelope + error payload, the
-**status vocabulary**, the health document, and the mesh `benzene:spec` descriptor. The port holds these
+**status vocabulary**, the health document, and the `benzene:spec` Contract Document. The port holds these
 byte-identical to .NET so the two interoperate:
 
 - **Reserved topic ids.** `BenzeneTopic` (`@benzenejs/abstractions`) is the port's single source of truth
   for the framework-owned topic namespace, and every reserved id carries its `benzene:` marker:
-  `benzene:healthcheck` (Cloud Service Profile R3), `benzene:spec` (R5), and `benzene:mesh` +
-  `benzene:mesh:register`/`:heartbeat`/`:traces`/`:issues` (R6, `mesh.md` §§1/4), plus the mesh host's own
+  `benzene:healthcheck` (Cloud Service Profile R3), `benzene:spec` (R5, and R6's self-description), and
+  `benzene:mesh:register`/`:heartbeat`/`:traces`/`:issues` (R6, `mesh.md` §4), plus the mesh host's own
   `benzene:mesh:query:*`, `benzene:mesh:aggregate`, `benzene:mesh:dispatch` and friends. The ids are the
   wire contract, not decoration: a service binding the bare forms cannot register with, heartbeat to, or be
   health-probed by a collector written in any other language.
 
   **There is no bare-id compatibility shim, deliberately.** Nothing in the port accepts `healthcheck` or
-  `mesh` as an alias for the prefixed id. A shim would only make the TypeScript port *look* interoperable
+  `spec` as an alias for the prefixed id. A shim would only make the TypeScript port *look* interoperable
   while leaving the caller broken against .NET, Go and Python — the exact asymmetry the prefix exists to
   remove — and it costs nothing to do without: every reserved topic is already an explicit argument
-  (`useHealthCheck(app, topic, checks)`, `useMeshDescriptor(app, descriptor, ...aliases)`), so a deployment
-  that genuinely must answer a legacy bare id can pass it as an alias at its own composition root.
+  (`useHealthCheck(app, topic, checks)`, `useSpec(app, topic)`), so a deployment that genuinely must answer
+  a legacy bare id can pass it at its own composition root.
   `test/Benzene.Core.Test/Core/BenzeneTopicTest.test.ts` pins the ids and asserts the bare forms are
   ordinary application topics.
 - **Status vocabulary.** `BenzeneResultStatus`'s string values are the normative lowercase-kebab wire
@@ -1097,33 +1097,24 @@ byte-identical to .NET so the two interoperate:
   real global `fetch`, and it derives a cross-language topology edge from the .NET producer to the TypeScript
   consumer.
 - **A live, mesh-discoverable TypeScript service.** `examples/mesh-service` is a runnable Benzene HTTP service
-  (Express-hosted handlers) that serves `/benzene/spec` (a descriptor derived from its handler registry) and
+  (Express-hosted handlers) that serves `/benzene/spec` (its Contract Document, derived by `useSpec`) and
   `/benzene/health` — the language-neutral endpoints a mesh aggregator interrogates. Start it
   (`npm start -w @benzene-example/mesh-service`) and point either the TypeScript `MeshAggregator` or the .NET
   `Benzene.Mesh.Aggregator` at it; both catalog it with no knowledge that it's TypeScript.
   `test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` starts this very service and drives
   the real aggregator against it in CI.
-- **The normative descriptor path.** The reserved `benzene:mesh` topic → `ServiceDescriptor` contract
-  (`mesh.md` §2, the shape `Benzene.Mesh.Wire`/`Benzene.Mesh.Collector` use for the live .NET↔Go
-  cross-language fleets) is ported as `@benzenejs/mesh-wire`: `MeshServiceDescriptor` and friends,
-  `MeshDescriptorFactory.create` (topic list derived from the running `IMessageHandlerDefinitionLookUp`,
-  sorted by id then version), the §2.2 `descriptorHash` (`node:crypto` SHA-256 over the spec's canonical
-  JSON — fixed descriptor field order, lexicographic schema-map keys, `instanceId`/`degraded`/`profile`
-  blanked), and `useMeshDescriptor`, which intercepts the reserved topic and short-circuits with the
-  descriptor. `runtime` is `"node"` (the C# original's `"dotnet"`); per §2.2 the hash is per-port by design
-  and never compared across ports, so this difference is expected. The one divergence: C# derives each
-  topic's request/response JSON Schema (§2.1) by *reflecting* over the handler's CLR types, which
-  TypeScript's erased types can't do, so the port injects a pluggable **`IMeshSchemaProvider`** keyed by
-  topic (`NoMeshSchemaProvider` / `MapMeshSchemaProvider`) — the schema moves from CLR reflection to an
-  explicit source; the §2.1 mapping table itself is normative and unchanged. That source is realized by
-  **`ValidationMeshSchemaProvider`**, which derives each topic's schema from the `@benzenejs/zod`/`joi`/`yup`
-  schema the service registered to validate the payload type (via the `ITypeJsonSchemaSource` seam — see
-  the "Type → JSON Schema" porting convention), with `MapTypeJsonSchemaSource` for hand-authored/bring-
-  your-own schemas. So a service that validates automatically publishes its payload schemas to the
-  descriptor and the `benzene:spec` topic catalog, carrying the validation rules with them. `docs/specification/conformance/mesh-descriptor-cases.json`
-  is ported to `test/Benzene.Core.Test/Conformance/` and pins the derived descriptor + hash properties;
-  `examples/mesh-service` serves its normative descriptor at `/benzene/descriptor`
-  (`test/Benzene.Core.Test/MultiLanguage/RunnableServiceMeshTest.test.ts` reads it live).
+- **One self-description: the Contract Document, served and registered.** Since spec 3b (`spec-0.4.0`) a
+  service describes itself once — the Contract Document `useSpec` derives (`@benzenejs/schema-openapi`) —
+  and that same document is the body it registers with a mesh collector (`mesh.md` §2). There is no
+  `benzene:mesh` topic, no ServiceDescriptor and no `descriptorHash` any more. The document carries the
+  deployment-side fields the service knows (`runtime: "typescript"`, `placement`, the Cloud Service
+  `profile`, and `degraded` for a member it cannot determine — `IServiceDeploymentInfo` /
+  `setServiceDeploymentInfo`), all outside both hashes. Where C# derives each payload schema by
+  *reflecting* over the handler's CLR types, TypeScript's erased types can't, so schemas come from the
+  `ITypeJsonSchemaSource` seam (Zod/Joi/Yup, or `MapTypeJsonSchemaSource` for bring-your-own — see the
+  "Type → JSON Schema" porting convention); a service that validates automatically publishes its payload
+  schemas, rules included. `useBenzeneCloudService` answers `benzene:spec` on every surface, registers the
+  document with a collector at boot and heartbeats its `registrationHash` (see `@benzenejs/cloud-service`).
 - **The mesh trace feed** (`mesh.md` §3) is also ported in `@benzenejs/mesh-wire`: `MeshTraceEvent` /
   `MeshTraceBatch` / `MeshHeartbeat`, the ambient `MeshSpan` (W3C trace-context propagation over Node's
   `AsyncLocalStorage`, the port of C#'s `AsyncLocal`), the package-local `Traceparent` parser (join/reject
@@ -1133,23 +1124,14 @@ byte-identical to .NET so the two interoperate:
   becomes a fire-and-forget `dispose()`, with `disposeAsync()` for a guaranteed tail flush), and the
   `useMeshTrace` middleware. `docs/specification/conformance/mesh-trace-cases.json` is ported and pins the
   traceparent rules and the invocation → semantic-status mapping (including a handler exception traced as
-  `service-unavailable`). Not yet ported from `Benzene.Mesh.Wire`: nothing — but the collector side that
-  consumes these feeds (`Benzene.Mesh.Collector`) is a separate package, not yet ported.
-- **Code generation from JSON Schema.** `@benzenejs/codegen-client` closes the loop: it turns a service's
-  ServiceDescriptor — whose per-topic `requestSchema`/`responseSchema` are language-neutral JSON Schema
-  (§2.1) — into a fully typed TypeScript client (a payload interface per request/response, plus a
-  `<Service>ServiceClient` calling `IBenzeneMessageSender.sendAsync`). Because the input is the JSON
-  schemas rather than any runtime's types, a **C# service's descriptor generates the same client a
-  TypeScript service's does** — a client for a service in any language, derived purely from the contract.
-  This is the deliberate answer to porting `Benzene.CodeGen.*` (which generates by CLR reflection): route
-  everything through JSON Schema and the type-building becomes multi-language by construction.
-  `test/Benzene.Core.Test/CodeGen/GeneratedClientRoundTripTest.test.ts` regenerates the committed client
-  from `examples/mesh-service`'s live descriptor (asserting byte-for-byte match, so the checked-in client
-  `tsc` compiles is exactly what the generator emits) and exercises it over a fake sender.
-- **Code generation from a Contract Document.** The same package's second input path generates from a
+  `service-unavailable`). The collector side that consumes these feeds is `@benzenejs/mesh-collector`.
+- **Code generation from a Contract Document.** `@benzenejs/codegen-client` generates from a
   service's Contract Document (`docs/specification/contract-document.md`) - the document every port
-  serves on `benzene:spec`, often committed as `{service}.spec.json` - instead of a running service's
-  descriptor. The parser rejects a `schemaDialect` other than `openapi-3.0` and ignores `benzene:`
+  serves on `benzene:spec`, often committed as `{service}.spec.json`. Because the input is the contract rather
+  than any runtime's types, a **C# service's document generates the same client a TypeScript service's
+  does**. `test/Benzene.Core.Test/CodeGen/GeneratedClientRoundTripTest.test.ts` regenerates the committed
+  client from `examples/mesh-service`'s live `GET /benzene/spec` (asserting byte-for-byte match) and
+  exercises it over a fake sender. The parser rejects a `schemaDialect` other than `openapi-3.0` and ignores `benzene:`
   entries. `buildMessageClientSdk` emits one service-level client (topic include-list,
   contract-document.md §5.2); `buildAtomicClientSdk` emits one self-contained client **per topic**,
   narrowed to just that topic's reachable `components.schemas` via the §5.3 schema-closure walk
@@ -1737,7 +1719,8 @@ Ported (with tests):
   raw-string payload) as "no downcast", matching the C# `payload == null` guard.
 - Cloud Service conformance probe (`@benzenejs/cloud-service-probe`): a self-contained (no Benzene package
   deps) external, black-box HTTP probe of the Cloud Service Profile — `CloudServiceProbe.runAsync` hits a
-  live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and reserved `benzene:mesh` topic and returns
+  live service's `/benzene/health`, `/benzene/invoke`, `/benzene/spec` and the reserved `benzene:spec` topic over the
+  envelope (R6's self-description since spec 3b; it probed `benzene:mesh` before) and returns
   a tri-state (`Satisfied`/`NotSatisfied`/`Inconclusive`) assessment of R1–R8 built only from what it
   observed, never trusting the service's own claims. `HttpClient` + `BaseAddress` → an injectable `fetch`
   (`@benzenejs/health-checks-http`'s adaptation) + `baseUrl`; `System.Text.Json.Nodes` shape checks →
@@ -1763,16 +1746,17 @@ Ported (with tests):
 - Cloud Service bundle (`@benzenejs/cloud-service`): port of `Benzene.CloudService` — the batteries-included
   `useBenzeneCloudService(app, name, configure?)` that wires the whole Cloud Service Profile (R1–R8) in one
   call: the `/benzene/invoke` envelope endpoint, `/benzene/spec`, `/benzene/health` + reserved `benzene:healthcheck`
-  topic, the reserved `benzene:mesh` descriptor topic, and outbound mesh register/heartbeat/trace — over the same
-  `use*` builders, with a wiring-time `CloudServiceProfileReport` (R1–R8 self-assessment) stamped on the
-  descriptor's `profile` field and honestly reflecting any override (`withoutMesh()`, relocated paths).
+  topic, the `benzene:spec` Contract Document on the envelope surface too, and outbound mesh
+  register (that same document, since spec 3b)/heartbeat/trace — over the same `use*` builders, with a
+  wiring-time `CloudServiceProfileReport` (R1–R8 self-assessment) stamped on the document's `profile` field and
+  honestly reflecting any override (`withoutMesh()`, relocated paths).
   **Divergences:** `MeshAnnouncer` uses the global `fetch` (Node 22) instead of `HttpClient.PostAsync` (no
   new dependency, same adaptation as `HttpMeshTraceExporter`; `CancellationTokenSource` → `AbortController`;
   the spec §6 "swallow every failure, never block an invocation" rule ports verbatim); `IAsyncDisposable` +
   `IDisposable` → `disposeAsync()` + fire-and-forget `dispose()` (JS can't block on a promise, so C#'s
-  bounded `Wait(5s)` bridge becomes fire-and-forget); the eager-descriptor `ReflectionMessageHandlersFinder`
-  → `RegistryMessageHandlersFinder` (decorator metadata, since TS erases types), and the `volatile`/
-  double-checked lock drops (single-threaded runtime); because the envelope pipeline has its own container
+  bounded `Wait(5s)` bridge becomes fire-and-forget); the document is derived from the host container
+  (`CloudServiceContractDocumentSource`), attached at boot by a `cloud-service-registration` start-up hook (or
+  the first invocation), and the `volatile`/double-checked lock drops (single-threaded runtime); because the envelope pipeline has its own container
   (above), the mesh singletons are registered on the outer container and realized for disposal by an
   outer-pipeline middleware placed **ahead of** the invoke endpoint (C# realizes on the envelope pipeline's
   first middleware; the port can't, so it moves realization in front of the short-circuit on the outer

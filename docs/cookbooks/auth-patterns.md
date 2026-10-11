@@ -452,8 +452,8 @@ handler.
 
 - **Don't log the `Authorization` header.** It carries a bearer token or Basic credentials in the clear
   (base64 isn't encryption) — make sure any request-logging middleware you add redacts it.
-- **Protect the framework's own surfaces if you have no gateway.** `/benzene/spec` (the derived spec)
-  and the reserved `benzene:mesh` topic (the service descriptor) can leak schema/topology to an unauthenticated
+- **Protect the framework's own surfaces if you have no gateway.** `/benzene/spec` and the reserved
+  `benzene:spec` topic (the Contract Document, events and sends included) can leak schema/topology to an unauthenticated
   caller. If your service has no gateway in front of it, compose the same authentication middleware in
   front of those paths — they're ordinary HTTP routes/topics, so `useOAuth2Bearer`/`useBasicAuth` apply
   the same way.

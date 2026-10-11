@@ -162,7 +162,7 @@ Two things differ from the .NET `Benzene.JsonSchema` it ports (both recorded in 
   type with no registered schema is simply not validated.
 
 Like the other adapters, `useAjvValidation` also registers an `ITypeJsonSchemaSource`
-(`AjvJsonSchemaSource`) that publishes the registered schema to the service's spec/mesh descriptor — since
+(`AjvJsonSchemaSource`) that publishes the registered schema to the service's Contract Document — since
 it is already JSON Schema, the schema is embedded as-is.
 
 `use<Lib>Validation(router)` does two things, mirroring `.UseFluentValidation()`:
