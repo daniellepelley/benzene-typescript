@@ -13,13 +13,14 @@ import { EventBridgeSendMessageContext } from './EventBridgeSendMessageContext';
  * EventBridge routes on the event's `Source`/`DetailType`, so the Benzene routing topic maps to `DetailType`
  * (what the inbound `@benzenejs/aws-lambda-eventbridge` binding reads back as the topic) and the configured
  * `source` maps to `Source`. EventBridge has no native per-message attributes, so per-call headers are
- * embedded in the `Detail` JSON under the reserved `_benzeneHeaders` key (the inbound binding lifts them out).
+ * embedded in the `Detail` JSON under the reserved `benzene-headers` key (wire-contracts §2; the inbound
+ * binding reads them back into its header dictionary and leaves `detail` unchanged).
  */
 export class OutboundEventBridgeContextConverter
   implements IContextConverter<OutboundContext, EventBridgeSendMessageContext>
 {
   /** Must match the inbound binding's `EventBridgeMessageHeadersGetter` embedded-headers key. */
-  static readonly EmbeddedHeadersKey = '_benzeneHeaders';
+  static readonly EmbeddedHeadersKey = 'benzene-headers';
 
   private readonly serializer: ISerializer;
 

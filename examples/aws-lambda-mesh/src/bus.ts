@@ -104,7 +104,7 @@ function parsePayload(body: string | undefined): Record<string, unknown> {
   try {
     const parsed = JSON.parse(body) as Record<string, unknown>;
     // EventBridge embeds outbound headers under a reserved key; strip it so the consumer sees only the payload.
-    delete parsed['_benzeneHeaders'];
+    delete parsed['benzene-headers'];
     return parsed;
   } catch {
     return {};

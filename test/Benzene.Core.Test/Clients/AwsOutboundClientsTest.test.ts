@@ -82,8 +82,8 @@ describe('outbound EventBridge client', () => {
     expect(entry.Source).toBe('payments-api');
     expect(entry.DetailType).toBe('payment:captured');
     expect(entry.EventBusName).toBe('benzene-bus');
-    const detail = JSON.parse(entry.Detail) as { orderId: string; _benzeneHeaders: Record<string, string> };
+    const detail = JSON.parse(entry.Detail) as { orderId: string; 'benzene-headers': Record<string, string> };
     expect(detail.orderId).toBe('o3');
-    expect(detail._benzeneHeaders.traceparent).toBe('tp');
+    expect(detail['benzene-headers'].traceparent).toBe('tp');
   });
 });

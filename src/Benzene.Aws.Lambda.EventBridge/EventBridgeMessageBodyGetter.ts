@@ -7,9 +7,10 @@ import { EventBridgeContext } from './EventBridgeContext';
  *
  * TYPE-MODEL adaptation: C# reads a raw `JsonElement` and returns `detail.GetRawText()` (or `null` when the
  * detail is `Undefined`). In Node the event is already parsed, so `detail` is a value; `JSON.stringify`
- * reproduces the raw JSON text, and an absent detail maps to `undefined` (C# `null`). The reserved
- * `_benzeneHeaders` key, when present inside `detail`, is an extra field the request mapper's
- * deserialization simply ignores.
+ * reproduces the raw JSON text, and an absent detail maps to `undefined` (C# `null`). The body is
+ * `detail` **unchanged** — the reserved `benzene-headers` member included (wire-contracts §2): it is read
+ * into the header dictionary by `EventBridgeMessageHeadersGetter`, never stripped from the body, so a
+ * handler's request type must tolerate it (the request mapper's deserialization simply ignores it).
  */
 export class EventBridgeMessageBodyGetter implements IMessageBodyGetter<EventBridgeContext> {
   getBody(context: EventBridgeContext): string | undefined {

@@ -9,7 +9,7 @@ export interface AsEventBridgeOptions {
 
 /**
  * Builds an `EventBridgeEvent` from a message builder: the topic becomes `detail-type`, the message
- * becomes `detail`, and any headers are embedded under the reserved `_benzeneHeaders` key (only when the
+ * becomes `detail`, and any headers are embedded under the reserved `benzene-headers` key (only when the
  * message is an object) - the same shape the outbound EventBridge client publishes. Port of
  * `Benzene.Aws.Lambda.EventBridge.TestHelpers.MessageBuilderExtensions.AsEventBridge`.
  */
@@ -22,7 +22,7 @@ export function asEventBridge<T>(
   let detail: unknown = source.message;
   const headerEntries = Object.entries(source.headers);
   if (headerEntries.length > 0 && isPlainObject(source.message)) {
-    detail = { ...source.message, _benzeneHeaders: Object.fromEntries(headerEntries) };
+    detail = { ...source.message, 'benzene-headers': Object.fromEntries(headerEntries) };
   }
 
   return {

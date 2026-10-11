@@ -16,6 +16,8 @@ import {
   addEventBridge,
   EventBridgeApplication,
   EventBridgeContext,
+  EventBridgeMessageBodyGetter,
+  EventBridgeMessageHeadersGetter,
   useEventBridge,
 } from '@benzenejs/aws-lambda-eventbridge';
 import { useAwsLambda } from '@benzenejs/aws-lambda-core';
@@ -133,5 +135,37 @@ describe('EventBridgeApplication (direct)', () => {
 
     expect(handled).toEqual([]);
     expect(messageResult?.isSuccessful).toBe(false);
+  });
+});
+
+describe('EventBridge benzene-headers (wire-contracts §2, D14)', () => {
+  it('reads the embedded benzene-headers into the header dictionary and leaves detail unchanged', () => {
+    const event = {
+      id: 'evt-1',
+      source: 'orders',
+      'detail-type': 'order.created',
+      detail: { reference: 'R-1', 'benzene-headers': { traceparent: 'tp-1', 'x-correlation-id': 'c-1' } },
+    } as unknown as ConstructorParameters<typeof EventBridgeContext>[0];
+    const context = new EventBridgeContext(event);
+
+    const headers = new EventBridgeMessageHeadersGetter().getHeaders(context);
+    expect(EventBridgeMessageHeadersGetter.EmbeddedHeadersKey).toBe('benzene-headers');
+    expect(headers.traceparent).toBe('tp-1');
+    expect(headers['x-correlation-id']).toBe('c-1');
+
+    // The body is `detail` unchanged — the embedded member is NOT stripped.
+    const body = JSON.parse(new EventBridgeMessageBodyGetter().getBody(context)!) as Record<string, unknown>;
+    expect(body['benzene-headers']).toEqual({ traceparent: 'tp-1', 'x-correlation-id': 'c-1' });
+    expect(body.reference).toBe('R-1');
+  });
+
+  it('does not read the retired _benzeneHeaders key (clean break, no dual-accept)', () => {
+    const event = {
+      source: 'orders',
+      'detail-type': 'order.created',
+      detail: { _benzeneHeaders: { traceparent: 'tp-old' } },
+    } as unknown as ConstructorParameters<typeof EventBridgeContext>[0];
+
+    expect(new EventBridgeMessageHeadersGetter().getHeaders(new EventBridgeContext(event)).traceparent).toBeUndefined();
   });
 });

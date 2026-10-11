@@ -5,7 +5,7 @@ import { EventBridgeContext } from './EventBridgeContext';
 /**
  * Maps the event onto Benzene headers (C# plan decision E4): envelope metadata under `eventbridge-`-prefixed
  * keys, plus any Benzene wire headers (correlation, `traceparent`, ...) lifted verbatim from the reserved
- * `_benzeneHeaders` object inside `detail` — EventBridge has no native per-message attributes, so that's
+ * `benzene-headers` object inside `detail` — EventBridge has no native per-message attributes, so that's
  * where the outbound client embeds them. Embedded headers win over prefixed envelope keys on collision;
  * string values only.
  *
@@ -15,7 +15,7 @@ import { EventBridgeContext } from './EventBridgeContext';
  */
 export class EventBridgeMessageHeadersGetter implements IMessageHeadersGetter<EventBridgeContext> {
   /** The reserved key inside `detail` that carries embedded Benzene wire headers. */
-  static readonly EmbeddedHeadersKey = '_benzeneHeaders';
+  static readonly EmbeddedHeadersKey = 'benzene-headers';
 
   getHeaders(context: EventBridgeContext): Record<string, string> {
     const headers: Record<string, string> = {};
