@@ -1,7 +1,7 @@
 import { ISerializer } from '@benzenejs/abstractions';
 import { IMessageHandlerResult, IResponsePayloadMapper } from '@benzenejs/abstractions-message-handlers';
 import { isRawStringMessage } from '@benzenejs/abstractions-messages';
-import { ProblemTypes } from '@benzenejs/results';
+import { ProblemDetails, ProblemTypes } from '@benzenejs/results';
 
 /**
  * Default `IResponsePayloadMapper<TContext>` implementation: serializes the handler's success
@@ -29,7 +29,7 @@ export class DefaultResponsePayloadMapper<TContext> implements IResponsePayloadM
 
     return messageHandlerResult.benzeneResult.isSuccessful
       ? this.serializePayload(messageHandlerResult.benzeneResult.payloadAsObject, serializer)
-      : serializer.serialize(ProblemTypes.from(messageHandlerResult.benzeneResult));
+      : serializer.serialize(withoutHttpStatus(ProblemTypes.from(messageHandlerResult.benzeneResult)));
   }
 
   private serializePayload(payload: unknown, serializer: ISerializer): string | undefined {
@@ -43,4 +43,20 @@ export class DefaultResponsePayloadMapper<TContext> implements IResponsePayloadM
 
     return serializer.serialize(payload);
   }
+}
+
+/**
+ * The document without RFC 9457's numeric `status`: this transport-neutral mapper writes envelopes and
+ * queue replies, where `status` MUST be omitted (wire-contracts.md §1.3) - only an HTTP response body
+ * carries it, and the HTTP decorator sets it there. A synthesized document never has one; an attached
+ * document can - one a client received over HTTP (`BenzeneResult.receivedProblem`) and a handler passed
+ * on - so a copy without it is written, leaving the attached document untouched.
+ */
+function withoutHttpStatus(problem: ProblemDetails): ProblemDetails {
+  if (problem.status === undefined) {
+    return problem;
+  }
+  const { status: _status, ...rest } = problem;
+  // Same prototype, so a serializer that names the document after its class (XML) still does.
+  return Object.assign(Object.create(Object.getPrototypeOf(problem) as object) as ProblemDetails, rest);
 }

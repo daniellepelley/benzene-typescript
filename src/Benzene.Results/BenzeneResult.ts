@@ -94,6 +94,28 @@ export const BenzeneResult = {
     return result;
   },
 
+  /**
+   * Builds a failed result for a problem document a CLIENT received off the wire - the port of C#
+   * `BenzeneResult.AttachReceivedProblem<T>` (internal there, reached from
+   * `Benzene.Clients.Common.ClientResultExtensions`; exported here because the clients live in another
+   * package). The status is the one the envelope/HTTP classification already decided, never re-derived
+   * from the document's `benzeneStatus`; `errors` are the ones rebuilt from the document
+   * (core-concepts §12 "Error fidelity", wire-contracts.md §1.3); and the document, when there is one,
+   * is attached so `ProblemTypes.from(result)` returns exactly what was received - an application's own
+   * problem `type` survives the hop.
+   */
+  receivedProblem<T = VoidResult>(
+    status: string,
+    errors: readonly BenzeneError[],
+    problem?: ProblemDetails,
+  ): IBenzeneResultOf<T> {
+    const result = create<T>(status, voidPayload as T, [...errors], false);
+    if (problem !== undefined) {
+      (result as { problem?: ProblemDetails }).problem = problem;
+    }
+    return result;
+  },
+
   ok<T = VoidResult>(payload?: T): IBenzeneResultOf<T> {
     return BenzeneResult.set(BenzeneResultStatus.ok, payload);
   },

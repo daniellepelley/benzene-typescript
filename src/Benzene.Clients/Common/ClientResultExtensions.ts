@@ -1,5 +1,5 @@
-import { IBenzeneResultOf, ISerializer } from '@benzenejs/abstractions';
-import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneError, IBenzeneResultOf, ISerializer } from '@benzenejs/abstractions';
+import { BenzeneResult, ProblemDetails } from '@benzenejs/results';
 import { BenzeneMessageClientResponse } from '../BenzeneMessageClientResponse';
 import { BenzeneResultHttpMapper } from './BenzeneResultHttpMapper';
 
@@ -64,6 +64,11 @@ export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneRe
  * Success/failure classification is the envelope's own `isSuccessful` — **the** signal (wire-contracts
  * §1.2). An envelope without it is malformed and is treated as unsuccessful; the status text is never
  * re-classified (spec-0.2.0 removed the older-sender fallback).
+ *
+ * A failure body is read as the RFC 9457 problem document it is (wire-contracts §1.3, whatever its inner
+ * content type): the result's `errors` are rebuilt from it with `field` and `code` intact, in order, and
+ * the received document is attached (core-concepts §12 "Error fidelity") - see
+ * {@link failedResultFromProblem}.
  */
 export function asBenzeneResult<TResponse>(
   response: BenzeneMessageClientResponse,
@@ -81,6 +86,62 @@ export function asBenzeneResult<TResponse>(
     return BenzeneResult.set<TResponse>(status, payload as TResponse, true);
   }
 
-  // Failure: payload-less, matching convertStatusCode (the problem document is not surfaced in this cut).
-  return BenzeneResult.set<TResponse>(status, undefined, false);
+  return failedResultFromProblem<TResponse>(status, readProblemDocument(response.body, serializer));
+}
+
+/**
+ * Reads a failure body as a problem document (wire-contracts §1.3), or `undefined` when it is empty or is
+ * not a JSON object - a carrier failure, an HTML error page - so a malformed body costs the errors, never
+ * the result. Unknown members are kept on the returned object (RFC 9457 §3.2: a reader ignores, not
+ * strips, what it does not recognize), so an attached document is the one that was received.
+ */
+export function readProblemDocument(body: string | undefined | null, serializer: ISerializer): ProblemDetails | undefined {
+  if (body === undefined || body === null || body.trim() === '') {
+    return undefined;
+  }
+  let parsed: unknown;
+  try {
+    parsed = serializer.deserialize<unknown>(body);
+  } catch {
+    return undefined;
+  }
+  return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? (parsed as ProblemDetails) : undefined;
+}
+
+/**
+ * The failed `status` result for a received problem document - core-concepts §12 "Error fidelity": the
+ * result's `errors` are rebuilt from the document's `errors` with `field` and `code` intact and in order
+ * (authoritative when present, even empty); a document with no `errors` member yields its `detail` as one
+ * opaque message (never split on commas), and no `detail` yields no errors (wire-contracts §1.3, "Without
+ * `errors`"). The document is attached to the result (`BenzeneResult.receivedProblem`), so
+ * `ProblemTypes.from(result)` returns it verbatim. With no document the result simply carries no errors.
+ * Port of the C# `ClientResultExtensions.FailedResultFromProblem`.
+ */
+export function failedResultFromProblem<T>(status: string, problem: ProblemDetails | undefined): IBenzeneResultOf<T> {
+  if (problem === undefined) {
+    return BenzeneResult.set<T>(status, undefined, false);
+  }
+  return BenzeneResult.receivedProblem<T>(status, errorsFromProblem(problem), problem);
+}
+
+function errorsFromProblem(problem: ProblemDetails): BenzeneError[] {
+  const errors: unknown = (problem as { errors?: unknown }).errors;
+  if (Array.isArray(errors)) {
+    return errors.flatMap((item): BenzeneError[] => {
+      if (typeof item !== 'object' || item === null || typeof (item as { message?: unknown }).message !== 'string') {
+        return [];
+      }
+      const { message, field, code } = item as { message: string; field?: unknown; code?: unknown };
+      const error: BenzeneError = { message };
+      if (typeof field === 'string') {
+        error.field = field;
+      }
+      if (typeof code === 'string') {
+        error.code = code;
+      }
+      return [error];
+    });
+  }
+  const detail: unknown = (problem as { detail?: unknown }).detail;
+  return typeof detail === 'string' && detail !== '' ? [{ message: detail }] : [];
 }

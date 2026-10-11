@@ -47,6 +47,11 @@ import {
 import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
 import { httpBuilder } from '@benzenejs/testing';
 import { ProblemTypes } from '@benzenejs/results';
+import { IBenzeneResult } from '@benzenejs/abstractions';
+import { BenzeneClientContext } from '@benzenejs/abstractions-messages';
+import { asBenzeneResult, BenzeneMessageClientResponse } from '@benzenejs/clients';
+import { HttpContextConverter, HttpSendMessageContext } from '@benzenejs/clients-http';
+import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { findSubsetMismatch, load } from './ConformanceFixtures';
 import { GreetConformanceHandler } from './Handlers/GreetConformanceHandler';
 import { ProblemConformanceHandler } from './Handlers/ProblemConformanceHandler';
@@ -160,6 +165,47 @@ function assertEnvelope(
     }
     expect(new Set(errors.map((error) => error.field))).toEqual(new Set(expected.errorFields));
   }
+}
+
+/**
+ * core-concepts §12 "Error fidelity": what a CLIENT rebuilds from the problem document it received. The
+ * result carries the document's `errors` - message, `field` and `code` intact, in order - and the received
+ * document is attached, so an application's own `type` survives the hop.
+ */
+function assertClientFidelity(name: string, result: IBenzeneResult, received: string, expected: EnvelopeExpectation): void {
+  const document = JSON.parse(received) as { type?: string; errors?: unknown[] };
+  expect(result.isSuccessful, name).toBe(false);
+  expect(result.status, name).toBe(expected.statusCode);
+  expect(result.errors, `${name}: the received errors, field and code intact`).toEqual(document.errors ?? []);
+  const expectedErrors = (expected.body as { errors?: unknown[] } | undefined)?.errors;
+  if (expectedErrors !== undefined) {
+    expect(result.errors, name).toEqual(expectedErrors);
+  }
+  if (expected.errorFields !== undefined) {
+    expect(new Set(result.errors.map((error) => error.field))).toEqual(new Set(expected.errorFields));
+  }
+  expect(ProblemTypes.from(result).type, `${name}: the received document is attached`).toBe(document.type);
+}
+
+/**
+ * POSTs a case's request to its topic over a route-mapped HTTP binding (API Gateway) - so the failure is
+ * an `application/problem+json` response, not an envelope - with the canonical handlers behind it.
+ */
+async function postCaseAsync(problemCase: ProblemEnvelopeCase): Promise<APIGatewayProxyResult> {
+  const container = new DefaultBenzeneServiceContainer();
+  addBenzene(container);
+  addApiGateway(container);
+  container.addSingletonFactory(
+    IHttpEndpointDefinition,
+    () => new HttpEndpointDefinition('POST', '/conformance-case', problemCase.request.topic),
+  );
+
+  const builder = new MiddlewarePipelineBuilder<ApiGatewayContext>(container);
+  useMessageHandlersWithRouter(builder, (router) => useZodValidation(router), ProblemConformanceHandler, ValidateConformanceHandler);
+
+  const event = asApiGatewayRequest(httpBuilder('POST', '/conformance-case'));
+  event.body = problemCase.request.body;
+  return new ApiGatewayApplication(builder.build()).handleAsync(event, container.createServiceResolverFactory());
 }
 
 /** Capabilities this port implements, for cases marked `requires`. */
@@ -295,6 +341,35 @@ describe('ProblemDetailsConformanceTest', () => {
 
         expect(response).toBeDefined();
         assertEnvelope(problemCase.name, response, problemCase.expected);
+      });
+    }
+  });
+
+  // core-concepts §12 "Error fidelity", from the client side: each case's real failure, read back by this
+  // port's clients - the envelope reader (`asBenzeneResult`, what DefaultBenzeneMessageSender uses) and the
+  // HTTP client (`HttpContextConverter`) on a route-mapped `application/problem+json` response.
+  describe('client error fidelity (core-concepts §12)', () => {
+    for (const problemCase of fixture.envelopeCases) {
+      const run = problemCase.requires === undefined || capabilities.has(problemCase.requires) ? it : it.skip;
+
+      run(`${problemCase.name}: envelope client`, async () => {
+        const response = await runPipeline(toRequest(problemCase));
+        const received = new BenzeneMessageClientResponse(response!.statusCode, response!.body, response!.headers, response!.isSuccessful);
+        const result = asBenzeneResult<unknown>(received, new JsonSerializer());
+        assertClientFidelity(problemCase.name, result, response!.body, problemCase.expected);
+      });
+
+      run(`${problemCase.name}: HTTP client`, async () => {
+        const http = await postCaseAsync(problemCase);
+        expect(http.headers?.['content-type']).toMatch(/^application\/problem\+json/);
+        const context = new HttpSendMessageContext({ url: '/conformance-case', method: 'POST', headers: {}, body: '' });
+        context.response = new Response(http.body, {
+          status: http.statusCode,
+          headers: { 'content-type': String(http.headers!['content-type']) },
+        });
+        const clientContext = new BenzeneClientContext<unknown, unknown>({ topic: problemCase.request.topic, message: {}, headers: {} });
+        await new HttpContextConverter<unknown, unknown>('POST', '/conformance-case').mapResponseAsync(clientContext, context);
+        assertClientFidelity(problemCase.name, clientContext.response as IBenzeneResult, http.body, problemCase.expected);
       });
     }
   });

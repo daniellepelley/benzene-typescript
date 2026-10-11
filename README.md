@@ -1327,7 +1327,11 @@ Ported (with tests):
   host-builder extensions), warm-up/start-up-checks, and the registration-diagnostics surface remain
   deferred; `InlineAwsLambdaStartUp` stays for fluent inline tests/samples.
 - Outbound HTTP client (`@benzenejs/clients-http` + `@benzenejs/clients` core): the client pipeline sends
-  over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult`, plus the full
+  over the Node global `fetch` and maps the HTTP status back to a `BenzeneResult` - a failure's
+  `application/problem+json` body rebuilds the result's `errors` (field and code intact) and is attached,
+  as the envelope reader `asBenzeneResult` does for a failure envelope (core-concepts §12; the C#
+  `HttpContextConverter` reads no failure body, and C#'s internal `BenzeneResult.AttachReceivedProblem` is
+  the exported `BenzeneResult.receivedProblem` here, since the clients live in another package) - plus the full
   `Benzene.Clients` wrapper suite — retry, correlation-id and header-forwarding message-client
   decorators, their builders, and the client factory.
 - Caching (`@benzenejs/cache-core` + `@benzenejs/cache-redis`§): the lazy-load `CacheEntry` abstraction

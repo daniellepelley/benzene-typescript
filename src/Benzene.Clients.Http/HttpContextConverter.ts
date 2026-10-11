@@ -1,7 +1,7 @@
 import { ISerializer } from '@benzenejs/abstractions';
 import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
 import { IContextConverter } from '@benzenejs/abstractions-middleware';
-import { convertStatusCode } from '@benzenejs/clients';
+import { convertStatusCode, failedResultFromProblem, readProblemDocument } from '@benzenejs/clients';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageContext';
 
@@ -9,8 +9,9 @@ import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageCon
  * Converts an `IBenzeneClientContext<TRequest, TResponse>` (the outer, message-shaped client context)
  * to/from an `HttpSendMessageContext` (the inner, HTTP-shaped context): on the way out it serializes
  * the request message to a JSON body and builds the request with the configured verb/path/headers; on
- * the way back it reads the response body, deserializes it to `TResponse`, and maps the HTTP status
- * code to a `BenzeneResult` via `convertStatusCode`.
+ * the way back it maps the HTTP status code to a `BenzeneResult` via `convertStatusCode`: a success
+ * carries the body deserialized to `TResponse`; a failure whose body is `application/problem+json`
+ * carries the document's errors (field and code intact) and the document itself.
  * Port of Benzene.Client.Http.HttpContextConverter&lt;TRequest, TResponse&gt;.
  *
  * The .NET `response.StatusCode.Convert(response)` (`Benzene.Results.BenzeneResultExtensions.Convert`)
@@ -60,7 +61,27 @@ export class HttpContextConverter<TRequest, TResponse>
   ): Promise<void> {
     // A fetch `Response` body is single-read; read it once as text (C# `ReadAsStringAsync`).
     const body = await contextOut.response.text();
-    const response = this.serializer.deserialize<TResponse>(body) as TResponse;
-    contextIn.response = convertStatusCode<TResponse>(contextOut.response.status, response);
+    const httpStatus = contextOut.response.status;
+
+    if (contextOut.response.ok) {
+      const response = this.serializer.deserialize<TResponse>(body) as TResponse;
+      contextIn.response = convertStatusCode<TResponse>(httpStatus, response);
+      return;
+    }
+
+    // A failure: the status comes from the HTTP code (wire-contracts §4.1, reverse table). When the body
+    // is an `application/problem+json` document, the result's `errors` are rebuilt from it with `field`
+    // and `code` intact and the document is attached (core-concepts §12 "Error fidelity"). Any other
+    // failure body (an HTML error page, an empty body) is not parsed: deserializing it as TResponse would
+    // throw and hide the real status.
+    const mapped = convertStatusCode<TResponse>(httpStatus, undefined as TResponse);
+    contextIn.response = isProblemJson(contextOut.response.headers.get('content-type'))
+      ? failedResultFromProblem<TResponse>(mapped.status, readProblemDocument(body, this.serializer))
+      : mapped;
   }
+}
+
+/** Whether a `content-type` names `application/problem+json` (RFC 9457), parameters and case ignored. */
+function isProblemJson(contentType: string | null): boolean {
+  return contentType !== null && contentType.split(';')[0]!.trim().toLowerCase() === 'application/problem+json';
 }

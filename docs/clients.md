@@ -108,6 +108,27 @@ await this.sender.sendAsync<CreateOrderRequest, VoidResult>(
 
 Sending to a topic with no registered route throws `UnroutedTopicException` (which names the topic).
 
+### Reading a failure
+
+When the reply is a failure, the problem document it carries is not lost: the result's `errors` are the
+document's `errors`, each with its `message`, `field` (a JSON Pointer into your request) and `code`
+intact and in order, so a caller can map a validation failure back onto its own form fields. A
+document without an `errors` member gives one error carrying its `detail`. The received document
+itself is attached — `ProblemTypes.from(result)` (`@benzenejs/results`) returns it verbatim, so an
+application's own problem `type` (and any extension member) survives the hop:
+
+```ts
+const result = await this.sender.sendAsync<CreateOrderRequest, OrderCreated>('order:create', request);
+if (!result.isSuccessful) {
+  for (const error of result.errors) {
+    console.log(error.field, error.code, error.message); // '/items/0/sku' 'OutOfStock' '...'
+  }
+  const problem = ProblemTypes.from(result); // the document the service sent
+}
+```
+
+The HTTP client below does the same for an `application/problem+json` response.
+
 ## Wiring routes: `OutboundRoutingBuilder`
 
 `addOutboundRouting(services, configure)` (a free function taking the container first — the port's
@@ -244,7 +265,9 @@ out(builder, (senders) =>
 
 Then resolve an `IMessageSender<CreateOrder, OrderCreated>` and call `sendMessageAsync`; the response
 body is deserialized and the HTTP status code mapped onto an `IBenzeneResult` (200 → `ok`, 404 →
-`not-found`, 503 → `service-unavailable`, …). The three builder helpers (all free functions taking the
+`not-found`, 503 → `service-unavailable`, …). A failure is never deserialized as the response type: an
+`application/problem+json` body rebuilds the result's `errors` (field and code intact) and is attached
+to it, as [above](#reading-a-failure); any other failure body is left unread. The three builder helpers (all free functions taking the
 pipeline builder first):
 
 - `useHttpClientToSend<TReq, TRes>(app, verb, path, fetchFn?)` — converts the client pipeline into an
