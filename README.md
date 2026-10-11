@@ -973,6 +973,59 @@ next to its C# counterpart:
     `ContractDocumentConformanceTest` against `parseContractDocument`/`applyTopicScope`/
     `reachableSchemaNames`/`computeContractHash` directly (no live handler pipeline needed - unlike
     `envelope-cases`, these fixtures pin a pure document transform, not routed behavior).
+- **spec-0.2.0 (Phase 1) — where the port bends, and why.** The spec rulings are followed exactly; these
+  are the TypeScript shapes chosen for them where .NET (at the time of porting) had no counterpart or a
+  different one.
+  - **Version selection (core-concepts §2).** `IVersionSelector.select` may return `undefined` ("no handler
+    serves this version" → `not-found`) and takes an optional third argument, a `VersionSelectionOptions`
+    object (`defaultVersion`, `castableVersions`) — an options object rather than new positional
+    parameters, so a selector written against the old two-argument shape still type-checks. The default
+    `VersionSelector` is the spec rule; a tie between cast targets with no declared default among them goes
+    to the ordinally highest version (deterministic and documented, as the spec requires).
+    `HighestAvailableVersionSelector` keeps the pre-0.2.0 policy as an explicit opt-in
+    (`services.addSingleton(IVersionSelector, HighestAvailableVersionSelector)`). The C# lookup's
+    single-handler fast path (any version → the only handler) is **not** ported: it contradicts the rule.
+  - **Declaring a default handler.** `@message(topic, { version, isDefault: true })` (an option on the
+    decorator; `MessageHandlerDefinition.asDefault()` for hand-built definitions). `DefaultHandlerStartUpCheck`
+    (TS-only) rejects two defaults for one topic and logs a warning for a topic that is all-versioned with no
+    default.
+  - **Cast reachability — `IPayloadCastLookUp`.** The lookup lives in `@benzenejs/core-message-handlers`,
+    which the versioning package depends on, so it asks a small TS-only seam that `usePayloadVersionCasting`
+    registers. Reachability is keyed on the handler's **request type** (what the casting request mapper
+    casts to), so an unversioned handler is a cast target like any other.
+  - **One version header.** `MessageVersionHeaderNames`/`addMessageVersionHeaderNames(...names)` (an ordered
+    fallback list in .NET at the time) became `MessageVersionHeaderName`/`addMessageVersionHeaderName(name)`:
+    the spec made it one name that a configured name *replaces*, so a list-shaped API would invite the
+    fallback the spec forbids. `MessageGetter` joins the version into the topic (port of .NET's
+    `GetVersionedTopic`); unlike .NET the join never throws — erased generics mean diagnostics decorators
+    call `getTopic` with other pipelines' contexts, which simply carry no version.
+  - **Settlement (transport-bindings §1, obligation 8).** .NET carries the escalate/catch decision in
+    per-platform base classes (`SingleContextEscalatingApplicationBase`, `AzureFunctionBatchApplicationBase`)
+    this port does not have; the rule is written once as free functions in `Settlement.ts`
+    (`isSettledAsFailure`, `markUnmatchedTopic`/`isUnmatchedTopic`) that every binding calls. Every
+    one-way binding's options/config carries the same two knobs, `atMostOnce` and `ignoreUnmatchedTopics`
+    (`SettlementOptions`) — one spelling across ~20 bindings, beside the .NET-faithful
+    `raiseOnFailureStatus`/`catchExceptions`/`ackMode` knobs that remain. An unmatched topic is recognised by
+    an invisible, non-enumerable mark the router puts on its `not-found` result (never on the wire), so a
+    handler's own `not-found` stays an ordinary failure. Stream bindings default `ignoreUnmatchedTopics` to
+    `true` (in .NET an unrouted record is a missing result, which those bindings acknowledge); the spec allows
+    a stream to skip-and-continue and each options type says so. TS-only options types where .NET has none:
+    `KinesisOptions` (the port's per-record Kinesis adaptation settles by invocation; .NET's is a fan-in
+    checkpointer), `DynamoDbOptions`, `BlobStorageOptions`, `CosmosDbChangeFeedOptions`,
+    `BenzeneMessageLambdaOptions`.
+  - **The asynchronous envelope.** `useBenzeneMessage(aws, action, (o) => { o.invocationType = 'Event'; })`
+    — the AWS `InvocationType` spelling a Lambda developer already knows — selects the one-shot settlement;
+    the platform cannot tell the function, so it is configuration, not detection.
+  - **Envelope over HTTP.** A malformed envelope (the one carrier failure) is answered `400` with an
+    `application/problem+json` document rather than an envelope, since no envelope was processed; every
+    processed envelope is `200`. A restricted topic (`topicFilter`) is a processed `not-found` envelope shaped
+    like the router's own.
+  - **Health over HTTP.** `HttpStatusCodeResponseHandler` recognises a health report **by shape** (a boolean
+    `isHealthy` beside a `healthChecks` object) so an application's own alias route gets the 503 too.
+  - **`benzene:ping`** is answered by `MessageRouter` itself when no handler is registered for it (an
+    application's handler wins), so every pipeline serves the probe with no wiring.
+  - **gRPC `FieldViolation.field`.** Written dotted per wire §4.2; the reader converts it back to a JSON
+    Pointer (`fieldPathToJsonPointer`) so `BenzeneError.field` is one shape in-process whatever the transport.
 
 ## Multi-language interoperability
 
@@ -1740,8 +1793,8 @@ Ported (with tests):
   invokes ONE registered service's real handler with a caller-supplied payload (the direct-to-consumer test
   path) — `MeshDispatchMessageHandler` + `MeshDispatchGate` (refused in Production unless
   `MeshDispatchOptions.allowInProduction`), the `IMeshServiceDispatcher` transport seam with a shipped
-  `HttpMeshServiceDispatcher` (POSTs the `{ topic, headers, body }` envelope to `<origin>/benzene-message`
-  or an explicit `invokeUrl`), and `useMeshDispatch` wiring. Adaptations: `HttpClient` → injectable `fetch`
+  `HttpMeshServiceDispatcher` (POSTs the `{ topic, headers, body }` envelope to `<origin>/benzene/invoke`
+  or an explicit `invokeUrl`, and reads the outcome from the response envelope whatever the HTTP status), and `useMeshDispatch` wiring. Adaptations: `HttpClient` → injectable `fetch`
   (`@benzenejs/health-checks-http`'s pattern); `CancellationToken` → optional `AbortSignal`; the environment
   reader checks `NODE_ENV` first (then the .NET `ASPNETCORE_ENVIRONMENT`/`DOTNET_ENVIRONMENT` for migrating
   teams), unset = Production (the safe default). Also ported the concrete `RawStringMessage` class into

@@ -417,9 +417,9 @@ What it does:
   a `warning` does not flip it.
 - **Names** each result via `HealthCheckNamer` so keys stay unique (see
   [naming](#result-naming-and-deduplication)).
-- **Returns an `IBenzeneResult`** whose payload is a `HealthCheckResponse`, with status `ok`
-  (HTTP 200) when healthy or `serviceUnavailable` (HTTP 503 — but flagged *successful*, so the body
-  still renders the report) when not. See [HTTP status codes](#http-status-codes).
+- **Returns an `IBenzeneResult`** whose payload is a `HealthCheckResponse`, always with status `ok`:
+  the check *ran*, and the verdict is the report's `isHealthy`, not the result status. Over HTTP an
+  unhealthy report still becomes a `503`. See [HTTP status codes](#http-status-codes).
 
 ### The internal safety net
 
@@ -566,8 +566,10 @@ succeeded; an `ok`/`warning` check leaves it `true`.
 ### HTTP status codes
 
 Over an HTTP transport the response's HTTP status code reflects `isHealthy`, not just its body:
-`200` when healthy, `503 Service Unavailable` when not (mapped by the default status-code mapper,
-same as everywhere else in Benzene). This matters because most health-check consumers — a Kubernetes
+`200` when healthy, `503 Service Unavailable` when not. The result status is `ok` either way (the
+verdict lives in the report — spec-0.2.0); `HttpStatusCodeResponseHandler` reads `isHealthy` off a
+health report and answers `503` for `false`. Over the envelope (`benzene:healthcheck` through
+`/benzene/invoke` or a queue) the caller reads `isHealthy` from the payload. This matters because most health-check consumers — a Kubernetes
 HTTP probe, a load-balancer target-health check — only look at the status code, not the body, so a
 check whose body said `"isHealthy": false` but whose status code was still `200` would be silently
 treated as healthy. `HealthCheckProcessor` handles this for every `useHealthCheck` /

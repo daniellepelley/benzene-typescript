@@ -83,26 +83,56 @@ and `@benzenejs/abstractions` has changed since (`BenzeneError` moved into it an
 old abstractions against new dependents. The next bump to `0.1.0-beta.2` publishes all 129 as one
 consistent set and supersedes it under the `beta` tag.
 
-## A release-notes condition on the next publish
+## The release-notes condition — discharged in source, with one caveat
 
 The cross-port spec plan (benzene `work/spec-simplification-plan.md`, rule 3 and decision D16) makes
-settlement safe by default on every one-way binding: a failed result, a missing result or an
-uncaught error is redelivered, not acknowledged. This port does not do that yet — the per-binding
-breakdown in [`docs/capability-matrix.md`](../docs/capability-matrix.md#returned-failure-result-settlement--the-per-transport-breakdown)
-is the audited record (2026-10-11).
+settlement safe by default on every one-way binding. The port's Phase 1 settlement work (commit
+`4b8d0b6`) does that: a failure result, a missing result or an uncaught error is redelivered by default
+on every queue/topic/one-shot binding, every binding carries the same `atMostOnce` /
+`ignoreUnmatchedTopics` knobs, and the audited per-binding record is
+[`docs/capability-matrix.md`](../docs/capability-matrix.md#returned-failure-result-settlement--the-per-transport-breakdown).
+The documented carve-outs are deliberate and follow .NET: the **stream** bindings (Lambda Kinesis and MSK,
+the Functions Kafka and Event Hub triggers, the Kafka and Event Hub workers) acknowledge a *missing*
+result and default `ignoreUnmatchedTopics` on, and the Functions **Timer** trigger acknowledges a missing
+result; a failure result is redelivered on all of them.
 
-So whichever publish comes next — finishing `0.1.0-beta.1` or a `0.1.0-beta.2` — either follows the
-port's Phase 1 settlement work, or its release notes say, in these words or plainer, that **on these
-bindings a returned failure can be acknowledged and lost by default**:
+**The caveat:** the 25 packages already on npm at `0.1.0-beta.1` — including `@benzenejs/aws-lambda*` —
+are the 14 August build, with the old acknowledge-by-default behaviour. Finishing `0.1.0-beta.1` leaves
+those unsafe builds as the published Lambda bindings. So if the next publish *finishes* `0.1.0-beta.1`, its
+release notes must still say that **the `0.1.0-beta.1` AWS Lambda bindings can acknowledge and lose a
+returned failure by default** (SNS escalation off; EventBridge, S3, Kinesis and MSK with no knob; a
+missing result acknowledged) and point at `0.1.0-beta.2`. A `0.1.0-beta.2` publish of all packages
+discharges it outright.
 
-- the escalation knob defaults **off**: Lambda SNS (`raiseOnFailureStatus`), the Functions Service
-  Bus trigger, the Functions Kafka trigger;
-- **no knob** at all: Lambda EventBridge, S3, Kinesis and MSK, the Functions Event Hub and Timer
-  triggers, and the self-hosted Kafka worker;
-- a **missing result** is acknowledged on ten bindings where .NET redelivers it (listed in the
-  breakdown).
+## Migration notes for the next publish (spec-0.2.0 / Phase 1)
 
-Publishing either way is fine. Publishing without saying so is not.
+These are breaking changes in observable behaviour or public API since `0.1.0-beta.1`; the next release
+notes must list them.
+
+- **Version selection** (core-concepts §2). An unknown version is `not-found`, never the highest
+  registered version; a message with no version goes to the unversioned handler, else the one declared
+  `@message(topic, { version, isDefault: true })`, else `not-found`. Opt back into the old policy with
+  `HighestAvailableVersionSelector`. `IVersionSelector.select` returns `string | undefined` and takes an
+  options object; `MessageHandlerDefinitionLookUp` takes an optional `IPayloadCastLookUp`.
+- **One version header.** `MessageVersionHeaderNames` / `addMessageVersionHeaderNames(...names)` became
+  `MessageVersionHeaderName` / `addMessageVersionHeaderName(name)`; only `benzene-version` is read (no
+  `version` / `x-version` fallback), and HTTP transports now route on it.
+- **Envelope over HTTP.** A processed envelope is HTTP `200` whatever its `statusCode` (the outcome is in
+  the body); a malformed one is `400` problem+json. The default path moved to `/benzene/invoke`.
+- **Default paths** moved under `/benzene/`: `/benzene/spec-ui`, `/benzene/mesh-ui`, the mesh dispatcher's
+  `/benzene/invoke`.
+- **Health.** `HealthCheckProcessor` returns `ok` with the verdict in `isHealthy`; HTTP still answers
+  `503` for an unhealthy report.
+- **`benzene:spec`** answers `not-implemented` for an unsupported `type`/`format`; **`benzene:ping`** is
+  answered `ok` when no handler claims it.
+- **EventBridge** embedded headers travel under `benzene-headers` (was `_benzeneHeaders`).
+- **Validation** `errors[].field` is a JSON Pointer from every adapter (Yup and ajv changed shape); the
+  gRPC rich error details carry it dotted.
+- **Clients:** a response envelope without `isSuccessful` is unsuccessful; no client classifies from
+  `statusCode` text any more.
+- **Settlement** defaults flipped as above; the Lambda MSK handler now returns `batchItemFailures`;
+  `BenzeneMessageLambdaOptions.invocationType` distinguishes `Event` (one-way: a failure throws) from
+  `RequestResponse`.
 
 ## What is left to do
 

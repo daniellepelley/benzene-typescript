@@ -218,15 +218,15 @@ callback returns without throwing, governed entirely by the trigger's own `host.
 settings), independent of whatever your handler returns.
 
 What Benzene *does* give you is `ServiceBusOptions`, passed as the optional third argument to
-`useServiceBus`. Both flags default to `false`:
+`useServiceBus`. The defaults are at-least-once (the spec's settlement rule, and .NET's defaults):
 
 ```ts
 useServiceBus(
   app,
   (sb) => useMessageHandlers(sb, CreateOrderHandler),
   (options) => {
-    options.catchExceptions = true;    // default false
-    options.raiseOnFailureStatus = true; // default false
+    options.catchExceptions = true;       // default false
+    options.ignoreUnmatchedTopics = true; // default false — a shared topic subscription
   },
 );
 ```
@@ -235,10 +235,14 @@ useServiceBus(
   whole trigger invocation, so the Functions host's retry policy sees it (and abandons/redelivers per the
   entity's settings). Set it `true` to instead catch and log each message's exception so one bad message
   in a batch doesn't fail the others.
-- **`raiseOnFailureStatus`** — by default (`false`) a handler that returns a non-exception *failure result*
-  (e.g. `BenzeneResult.serviceUnavailable(...)`) is silently accepted and the message auto-completes. Set
-  it `true` to escalate a failure result into a thrown `ServiceBusMessageProcessingException`, so it's
-  treated the same as an unhandled exception for the host's retry purposes.
+- **`raiseOnFailureStatus`** — by default (`true`) a handler that returns a non-exception *failure result*
+  (e.g. `BenzeneResult.serviceUnavailable(...)`), or a pipeline that records **no result**, is escalated
+  into a thrown `ServiceBusMessageProcessingException`, so the message is redelivered like an unhandled
+  exception. Set it `false` to accept failure results.
+- **`ignoreUnmatchedTopics`** — by default (`false`) a message whose topic no handler serves is a
+  `not-found` failure and is redelivered (eventually dead-lettered). Set it `true` on a subscription that
+  sees other services' topics.
+- **`atMostOnce`** — acknowledge every message whatever the outcome; nothing is redelivered.
 
 Each message in the batch runs concurrently, in its own DI scope, on the `"service-bus"` transport (from
 `ServiceBusBatchApplication`).

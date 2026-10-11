@@ -86,7 +86,8 @@ import { message } from '@benzenejs/core-message-handlers';
 import { BenzeneResult } from '@benzenejs/results';
 import { CreateOrderV1, CreateOrderV2, OrderAcceptedV1, OrderAcceptedV2 } from '../contracts/order.js';
 
-@message('order:create', { version: 'v1', requestType: CreateOrderV1, responseType: OrderAcceptedV1 })
+// `isDefault: true` — a message that carries no version is routed here (producers that predate versioning).
+@message('order:create', { version: 'v1', isDefault: true, requestType: CreateOrderV1, responseType: OrderAcceptedV1 })
 export class CreateOrderV1Handler implements IMessageHandler<CreateOrderV1, OrderAcceptedV1> {
   handleAsync(request: CreateOrderV1): Promise<IBenzeneResultOf<OrderAcceptedV1>> {
     const accepted = new OrderAcceptedV1();
@@ -108,26 +109,26 @@ export class CreateOrderV2Handler implements IMessageHandler<CreateOrderV2, Orde
 }
 ```
 
-The router reads the incoming version with `IMessageVersionGetter<TContext>` (the default
-`HeaderMessageVersionGetter` scans `benzene-version` → `version` → `x-version`) and hands it to the
-`VersionSelector`. The selector returns the handler for the **exact** version if one exists, otherwise the
-**highest** registered version. So:
+The router reads the incoming version from the one `benzene-version` header (`HeaderMessageVersionGetter`;
+rename it with `addMessageVersionHeaderName` if you must) and picks the handler by the
+[spec's selection rule](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/core-concepts.md):
+the **exact** version if one is registered, otherwise a handler the version can be **cast** to (Mechanism
+B), otherwise `not-found`. So:
 
 - `benzene-version: v1` → the V1 handler.
 - `benzene-version: v2` → the V2 handler.
-- **no version** → the highest registered version (`v2`) — i.e. the newest handler is the topic's default.
+- `benzene-version: v9` → `not-found` naming the topic and `v9` — never another version's handler.
+- **no version** → the topic's **default** handler: an unversioned handler if there is one, otherwise the
+  one declared `isDefault: true` (V1 here). With neither, `not-found` — and the app logs a start-up
+  warning for the topic. Two handlers of one topic declared default is a start-up error.
 
 That's all the wiring: register both handlers with `useMessageHandlers(pipeline, CreateOrderV1Handler,
 CreateOrderV2Handler)` as usual. No caster config is involved.
 
-> **Port note — reading the routing version off `benzene-version`.** The router picks a versioned handler
-> from the topic's `version`, which the stock BenzeneMessage getter reads from a `version` header, whereas
-> the spec's canonical version key is `benzene-version`. To make **both** mechanisms read the one header,
-> the runnable example wraps the transport's `IMessageGetter` with a small `VersionAwareMessageGetter` that
-> stamps the routing version from the resolved `IMessageVersionGetter` (see
-> [`examples/versioning/src/versionAwareMessageGetter.ts`](../../examples/versioning/src/versionAwareMessageGetter.ts)).
-> Copy that seam if you want handler dispatch to key off `benzene-version` too; if your producers already
-> send a `version` header, you don't need it.
+> **Port note — the old "highest available" fallback.** Before spec-0.2.0 an unknown or missing version
+> went to the highest registered version. That is no longer the default; if an app still depends on it
+> while it migrates to declared defaults, opt in explicitly with
+> `services.addSingleton(IVersionSelector, HighestAvailableVersionSelector)` after `addBenzene`.
 
 ## Mechanism B — one handler, transparent casting (with chaining)
 
@@ -418,12 +419,15 @@ The full example test also covers the single-hop (V2), no-cast (V3), and no-vers
 - **The handler sees a versioned payload it doesn't understand.** Check `usePayloadVersionCasting` is
   called **after** `useMessageHandlers` (the casting decorators must be the last-registered mappers to
   win), and that the topic appears in `registerPayloadSchemaVersions`.
-- **Handler dispatch ignores `benzene-version`.** The stock BenzeneMessage getter reads the routing version
-  from a `version` header. Either send that header, or add the `VersionAwareMessageGetter` seam from the
-  example so dispatch reads `benzene-version`.
-- **A no-version message isn't behaving like a default.** With no `benzene-version`, Mechanism A routes to
-  the **highest** registered version, and Mechanism B **bypasses** casting (the body deserializes directly
-  as the handler's own type). Both treat "no version" as "the newest/canonical shape".
+- **A versioned message comes back `not-found`.** No handler is registered for that version and none is
+  reachable by casting. Benzene never silently serves another version: register a handler for it, or
+  declare a caster path to an existing one with `registerPayloadSchemaVersions`.
+- **A no-version message comes back `not-found`.** Every handler for the topic is versioned and none is
+  declared default (the start-up log warns about exactly this). Add `isDefault: true` to the version
+  unversioned producers should get. Under Mechanism B a no-version message **bypasses** casting (the body
+  deserializes directly as the default handler's own type).
+- **Only `version` / `x-version` headers arrive.** Benzene reads one header, `benzene-version`. Fix the
+  producer, or rename the header the app reads with `addMessageVersionHeaderName`.
 
 ## Further reading
 

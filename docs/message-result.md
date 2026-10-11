@@ -225,38 +225,49 @@ application/problem+json`, and a body whose `status` is `404` too — not the (e
 ### Async/event transports — settlement (ack/nack/retry)
 
 For queues, streams, and event triggers there is no synchronous HTTP status to return to a caller;
-instead the result's `isSuccessful` flag decides whether the message is **settled** (acknowledged) or
-**redelivered** (left for retry). Each transport's result-setter records the outcome on the context's
-`messageResult`, and the transport's application reads that back to decide how to settle. Because a
-redelivered message re-runs the handler, **any handler on a retrying transport must be idempotent** — see
-the [cookbooks](cookbooks/README.md).
+instead the result decides whether the message is **settled** (acknowledged) or **redelivered** (left for
+retry), per the spec's settlement rule ([transport-bindings §1, obligation 8](https://github.com/daniellepelley/Benzene/tree/main/docs/specification/transport-bindings.md)):
 
-Two representative examples, verified against the port's source:
+- `isSuccessful: true` — `ignored` included — is acknowledged;
+- `isSuccessful: false`, **no result at all**, or an uncaught error is **not** acknowledged — the
+  transport redelivers it, subject to its own redrive / dead-letter configuration;
+- a topic no handler serves is a `not-found` failure, so it is redelivered too — unless the binding's
+  `ignoreUnmatchedTopics` option treats it as `ignored` (for a subscriber on a shared bus).
 
-- **AWS SQS** (`@benzenejs/aws-lambda-sqs`) — batch-based. `SqsApplication` runs each record in the batch,
-  and reports every record whose handler returned `isSuccessful === false`, or that threw, back to Lambda
-  as an `SQSBatchResponse.batchItemFailures` entry — so SQS redrives (or dead-letters, per your redrive
-  policy) only those records; successfully-handled records in the same batch are not reprocessed.
-  Configurable via `SqsOptions.batchFailureMode` (default `SqsBatchFailureMode.PartialBatchFailure`;
-  `FailWholeBatch` throws `SqsBatchProcessingException` on any failure so SQS retries the whole batch).
-  Partial-batch mode requires `ReportBatchItemFailures` on the event source mapping's
-  `FunctionResponseTypes`.
+Each transport's result-setter records the result on the context's `messageResult`, and the transport's
+application reads it back. A middleware that ends a one-way pipeline must therefore **set a result**, or
+the message is redelivered. Because a redelivered message re-runs the handler, **any handler on a
+one-way transport must be idempotent** — see the [cookbooks](cookbooks/README.md).
+
+Every one-way binding's options carry the same two knobs: `atMostOnce` (acknowledge whatever the
+outcome — nothing is ever redelivered) and `ignoreUnmatchedTopics`. Stream bindings (Kafka, Event Hub,
+Kinesis) skip-and-continue a missing result and an unmatched topic by default — retaining such a record
+would replay its partition forever — and redeliver a failure result. The
+[capability matrix](capability-matrix.md#returned-failure-result-settlement--the-per-transport-breakdown)
+has every binding's defaults and unit of settlement.
+
+Two representative examples:
+
+- **AWS SQS** (`@benzenejs/aws-lambda-sqs`) — batch-based. `SqsApplication` runs each record in the batch
+  and reports every record that must be redelivered — failure result, no result, or a throw — back to
+  Lambda as an `SQSBatchResponse.batchItemFailures` entry, so SQS redrives (or dead-letters, per your
+  redrive policy) only those records. Configurable via `SqsOptions.batchFailureMode` (default
+  `SqsBatchFailureMode.PartialBatchFailure`; `FailWholeBatch` throws `SqsBatchProcessingException` on any
+  failure so SQS retries the whole batch). Partial-batch mode requires `ReportBatchItemFailures` on the
+  event source mapping's `FunctionResponseTypes`.
 - **AWS SNS** (`@benzenejs/aws-lambda-sns`) — one notification per invocation, no per-record ack API, so
-  settlement rides on whether the invocation throws. `SnsMessageMessageHandlerResultSetter` records the result;
-  `SnsApplication` then consults `SnsOptions`. Both flags are **opt-in, defaulting to `false`**:
-  - `raiseOnFailureStatus` (default `false`) — when `true`, a non-exception failure result is escalated
-    into a thrown `SnsMessageProcessingException`, so SNS's subscription retry/redrive applies (the same
-    at-least-once treatment a thrown exception gets). Left `false`, a failure result is accepted with no
-    retry — appropriate when a failure reflects a permanent business-logic failure retrying won't fix.
+  settlement rides on whether the invocation throws. `SnsApplication` consults `SnsOptions`:
+  - `raiseOnFailureStatus` (default `true`) — a failure result, or no result, is escalated into a thrown
+    `SnsMessageProcessingException`, so SNS's subscription retry/redrive applies.
   - `catchExceptions` (default `false`) — when `true`, an unhandled handler exception is caught and
-    logged and the invocation reports success (no retry) instead of cascading out. Left `false`, an
-    exception cascades so SNS's own retry policy applies.
+    logged and the invocation reports success (no retry) instead of cascading out.
+  - `atMostOnce` / `ignoreUnmatchedTopics` — as above.
 
-> **Port note.** The .NET `SnsOptions.RaiseOnFailureStatus` defaults to `true`; the TypeScript port keeps
-> both `SnsOptions` flags additive and `false` by default, preserving the pre-settlement behavior. Set
-> `raiseOnFailureStatus = true` explicitly if you want a failure result to trigger SNS retries. Other
-> queue/stream transports (`@benzenejs/azure-function-service-bus`, `@benzenejs/azure-function-kafka`, ...)
-> expose their own equivalent options — check each package's `*Options` class for its exact default.
+```ts
+useSns(aws, (sns) => useMessageHandlers(sns, OrderPlacedHandler), (options) => {
+  options.ignoreUnmatchedTopics = true; // this subscription also receives other services' topics
+});
+```
 
 ## See also
 

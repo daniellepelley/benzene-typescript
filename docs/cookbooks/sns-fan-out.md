@@ -173,8 +173,8 @@ A few things to know about `@benzenejs/aws-lambda-sns` from reading `SnsApplicat
 
 ### Configuring exception and retry behavior with `SnsOptions`
 
-`useSns` takes an optional third `configure` callback for `SnsOptions`. Both flags default to **`false`**
-in the TypeScript port (purely additive/opt-in):
+`useSns` takes an optional third `configure` callback for `SnsOptions`. The defaults are at-least-once —
+a failure result, a missing result and an exception all fail the invocation so SNS retries:
 
 ```ts
 import { useSns, useMessageHandlers } from '@benzenejs/aws-lambda';
@@ -183,11 +183,8 @@ useSns(
   app,
   (sns) => useMessageHandlers(sns, SendOrderConfirmationEmailHandler),
   (options) => {
-    // Catch handler exceptions instead of letting them fail the invocation (no SNS retry).
-    options.catchExceptions = true;
-    // Escalate a non-exception failure result into a thrown SnsMessageProcessingException, so SNS
-    // retries it the same way it would an unhandled exception.
-    options.raiseOnFailureStatus = true;
+    // This topic also carries other services' messages: acknowledge the ones no handler serves.
+    options.ignoreUnmatchedTopics = true;
   },
 );
 ```
@@ -197,15 +194,16 @@ The defaults, and what each flag does:
 - `catchExceptions` (default `false`) — with the default, an unhandled exception from a handler **cascades
   out of the invocation**: Lambda reports the invocation as failed, so SNS's own subscription retry policy
   applies. Set it `true` to catch-and-log instead (the invocation reports success to SNS — no retry).
-- `raiseOnFailureStatus` (default `false`) — with the default, a handler returning a non-exception failure
-  result (e.g. `BenzeneResult.serviceUnavailable(...)`) is **silently accepted** — no retry. Set it `true`
-  to escalate that failure result into a thrown `SnsMessageProcessingException`, so SNS retries the
-  notification.
+- `raiseOnFailureStatus` (default `true`) — a handler returning a non-exception failure result (e.g.
+  `BenzeneResult.serviceUnavailable(...)`), or a pipeline that recorded **no result**, is escalated into a
+  thrown `SnsMessageProcessingException`, so SNS retries the notification (at-least-once — make the handler
+  idempotent). Set it `false` to accept failure results.
+- `ignoreUnmatchedTopics` (default `false`) — a notification whose topic no handler serves is a `not-found`
+  failure and is retried. On a shared topic that also carries other services' messages, set it `true` to
+  acknowledge them instead.
+- `atMostOnce` (default `false`) — acknowledge every notification whatever the outcome: nothing is retried.
 
-> **Divergence from .NET.** The .NET `SnsOptions.RaiseOnFailureStatus` defaults to `true` (safe-by-default
-> redelivery). The TypeScript port defaults **both** flags to `false`, matching the original pre-1.0
-> behavior: an exception cascades, a failure result is accepted. If you want a returned failure result
-> redelivered, set `raiseOnFailureStatus = true` explicitly (and make the handler idempotent).
+These match .NET's `SnsOptions` defaults and the spec's settlement rule (transport-bindings §1, obligation 8).
 
 ### 3. Subscribe both Lambdas to the same SNS topic
 
@@ -313,11 +311,12 @@ logs. If you've set `SnsOptions.catchExceptions = true`, remember that means the
 logged (via a logger from `ILoggerFactory`) but never reaches SNS at all, so there's no retry — expect it
 in your logs rather than as a redelivery.
 
-### A failure result isn't triggering an SNS retry
+### Notifications for topics this function doesn't handle keep being retried
 
-In the TypeScript port, `SnsOptions.raiseOnFailureStatus` defaults to `false`, so a returned failure
-result is accepted silently (no retry). Set `raiseOnFailureStatus = true` if you want failure results
-escalated and redelivered — and make the handler idempotent, since SNS redelivery has no de-duplication.
+An unmatched topic is a `not-found` failure, and failures are retried by default. If the subscription
+legitimately carries topics this function doesn't handle, set `ignoreUnmatchedTopics = true` (or narrow
+the subscription with a filter policy). Make the handler idempotent either way: SNS redelivery has no
+de-duplication.
 
 ## Variations
 
@@ -332,9 +331,9 @@ reporting and DLQ support for that specific subscriber, at the cost of an extra 
 ### Swallow everything for a best-effort subscriber
 
 If a subscriber is genuinely optional (e.g. it only updates a non-critical dashboard) and you'd rather
-log-and-move-on than have SNS retry a misbehaving downstream, set `catchExceptions = true` and leave
-`raiseOnFailureStatus = false` (the default). Every failure — thrown or returned — is then logged and
-never propagates, so SNS always sees the invocation as successful.
+log-and-move-on than have SNS retry a misbehaving downstream, set `atMostOnce = true`. Every failure —
+thrown, returned, or no result — is then logged and acknowledged, so SNS always sees the invocation as
+successful.
 
 ## Further Reading
 
