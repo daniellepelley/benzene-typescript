@@ -6,7 +6,7 @@ import { IMessageSenderDefinition, IMessageSendersFinder } from '@benzenejs/abst
  * `Benzene.Core.MessageHandlers`' `DependencyMessageHandlersFinder`, mirroring inbound handler
  * discovery (core-concepts.md §9) for outbound registration (mesh.md §2.3): an application registers
  * an `IMessageSenderDefinition` instance per topic it may send (no handler, since nothing here
- * receives), and this finder collects them for `MeshDescriptorFactory.create`'s `consumes` projection.
+ * receives), and this finder collects them for the Contract Document's `sends` (contract-document.md §3).
  */
 export class DependencyMessageSendersFinder implements IMessageSendersFinder {
   constructor(private readonly messageSenderDefinitions: Iterable<IMessageSenderDefinition>) {}

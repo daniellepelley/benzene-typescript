@@ -20,9 +20,11 @@ import { MessageSenderDefinition } from '@benzenejs/core-messages';
  *   .register({ kind: 'send', topic: 'inventory:reserve', request: Reserve, response: Reservation });
  * ```
  *
- * One registry feeds both self-descriptions: the Contract Document's `events[]` and `sends[]`, and the mesh
- * descriptor's `produces` (events ∪ sends). Register it with {@link addMeshOutbound}, or hand it to a cloud
- * service's `withOutbound`.
+ * It feeds the Contract Document's `events[]` and `sends[]` - the document `benzene:spec` serves and the
+ * service registers with a collector, which makes the service a provider of each (mesh.md §4) - and the AsyncAPI
+ * document's send operations. Register it with {@link addMeshOutbound}, or hand it to a cloud service's
+ * `withOutbound`. Registering one, even empty, asserts the declarations are complete: without it, the document
+ * names `events` and `sends` in `degraded` (contract-document.md §1).
  *
  * Divergence from C#: `Register<TRequest[, TResponse]>` cannot tell an event from a send (both are one
  * record shape there); the port takes a declaration discriminated by `kind` instead (design §10.3). Declaring
@@ -86,8 +88,8 @@ function sameTypes(a: OutboundDeclaration, b: OutboundDeclaration): boolean {
 }
 
 /**
- * Registers `registry` as the container's {@link IMeshOutboundDefinitionLookUp}, so the spec builder
- * (`events`/`sends`) and the mesh descriptor (`produces`) both read it. C# has no equivalent free function
+ * Registers `registry` as the container's {@link IMeshOutboundDefinitionLookUp}, so the spec builder reads it
+ * (`events`/`sends`, and the AsyncAPI send operations). C# has no equivalent free function
  * (its registry is handed to `WithConsumes`); added so a host without the cloud-service builder can wire it.
  */
 export function addMeshOutbound(

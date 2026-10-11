@@ -1,53 +1,16 @@
-/** Port of Benzene.Mesh.Wire.Extensions (the UseMeshDescriptor half of the descriptor path). */
-import {
-  IMessageGetter,
-  IMessageHandlerResultSetter,
-} from '@benzenejs/abstractions-message-handlers';
+/** Port of Benzene.Mesh.Wire.Extensions (the trace-feed half; the descriptor half went with spec 3b). */
+import { IMessageGetter } from '@benzenejs/abstractions-message-handlers';
 import { IMiddlewarePipelineBuilder } from '@benzenejs/abstractions-middleware';
-import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
-import { BenzeneResult } from '@benzenejs/results';
 import { IMeshStatusReader } from './IMeshStatusReader';
 import { IMeshTraceExporter } from './IMeshTraceExporter';
-import { MeshServiceDescriptor } from './MeshServiceDescriptor';
 import { MeshServiceInfo } from './MeshServiceInfo';
 import { MeshSpan, Traceparent } from './MeshSpan';
-import { MeshTopics } from './MeshTopics';
 import { MeshTraceEvent } from './MeshTraceEvent';
-
-/**
- * Intercepts the reserved `benzene:mesh` topic (plus any `aliases`) and short-circuits with `descriptor`,
- * exactly as health-check interception works - by topic id alone, ignoring version. Not wiring this
- * in is the "descriptor endpoint withheld" deployment: every other mesh feed keeps working
- * (docs/specification/mesh.md §6). C# extension method -> free function.
- */
-export function useMeshDescriptor<TContext>(
-  app: IMiddlewarePipelineBuilder<TContext>,
-  descriptor: MeshServiceDescriptor,
-  ...aliases: string[]
-): IMiddlewarePipelineBuilder<TContext> {
-  const topics = new Set<string>(aliases);
-  topics.add(MeshTopics.descriptor);
-
-  return app.useFn('MeshDescriptor', async (context, next, resolver) => {
-    const messageGetter = resolver.getService(IMessageGetter);
-    const topic = messageGetter.getTopic(context);
-    if (topic?.id == null || !topics.has(topic.id)) {
-      await next();
-      return;
-    }
-
-    const resultSetter = resolver.getService(IMessageHandlerResultSetter);
-    await resultSetter.setResultAsync(
-      context,
-      new MessageHandlerResult(topic, MessageHandlerDefinition.empty(), BenzeneResult.ok(descriptor)),
-    );
-  });
-}
 
 /**
  * Observes every invocation that passes through it and hands the resulting `MeshTraceEvent` to
  * `exporter` after downstream middleware finishes (docs/specification/mesh.md §3). Wire it outermost
- * (before health-check/descriptor interception) so it sees every invocation. Because the message
+ * (before health-check interception) so it sees every invocation. Because the message
  * handler layer already converts a missing handler, a request conversion failure, and a handler
  * exception into results, every routed invocation produces a status - trace coverage is structural.
  *

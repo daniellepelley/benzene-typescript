@@ -110,7 +110,7 @@ describe('CloudServiceProbe', () => {
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) => {
         if (topic === 'benzene:healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
-        if (topic === 'benzene:mesh') return { status: 200, json: envelope('{"service":"orders","topics":[{"id":"order:create"}]}') };
+        if (topic === 'benzene:spec') return { status: 200, json: envelope('{"schemaDialect":"openapi-3.0","service":"orders","requests":[{"topic":"order:create","request":{}}],"events":[],"sends":[]}') };
         return { status: 404, json: '{}' };
       },
     });
@@ -200,7 +200,7 @@ describe('CloudServiceProbe', () => {
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) => {
         if (topic === 'benzene:healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
-        if (topic === 'benzene:mesh') return { status: 200, json: envelope('{"service":"orders","topics":[]}') };
+        if (topic === 'benzene:spec') return { status: 200, json: envelope('{"schemaDialect":"openapi-3.0","service":"orders","requests":[],"events":[],"sends":[]}') };
         return { status: 404, json: '{}' };
       },
     });
@@ -226,7 +226,7 @@ describe('CloudServiceProbe', () => {
       onSpec: () => ({ status: 200, json: '{"openapi":"3.0.0"}' }),
       onInvoke: (topic) => {
         if (topic === 'benzene:healthcheck') return { status: 200, json: envelope('{"isHealthy":true}') };
-        if (topic === 'benzene:mesh') return { status: 200, json: envelope('{"service":"orders","topics":[]}') };
+        if (topic === 'benzene:spec') return { status: 200, json: envelope('{"schemaDialect":"openapi-3.0","service":"orders","requests":[],"events":[],"sends":[]}') };
         return { status: 404, json: '{}' };
       },
     });

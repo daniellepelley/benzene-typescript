@@ -32,7 +32,13 @@ import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { HttpEndpointDefinition, IHttpEndpointDefinition } from '@benzenejs/http';
 import { addMeshOutbound, MeshOutboundRegistry } from '@benzenejs/mesh-wire';
 import { BenzeneResult } from '@benzenejs/results';
-import { ComponentNameCollisionError, SpecBuilder, SpecRequest, useSpec } from '@benzenejs/schema-openapi';
+import {
+  ComponentNameCollisionError,
+  setServiceDeploymentInfo,
+  SpecBuilder,
+  SpecRequest,
+  useSpec,
+} from '@benzenejs/schema-openapi';
 import { registerZodSchema, ZodJsonSchemaSource } from '@benzenejs/zod';
 import { addApiGateway, ApiGatewayApplication, ApiGatewayContext } from '@benzenejs/aws-lambda-api-gateway';
 import { asApiGatewayRequest } from '@benzenejs/aws-lambda-testing';
@@ -146,10 +152,19 @@ interface Registrations {
 
 type Entry = Record<string, unknown> & { topic: string; version?: string };
 
+/** A derivation case's identity and placement (contract-document.md §1), outside both hashes. */
+interface ServiceInfo {
+  service: string;
+  serviceVersion?: string;
+  versionScheme?: string;
+  placement?: { cloud: string; region?: string };
+}
+
 interface DerivationCase {
   name: string;
+  serviceInfo?: ServiceInfo;
   registrations: Registrations;
-  expected: {
+  expected: Record<string, unknown> & {
     requests: Entry[];
     events: Entry[];
     sends: Entry[];
@@ -223,10 +238,24 @@ function register(
   addMeshOutbound(container, outbound);
 }
 
-function deriveDocument(registrations: Registrations): Record<string, unknown> {
+/** The document-level fields a derivation case's `expected` may pin (everything but the members and hashes). */
+const identityFields = ['service', 'serviceVersion', 'versionScheme', 'placement'] as const;
+
+function deriveDocument(registrations: Registrations, serviceInfo?: ServiceInfo): Record<string, unknown> {
   const container = new DefaultBenzeneServiceContainer();
   addMessageHandlers(container);
-  setApplicationInfo(container, 'conformance', '', '');
+  // The identity the case declares, through the two seams an adopter uses: the application info (service,
+  // serviceVersion, versionScheme) and the deployment info (placement).
+  setApplicationInfo(
+    container,
+    serviceInfo?.service ?? 'conformance',
+    serviceInfo?.serviceVersion ?? '',
+    '',
+    serviceInfo?.versionScheme,
+  );
+  if (serviceInfo?.placement !== undefined) {
+    setServiceDeploymentInfo(container, { placement: serviceInfo.placement });
+  }
   container.addSingletonInstance(ITypeJsonSchemaSource, new ZodJsonSchemaSource());
   register(container, registrations, (name) => canonicalTypes[name]!);
   const resolver = container.createServiceResolverFactory().createScope();
@@ -275,8 +304,15 @@ describe('ContractDocumentProducerConformanceTest', () => {
   describe('derivationCases', () => {
     for (const derivationCase of fixture.derivationCases) {
       it(derivationCase.name, () => {
-        const document = deriveDocument(derivationCase.registrations);
+        const document = deriveDocument(derivationCase.registrations, derivationCase.serviceInfo);
         const expected = derivationCase.expected;
+
+        // The identity fields `expected` carries, subset-matched against the document (README, derivationCases).
+        const expectedIdentity = Object.fromEntries(
+          identityFields.filter((field) => field in expected).map((field) => [field, expected[field]]),
+        );
+        const identityMismatch = findSubsetMismatch(expectedIdentity, document);
+        expect(identityMismatch, identityMismatch ?? undefined).toBeNull();
 
         for (const member of ['requests', 'events', 'sends'] as const) {
           const actualEntries = (document[member] as Entry[]) ?? [];

@@ -2,7 +2,7 @@ import { Constructor, ServiceToken, serviceToken } from '@benzenejs/abstractions
 
 /**
  * Supplies a JSON Schema for a request/response type — the runtime source of a topic's payload schema in the
- * benzene spec / mesh descriptor.
+ * benzene Contract Document.
  *
  * TypeScript-only abstraction with no direct C# counterpart. `Benzene.Schema.OpenApi` derives a topic's
  * schema by *reflecting* over the CLR request/response type; TypeScript erases types, so there is nothing to

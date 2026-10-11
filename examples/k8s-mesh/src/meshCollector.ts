@@ -38,14 +38,14 @@ import {
   TraceView,
   TracesMessageHandler,
 } from '@benzenejs/mesh-collector';
-import { MeshHeartbeat, MeshIssueBatch, MeshServiceDescriptor, MeshTraceBatch } from '@benzenejs/mesh-wire';
+import { MeshHeartbeat, MeshIssueBatch, MeshRegistration, MeshTraceBatch } from '@benzenejs/mesh-wire';
 
 export function addMeshCollector(container: IBenzeneServiceContainer): void {
   container.addSingletonFactory(MeshCollectorStore, () => new MeshCollectorStore());
   container.addSingletonFactory(IMeshFleetReadModel, (resolver) => resolver.getService(MeshCollectorStore));
 
   // The ingest quartet — depend on the store directly.
-  registerHandler(container, MeshCollectorTopics.register, MeshServiceDescriptor, Ack, RegisterMessageHandler, (r) =>
+  registerHandler(container, MeshCollectorTopics.register, MeshRegistration, Ack, RegisterMessageHandler, (r) =>
     new RegisterMessageHandler(r.getService(MeshCollectorStore)),
   );
   registerHandler(container, MeshCollectorTopics.heartbeat, MeshHeartbeat, Ack, HeartbeatMessageHandler, (r) =>

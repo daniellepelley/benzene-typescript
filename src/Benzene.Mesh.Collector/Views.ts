@@ -8,7 +8,7 @@
  * `number`/`number | undefined` (the same choice `MeshTraceEvent.startedAt` makes in the wire port).
  * `List<T>`/`Dictionary<string,long>` -> arrays / `Record<string, number>`.
  */
-import { MeshIssue, MeshServiceDescriptor, MeshPlacement, MeshTraceEvent } from '@benzenejs/mesh-wire';
+import { MeshIssue, MeshPlacement, MeshRegistration, MeshTraceEvent } from '@benzenejs/mesh-wire';
 
 /** Health classification of a service, from its instances' latest heartbeats. */
 export const MeshHealth = {
@@ -54,14 +54,16 @@ export class FleetView {
 
 /**
  * One service's fleet row. `missingFeeds` names the feeds the collector has not received for it
- * ("descriptor", "health", "traces") - reduced is visible, never mistaken for empty.
+ * ("descriptor" - its registration, under the name the read models have always used - "health", "traces") -
+ * reduced is visible, never mistaken for empty. `topics` counts the registration's `requests`.
  */
 export class ServiceSummary {
   service = '';
 
   runtime?: string;
 
-  binding?: string;
+  /** The registration's `transports` (contract-document.md §1), which replaced the old descriptor `binding`. */
+  transports?: string[];
 
   placement: MeshPlacement = new MeshPlacement();
 
@@ -100,8 +102,8 @@ export interface TopicEdgeActivity {
 export type TopicActivity = Record<string, TopicEdgeActivity>;
 
 /**
- * One topic's catalog row: providers/consumers from the latest registered `ServiceDescriptor`'s `topics`/
- * `consumes` (mesh.md §4's 2026-08 revision - the DECLARED graph, unconditioned on traffic), stats from the
+ * One topic's catalog row: providers from the latest registrations' `events` ∪ `sends`, consumers from their
+ * `requests` (mesh.md §4 - the DECLARED graph, unconditioned on traffic), stats from the
  * trace feed. `providerActivity`/`consumerActivity` layer the §4.2 observed-only liveness signal on top,
  * additively - they never change who counts as a provider/consumer, only whether trace evidence has ever
  * confirmed a declared edge.
@@ -172,7 +174,7 @@ export class TraceSummary {
 }
 
 /**
- * The `benzene:mesh:query:service` response: the fleet row plus the registered descriptor and per-instance
+ * The `benzene:mesh:query:service` response: the fleet row plus the registered document and per-instance
  * heartbeat state. `hashMatches` is false when an instance runs a different contract than the collector
  * knows (a redeploy it hasn't re-learned), `undefined` when either side didn't supply a hash.
  */
@@ -181,7 +183,7 @@ export class ServiceView {
 
   runtime?: string;
 
-  binding?: string;
+  transports?: string[];
 
   placement: MeshPlacement = new MeshPlacement();
 
@@ -197,7 +199,11 @@ export class ServiceView {
 
   missingFeeds: string[] = [];
 
-  descriptor?: MeshServiceDescriptor;
+  /**
+   * The service's latest registration - its Contract Document (mesh.md §2), as received. Kept under the
+   * `descriptor` key the read model has always used, so readers keep working.
+   */
+  descriptor?: MeshRegistration;
 
   instances: InstanceView[] = [];
 
@@ -214,7 +220,11 @@ export class InstanceView {
   /** Epoch milliseconds (the port of C# `DateTimeOffset LastHeartbeat`). */
   lastHeartbeat = 0;
 
-  descriptorHash?: string;
+  /** The release the instance reported on its heartbeat (spec §5), when it declares one. */
+  serviceVersion?: string;
+
+  /** The `registrationHash` the instance's heartbeat carried. */
+  registrationHash?: string;
 
   hashMatches?: boolean;
 }

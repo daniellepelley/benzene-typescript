@@ -40,8 +40,8 @@ export type OutboundDeclaration = EventDeclaration | SendDeclaration;
  *
  * Divergence from C#: the lookup lives here rather than in `@benzenejs/mesh-wire` (where its implementation,
  * `MeshOutboundRegistry`, lives), because the spec builder in `@benzenejs/schema-openapi` reads it too and
- * self-description must not depend on the mesh. Both the Contract Document (`events`/`sends`) and the mesh
- * descriptor (`produces`, events ∪ sends) are fed from this one registration.
+ * self-description must not depend on the mesh. The Contract Document's `events`/`sends` - the document
+ * `benzene:spec` serves and a mesh-enabled service registers - are fed from this one registration.
  */
 export interface IMeshOutboundDefinitionLookUp {
   /** Every declaration, in registration order. */
@@ -49,7 +49,7 @@ export interface IMeshOutboundDefinitionLookUp {
 
   /**
    * Every declaration as a sender definition (`(topic, request, response)` — an event's message is its
-   * request, with no response): the shape the mesh descriptor's `produces` is projected from.
+   * request, with no response), for readers that want the sender-definition view of events ∪ sends.
    */
   getAllDefinitions(): IMessageSenderDefinition[];
 }

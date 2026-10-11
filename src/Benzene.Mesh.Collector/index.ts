@@ -4,7 +4,7 @@
  * `benzene:mesh:query:*` read models over an in-memory store.
  *
  * `MeshCollectorStore` is the in-memory push-collector plane (cumulative per-service/per-topic stats, latest
- * heartbeat per instance, registered descriptors, and a bounded ring of recent trace events);
+ * heartbeat per instance, registered Contract Documents, and a bounded ring of recent trace events);
  * `CompositeMeshFleetReadModel` is the backend-composed alternative (an `IMeshTraceSource` for flows + one
  * or more `IMeshUsageSource`s for stats). Both implement `IMeshFleetReadModel`, the swappable read seam the
  * five query handlers depend on. `CollectorUsageSource` bridges the store's cumulative stats into the

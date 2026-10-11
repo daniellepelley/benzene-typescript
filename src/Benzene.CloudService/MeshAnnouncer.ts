@@ -1,28 +1,22 @@
 /** Port of Benzene.CloudService.MeshAnnouncer. */
-import { IServiceResolver } from '@benzenejs/abstractions';
 import { Constants, HealthCheckProcessor } from '@benzenejs/health-checks';
 import { HealthCheckResponse, IHealthCheck } from '@benzenejs/health-checks-core';
-import {
-  MeshHeartbeat,
-  MeshJson,
-  MeshServiceDescriptor,
-  MeshServiceInfo,
-  MeshTopics,
-} from '@benzenejs/mesh-wire';
-import { CloudServiceDescriptorSource } from './CloudServiceDescriptorSource';
+import { MeshHeartbeat, MeshJson, MeshServiceInfo, MeshTopics } from '@benzenejs/mesh-wire';
+import { CloudServiceContractDocumentSource } from './CloudServiceContractDocumentSource';
 
 /** A `fetch`-like function — the port of C# `HttpClient.PostAsync` (`HttpClient` → injectable `fetch`). */
 export type AnnouncerFetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * The outbound announcement half of the mesh feeds (mesh.md §4–§5): registers the service's descriptor with
- * the collector on startup (retrying until the collector is up), then heartbeats on an interval, carrying the
- * aggregated health check response and the descriptor hash.
+ * The outbound announcement half of the mesh feeds (mesh.md §2, §4–§5): registers the service's Contract
+ * Document - byte for byte the document its `benzene:spec` topic serves - with the collector on startup
+ * (retrying until the collector is up), then heartbeats on an interval, carrying the aggregated health check
+ * response, the instance's `serviceVersion`, and the registered document's `registrationHash`.
  *
  * The §6 degradation rule applies throughout: every failure — collector down, send faulted, health check
- * throwing — is swallowed and retried on the next tick, and nothing here ever runs on, blocks, or fails an
- * invocation. Started at wire-up when the descriptor is available eagerly, otherwise by the first invocation
- * (see {@link MeshAnnouncer.ensureStarted}).
+ * throwing, the document not derivable — is swallowed and retried later, and nothing here ever runs on,
+ * blocks, or fails an invocation. Started at host boot by the cloud service's start-up hook once the host
+ * container is attached, otherwise by the first invocation (see {@link MeshAnnouncer.ensureStarted}).
  *
  * Divergences from C#: `HttpClient.PostAsync` → the global `fetch` (no new dependency), as `HttpMeshTraceExporter`
  * does. The `CancellationTokenSource` → an `AbortController` (aborts the in-flight send and wakes the delay).
@@ -44,7 +38,7 @@ export class MeshAnnouncer {
 
   constructor(
     private readonly info: MeshServiceInfo,
-    private readonly descriptorSource: CloudServiceDescriptorSource,
+    private readonly documentSource: CloudServiceContractDocumentSource,
     private readonly collectorEnvelopeUrl: string,
     healthChecks: IHealthCheck[],
     fetchFn?: AnnouncerFetch,
@@ -56,30 +50,33 @@ export class MeshAnnouncer {
   }
 
   /**
-   * Starts the announce loop exactly once; safe to call from every invocation. The `resolver` is used only if
-   * the descriptor still needs deriving from the registry (the lazy path); pass `undefined` when the
-   * descriptor was built eagerly.
+   * Starts the announce loop exactly once; safe to call from every invocation. Does nothing while the document
+   * source has no host container attached, or the document cannot be derived (the `contract-document` start-up
+   * check reports that) - the next call tries again rather than announcing an empty contract.
    */
-  ensureStarted(resolver?: IServiceResolver): void {
+  ensureStarted(): void {
     if (this.started) {
       return;
     }
 
-    const descriptor = resolver === undefined ? this.descriptorSource.tryGet() : this.descriptorSource.get(resolver);
-    if (descriptor === undefined) {
-      // No descriptor available yet (lazy path started without a resolver) — let the next invocation try
-      // again rather than announcing an empty contract.
+    let document: string | undefined;
+    try {
+      document = this.documentSource.tryGet();
+    } catch {
+      return; // never fail the invocation that happened to start us (spec §6)
+    }
+    if (document === undefined) {
       return;
     }
 
     this.started = true;
-    this.runPromise = this.runAsync(descriptor);
+    this.runPromise = this.runAsync(document, registrationHashOf(document));
   }
 
-  private async runAsync(descriptor: MeshServiceDescriptor): Promise<void> {
+  private async runAsync(document: string, registrationHash: string | undefined): Promise<void> {
     try {
       while (!this.stopping) {
-        if (await this.sendAsync(MeshTopics.register, MeshJson.serialize(descriptor))) {
+        if (await this.sendAsync(MeshTopics.register, document)) {
           break;
         }
         await this.delay(2000);
@@ -88,9 +85,10 @@ export class MeshAnnouncer {
       while (!this.stopping) {
         const heartbeat = new MeshHeartbeat();
         heartbeat.service = this.info.service;
+        heartbeat.serviceVersion = this.info.serviceVersion;
         heartbeat.instanceId = this.info.instanceId;
-        heartbeat.descriptorHash = descriptor.descriptorHash;
-        heartbeat.sentAt = Date.now();
+        heartbeat.registrationHash = registrationHash;
+        heartbeat.sentAt = new Date().toISOString();
         heartbeat.health = await this.getHealthAsync();
         await this.sendAsync(MeshTopics.heartbeat, MeshJson.serialize(heartbeat));
         await this.delay(this.heartbeatIntervalMs);
@@ -190,4 +188,14 @@ function envelopeSucceeded(body: string, fallback: boolean): boolean {
     // not JSON - not an envelope
   }
   return fallback;
+}
+
+/** The `registrationHash` the registered document carries (contract-document.md §6), echoed on every heartbeat. */
+function registrationHashOf(document: string): string | undefined {
+  try {
+    const parsed = JSON.parse(document) as { registrationHash?: unknown } | null;
+    return typeof parsed?.registrationHash === 'string' ? parsed.registrationHash : undefined;
+  } catch {
+    return undefined;
+  }
 }

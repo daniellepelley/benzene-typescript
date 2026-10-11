@@ -19,10 +19,10 @@ const MaxConcurrentTagReads = 8;
  * `AWSSDK.Lambda`/`IAmazonLambda` -> `@aws-sdk/client-lambda`'s `LambdaClient` + the v3 command pattern (the
  * C# test mocked the SDK client, so the port takes the client directly rather than adding a seam). IAM:
  * `lambda:ListFunctions`, `lambda:ListTags`, and `lambda:InvokeFunction` (for the later interrogation). An
- * optional `benzene:mesh-path` tag is carried into `sourceOptions` for a non-default descriptor path.
+ * optional `benzene:mesh-path` tag is carried into `sourceOptions` for a non-default self-description (spec) path.
  */
 export class AwsLambdaDiscoveryProvider implements IMeshDiscoveryProvider {
-  /** The tag whose value (when present) overrides the mesh descriptor path for a service. */
+  /** The tag whose value (when present) overrides the self-description (spec) path the mesh interrogates for a service. */
   static readonly MeshPathTag = 'benzene:mesh-path';
 
   constructor(private readonly lambda: LambdaClient) {}

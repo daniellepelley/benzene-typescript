@@ -22,7 +22,7 @@ import { IMessageHandler } from '@benzenejs/abstractions-message-handlers';
 import {
   MeshHeartbeat,
   MeshIssueBatch,
-  MeshServiceDescriptor,
+  MeshRegistration,
   MeshTopics,
   MeshTraceBatch,
 } from '@benzenejs/mesh-wire';
@@ -71,12 +71,17 @@ export const MeshCollectorTopics = {
   queryCorrelation: 'benzene:mesh:query:correlation',
 } as const;
 
-/** Ingests a service's descriptor (spec §4): re-registration replaces provider edges wholesale. */
-export class RegisterMessageHandler implements IMessageHandler<MeshServiceDescriptor, Ack> {
+/**
+ * Ingests a service's registration - its Contract Document (spec §2, §4): re-registration replaces its provider
+ * and consumer edges wholesale. Only `service` is required (a string; else `bad-request`): every other member may
+ * be absent, the document's dialect is not checked, and a `registrationHash` is trusted, never recomputed - a
+ * registration is never rejected for one.
+ */
+export class RegisterMessageHandler implements IMessageHandler<MeshRegistration, Ack> {
   constructor(private readonly store: MeshCollectorStore) {}
 
-  handleAsync(request: MeshServiceDescriptor): Promise<IBenzeneResultOf<Ack>> {
-    if (request.service === undefined || request.service.length === 0) {
+  handleAsync(request: MeshRegistration): Promise<IBenzeneResultOf<Ack>> {
+    if (request === null || typeof request !== 'object' || typeof request.service !== 'string' || request.service.length === 0) {
       return Promise.resolve(BenzeneResult.badRequest<Ack>('service is required'));
     }
     this.store.register(request);
@@ -135,7 +140,7 @@ export class FleetQueryMessageHandler implements IMessageHandler<FleetQuery, Fle
   }
 }
 
-/** One service: fleet row + descriptor + per-instance heartbeat state. */
+/** One service: fleet row + its registered document + per-instance heartbeat state. */
 export class ServiceQueryMessageHandler implements IMessageHandler<ServiceQuery, ServiceView> {
   constructor(private readonly readModel: IMeshFleetReadModel) {}
 
@@ -150,7 +155,7 @@ export class ServiceQueryMessageHandler implements IMessageHandler<ServiceQuery,
   }
 }
 
-/** One topic's catalog row: providers/consumers from the latest registered ServiceDescriptor's `produces`/`topics` (mesh.md §4). */
+/** One topic's catalog row: providers from the latest registrations' `events` ∪ `sends`, consumers from their `requests` (mesh.md §4). */
 export class TopicQueryMessageHandler implements IMessageHandler<TopicQuery, TopicSummary> {
   constructor(private readonly readModel: IMeshFleetReadModel) {}
 

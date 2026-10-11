@@ -5,12 +5,12 @@ import { getRegisteredJsonSchema } from './AjvSchemaRegistry';
 /**
  * An `ITypeJsonSchemaSource` backed by the registered JSON Schemas: for a request/response type, it returns
  * the schema registered for that type (or `undefined` when none is registered). This feeds a topic's
- * payload schema into the spec/mesh descriptor when a service validates with ajv — the runtime replacement
+ * payload schema into the Contract Document when a service validates with ajv — the runtime replacement
  * for .NET reflecting over the CLR type. Registered by `useAjvValidation`.
  *
  * Unlike the Zod adapter's source (which must convert a `ZodType` via `zodToJsonSchema`), the registered
  * schema is *already* a JSON Schema, so it is returned directly. The root `$schema` dialect marker is
- * stripped — these schemas embed as fragments inside a larger spec/descriptor document, not as standalone
+ * stripped — these schemas embed as fragments inside a larger Contract Document, not as standalone
  * documents (matching `zodToJsonSchema` and .NET's embedded `OpenApiSchema`, which carry none).
  */
 export class AjvJsonSchemaSource implements ITypeJsonSchemaSource {

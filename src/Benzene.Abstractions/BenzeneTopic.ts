@@ -2,7 +2,7 @@
 
 /**
  * The framework-owned reserved topic ids - Benzene's own endpoints, as opposed to the application's
- * topics (see `docs/specification/cloud-service-profile.md` and `docs/specification/mesh.md` §1).
+ * topics (see `docs/specification/cloud-service-profile.md` and `docs/specification/wire-contracts.md` §7).
  *
  * Every id here carries the {@link BenzeneTopic.prefix} marker, per the naming principle: **where
  * Benzene puts a name into a namespace it shares with someone else, that name is marked as
@@ -20,12 +20,15 @@
  * add-on and this root abstraction deliberately doesn't know about it. They carry the same prefix, so
  * {@link BenzeneTopic.isReserved} recognises them too.
  *
- * **No bare-id compatibility shim, deliberately.** Nothing in the port accepts `healthcheck` or `mesh`
+ * **No bare-id compatibility shim, deliberately.** Nothing in the port accepts `healthcheck` or `spec`
  * as an alias for the prefixed id. A shim would make this port *look* interoperable while leaving the
  * caller broken against .NET, Go and Python - the asymmetry the prefix exists to remove - and it buys
  * nothing, because every reserved topic is already an explicit argument
- * (`useHealthCheck(app, topic, checks)`, `useMeshDescriptor(app, descriptor, ...aliases)`): a
- * deployment that must answer a legacy bare id passes it as an alias at its own composition root.
+ * (`useHealthCheck(app, topic, checks)`, `useSpec(app, topic)`): a deployment that must answer a legacy
+ * bare id passes it at its own composition root.
+ *
+ * There is no `benzene:mesh` id any more (spec 3b): a service's self-description is its Contract Document at
+ * {@link BenzeneTopic.spec}, and that document is what it registers with a mesh collector.
  *
  * C# `static class` of `const string`s + statics -> a frozen object; the string VALUES are the
  * reserved wire topic ids (lowercase, case-sensitive on the wire per wire-contracts.md §3, though
@@ -38,7 +41,7 @@
  */
 const prefix = 'benzene:';
 
-/** The service's own contract document (Cloud Service Profile R5). */
+/** The service's own contract document (Cloud Service Profile R5) - also its mesh registration (R6). */
 const spec = 'benzene:spec';
 
 /** Example payloads a caller can use to exercise the service's topics. */
@@ -52,9 +55,6 @@ const liveness = 'benzene:liveness';
 
 /** Readiness: should this instance receive traffic? */
 const readiness = 'benzene:readiness';
-
-/** The mesh descriptor topic a meshed service intercepts (mesh spec §1, Profile R6). */
-const mesh = 'benzene:mesh';
 
 /** The transport reachability probe used by the queue/stream health checks. */
 const ping = 'benzene:ping';
@@ -71,7 +71,6 @@ const all: readonly string[] = Object.freeze([
   healthCheck,
   liveness,
   readiness,
-  mesh,
   ping,
 ]);
 
@@ -84,7 +83,6 @@ export const BenzeneTopic = {
   healthCheck,
   liveness,
   readiness,
-  mesh,
   ping,
 
   /**

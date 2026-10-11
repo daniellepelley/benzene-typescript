@@ -1,9 +1,9 @@
 /**
- * Port of Benzene.Test.Mesh.Wire.ExtensionsTest: drive a real BenzeneMessage pipeline and assert the
- * reserved `benzene:mesh` topic (plus aliases) short-circuits with the descriptor while every other topic falls
- * through (UseMeshDescriptor), and that the trace feed produces a `MeshTraceEvent` per invocation with
+ * Port of Benzene.Test.Mesh.Wire.ExtensionsTest: drive a real BenzeneMessage pipeline and assert that the
+ * trace feed produces a `MeshTraceEvent` per invocation with
  * W3C trace-context join semantics, ambient `MeshSpan` propagation, and full §6 degradation
- * (UseMeshTrace). Mockito's `Mock<IMeshTraceExporter>` maps to a small capturing/throwing fake.
+ * (UseMeshTrace). Mockito's `Mock<IMeshTraceExporter>` maps to a small capturing/throwing fake. (The
+ * UseMeshDescriptor cases went with the descriptor in spec 3b; a terminal that answers `ok` stands in for it.)
  */
 import { describe, expect, it } from 'vitest';
 import { BenzeneMessageContext, BenzeneMessageRequest } from '@benzenejs/core-messages';
@@ -16,15 +16,15 @@ import {
   BenzeneMessageApplication,
 } from '@benzenejs/core-message-handlers';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
+import { IMessageGetter, IMessageHandlerResultSetter } from '@benzenejs/abstractions-message-handlers';
+import { MessageHandlerDefinition, MessageHandlerResult } from '@benzenejs/core-message-handlers';
+import { BenzeneResult } from '@benzenejs/results';
 import {
   BenzeneMessageMeshStatusReader,
   IMeshTraceExporter,
-  MeshServiceDescriptor,
   MeshServiceInfo,
   MeshSpan,
-  MeshTopics,
   MeshTraceEvent,
-  useMeshDescriptor,
   useMeshTrace,
 } from '@benzenejs/mesh-wire';
 
@@ -53,15 +53,21 @@ function newPipeline(): {
   addBenzene(container);
   addBenzeneMessage(container);
   // Registers the default IMessageGetter/IMessageHandlerResultSetter mappers (the C# test's AddContextItems);
-  // useMeshDescriptor resolves both. Normally useMessageHandlers pulls these in, but this pipeline has none.
+  // the `ok` terminal resolves both. Normally useMessageHandlers pulls these in, but this pipeline has none.
   addContextItems(container);
   return { builder: new MiddlewarePipelineBuilder<BenzeneMessageContext>(container), container };
 }
 
-function descriptorFor(service: string): MeshServiceDescriptor {
-  const descriptor = new MeshServiceDescriptor();
-  descriptor.service = service;
-  return descriptor;
+const okTopic = 'orders:ping';
+
+/** A terminal that answers every invocation `ok` - something downstream that produces a result. */
+function useOkTerminal(builder: MiddlewarePipelineBuilder<BenzeneMessageContext>): void {
+  builder.useFn('OkTerminal', async (context, _next, resolver) => {
+    const topic = resolver.getService(IMessageGetter).getTopic(context)!;
+    await resolver
+      .getService(IMessageHandlerResultSetter)
+      .setResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.empty(), BenzeneResult.ok({})));
+  });
 }
 
 async function send(
@@ -79,40 +85,6 @@ async function send(
 }
 
 describe('MeshWireExtensionsTest', () => {
-  it('UseMeshDescriptor_MatchingTopic_ShortCircuitsWithTheDescriptor', async () => {
-    const { builder, container } = newPipeline();
-    useMeshDescriptor(builder, descriptorFor('orders-service'));
-
-    const response = await send(builder, container, MeshTopics.descriptor);
-
-    expect(response.statusCode).toBe(BenzeneResultStatus.ok);
-    expect(response.body).toContain('orders-service');
-  });
-
-  it('UseMeshDescriptor_AliasTopic_ShortCircuitsWithTheDescriptor', async () => {
-    const { builder, container } = newPipeline();
-    useMeshDescriptor(builder, descriptorFor('orders-service'), 'orders.mesh');
-
-    const response = await send(builder, container, 'orders.mesh');
-
-    expect(response.statusCode).toBe(BenzeneResultStatus.ok);
-    expect(response.body).toContain('orders-service');
-  });
-
-  it('UseMeshDescriptor_NonMatchingTopic_FallsThroughToNextMiddleware', async () => {
-    const { builder, container } = newPipeline();
-    let nextRan = false;
-    useMeshDescriptor(builder, descriptorFor('orders-service'));
-    builder.useFn('Terminal', (_context, next) => {
-      nextRan = true;
-      return next();
-    });
-
-    await send(builder, container, 'some-other-topic');
-
-    expect(nextRan).toBe(true);
-  });
-
   it('UseMeshTrace_NullExporter_IsAPassThrough', async () => {
     const { builder, container } = newPipeline();
     let nextRan = false;
@@ -131,13 +103,13 @@ describe('MeshWireExtensionsTest', () => {
     const { builder, container } = newPipeline();
     const exporter = new CapturingExporter();
     useMeshTrace(builder, new MeshServiceInfo('orders-service'), exporter, new BenzeneMessageMeshStatusReader());
-    useMeshDescriptor(builder, descriptorFor('orders-service'));
+    useOkTerminal(builder);
 
-    await send(builder, container, MeshTopics.descriptor);
+    await send(builder, container, okTopic);
 
     expect(exporter.events).toHaveLength(1);
     const exported = exporter.events[0]!;
-    expect(exported.topic).toBe(MeshTopics.descriptor);
+    expect(exported.topic).toBe(okTopic);
     expect(exported.service).toBe('orders-service');
     expect(exported.status).toBe(BenzeneResultStatus.ok);
     expect(exported.durationMs).toBeGreaterThanOrEqual(0);
@@ -203,9 +175,9 @@ describe('MeshWireExtensionsTest', () => {
     const { builder, container } = newPipeline();
     const exporter = new ThrowingExporter();
     useMeshTrace(builder, new MeshServiceInfo('orders-service'), exporter);
-    useMeshDescriptor(builder, descriptorFor('orders-service'));
+    useOkTerminal(builder);
 
-    const response = await send(builder, container, MeshTopics.descriptor);
+    const response = await send(builder, container, okTopic);
 
     expect(response.statusCode).toBe(BenzeneResultStatus.ok);
     expect(exporter.calls).toBe(1);
@@ -215,9 +187,9 @@ describe('MeshWireExtensionsTest', () => {
     const { builder, container } = newPipeline();
     const exporter = new CapturingExporter();
     useMeshTrace(builder, new MeshServiceInfo('orders-service'), exporter);
-    useMeshDescriptor(builder, descriptorFor('orders-service'));
+    useOkTerminal(builder);
 
-    await send(builder, container, MeshTopics.descriptor);
+    await send(builder, container, okTopic);
 
     expect(exporter.events[0]!.status).toBe('');
   });

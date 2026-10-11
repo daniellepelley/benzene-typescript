@@ -2,7 +2,7 @@ import type { Schema } from 'yup';
 
 /**
  * Converts a Yup schema to a JSON Schema object for use as a topic's request/response payload schema in the
- * benzene spec / mesh descriptor.
+ * benzene Contract Document.
  *
  * TypeScript-only file with no direct C# counterpart — the Yup counterpart of `Benzene.Zod`'s
  * `zodToJsonSchema`. TypeScript erases types, so the schema is derived from the runtime Yup schema the

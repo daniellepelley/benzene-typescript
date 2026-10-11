@@ -3,12 +3,12 @@ import { ITypeJsonSchemaSource } from './ITypeJsonSchemaSource';
 
 /**
  * A "bring your own schema" `ITypeJsonSchemaSource`: hand-authored JSON Schemas keyed by request/response
- * type. Register the schema a type should publish and it surfaces in the spec / mesh descriptor exactly like
+ * type. Register the schema a type should publish and it surfaces in the Contract Document exactly like
  * a validator-derived one — the runtime equivalent of .NET's `SuppliedSchemaCatalog` (`AddSuppliedSchemas`),
  * for services that don't validate with Zod/Joi/Yup or that want to override the derived schema (e.g. to
  * publish a curated contract, or a schema pulled from a wire schema registry's JSON entries).
  *
- * Compose it alongside the validator sources: a `ValidationMeshSchemaProvider` tries every registered source
+ * Compose it alongside the validator sources: the spec builder's `SchemaBuilder` tries every registered source
  * in turn, so a hand-authored schema and a validator-derived one coexist (registration order decides which
  * wins for a type both cover).
  */

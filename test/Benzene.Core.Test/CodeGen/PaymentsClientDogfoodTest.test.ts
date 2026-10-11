@@ -5,7 +5,7 @@
  * `@benzene-example/payments-client`'s `contracts/payments.spec.json`, migrated to the spec-0.3.0 shape -
  * see that example's README) - proving a Node consumer gets a typed, topic-scoped client for a .NET
  * service with no .NET SDK involved. Mirrors
- * `GeneratedClientRoundTripTest.test.ts`'s golden-file pattern for the mesh-descriptor input path,
+ * `GeneratedClientRoundTripTest.test.ts`'s golden-file pattern for a live service's served document,
  * applied here to the topic-scoped (`AtomicClientSdkBuilder`, contract-document.md §5.3) output shape.
  */
 import { createHash } from 'node:crypto';

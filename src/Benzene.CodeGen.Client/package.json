@@ -1,7 +1,7 @@
 {
   "name": "@benzenejs/codegen-client",
   "version": "0.1.0-beta.1",
-  "description": "TypeScript port of Benzene.CodeGen.Client (mesh ServiceDescriptor + Contract Document client generators)",
+  "description": "TypeScript port of Benzene.CodeGen.Client (Contract Document client generator)",
   "license": "MIT",
   "type": "commonjs",
   "main": "./dist/index.js",
@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@benzenejs/abstractions": "0.1.0-beta.1",
-    "@benzenejs/codegen-core": "0.1.0-beta.1",
-    "@benzenejs/mesh-wire": "0.1.0-beta.1"
+    "@benzenejs/codegen-core": "0.1.0-beta.1"
   },
   "files": [
     "dist"

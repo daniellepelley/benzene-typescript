@@ -29,7 +29,7 @@ export function useAjvValidation(builder: IMessageRouterBuilder): IMessageRouter
   builder.register((container) => {
     tryAddSingleton(container, IValidationStatusMapper, DefaultValidationStatusMapper);
     // Publish the registered JSON Schemas as a JSON-Schema source so the topic's payload schema reaches the
-    // spec / mesh descriptor (the runtime replacement for .NET reflecting over the CLR type), mirroring
+    // Contract Document (the runtime replacement for .NET reflecting over the CLR type), mirroring
     // useZodValidation.
     container.addSingletonInstance(ITypeJsonSchemaSource, new AjvJsonSchemaSource());
   });

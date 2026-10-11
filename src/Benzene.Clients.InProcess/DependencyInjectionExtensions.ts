@@ -56,7 +56,7 @@ export function addInProcessMessaging(
   // Reuses the same BenzeneMessage request/response plumbing addBenzeneMessage(HTTP/Lambda) relies on,
   // but deliberately skips addBenzeneMessage()'s ITransportInfo("benzene") registration: a service
   // that only dispatches in-process never exposes that wire endpoint, and advertising it anyway would
-  // misrepresent the service's transport surface to the mesh/descriptor.
+  // misrepresent the service's transport surface in its Contract Document (`transports`).
   addBenzeneMessageHandling(services);
 
   const builder = new InProcessMessagingBuilder(services);

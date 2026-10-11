@@ -28,7 +28,7 @@ export function useJoiValidation(builder: IMessageRouterBuilder): IMessageRouter
   builder.register((container) => {
     tryAddSingleton(container, IValidationStatusMapper, DefaultValidationStatusMapper);
     // Publish the registered Joi schemas as a JSON-Schema source so the topic's payload schema reaches the
-    // spec / mesh descriptor — the runtime replacement for .NET reflecting over the CLR type.
+    // Contract Document — the runtime replacement for .NET reflecting over the CLR type.
     container.addSingletonInstance(ITypeJsonSchemaSource, new JoiJsonSchemaSource());
   });
   return builder.add(new ValidationMiddlewareBuilder());

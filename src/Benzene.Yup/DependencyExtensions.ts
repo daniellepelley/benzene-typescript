@@ -28,7 +28,7 @@ export function useYupValidation(builder: IMessageRouterBuilder): IMessageRouter
   builder.register((container) => {
     tryAddSingleton(container, IValidationStatusMapper, DefaultValidationStatusMapper);
     // Publish the registered Yup schemas as a JSON-Schema source so the topic's payload schema reaches the
-    // spec / mesh descriptor — the runtime replacement for .NET reflecting over the CLR type.
+    // Contract Document — the runtime replacement for .NET reflecting over the CLR type.
     container.addSingletonInstance(ITypeJsonSchemaSource, new YupJsonSchemaSource());
   });
   return builder.add(new ValidationMiddlewareBuilder());

@@ -8,7 +8,7 @@ import { MeshServiceRegistry, MeshServiceRegistryEntry, MeshServiceStatus } from
 
 /**
  * Drives the real `@benzenejs/mesh-aggregator` against the runnable `@benzene-example/mesh-service` - a live
- * TypeScript Benzene HTTP service (Express + real handlers + a registry-derived spec), started on a real
+ * TypeScript Benzene HTTP service (Express + real handlers + a `useSpec`-derived Contract Document), started on a real
  * port and polled over the real global `fetch`. It proves the example service is genuinely
  * mesh-discoverable: the aggregator catalogs its topics and HTTP mappings from what the running service
  * self-describes, which is the same thing a .NET mesh aggregator would do (the spec/health endpoints are
@@ -38,54 +38,78 @@ describe('runnable TypeScript service in a mesh', () => {
       ]),
     );
 
-    // The live service is reachable and healthy, and advertises HTTP transport.
+    // The live service is reachable and healthy, and advertises the transport it is hosted on.
     expect(manifest.services).toHaveLength(1);
     expect(manifest.services[0]!.status).toBe(MeshServiceStatus.healthy);
-    expect(manifest.services[0]!.transports).toEqual(['http']);
+    expect(manifest.services[0]!.transports).toEqual(['express']);
 
-    // The topic catalog is derived from the running handlers: order:create (POST /orders) + order:get.
+    // The topic catalog is derived from the served Contract Document: the running handlers order:create
+    // (POST /orders) + order:get, and the declared send payments:capture, which this service produces.
     const catalog = JSON.parse((await store.tryReadAsync('topics.json'))!) as {
-      topics: { topic: string; consumers: { service: string; httpMappings: { method: string; path: string }[] }[] }[];
+      topics: {
+        topic: string;
+        consumers: { service: string; httpMappings: { method: string; path: string }[] }[];
+        producers: { service: string }[];
+      }[];
     };
     const topicIds = catalog.topics.map((t) => t.topic).sort();
-    expect(topicIds).toEqual(['order:create', 'order:get']);
+    expect(topicIds).toEqual(['order:create', 'order:get', 'payments:capture']);
+    const capture = catalog.topics.find((t) => t.topic === 'payments:capture')!;
+    expect(capture.producers.map((p) => p.service)).toEqual(['orders-ts']);
+    expect(capture.consumers).toEqual([]);
 
     const create = catalog.topics.find((t) => t.topic === 'order:create')!;
     expect(create.consumers[0]!.service).toBe('orders-ts');
-    expect(create.consumers[0]!.httpMappings).toContainEqual({ method: 'post', path: '/orders' });
+    expect(create.consumers[0]!.httpMappings).toContainEqual({ method: 'POST', path: '/orders' });
   });
 
-  it('the live service serves its normative ServiceDescriptor (mesh.md §2) with a per-port hash', async () => {
-    // The reserved descriptor path (mesh.md §2): the same self-derived, cross-language shape a .NET or Go
-    // service emits, here exposed over HTTP so it can be read live. Derived from the running registry.
-    const response = await fetch(`${service.url}/benzene/descriptor`);
+  it('the live service serves its Contract Document - the body it would register with a collector (mesh.md §2)', async () => {
+    // One self-description: the document `benzene:spec` serves is the register body (spec 3b). Derived from
+    // the running registry, the declared outbound, and the service's identity and placement.
+    const response = await fetch(`${service.url}/benzene/spec`);
     expect(response.status).toBe(200);
 
-    const descriptor = (await response.json()) as {
+    const document = (await response.json()) as {
+      schemaDialect: string;
       service: string;
+      serviceVersion: string;
+      versionScheme: string;
       runtime: string;
       placement: { cloud: string };
-      topics: { id: string; requestSchema?: unknown; responseSchema?: unknown }[];
-      produces: { id: string; requestSchema?: unknown; responseSchema?: unknown }[];
-      descriptorHash: string;
+      degraded?: string[];
+      requests: { topic: string; request?: unknown }[];
+      events: { topic: string }[];
+      sends: { topic: string; request?: unknown; response?: unknown }[];
+      components: { schemas: Record<string, unknown> };
+      contractHash: string;
+      registrationHash: string;
     };
 
-    expect(descriptor.service).toBe('orders');
-    expect(descriptor.runtime).toBe('node'); // this port's runtime identifier (mesh.md §2)
-    expect(descriptor.placement.cloud).toBe('self-hosted');
+    expect(document.schemaDialect).toBe('openapi-3.0');
+    expect(document.service).toBe('orders');
+    expect(document.serviceVersion).toBe('1.0.0');
+    expect(document.versionScheme).toBe('semver');
+    expect(document.runtime).toBe('typescript'); // this port's runtime identifier (contract-document.md §1)
+    expect(document.placement.cloud).toBe('self-hosted');
+    // Every member is determined: the handlers, and a complete (empty-events) outbound declaration.
+    expect(document.degraded).toBeUndefined();
 
-    // Topics are the running handlers' topics, sorted by id, each carrying its §2.1 payload schemas.
-    expect(descriptor.topics.map((t) => t.id)).toEqual(['order:create', 'order:get']);
-    const create = descriptor.topics.find((t) => t.id === 'order:create')!;
-    expect(create.requestSchema).toEqual({ type: 'object', properties: { customerId: { type: 'string' } } });
+    // requests are the running handlers' topics (the consumer side of the mesh graph), each with its schema.
+    expect(document.requests.map((r) => r.topic).sort()).toEqual(['order:create', 'order:get']);
+    expect(document.components.schemas['CreateOrder']).toEqual({
+      type: 'object',
+      properties: { customerId: { type: 'string' } },
+    });
 
-    // produces is the outbound registration (mesh.md §2.3): this is what would let a collector build the
-    // orders -> payments PROVIDER edge from the descriptor alone, before any message has ever flowed (§4).
-    expect(descriptor.produces.map((t) => t.id)).toEqual(['payments:capture']);
-    expect(descriptor.produces[0]!.responseSchema).toEqual({});
+    // sends is the declared outbound: what lets a collector draw the orders -> payments PROVIDER edge from the
+    // registration alone, before any message has ever flowed (mesh.md §4). A one-way send has no response.
+    expect(document.events).toEqual([]);
+    expect(document.sends.map((s) => s.topic)).toEqual(['payments:capture']);
+    expect('response' in document.sends[0]!).toBe(false);
 
-    // The §2.2 contract hash: "sha256:" + 64 lowercase hex chars.
-    expect(descriptor.descriptorHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    // Both hashes (contract-document.md §6): "sha256:" + 64 lowercase hex chars.
+    expect(document.contractHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(document.registrationHash).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 
   it('the live service actually handles a message (it is a real Benzene service, not a stub)', async () => {

@@ -4,7 +4,8 @@ import { Constructor, ServiceIdentifier, VoidResult } from '@benzenejs/abstracti
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { BenzeneMessageContext } from '@benzenejs/core-messages';
 import { IHealthCheck } from '@benzenejs/health-checks-core';
-import { IMeshTraceExporter, MeshOutboundRegistry, MeshPlacement, MeshServiceInfo } from '@benzenejs/mesh-wire';
+import { IMeshTraceExporter, MeshOutboundRegistry, MeshServiceInfo } from '@benzenejs/mesh-wire';
+import { ServicePlacement } from '@benzenejs/schema-openapi';
 import { CloudServicePaths } from './CloudServicePaths';
 import type { CloudServiceProfileReport } from './CloudServiceProfileReport';
 
@@ -15,23 +16,27 @@ import type { CloudServiceProfileReport } from './CloudServiceProfileReport';
  * are reflected honestly in the service's {@link CloudServiceProfileReport} rather than refused.
  */
 export interface ICloudServiceBuilder {
-  /** Sets the service version reported in the descriptor (participates in the contract hash). */
-  withServiceVersion(serviceVersion: string): ICloudServiceBuilder;
+  /**
+   * Sets the release this is: the Contract Document's `serviceVersion` (with `versionScheme` - `integer`,
+   * `semver` or `lexicographic` - when the version is orderable, service-versions.md §2), and the
+   * `serviceVersion` on heartbeats. Outside both hashes.
+   */
+  withServiceVersion(serviceVersion: string, versionScheme?: string): ICloudServiceBuilder;
 
-  /** Sets the instance id reported in the descriptor, traces, and heartbeats. Defaults to a generated per-process id. */
+  /** Sets the instance id reported on traces and heartbeats. Defaults to a generated per-process id. */
   withInstanceId(instanceId: string): ICloudServiceBuilder;
 
   /**
-   * Sets the placement reported in the descriptor. Per mesh.md §2, only set a region the platform actually
+   * Sets the Contract Document's `placement` (contract-document.md §1). Only set a region the platform actually
    * documents — never guess. When not set, placement defaults to `self-hosted`.
    */
   withPlacement(cloud: string, region?: string): ICloudServiceBuilder;
 
   /**
    * Sets the collector's envelope URL, enabling the outbound mesh feeds (profile R6): `benzene:mesh:register` on
-   * startup, `benzene:mesh:heartbeat`, and the `benzene:mesh:traces` feed. Without a collector the service still serves its
-   * descriptor on the reserved `benzene:mesh` topic, but the outbound feeds have nowhere to go and R6 is reported as
-   * missing.
+   * startup (its body the Contract Document `benzene:spec` serves), `benzene:mesh:heartbeat`, and the
+   * `benzene:mesh:traces` feed. Without a collector the service still answers `benzene:spec`, but the outbound
+   * feeds have nowhere to go and R6 is reported as missing.
    */
   withCollector(collectorEnvelopeUrl: string): ICloudServiceBuilder;
 
@@ -39,18 +44,20 @@ export interface ICloudServiceBuilder {
   withHealthChecks(...healthChecks: IHealthCheck[]): ICloudServiceBuilder;
 
   /**
-   * Registers the message handler types the service serves (profile R2). When given, the descriptor is
-   * derived eagerly at wire-up and mesh registration starts immediately; when omitted, handlers come from
-   * the container's existing registrations and the descriptor is derived on the first invocation instead.
+   * Registers the message handler types the service serves (profile R2), on both the HTTP and the envelope
+   * pipelines; when omitted, handlers come from the container's existing registrations. Either way the
+   * Contract Document - the `requests` it lists, and the registration - is derived from the host container.
    */
   withHandlers(...handlerTypes: Constructor<unknown>[]): ICloudServiceBuilder;
 
   /**
    * Declares what this service puts on the wire (contract-document.md §3.3): the events it publishes and the
    * sends it makes to topics other parties define, as a {@link MeshOutboundRegistry}. The declarations feed the
-   * Contract Document's `events[]`/`sends[]` and the mesh descriptor's `produces` (events ∪ sends) — a topic
-   * never declared is never a provider edge, however much traffic flows. May be called more than once; the
-   * declarations accumulate (a topic declared both as an event and a send throws).
+   * Contract Document's `events[]`/`sends[]`, which make this service a provider in the mesh graph (mesh.md §4)
+   * — a topic never declared is never a provider edge, however much traffic flows. May be called more than
+   * once; the declarations accumulate (a topic declared both as an event and a send throws). Calling it, even
+   * with an empty registry, asserts the declarations are complete; without it the document names `events` and
+   * `sends` in `degraded` (unknown, not "none").
    */
   withOutbound(outbound: MeshOutboundRegistry): ICloudServiceBuilder;
 
@@ -82,7 +89,7 @@ export interface ICloudServiceBuilder {
 
   /**
    * Adds custom middleware to the wire-envelope pipeline, inside the profile's own middleware (trace,
-   * health, descriptor) and before the message router. Custom middleware for the outer HTTP pipeline needs
+   * health) and before the message router. Custom middleware for the outer HTTP pipeline needs
    * no hook: add it to that pipeline before calling `useBenzeneCloudService`.
    */
   withMiddleware(configure: PipelineBuilderAction<BenzeneMessageContext>): ICloudServiceBuilder;
@@ -108,15 +115,16 @@ export interface ICloudServiceBuilder {
    * Runs `callback` with the wiring-time {@link CloudServiceProfileReport} once it has been evaluated, for
    * services (or tests) that want to inspect the self-assessment at wire-up without resolving it back out of
    * DI — e.g. logging a startup warning when the profile isn't fully met. The same report is also registered
-   * in DI and stamped on the descriptor (mesh.md §2's `profile` field); this is a convenience for the
-   * wire-up call site itself.
+   * in DI and stamped on the Contract Document (contract-document.md §1's `profile` field); this is a
+   * convenience for the wire-up call site itself.
    */
   withProfileReport(callback: (report: CloudServiceProfileReport) => void): ICloudServiceBuilder;
 
   /**
-   * Declines the mesh feeds entirely: no reserved `benzene:mesh` topic, no trace middleware, no registration or
-   * heartbeats. The service remains a working Benzene Core service and the profile report marks R6 and R8 as
-   * missing — use this for a deliberate opt-out, not as a substitute for simply not configuring a collector.
+   * Declines the mesh feeds entirely: no trace middleware, no registration or heartbeats (`benzene:spec` is still
+   * served - it is the R5 document). The service remains a working Benzene Core service and the profile report
+   * marks R6 and R8 as missing — use this for a deliberate opt-out, not as a substitute for simply not
+   * configuring a collector.
    */
   withoutMesh(): ICloudServiceBuilder;
 }
@@ -130,13 +138,16 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
   constructor(readonly serviceName: string) {}
 
   serviceVersion?: string;
+  versionScheme?: string;
   instanceId?: string;
-  placement?: MeshPlacement;
+  placement?: ServicePlacement;
   collectorEnvelopeUrl?: string;
   readonly healthChecks: IHealthCheck[] = [];
   handlerTypes?: Constructor<unknown>[];
-  /** The outbound declarations (`withOutbound`), feeding the spec's events/sends and the descriptor's produces. */
+  /** The outbound declarations (`withOutbound`), feeding the Contract Document's events/sends. */
   readonly outbound = new MeshOutboundRegistry();
+  /** True once `withOutbound`/`withProduces` was called: the declarations are then complete, even if empty. */
+  outboundDeclared = false;
   envelopeMiddleware?: PipelineBuilderAction<BenzeneMessageContext>;
   invokePath: string = CloudServicePaths.invoke;
   specPath: string = CloudServicePaths.spec;
@@ -153,18 +164,23 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
     );
   }
 
+  /** The identity stamped on traces and heartbeats. */
   buildServiceInfo(): MeshServiceInfo {
     return new MeshServiceInfo(
       this.serviceName,
       this.serviceVersion,
       this.instanceId ?? `${this.serviceName}-${randomUUID().replace(/-/g, '').slice(0, 4)}`,
-      'http',
-      this.placement,
     );
   }
 
-  withServiceVersion(serviceVersion: string): ICloudServiceBuilder {
+  /** The Contract Document's `placement`: the configured one, else `self-hosted`. */
+  buildPlacement(): ServicePlacement {
+    return this.placement ?? { cloud: 'self-hosted' };
+  }
+
+  withServiceVersion(serviceVersion: string, versionScheme?: string): ICloudServiceBuilder {
     this.serviceVersion = serviceVersion;
+    this.versionScheme = versionScheme;
     return this;
   }
 
@@ -174,10 +190,7 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
   }
 
   withPlacement(cloud: string, region?: string): ICloudServiceBuilder {
-    const placement = new MeshPlacement();
-    placement.cloud = cloud;
-    placement.region = region;
-    this.placement = placement;
+    this.placement = region === undefined || region === '' ? { cloud } : { cloud, region };
     return this;
   }
 
@@ -197,6 +210,7 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
   }
 
   withOutbound(outbound: MeshOutboundRegistry): ICloudServiceBuilder {
+    this.outboundDeclared = true;
     for (const declaration of outbound.getAllDeclarations()) {
       this.outbound.register(declaration);
     }
@@ -210,6 +224,7 @@ export class CloudServiceBuilder implements ICloudServiceBuilder {
     responseType: ServiceIdentifier<unknown> = VoidResult,
     version = '',
   ): ICloudServiceBuilder {
+    this.outboundDeclared = true;
     this.outbound.register({
       kind: 'send',
       topic,

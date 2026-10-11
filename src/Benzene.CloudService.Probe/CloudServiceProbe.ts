@@ -22,7 +22,8 @@ const MeshDescription = 'Mesh service-side feeds (observable half - see reason)'
 // service built on any Benzene version). `BenzeneTopic` in `@benzenejs/abstractions` is the in-process
 // source of truth for the same strings.
 const HealthcheckEnvelope = '{"topic":"benzene:healthcheck","headers":{},"body":"{}"}';
-const MeshEnvelope = '{"topic":"benzene:mesh","headers":{},"body":"{}"}';
+// R6's self-description: the R5 contract document on the reserved `benzene:spec` topic, over the envelope.
+const SpecEnvelope = '{"topic":"benzene:spec","headers":{},"body":"{}"}';
 
 interface HttpResult {
   reached: boolean;
@@ -34,13 +35,13 @@ interface HttpResult {
 interface ProbeOutcome {
   requirement: CloudServiceProbeRequirement;
   reached: boolean;
-  topics?: unknown[];
+  requests?: unknown[];
 }
 
 /**
  * Runs an external, black-box conformance probe against a live Benzene Cloud Service, asserting R1-R8's
- * observable surfaces from outside - health response shape, envelope round-trip, spec and descriptor
- * presence, default paths - over real HTTP, without relying on anything the service says about itself.
+ * observable surfaces from outside - health response shape, envelope round-trip, the spec over HTTP and on the
+ * `benzene:spec` topic, default paths - over real HTTP, without relying on anything the service says about itself.
  * Port of Benzene.CloudService.Probe.CloudServiceProbe (a static class -> a const object).
  */
 export const CloudServiceProbe = {
@@ -150,7 +151,9 @@ async function probeSpecAsync(
     `GET ${options.specPath} returned 200 with a non-empty JSON object body`, true);
 }
 
-// ---- R6 (observable half only): POST topic "benzene:mesh"; satisfied iff 200 envelope wraps a descriptor with a non-empty "service". ----
+// ---- R6 (observable half only): POST topic "benzene:spec"; satisfied iff the 200 envelope wraps the contract
+// document (a non-empty "service"). R6 keeps the self-description: the R5 document on the reserved topic, on every
+// transport, plus the three feeds (cloud-service-profile.md R6). ----
 async function probeMeshAsync(
   baseUrl: string,
   options: CloudServiceProbeOptions,
@@ -158,36 +161,36 @@ async function probeMeshAsync(
   signal: AbortSignal | undefined,
 ): Promise<ProbeOutcome> {
   const caveat =
-    'Registration (benzene:mesh:register) and heartbeat (benzene:mesh:heartbeat) delivery to a collector cannot be observed ' +
-    'by probing the service alone, so that half of R6 stays unverified even when the descriptor endpoint ' +
-    'itself checks out - a passing descriptor check does not imply the whole of R6.';
+    'Registration (benzene:mesh:register), heartbeat (benzene:mesh:heartbeat) and trace (benzene:mesh:traces) delivery ' +
+    'to a collector cannot be observed by probing the service alone, so that half of R6 stays unverified even when ' +
+    'the benzene:spec self-description checks out - a passing check does not imply the whole of R6.';
 
-  const r = await postAsync(baseUrl, options.invokePath, MeshEnvelope, options.sendTraceParentProbe, fetchFn, signal);
+  const r = await postAsync(baseUrl, options.invokePath, SpecEnvelope, options.sendTraceParentProbe, fetchFn, signal);
   if (!r.reached) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `POST ${options.invokePath} with topic 'benzene:mesh' did not reach the service: ${r.failureReason}. ${caveat}`, false);
+      `POST ${options.invokePath} with topic 'benzene:spec' did not reach the service: ${r.failureReason}. ${caveat}`, false);
   }
   if (r.status !== 200) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `POST ${options.invokePath} with topic 'benzene:mesh' returned ${r.status}, expected 200 (the reserved mesh topic does not appear to be served). ${caveat}`, true);
+      `POST ${options.invokePath} with topic 'benzene:spec' returned ${r.status}, expected 200 (the reserved spec topic does not appear to be served over the envelope). ${caveat}`, true);
   }
   const envelope = tryParseEnvelopeResponse(r.body);
   if (!envelope.ok) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response to the 'benzene:mesh' topic did not have the {statusCode, headers, body} envelope shape (wire-contracts.md §1.2): ${envelope.reason}. ${caveat}`, true);
+      `200 response to the 'benzene:spec' topic did not have the {statusCode, headers, body} envelope shape (wire-contracts.md §1.2): ${envelope.reason}. ${caveat}`, true);
   }
-  const descriptor = tryParseDescriptor(envelope.innerBody);
-  if (!descriptor.ok) {
+  const document = tryParseContractDocument(envelope.innerBody);
+  if (!document.ok) {
     return outcome('R6', MeshDescription, CloudServiceProbeVerdict.NotSatisfied,
-      `200 response to the 'benzene:mesh' topic did not parse as a descriptor with a non-empty 'service' field (mesh.md §2): ${descriptor.reason}. ${caveat}`, true);
+      `200 response to the 'benzene:spec' topic did not parse as a contract document with a non-empty 'service' field (contract-document.md §1): ${document.reason}. ${caveat}`, true);
   }
 
-  const topics = Array.isArray(descriptor.descriptor.topics) ? (descriptor.descriptor.topics as unknown[]) : undefined;
+  const requests = Array.isArray(document.document.requests) ? (document.document.requests as unknown[]) : undefined;
   return {
     requirement: new CloudServiceProbeRequirement('R6', MeshDescription, CloudServiceProbeVerdict.Satisfied,
-      `the reserved 'benzene:mesh' topic served a descriptor for service '${String(descriptor.descriptor.service)}' - the observable half of R6 checks out. ${caveat}`),
+      `the reserved 'benzene:spec' topic served the contract document for service '${String(document.document.service)}' over the envelope - the observable half of R6 checks out. ${caveat}`),
     reached: true,
-    topics,
+    requests,
   };
 }
 
@@ -199,22 +202,22 @@ function evaluateR1(health: ProbeOutcome, invoke: ProbeOutcome, spec: ProbeOutco
     ? new CloudServiceProbeRequirement('R1', description, CloudServiceProbeVerdict.Satisfied,
         'at least one probed surface responded over HTTP, which proves a hosted pipeline exists behind a transport binding - an in-process-only pipeline would have nothing for this probe to reach')
     : new CloudServiceProbeRequirement('R1', description, CloudServiceProbeVerdict.NotSatisfied,
-        'none of the health, invoke, spec, or mesh surfaces responded at all; no hosted pipeline was reachable at the configured base address');
+        'none of the health, invoke, spec, or benzene:spec surfaces responded at all; no hosted pipeline was reachable at the configured base address');
 }
 
-// ---- R2: inferential from R6's descriptor topics only. ----
+// ---- R2: inferential from the benzene:spec contract document's requests only. ----
 function evaluateR2(mesh: ProbeOutcome): CloudServiceProbeRequirement {
   const description = 'Message handlers via the registry';
   if (mesh.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) {
     return new CloudServiceProbeRequirement('R2', description, CloudServiceProbeVerdict.Inconclusive,
-      'no reachable mesh descriptor to read registered topics from, and the profile does not mandate a spec document format, so topic counts can\'t be read from the spec surface either - absence of evidence isn\'t evidence of absence');
+      'no contract document reachable on the benzene:spec topic to read registered requests from - absence of evidence isn\'t evidence of absence');
   }
-  if (mesh.topics !== undefined && mesh.topics.length > 0) {
+  if (mesh.requests !== undefined && mesh.requests.length > 0) {
     return new CloudServiceProbeRequirement('R2', description, CloudServiceProbeVerdict.Satisfied,
-      `the mesh descriptor lists ${mesh.topics.length} registered topic(s) (mesh.md §2), which can only be populated from the handler registry`);
+      `the contract document lists ${mesh.requests.length} request(s) (contract-document.md §2), which can only be populated from the handler registry`);
   }
   return new CloudServiceProbeRequirement('R2', description, CloudServiceProbeVerdict.Inconclusive,
-    'the mesh descriptor is reachable but lists no topics; a service can legitimately have zero handlers registered so far - absence of evidence isn\'t evidence of absence');
+    'the contract document is reachable but lists no requests; a service can legitimately have zero handlers registered so far - absence of evidence isn\'t evidence of absence');
 }
 
 // ---- R7: only assessable when the probe itself used the defaults. ----
@@ -235,7 +238,7 @@ function evaluateR7(
   if (health.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R3 (health)');
   if (invoke.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R4 (invoke)');
   if (spec.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R5 (spec)');
-  if (mesh.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R6 (mesh)');
+  if (mesh.requirement.verdict !== CloudServiceProbeVerdict.Satisfied) failing.push('R6 (benzene:spec)');
 
   if (failing.length === 0) {
     return new CloudServiceProbeRequirement('R7', description, CloudServiceProbeVerdict.Satisfied,
@@ -252,7 +255,7 @@ function evaluateR8(options: CloudServiceProbeOptions, invoke: ProbeOutcome, mes
     'trace context propagation cannot be verified by a single-service black-box HTTP probe; proving it ' +
     'requires either a second service to observe forwarded traceparent headers, or a mesh collector ' +
     'observing trace parentage as the additive, observed-only liveness/drift signal it feeds (never the ' +
-    'producer/consumer graph itself, which is declared from ServiceDescriptor alone - mesh.md §3-4, §4.2)';
+    'producer/consumer graph itself, which is declared from the registered contract document alone - mesh.md §3-4, §4.2)';
 
   if (!options.sendTraceParentProbe) {
     return new CloudServiceProbeRequirement('R8', description, CloudServiceProbeVerdict.Inconclusive, baseReason);
@@ -385,9 +388,9 @@ function tryParseEnvelopeResponse(raw: string | undefined):
   return { ok: true, innerBody: node.body };
 }
 
-/** Parses an envelope's inner body as a descriptor (mesh.md §2) and requires a non-empty "service" field. */
-function tryParseDescriptor(innerBody: string | undefined):
-  | { ok: true; descriptor: Record<string, unknown> }
+/** Parses an envelope's inner body as a contract document (contract-document.md §1) and requires a non-empty "service" field. */
+function tryParseContractDocument(innerBody: string | undefined):
+  | { ok: true; document: Record<string, unknown> }
   | { ok: false; reason: string } {
   if (innerBody === undefined || innerBody.trim() === '') {
     return { ok: false, reason: 'empty envelope body' };
@@ -402,7 +405,7 @@ function tryParseDescriptor(innerBody: string | undefined):
   if (typeof node.service !== 'string' || node.service === '') {
     return { ok: false, reason: "missing a non-empty string 'service' field" };
   }
-  return { ok: true, descriptor: node };
+  return { ok: true, document: node };
 }
 
 function errorMessage(ex: unknown): string {

@@ -3,12 +3,13 @@ import {
   CorrelationQueryMessageHandler,
   IssuesMessageHandler,
   MeshCollectorStore,
+  RegisterMessageHandler,
 } from '@benzenejs/mesh-collector';
 import {
+  MeshHeartbeat,
   MeshIssue,
   MeshIssueBatch,
-  MeshServiceDescriptor,
-  MeshTopicDescriptor,
+  MeshRegistration,
   MeshTraceEvent,
 } from '@benzenejs/mesh-wire';
 import { BenzeneResultStatus } from '@benzenejs/results';
@@ -16,8 +17,8 @@ import { BenzeneResultStatus } from '@benzenejs/results';
 /**
  * Port of test/Benzene.Mesh.Test/MeshCollectorStoreTest.cs. Store behaviors the conformance sequences
  * don't pin: the bounded ring window (eviction, with cumulative stats deliberately outliving it), the fleet
- * flow-list cap, the declared-graph/§4.2 observed-signal behaviors the mesh.md 2026-08 revision added, and
- * the correlation lookup. `DateTimeOffset` -> epoch-ms `number`; a null wire status -> `undefined` on
+ * flow-list cap, the declared-graph/§4.2 observed-signal behaviors (with the spec 3b register body - the
+ * Contract Document - and its unknown members), the heartbeat hash comparison, and the correlation lookup. `DateTimeOffset` -> epoch-ms `number`; a null wire status -> `undefined` on
  * `MeshTraceEvent.status`; `null` returns -> `undefined`.
  */
 function event(
@@ -40,21 +41,27 @@ function event(
 }
 
 /**
- * Builds a registrable `MeshServiceDescriptor`. Note what the two lists mean since the 2026-08 role
- * inversion: `handles` becomes `topics`, which makes the service those topics' CONSUMER, and `sends`
- * becomes `produces`, which makes it their PROVIDER.
+ * Builds a registration - a Contract Document carrying only what the graph reads (mesh.md §2): `handles`
+ * becomes `requests`, which makes the service those topics' CONSUMER; `sends` becomes `sends` and `events`
+ * becomes `events`, which both make it their PROVIDER. Every member is present, so every member is known.
  */
-function descriptor(service: string, handles: string[], sends: string[]): MeshServiceDescriptor {
-  const value = new MeshServiceDescriptor();
-  value.service = service;
-  value.topics = handles.map(topicDescriptor);
-  value.produces = sends.map(topicDescriptor);
-  return value;
+function registration(service: string, handles: string[], sends: string[], events: string[] = []): MeshRegistration {
+  return {
+    service,
+    requests: handles.map((topic) => ({ topic, request: {} })),
+    events: events.map((topic) => ({ topic, message: {} })),
+    sends: sends.map((topic) => ({ topic, request: {} })),
+  };
 }
 
-function topicDescriptor(id: string): MeshTopicDescriptor {
-  const value = new MeshTopicDescriptor();
-  value.id = id;
+function heartbeat(service: string, instanceId: string, registrationHash?: string, serviceVersion?: string): MeshHeartbeat {
+  const value = new MeshHeartbeat();
+  value.service = service;
+  value.instanceId = instanceId;
+  value.registrationHash = registrationHash;
+  value.serviceVersion = serviceVersion;
+  value.sentAt = new Date().toISOString();
+  value.health = { isHealthy: true, healthChecks: {} } as unknown as MeshHeartbeat['health'];
   return value;
 }
 
@@ -155,7 +162,7 @@ describe('MeshCollectorStore', () => {
     expect(fleet.traces[0].topic).toBe('topic'); // the flow's entry topic (earliest event's)
   });
 
-  // ---- declared producer/consumer graph (mesh.md §4, the 2026-08 revision) ----
+  // ---- declared producer/consumer graph (mesh.md §4) ----
 
   it('TraceParentage_NeverAdmitsAConsumerEdge_TheGraphIsDeclaredOnly', () => {
     // Same shape as the pre-revision test this replaces (a genuine caller/callee parentage, plus a
@@ -173,7 +180,7 @@ describe('MeshCollectorStore', () => {
 
     const inner = store.topic('inner', undefined);
     expect(inner).toBeDefined();
-    expect(inner!.consumers).toEqual([]); // no ServiceDescriptor ever declared it - trace parentage alone never does
+    expect(inner!.consumers).toEqual([]); // no registration ever declared it - trace parentage alone never does
     expect(inner!.providers).toEqual([]);
     expect(inner!.invocations).toBe(2); // stats still accrue (child + selfCall); only graph membership is unaffected
   });
@@ -182,8 +189,8 @@ describe('MeshCollectorStore', () => {
     // Spec §4: "A collector MUST report this graph in full for a service that has registered but never
     // sent or received a single message."
     const store = new MeshCollectorStore();
-    store.register(descriptor('payments', ['payments:capture'], []));
-    store.register(descriptor('orders', ['order:create'], ['payments:capture']));
+    store.register(registration('payments', ['payments:capture'], []));
+    store.register(registration('orders', ['order:create'], ['payments:capture']));
 
     // orders SENDS payments:capture, so it provides it; payments HANDLES it, so it consumes it.
     const capture = store.topic('payments:capture', undefined);
@@ -199,10 +206,10 @@ describe('MeshCollectorStore', () => {
 
   it('Reregistration_ReplacesBothProviderAndConsumerEdges', () => {
     const store = new MeshCollectorStore();
-    store.register(descriptor('payments', ['payments:capture'], []));
-    store.register(descriptor('orders', ['order:create'], ['payments:capture']));
+    store.register(registration('payments', ['payments:capture'], []));
+    store.register(registration('orders', ['order:create'], ['payments:capture']));
     // Redeploy: orders handles order:cancel instead, and stops producing payments:capture.
-    store.register(descriptor('orders', ['order:cancel'], []));
+    store.register(registration('orders', ['order:cancel'], []));
 
     expect(store.topic('order:create', undefined)!.consumers).toEqual([]);
     expect(store.topic('payments:capture', undefined)!.providers).toEqual([]);
@@ -212,8 +219,8 @@ describe('MeshCollectorStore', () => {
 
   it('ProviderActivity_TracksLastObservedAtPerDeclaredEdge_OnceTrafficArrives', () => {
     const store = new MeshCollectorStore();
-    store.register(descriptor('payments', ['payments:capture'], []));
-    store.register(descriptor('orders', ['order:create'], ['payments:capture']));
+    store.register(registration('payments', ['payments:capture'], []));
+    store.register(registration('orders', ['order:create'], ['payments:capture']));
 
     const provide = event('trace-1', 'span-1', 'payments', 'payments:capture', Date.now());
     const consume = event('trace-1', 'span-2', 'orders', 'order:create', Date.now() + 1);
@@ -237,7 +244,7 @@ describe('MeshCollectorStore', () => {
 
   it('ContractDrift_RegisteredConsumerHandlingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
     const store = new MeshCollectorStore();
-    store.register(descriptor('orders', ['order:create'], [])); // does NOT declare order:cancel
+    store.register(registration('orders', ['order:create'], [])); // does NOT declare order:cancel
 
     store.addEvents([event('trace-1', 'span-1', 'orders', 'order:cancel', Date.now())]);
 
@@ -253,8 +260,8 @@ describe('MeshCollectorStore', () => {
 
   it('ContractDrift_RegisteredProviderSendingAnUndeclaredTopic_IsFiledAsContractDrift', () => {
     const store = new MeshCollectorStore();
-    store.register(descriptor('payments', ['payments:capture'], []));
-    store.register(descriptor('orders', ['order:create'], [])); // does NOT declare payments:capture
+    store.register(registration('payments', ['payments:capture'], []));
+    store.register(registration('orders', ['order:create'], [])); // does NOT declare payments:capture
 
     const callerSpan = event('trace-1', 'span-1', 'orders', 'order:create', Date.now());
     const call = event('trace-1', 'span-2', 'payments', 'payments:capture', Date.now() + 1);
@@ -279,7 +286,7 @@ describe('MeshCollectorStore', () => {
 
   it('ContractDrift_MergesRepeatOccurrencesByFingerprint', () => {
     const store = new MeshCollectorStore();
-    store.register(descriptor('orders', ['order:create'], []));
+    store.register(registration('orders', ['order:create'], []));
 
     store.addEvents([event('trace-1', 'span-1', 'orders', 'order:cancel', 1_000)]);
     store.addEvents([event('trace-2', 'span-2', 'orders', 'order:cancel', 2_000)]);
@@ -289,6 +296,110 @@ describe('MeshCollectorStore', () => {
     expect(issues[0].count).toBe(2); // one occurrence per event, merged by the shared fingerprint
     expect(issues[0].firstSeen).toBe(1_000);
     expect(issues[0].lastSeen).toBe(2_000);
+  });
+
+  // ---- spec 3b: the register body is the Contract Document (mesh.md §2) ----
+
+  it('Register_APublishedEvent_MakesItsPublisherAProvider', () => {
+    const store = new MeshCollectorStore();
+    store.register(registration('orders', ['order:create'], [], ['order:placed']));
+    store.register(registration('shipping', ['order:placed'], []));
+
+    const placed = store.topic('order:placed', undefined)!;
+    expect(placed.providers).toEqual(['orders']);
+    expect(placed.consumers).toEqual(['shipping']);
+  });
+
+  it('Register_BenzeneEntries_AreIgnored', () => {
+    const store = new MeshCollectorStore();
+    store.register({
+      service: 'orders',
+      requests: [{ topic: 'order:create' }, { topic: 'benzene:spec' }],
+      sends: [{ topic: 'benzene:mesh:traces' }],
+    });
+
+    expect(store.topic('benzene:spec', undefined)).toBeUndefined();
+    expect(store.topic('benzene:mesh:traces', undefined)).toBeUndefined();
+    expect(store.fleet().services[0].topics).toBe(1);
+  });
+
+  it('RegisterHandler_OnlyServiceIsRequired_NoDialectCheck_NoHashCheck', async () => {
+    const store = new MeshCollectorStore();
+    const handler = new RegisterMessageHandler(store);
+
+    // A body with only `service` is accepted; so is one whose dialect is unknown and whose hash is fake.
+    expect((await handler.handleAsync({ service: 'orders' })).status).toBe(BenzeneResultStatus.ok);
+    const odd = { service: 'payments', schemaDialect: 'json-schema-2099', registrationHash: 'sha256:aaaa' };
+    expect((await handler.handleAsync(odd)).status).toBe(BenzeneResultStatus.ok);
+    expect((await handler.handleAsync({} as MeshRegistration)).status).toBe(BenzeneResultStatus.badRequest);
+    expect(store.fleet().services.map((x) => x.service)).toEqual(['orders', 'payments']);
+  });
+
+  it('UnknownMembers_ContributeNoEdges_AndRaiseNoUndeclaredDrift', () => {
+    // orders' requests are degraded and its events/sends absent: all three are unknown (mesh.md §2).
+    const store = new MeshCollectorStore();
+    store.register({ service: 'orders', degraded: ['requests'], requests: [{ topic: 'order:create' }] });
+    store.register(registration('payments', ['payments:capture'], []));
+
+    expect(store.topic('order:create', undefined)).toBeUndefined(); // a degraded list asserts nothing
+    const callerSpan = event('trace-1', 'span-1', 'orders', 'order:cancel', Date.now());
+    const call = event('trace-1', 'span-2', 'payments', 'payments:capture', Date.now() + 1);
+    call.parentSpanId = 'span-1';
+    store.addEvents([callerSpan, call]);
+
+    // orders handled a topic its unknown requests can't rule out, and sent on a topic its unknown events/sends
+    // can't rule out: neither is undeclared, so no contract-drift.
+    expect(store.fleet().issues).toHaveLength(0);
+  });
+
+  it('DegradedSends_StillLeaveKnownEventsDeclared_ButNoProviderDrift', () => {
+    const store = new MeshCollectorStore();
+    store.register({ ...registration('orders', ['order:create'], [], ['order:placed']), degraded: ['sends'] });
+
+    expect(store.topic('order:placed', undefined)!.providers).toEqual(['orders']);
+    const callerSpan = event('trace-1', 'span-1', 'orders', 'order:create', Date.now());
+    const call = event('trace-1', 'span-2', 'payments', 'payments:capture', Date.now() + 1);
+    call.parentSpanId = 'span-1';
+    store.addEvents([callerSpan, call]);
+
+    expect(store.fleet().issues.filter((x) => x.service === 'orders')).toHaveLength(0);
+  });
+
+  it('ReservedTopics_AreNeverUndeclaredEdges', () => {
+    // mesh.md §4.2: no document lists a benzene: topic, so traces of benzene:spec, benzene:healthcheck and the
+    // like - handled or sent by a registered service - never file contract-drift.
+    const store = new MeshCollectorStore();
+    store.register(registration('orders', ['order:create'], []));
+    store.register(registration('payments', ['payments:capture'], []));
+
+    const callerSpan = event('trace-1', 'span-1', 'orders', 'order:create', Date.now());
+    const call = event('trace-1', 'span-2', 'payments', 'benzene:spec', Date.now() + 1);
+    call.parentSpanId = 'span-1';
+    store.addEvents([
+      callerSpan,
+      call,
+      event('trace-2', 'span-3', 'orders', 'benzene:healthcheck', Date.now()),
+      event('trace-3', 'span-4', 'orders', 'BENZENE:SPEC', Date.now()),
+    ]);
+
+    expect(store.fleet().issues).toHaveLength(0);
+  });
+
+  it('Heartbeat_HashIsComparedWithTheCarriedRegistrationHash', () => {
+    const store = new MeshCollectorStore();
+    store.register({ ...registration('orders', ['order:create'], []), registrationHash: 'sha256:aaaa' });
+    store.heartbeat(heartbeat('orders', 'orders-1', 'sha256:aaaa', '1.4.2'));
+    store.heartbeat(heartbeat('orders', 'orders-2', 'sha256:bbbb'));
+    store.heartbeat(heartbeat('orders', 'orders-3'));
+
+    const instances = store.service('orders')!.instances;
+    expect(instances.map((x) => [x.instanceId, x.hashMatches])).toEqual([
+      ['orders-1', true],
+      ['orders-2', false],
+      ['orders-3', undefined], // no hash on the heartbeat: nothing to compare
+    ]);
+    expect(instances[0].serviceVersion).toBe('1.4.2');
+    expect(instances[0].registrationHash).toBe('sha256:aaaa');
   });
 
   // ---- correlation lookup (benzene:mesh:query:correlation) ----

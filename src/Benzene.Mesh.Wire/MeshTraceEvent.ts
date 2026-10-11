@@ -47,17 +47,25 @@ export class MeshTraceBatch {
 
 /**
  * The body of a `benzene:mesh:heartbeat` message (spec §5): the standard aggregate health response reused
- * as-is, wrapped with identity and the contract hash. `DateTimeOffset SentAt` -> epoch-ms `number`.
+ * as-is, wrapped with identity and the hash of the registered document:
+ * `{ service, serviceVersion?, instanceId, registrationHash, sentAt, health }`.
+ *
+ * `sentAt` is ISO-8601 on the wire, as the spec shows it (C# `DateTimeOffset SentAt` serializes the same way);
+ * a collector keys liveness off its own clock, never off this value.
  */
 export class MeshHeartbeat {
   service = '';
 
+  /** The instance's release (service-versions.md), omitted when it declares none. */
+  serviceVersion?: string;
+
   instanceId?: string;
 
-  descriptorHash?: string;
+  /** The `registrationHash` of the document this instance registered (contract-document.md §6). */
+  registrationHash?: string;
 
-  /** Epoch milliseconds (the port of C# `DateTimeOffset SentAt`). */
-  sentAt = 0;
+  /** ISO-8601 (the port of C# `DateTimeOffset SentAt`). */
+  sentAt = '';
 
   health?: HealthCheckResponse;
 }

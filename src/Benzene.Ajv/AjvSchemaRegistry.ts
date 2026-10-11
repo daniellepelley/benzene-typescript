@@ -15,7 +15,7 @@ import { Constructor } from '@benzenejs/abstractions';
  *
  * Each schema is compiled once (at registration) by a shared ajv instance into a reusable
  * {@link ValidateFunction}, the ajv analog of .NET's cached `Json.Schema.JsonSchema`. The raw schema is
- * kept alongside so {@link AjvJsonSchemaSource} can publish it to the spec/mesh descriptor unchanged.
+ * kept alongside so {@link AjvJsonSchemaSource} can publish it to the Contract Document unchanged.
  */
 
 // Shared ajv instance. `allErrors` reports every failing keyword (like the C# `OutputFormat.List`

@@ -26,7 +26,6 @@ describe('BenzeneTopic', () => {
     expect(BenzeneTopic.healthCheck).toBe('benzene:healthcheck');
     expect(BenzeneTopic.liveness).toBe('benzene:liveness');
     expect(BenzeneTopic.readiness).toBe('benzene:readiness');
-    expect(BenzeneTopic.mesh).toBe('benzene:mesh');
     expect(BenzeneTopic.ping).toBe('benzene:ping');
   });
 
@@ -43,8 +42,11 @@ describe('BenzeneTopic', () => {
   });
 
   it('isKnown is the narrower list test', () => {
-    expect(BenzeneTopic.isKnown('benzene:mesh')).toBe(true);
-    expect(BenzeneTopic.isKnown('BENZENE:MESH')).toBe(true);
+    expect(BenzeneTopic.isKnown('benzene:spec')).toBe(true);
+    expect(BenzeneTopic.isKnown('BENZENE:SPEC')).toBe(true);
+    // Spec 3b removed the mesh self-description topic: the self-description is benzene:spec.
+    expect(BenzeneTopic.isKnown('benzene:mesh')).toBe(false);
+    expect(BenzeneTopic.isReserved('benzene:mesh')).toBe(true);
     // Prefixed, so reserved - but not one of the ids this module declares.
     expect(BenzeneTopic.isKnown('benzene:mesh:register')).toBe(false);
     expect(BenzeneTopic.isReserved('benzene:mesh:register')).toBe(true);
@@ -69,8 +71,8 @@ describe('reserved topic ids across the port', () => {
     expect(SchemaConstants.DefaultSpecTopic).toBe('benzene:spec');
   });
 
-  it('binds the profile R6 mesh feed ids (mesh.md §§1/4)', () => {
-    expect(MeshTopics.descriptor).toBe('benzene:mesh');
+  it('binds the profile R6 mesh feed ids (mesh.md §4)', () => {
+    expect(Object.values(MeshTopics)).not.toContain('benzene:mesh');
     expect(MeshTopics.register).toBe('benzene:mesh:register');
     expect(MeshTopics.heartbeat).toBe('benzene:mesh:heartbeat');
     expect(MeshTopics.traces).toBe('benzene:mesh:traces');

@@ -7,11 +7,11 @@
  *
  * The two sources cover different, non-overlapping slices of the fleet, and each is fetched in isolation (a
  * throwing source degrades its own slice to empty, never blanks the whole view - the aggregator's
- * fetch-isolation rule): topics + stats come from the usage feed (no descriptor, and no duration for the
+ * fetch-isolation rule): topics + stats come from the usage feed (no registration, and no duration for the
  * shipped adapters, so those dimensions are marked absent per topic row); recent flows and the
  * anonymous-but-live service list come from the trace source (name-only rows with their stat dimensions
  * marked absent). A single service's detail and a single topic's catalog row return `undefined` (no
- * descriptor feed on this plane).
+ * registration feed on this plane).
  *
  * Divergences from the C# original:
  * - `MeshUsageWindow` is NOT threaded to the usage sources: it is one of the five types
@@ -66,7 +66,7 @@ export class CompositeMeshFleetReadModel implements IMeshFleetReadModel {
     return this.traceSource.getCorrelationAsync(correlationId, range, cancellationToken);
   }
 
-  // No descriptor feed on this plane, so neither a single service nor a single topic can be answered.
+  // No registration feed on this plane, so neither a single service nor a single topic can be answered.
   serviceAsync(_name: string, _range?: MeshTimeRange, _cancellationToken?: AbortSignal): Promise<ServiceView | undefined> {
     return Promise.resolve(undefined);
   }
@@ -235,7 +235,7 @@ function topicSummaryFromUsage(key: { topic: string; version: string }, group: M
   summary.avgDurationMs = durationSamples > 0 ? weightedDuration / durationSamples : 0;
   summary.statusCounts = statusCounts;
 
-  // Providers come from a descriptor feed this plane doesn't have; duration is absent unless a usage source
+  // Providers come from a registration feed this plane doesn't have; duration is absent unless a usage source
   // measured it. Mark both so the UI renders "—", not a fabricated zero.
   summary.missingFeeds.push('descriptor');
   if (durationSamples === 0) {

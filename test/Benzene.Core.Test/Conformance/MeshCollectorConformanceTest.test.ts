@@ -1,9 +1,10 @@
 /**
  * Runs docs/specification/conformance/mesh-collector-cases.json AND mesh-issue-cases.json against
  * the TypeScript port's spec collector (`@benzenejs/mesh-collector`) - ingest/validation, the declared producer/consumer graph
- * (mesh.md §4, the 2026-08 revision: "the graph MUST be built from the latest registered
- * ServiceDescriptor alone"), heartbeat-driven health/hash-mismatch, and re-registration replacing both
- * provider and consumer edges wholesale.
+ * (mesh.md §4: "the graph MUST be built from the latest registration alone" - the registered Contract
+ * Document's `requests` for consumers, `events` ∪ `sends` for providers), heartbeat-driven health/hash-mismatch,
+ * and re-registration replacing both provider and consumer edges wholesale. `mesh-service-version-cases.json`
+ * is not run: this collector keys by `service` alone (see `ConformanceCoverageTest`'s opt-out list).
  *
  * Each case's `steps` run in order against ONE fresh collector (a real `BenzeneMessageApplication`
  * with the collector's nine handlers wired on their reserved topics, mirroring

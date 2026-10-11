@@ -1,5 +1,5 @@
 /** Port of Benzene.CloudService.CloudServiceProfileReport (and CloudServiceRequirement). */
-import { MeshProfile } from '@benzenejs/mesh-wire';
+import { ServiceProfile } from '@benzenejs/schema-openapi';
 import type { CloudServiceBuilder } from './CloudServiceBuilder';
 
 /** One requirement of the Cloud Service Profile (docs/specification/cloud-service-profile.md §2), as self-assessed at wire-up. */
@@ -19,16 +19,16 @@ export class CloudServiceRequirement {
 /**
  * The wiring-time self-assessment of a service against the Cloud Service Profile
  * (docs/specification/cloud-service-profile.md). Produced by `useBenzeneCloudService` from what was
- * actually wired — defaults kept, surfaces declined, paths relocated — and carried on the service's
- * descriptor (mesh.md §2's `profile` field) so any tool that can reach the reserved `benzene:mesh` topic can ask
- * a running service whether it claims the profile.
+ * actually wired — defaults kept, surfaces declined, paths relocated — and carried on the service's Contract
+ * Document (contract-document.md §1's `profile` field) so any tool that can reach the reserved `benzene:spec`
+ * topic (or a collector it registered with) can ask a running service whether it claims the profile.
  *
  * This is a self-assessment of provisioning, not a runtime probe: it reflects what the builder wired, and
  * runtime degradation (an unreachable collector, a failing check) never changes it — per the profile's §4,
  * runtime degradation is not a conformance failure.
  */
 export class CloudServiceProfileReport {
-  /** The profile name carried on the wire (mesh.md §2 `profile.name`). */
+  /** The profile name carried on the wire (contract-document.md §1 `profile.name`). */
   static readonly profileName = 'cloud-service';
 
   // Public (not C#'s private) so the report can be registered as its own class token in DI, as the C#
@@ -48,13 +48,12 @@ export class CloudServiceProfileReport {
     return this.requirements.every((x) => x.satisfied);
   }
 
-  /** The wire shape for the descriptor's `profile` field. */
-  toMeshProfile(): MeshProfile {
+  /** The wire shape for the Contract Document's `profile` field (contract-document.md §1). */
+  toProfile(): ServiceProfile {
     const missing = this.missing;
-    const profile = new MeshProfile();
-    profile.name = CloudServiceProfileReport.profileName;
-    profile.missing = missing.length === 0 ? undefined : missing;
-    return profile;
+    return missing.length === 0
+      ? { name: CloudServiceProfileReport.profileName }
+      : { name: CloudServiceProfileReport.profileName, missing };
   }
 
   static evaluate(builder: CloudServiceBuilder): CloudServiceProfileReport {
@@ -74,7 +73,7 @@ export class CloudServiceProfileReport {
         true,
         builder.handlerTypes !== undefined
           ? `${builder.handlerTypes.length} handler type(s) registered explicitly`
-          : "handlers taken from the container's registrations; the descriptor's topics are the runtime truth",
+          : "handlers taken from the container's registrations; the Contract Document's requests are the runtime truth",
       ),
       new CloudServiceRequirement(
         'R3',
@@ -84,15 +83,17 @@ export class CloudServiceProfileReport {
       ),
       new CloudServiceRequirement('R4', 'Wire-envelope invocability', true),
       new CloudServiceRequirement('R5', 'Derived spec', true),
+      // R6 (spec 3b): benzene:spec answered on every transport (always wired here), plus three feeds - the
+      // registration (the R5 document), heartbeats and traces - which need a collector to go to.
       new CloudServiceRequirement(
         'R6',
-        'Mesh service-side feeds',
+        'Mesh service-side feeds (benzene:spec, registration, heartbeats, traces)',
         mesh && collector,
         !mesh
-          ? 'mesh declined via withoutMesh()'
+          ? 'mesh declined via withoutMesh(): benzene:spec is still served, but no registration, heartbeat or trace feed'
           : !collector
-            ? 'no collector configured: register/heartbeat/trace feeds have no destination'
-            : undefined,
+            ? 'no collector configured: benzene:spec is served, but the registration/heartbeat/trace feeds have no destination'
+            : 'benzene:spec served on the HTTP and envelope surfaces; the R5 document registered, heartbeats and traces sent',
       ),
       new CloudServiceRequirement(
         'R7',

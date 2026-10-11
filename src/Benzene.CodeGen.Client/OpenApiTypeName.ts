@@ -1,7 +1,7 @@
 /**
  * Maps a Contract Document OpenAPI 3.0 Schema Object to the TypeScript type expression that describes
  * its marshaled JSON form. Retargets `Benzene.CodeGen.Client.CSharpTypeName` (`ITypeName`) from
- * `OpenApiSchema`/C# to `OpenApiSchemaObject`/TypeScript, reusing the mesh-descriptor codegen path's
+ * `OpenApiSchema`/C# to `OpenApiSchemaObject`/TypeScript, reusing the (since removed) mesh-descriptor codegen path's
  * inline-object idiom (`TypeScriptTypeName.ts`) where the two schema shapes agree, and additionally
  * resolving `$ref` into a catalogue name (the mesh descriptor's schemas never carry one) and handling
  * `allOf`/`oneOf`/`anyOf` composition (which OpenAPI has and the mesh's §2.1 JSON-Schema subset does

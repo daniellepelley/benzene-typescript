@@ -4,7 +4,6 @@
  * alongside services written in any other language. See `README.md`.
  */
 export * from './handlers';
-export * from './benzeneSpec';
-export * from './benzeneDescriptor';
+export * from './contract';
 export * from './health';
 export * from './orderService';

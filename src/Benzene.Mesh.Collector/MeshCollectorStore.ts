@@ -2,15 +2,20 @@
  * Port of Benzene.Mesh.Collector.MeshCollectorStore.
  *
  * The in-memory state behind the spec collector (docs/specification/mesh.md §4-§6): cumulative per-service
- * and per-topic stats, the latest heartbeat per instance, registered descriptors, and a bounded ring of
+ * and per-topic stats, the latest heartbeat per instance, registered Contract Documents, and a bounded ring of
  * recent trace events (the window the trace/correlation queries derive from). Everything is derived - a
  * service that never registered still appears once its traces do (anonymous but live, with its missing feeds
  * named), a registered service with no traffic is a catalog entry with no stats, and no missing feed ever
  * fails ingestion or a query: the §6 degradation rule, collector side.
  *
- * **Declared vs. observed (the 2026-08 revision, mesh.md §4/§4.2):** the producer/consumer graph is now built
- * ENTIRELY from the latest registered `ServiceDescriptor` - `produces` gives provider edges, `topics` gives
- * consumer edges (`register` replaces both wholesale) - never from trace parentage. Trace parentage is kept
+ * **Declared vs. observed (mesh.md §4/§4.2):** the producer/consumer graph is built ENTIRELY from the latest
+ * registration - the service's Contract Document (§2) - with `events` ∪ `sends` giving provider edges and
+ * `requests` giving consumer edges (`register` replaces both wholesale), never from trace parentage. A member
+ * that is absent from the body, or that its `degraded` names, is unknown: it contributes no edges and raises no
+ * undeclared-edge drift; `benzene:` entries are ignored. Only `service` is required - schemas are carried, never
+ * interpreted, and the document's dialect is not checked. The catalog is keyed by `service` (this collector does
+ * not implement Service Versions), so a heartbeat's `registrationHash` is compared with the service's one
+ * registration. Trace parentage is kept
  * only as a separate, additive, observed-only signal, layered on top of the declared graph and never fed back
  * into it: a `spanId -> service` index (`spanIdToService`, scoped to the same bounded ring window as the trace
  * queries) lets ingestion notice, per event, which service actually provided/called a topic, which feeds two
@@ -19,7 +24,7 @@
  * "Unobserved" decommission-candidate signal, and (b) a synthesized `contract-drift` issue (mesh.md §4.1's
  * classification, filed exactly like a wire-fed `benzene:mesh:issues` entry) when a *registered* service's traffic
  * names a topic it never declared providing/consuming - the "Undeclared" signal. An anonymous/never-registered
- * service is never flagged (no descriptor, no contract to diverge from).
+ * service is never flagged (no registration, no contract to diverge from).
  *
  * Divergences from the C# original:
  * - `DateTimeOffset` -> epoch-millisecond `number`; `DateTimeOffset.UtcNow` -> `Date.now()`.
@@ -37,8 +42,11 @@ import {
   MeshIssueBatch,
   MeshIssueClassification,
   MeshIssueFingerprint,
-  MeshServiceDescriptor,
-  MeshTopicDescriptor,
+  MeshPlacement,
+  MeshRegistration,
+  MeshRegistrationEntry,
+  MeshRegistrationMember,
+  MeshRegistrations,
   MeshTraceEvent,
 } from '@benzenejs/mesh-wire';
 import { BenzeneResultStatus } from '@benzenejs/results';
@@ -62,11 +70,12 @@ import {
 interface InstanceState {
   healthy: boolean;
   lastHeartbeat: number;
-  descriptorHash?: string;
+  serviceVersion?: string;
+  registrationHash?: string;
 }
 
 class ServiceState {
-  descriptor?: MeshServiceDescriptor;
+  registration?: MeshRegistration;
   readonly instances = new Map<string, InstanceState>();
   lastSeen = 0;
   invocations = 0;
@@ -77,8 +86,8 @@ class ServiceState {
 }
 
 class TopicState {
-  // Declared graph membership (mesh.md §4): providers from every registered ServiceDescriptor's
-  // `produces`, consumers from its `topics` - handling a topic makes you its consumer, the way every
+  // Declared graph membership (mesh.md §4): providers from every registration's `events` ∪ `sends`,
+  // consumers from its `requests` - handling a topic makes you its consumer, the way every
   // broker in the field uses the word. Populated/replaced wholesale by `register`
   // ONLY - trace parentage never admits or removes an entry here (spec §4.2's "not for graph membership").
   readonly providers = new Set<string>();
@@ -127,41 +136,44 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
   }
 
   /**
-   * Stores the descriptor as the service's current contract, replacing any previous registration wholesale
-   * - a redeploy that drops a topic from `topics` drops the provider edge with it, and a redeploy that drops
-   * a topic from `produces` drops the provider edge with it, the same rule applied symmetrically to both
-   * declared lists (spec §4). This is the ONLY thing that ever changes the declared graph.
+   * Stores the registration (the service's Contract Document, mesh.md §2) as its current contract, replacing any
+   * previous registration wholesale - a redeploy that drops a topic from `requests` drops the consumer edge with
+   * it, and one that drops a topic from `events` or `sends` drops the provider edge, the same rule applied
+   * symmetrically to every declared list (spec §4). This is the ONLY thing that ever changes the declared graph.
+   *
+   * A published event makes its publisher a provider exactly as a send does. Unknown members (absent, or named
+   * in `degraded`) and `benzene:` entries add nothing. The body is read defensively - it is parsed JSON, not a
+   * constructed object - so a partial body never fails ingestion (§6).
    */
-  register(descriptor: MeshServiceDescriptor): void {
+  register(registration: MeshRegistration): void {
     for (const topic of this.topics.values()) {
-      topic.providers.delete(descriptor.service);
-      topic.consumers.delete(descriptor.service);
+      topic.providers.delete(registration.service);
+      topic.consumers.delete(registration.service);
     }
 
-    const state = this.ensureService(descriptor.service);
-    state.descriptor = descriptor;
+    const state = this.ensureService(registration.service);
+    state.registration = registration;
     state.lastSeen = Date.now();
 
-    // A wire body is deserialized straight off parsed JSON (no class construction), so an omitted
-    // `topics`/`produces` - legal on the wire, e.g. a service that declares no outbound registration -
-    // is genuinely `undefined` here, not the class field's `[]` default. Coalesce rather than assume,
-    // against the §6 "no feed fails ingestion" rule.
-    for (const topic of descriptor.topics ?? []) {
-      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).consumers.add(descriptor.service);
+    for (const entry of MeshRegistrations.known(registration, 'requests') ?? []) {
+      this.ensureTopic(topicKey(entry.topic, versionOf(entry))).consumers.add(registration.service);
     }
-    for (const topic of descriptor.produces ?? []) {
-      this.ensureTopic(topicKey(topic.id, topic.version ?? '')).providers.add(descriptor.service);
+    for (const member of ['events', 'sends'] as const) {
+      for (const entry of MeshRegistrations.known(registration, member) ?? []) {
+        this.ensureTopic(topicKey(entry.topic, versionOf(entry))).providers.add(registration.service);
+      }
     }
   }
 
-  /** Records the latest health report for one instance. */
+  /** Records the latest health report for one instance, with the hash it says it registered (spec §5). */
   heartbeat(heartbeat: MeshHeartbeat): void {
     const state = this.ensureService(heartbeat.service);
     state.lastSeen = Date.now();
     state.instances.set(heartbeat.instanceId ?? '', {
       healthy: heartbeat.health?.isHealthy ?? false,
       lastHeartbeat: Date.now(),
-      descriptorHash: heartbeat.descriptorHash,
+      serviceVersion: nonEmptyOrUndefined(heartbeat.serviceVersion),
+      registrationHash: nonEmptyOrUndefined(heartbeat.registrationHash),
     });
   }
 
@@ -236,9 +248,10 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   /**
    * §4.2 "Undeclared": a REGISTERED service's own traffic naming a topic it never declared. Consumer side -
-   * the handling service's descriptor doesn't list this topic in `topics`; provider side - the calling
-   * service's descriptor doesn't list it in `produces`. An anonymous/never-registered service (no descriptor)
-   * is never flagged - it has no contract to diverge from. Filed as a `contract-drift` issue, merged by the
+   * the handling service's registration doesn't list this topic in `requests`; provider side - the calling
+   * service's registration lists it in neither `events` nor `sends`. An anonymous/never-registered service is
+   * never flagged - it has no contract to diverge from - and neither is a side whose member is unknown (absent
+   * or `degraded`, mesh.md §2): an unknown list declares nothing, so nothing on it is undeclared. Filed as a `contract-drift` issue, merged by the
    * same fingerprint scheme as a wire-fed `benzene:mesh:issues` entry (§4.1).
    */
   private detectContractDrift(
@@ -252,16 +265,16 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
     if (
       traceEvent.service !== undefined &&
-      providerService?.descriptor !== undefined &&
-      !declaresTopic(providerService.descriptor.topics, topicId, version)
+      providerService?.registration !== undefined &&
+      undeclared(providerService.registration, ['requests'], topicId, version)
     ) {
       this.mergeIssue(driftIssue(traceEvent.service, topicId, version, traceEvent));
     }
 
     if (
       callerService !== undefined &&
-      callerState?.descriptor !== undefined &&
-      !declaresTopic(callerState.descriptor.produces, topicId, version)
+      callerState?.registration !== undefined &&
+      undeclared(callerState.registration, ['events', 'sends'], topicId, version)
     ) {
       this.mergeIssue(driftIssue(callerService, topicId, version, traceEvent));
     }
@@ -389,7 +402,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     const view = new ServiceView();
     view.service = summary.service;
     view.runtime = summary.runtime;
-    view.binding = summary.binding;
+    view.transports = summary.transports;
     view.placement = summary.placement;
     view.topics = summary.topics;
     view.health = summary.health;
@@ -397,7 +410,7 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     view.invocations = summary.invocations;
     view.errors = summary.errors;
     view.missingFeeds = summary.missingFeeds;
-    view.descriptor = state.descriptor;
+    view.descriptor = state.registration;
     view.instances = [...state.instances.entries()]
       .sort(([a], [b]) => ordinalCompare(a, b))
       .map(([instanceId, instance]) => {
@@ -405,10 +418,13 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
         instanceView.instanceId = instanceId;
         instanceView.healthy = instance.healthy;
         instanceView.lastHeartbeat = instance.lastHeartbeat;
-        instanceView.descriptorHash = instance.descriptorHash;
+        instanceView.serviceVersion = instance.serviceVersion;
+        instanceView.registrationHash = instance.registrationHash;
+        // Compared with the carried value of the service's one registration (spec §2, §5) - never recomputed.
+        const registered = nonEmptyOrUndefined(state.registration?.registrationHash);
         instanceView.hashMatches =
-          state.descriptor?.descriptorHash !== undefined && instance.descriptorHash !== undefined
-            ? instance.descriptorHash === state.descriptor.descriptorHash
+          registered !== undefined && instance.registrationHash !== undefined
+            ? instance.registrationHash === registered
             : undefined;
         return instanceView;
       });
@@ -569,13 +585,16 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
     summary.invocations = state.invocations;
     summary.errors = state.errors;
 
-    if (state.descriptor !== undefined) {
-      summary.runtime = state.descriptor.runtime;
-      summary.binding = state.descriptor.binding;
-      summary.placement = state.descriptor.placement;
-      summary.topics = (state.descriptor.topics ?? []).length;
+    if (state.registration !== undefined) {
+      const registration = state.registration;
+      summary.runtime = nonEmptyOrUndefined(registration.runtime);
+      summary.transports = Array.isArray(registration.transports) ? [...registration.transports] : undefined;
+      summary.placement = placementOf(registration);
+      summary.topics = (MeshRegistrations.known(registration, 'requests') ?? []).length;
     } else {
-      summary.missingFeeds.push('descriptor'); // known only from traffic: anonymous but live
+      // Known only from traffic: anonymous but live. The read models still call the registration feed
+      // `descriptor` (its name before spec 3b), unchanged so readers keep working.
+      summary.missingFeeds.push('descriptor');
     }
 
     if (state.instances.size === 0) {
@@ -697,17 +716,49 @@ function activityFor(declared: ReadonlySet<string>, observedAt: ReadonlyMap<stri
   return activity;
 }
 
+/** An entry's version, `''` when absent (the topic key's unversioned slot). */
+function versionOf(entry: MeshRegistrationEntry): string {
+  return typeof entry.version === 'string' ? entry.version : '';
+}
+
+function nonEmptyOrUndefined(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+/** The read models' placement for a registration: its `placement` when it carries a `cloud`, else empty. */
+function placementOf(registration: MeshRegistration): MeshPlacement {
+  const placement = new MeshPlacement();
+  const carried = registration.placement as Partial<MeshPlacement> | undefined;
+  if (carried !== null && typeof carried === 'object' && typeof carried.cloud === 'string') {
+    placement.cloud = carried.cloud;
+    placement.region = nonEmptyOrUndefined(carried.region);
+  }
+  return placement;
+}
+
 /**
- * Whether `topics`/`produces` (a descriptor's declared list) names `(id, version)` - spec §4.2's "Undeclared"
- * test. `declared` may be `undefined`: a wire-deserialized descriptor with the field genuinely omitted (see
- * `register`'s coalescing note) declares nothing, not everything.
+ * Whether `registration` positively declares that `(id, version)` is absent from `members` - spec §4.2's
+ * "Undeclared" test. Only a KNOWN member can make that claim: when any of `members` is unknown (absent, or
+ * named in `degraded`, mesh.md §2) nothing is undeclared, and a `benzene:` topic never is.
  */
-function declaresTopic(
-  declared: readonly MeshTopicDescriptor[] | undefined,
+function undeclared(
+  registration: MeshRegistration,
+  members: readonly MeshRegistrationMember[],
   id: string,
   version: string | undefined,
 ): boolean {
-  return (declared ?? []).some((topic) => topic.id === id && (topic.version ?? '') === (version ?? ''));
+  if (id.toLowerCase().startsWith('benzene:')) {
+    return false;
+  }
+  let declared = false;
+  for (const member of members) {
+    const entries = MeshRegistrations.known(registration, member);
+    if (entries === undefined) {
+      return false;
+    }
+    declared ||= entries.some((entry) => entry.topic === id && versionOf(entry) === (version ?? ''));
+  }
+  return !declared;
 }
 
 /** Builds the one-occurrence `contract-drift` issue §4.2 synthesizes for an undeclared edge, ready to merge. */

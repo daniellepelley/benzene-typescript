@@ -4,10 +4,9 @@
  * `<Service>ServiceClient` class whose methods call `IBenzeneMessageSender.sendAsync`, an exported
  * `<Service>ServiceClientRequiredTopics` constant, and an `add<Service>ServiceClient` DI registration
  * function. Port of `Benzene.CodeGen.Client.MessageClientSdkBuilder`, retargeted from OpenAPI-C# to
- * OpenAPI-TypeScript (the Contract Document counterpart of the existing mesh-descriptor-driven
- * `BenzeneClientBuilder.ts` - see that file's header for the JSON-Schema-pivoted "first" input path;
- * this is the "second, additional" one, contract-document.md's, per the README Porting-conventions
- * table).
+ * OpenAPI-TypeScript: the generator reads the Contract Document (contract-document.md), the port's one
+ * codegen input since the mesh-descriptor-driven `BenzeneClientBuilder` was removed with the descriptor
+ * (spec 3b).
  *
  * Divergence from `Benzene.Abstractions.DI.IBenzeneServiceContainer`'s C# `AddScoped<TService,
  * TImplementation>()` reflection-based constructor injection: TypeScript erases types, so the

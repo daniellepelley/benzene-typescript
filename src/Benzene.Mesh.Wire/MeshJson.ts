@@ -11,11 +11,10 @@ export type JsonObject = Record<string, unknown>;
  * contract's casing, docs/specification/wire-contracts.md §6), nulls/undefined omitted.
  *
  * In the C# original this is a `JsonSerializerOptions` with `CamelCase` naming and
- * `WhenWritingNull`. The TypeScript port's descriptor field names are already camelCase and its
+ * `WhenWritingNull`. The TypeScript port's wire field names are already camelCase and its
  * optional fields are `undefined` (not `null`); `JSON.stringify` omits `undefined`-valued
- * properties and preserves declaration/insertion order, so both settings come for free. Both the
- * descriptor hash canonicalization (see `MeshDescriptorHashing`) and any wire emission use this
- * helper so the two can't drift apart.
+ * properties and preserves declaration/insertion order, so both settings come for free. Every wire
+ * emission (heartbeats, trace and issue batches) uses this helper.
  */
 export const MeshJson = {
   serialize<T>(value: T): string {

@@ -28,7 +28,7 @@ export function useZodValidation(builder: IMessageRouterBuilder): IMessageRouter
   builder.register((container) => {
     tryAddSingleton(container, IValidationStatusMapper, DefaultValidationStatusMapper);
     // Publish the registered Zod schemas as a JSON-Schema source so the topic's payload schema reaches the
-    // spec / mesh descriptor (the runtime replacement for .NET reflecting over the CLR type). Wiring
+    // Contract Document (the runtime replacement for .NET reflecting over the CLR type). Wiring
     // validation is what enables schemas, mirroring how .NET's UseFluentValidation registers the
     // IValidationSchemaBuilder that the spec's OpenApiValidationSchemaBuilder folds in.
     container.addSingletonInstance(ITypeJsonSchemaSource, new ZodJsonSchemaSource());

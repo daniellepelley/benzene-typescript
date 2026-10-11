@@ -2,7 +2,7 @@ import type { Schema } from 'joi';
 
 /**
  * Converts a Joi schema to a JSON Schema object for use as a topic's request/response payload schema in the
- * benzene spec / mesh descriptor.
+ * benzene Contract Document.
  *
  * TypeScript-only file with no direct C# counterpart — the Joi counterpart of `Benzene.Zod`'s
  * `zodToJsonSchema`. Where `.NET` reflects over the CLR type for the base schema and folds FluentValidation
