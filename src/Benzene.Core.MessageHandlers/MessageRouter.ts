@@ -57,16 +57,16 @@ export class MessageRouter<TContext> implements IMiddleware<TContext> {
     this.logger.logDebug(`Finding message handler for ${topic.id}`);
     const messageHandlerDefinition = this.messageHandlerDefinitionLookUp.findHandler(topic);
     if (messageHandlerDefinition === undefined) {
-      this.logger.logWarning(`No handler found for topic ${topic.id}`);
+      // Names the topic and, when the message carried one, the version (core-concepts §2): a version no
+      // handler serves is not-found, never silently another version's handler.
+      const notFound = describeUnmatched(topic);
+      this.logger.logWarning(notFound);
       await this.messageHandlerResultSetter.setResultAsync(
         context,
         new MessageHandlerResult(
           topic,
           MessageHandlerDefinition.empty(),
-          BenzeneResult.setErrors(
-            this.defaultStatuses.notFound,
-            `No handler found for topic ${topic.id}`,
-          ),
+          BenzeneResult.setErrors(this.defaultStatuses.notFound, notFound),
         ),
       );
       return;
@@ -99,4 +99,10 @@ export class MessageRouter<TContext> implements IMiddleware<TContext> {
       new MessageHandlerResult(topic, messageHandlerDefinition, result),
     );
   }
+}
+
+function describeUnmatched(topic: { id: string; version: string }): string {
+  return topic.version === undefined || topic.version === ''
+    ? `No handler found for topic ${topic.id}`
+    : `No handler found for topic ${topic.id} version ${topic.version}`;
 }

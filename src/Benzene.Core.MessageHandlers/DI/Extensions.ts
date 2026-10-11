@@ -27,6 +27,8 @@ import {
   IMessageHandlersFinder,
   IMessageHandlersList,
   IMessageTopicGetter,
+  IMessageVersionGetter,
+  IPayloadCastLookUp,
   IRequestEnricher,
   IRequestMapper,
   IResponseHandler,
@@ -47,11 +49,12 @@ import { BenzeneMessageMessageHandlerResultSetter } from '../BenzeneMessage/Benz
 import { BenzeneMessageResponseAdapter } from '../BenzeneMessage/BenzeneMessageResponseAdapter';
 import { DefaultResponseStatusHandler } from '../BenzeneMessage/DefaultResponseStatusHandler';
 import { CacheMessageHandlersFinder } from '../CacheMessageHandlersFinder';
-import { tryAddHeaderMessageVersionGetter } from '../MessageVersionHeaderNames';
+import { tryAddHeaderMessageVersionGetter } from '../MessageVersionHeaderName';
 import { CompositeMessageHandlersFinder } from '../CompositeMessageHandlersFinder';
 import { DefaultStatuses } from '../DefaultStatuses';
 import { DuplicateTopicStartUpCheck } from '../StartUpChecks/DuplicateTopicStartUpCheck';
 import { EmptyHandlerRegistryStartUpCheck } from '../StartUpChecks/EmptyHandlerRegistryStartUpCheck';
+import { DefaultHandlerStartUpCheck } from '../StartUpChecks/DefaultHandlerStartUpCheck';
 import { DependencyMessageHandlersFinder } from '../DependencyMessageHandlersFinder';
 import { HandlerPipelineBuilder } from '../HandlerPipelineBuilder';
 import { ApplicationInfo } from '../Info/ApplicationInfo';
@@ -137,7 +140,7 @@ export function addBenzeneMessage(services: IBenzeneServiceContainer): IBenzeneS
  */
 export function addBenzeneMessageHandling(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
   tryAddHeaderMessageVersionGetter<BenzeneMessageContext>(services);
-  tryAddScoped(services, BenzeneMessageGetter);
+  tryAddScopedFactory(services, BenzeneMessageGetter, (r) => new BenzeneMessageGetter(r));
   tryAddScopedFactory(services, IMessageGetter, (r) =>
     r.getService(BenzeneMessageGetter) as unknown as IMessageGetter<unknown>,
   );
@@ -234,6 +237,7 @@ export function addBenzene(services: IBenzeneServiceContainer): IBenzeneServiceC
   if (!services.isTypeRegistered(IStartUpCheck)) {
     services.addSingletonFactory(IStartUpCheck, () => new DuplicateTopicStartUpCheck());
     services.addSingletonFactory(IStartUpCheck, () => new EmptyHandlerRegistryStartUpCheck());
+    services.addSingletonFactory(IStartUpCheck, () => new DefaultHandlerStartUpCheck());
   }
   return services;
 }
@@ -257,6 +261,7 @@ export function addContextItems(services: IBenzeneServiceContainer): IBenzeneSer
       r.getService(IMessageTopicGetter),
       r.getService(IMessageBodyGetter),
       r.getService(IMessageHeadersGetter),
+      r.tryGetService(IMessageVersionGetter),
     ),
   );
   tryAddScopedFactory(services, IResponsePayloadMapper, () => new DefaultResponsePayloadMapper());
@@ -380,6 +385,7 @@ export function addMessageHandlers(
       new MessageHandlerDefinitionLookUp(
         r.getService(MessageHandlerDefinitionIndex),
         r.getService(IVersionSelector),
+        r.tryGetService(IPayloadCastLookUp),
       ),
   );
   tryAddScopedFactory(

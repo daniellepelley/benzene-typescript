@@ -8,6 +8,13 @@ import { IRequestResponseMessageDefinition } from '@benzenejs/abstractions-messa
  */
 export interface IMessageHandlerDefinition extends IRequestResponseMessageDefinition {
   readonly handlerType: Constructor<unknown>;
+
+  /**
+   * Whether the application declared this handler the topic's **default handler** — the one a message
+   * carrying no version goes to when the topic has no unversioned handler (core-concepts §2). Set with
+   * `@message(topic, { version, isDefault: true })`. Absent means `false`.
+   */
+  readonly isDefault?: boolean;
 }
 
 /**

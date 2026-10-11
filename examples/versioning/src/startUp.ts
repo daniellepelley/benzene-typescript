@@ -3,10 +3,12 @@
  * version rides in the `benzene-version` header). It dogfoods BOTH versioning axes of versioning.md:
  *
  *  - Mechanism A — handler-version dispatch: `order:create` has two handlers (one per version); the
- *    incoming `benzene-version` selects which runs. No casters are registered for that topic, so the
- *    casting decorators pass it straight through.
+ *    incoming `benzene-version` selects which runs, and V1 is declared the topic's default (a message
+ *    with no version goes to it). No casters are registered for that topic, so the casting decorators
+ *    pass it straight through.
  *  - Mechanism B — transparent payload casting: `inventory:adjust` has three payload versions and ONE
- *    handler (on V3). Only ADJACENT casters (V1⇄V2, V2⇄V3) are declared; the `SchemaCastDefinitionsExpander`
+ *    handler (registered at V3, and declared the default). A V1/V2 message has no exact handler, so
+ *    version selection routes it to the handler it can be CAST to (core-concepts §2). Only ADJACENT casters (V1⇄V2, V2⇄V3) are declared; the `SchemaCastDefinitionsExpander`
  *    composes the missing V1⇄V3 pair by CHAINING at startup, so a V1 producer is upcast V1→V2→V3 to reach
  *    the handler and the response downcast V3→V2→V1 — with no direct V1⇄V3 caster.
  *
@@ -18,17 +20,14 @@
  * the mechanism the example is about.
  */
 import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
-import { IMessageGetter, IMessageVersionGetter } from '@benzenejs/abstractions-message-handlers';
 import { BenzeneMessageContext } from '@benzenejs/core-messages';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import {
   addBenzene,
   addBenzeneMessage,
   BenzeneMessageApplication,
-  BenzeneMessageGetter,
   useMessageHandlers,
 } from '@benzenejs/core-message-handlers';
-import { VersionAwareMessageGetter } from './versionAwareMessageGetter';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import {
   registerPayloadSchemaVersions,
@@ -146,17 +145,6 @@ export function buildVersioningApp(): VersioningApp {
   addBenzene(container);
   addBenzeneMessage(container);
   addInventoryVersioning(container);
-
-  // Key handler-version dispatch off the canonical `benzene-version` header (see
-  // `versionAwareMessageGetter.ts`), so both versioning axes read the one metadata header.
-  container.addScopedFactory(
-    IMessageGetter,
-    (resolver) =>
-      new VersionAwareMessageGetter(
-        resolver.getService(BenzeneMessageGetter) as unknown as IMessageGetter<BenzeneMessageContext>,
-        resolver.getService(IMessageVersionGetter) as unknown as IMessageVersionGetter<BenzeneMessageContext>,
-      ) as unknown as IMessageGetter<unknown>,
-  );
 
   const pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
   useMessageHandlers(

@@ -7,7 +7,7 @@ export const Topics = {
 
 /**
  * The payload schema version names. They are ordinary strings on the wire (the `benzene-version`
- * header/attribute); the framework compares them ordinally when picking a handler, so `v1 < v2 < v3`.
+ * header/attribute), matched exactly when picking a handler.
  */
 export const Versions = {
   v1: 'v1',

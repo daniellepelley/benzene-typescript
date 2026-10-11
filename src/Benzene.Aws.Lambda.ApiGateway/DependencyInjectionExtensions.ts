@@ -21,6 +21,7 @@ import {
   RendererResponseHandler,
   SerializerResponseRenderer,
   TransportInfo,
+  tryAddHeaderMessageVersionGetter,
 } from '@benzenejs/core-message-handlers';
 import {
   addHttpMessageHandlers,
@@ -75,6 +76,8 @@ import { ApiGatewayV2ResponseAdapter } from './ApiGatewayV2ResponseAdapter';
  * + `DefaultHttpStatusCodeMapper` (via `addHttpMessageHandlers`) so `"Ok"` becomes `"200"` etc.
  */
 export function addApiGateway(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  // The version signal (core-concepts §2, wire-contracts §2): the `benzene-version` header.
+  tryAddHeaderMessageVersionGetter<ApiGatewayContext>(services);
   tryAddScoped(services, JsonSerializer);
 
   tryAddScopedFactory(
@@ -183,6 +186,8 @@ export function addApiGateway(services: IBenzeneServiceContainer): IBenzeneServi
  * becomes a factory under the interface's shared `<unknown>` token.
  */
 export function addApiGatewayV2(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  // The version signal (core-concepts §2, wire-contracts §2): the `benzene-version` header.
+  tryAddHeaderMessageVersionGetter<ApiGatewayV2Context>(services);
   tryAddScoped(services, JsonSerializer);
 
   tryAddScopedFactory(

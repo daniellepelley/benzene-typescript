@@ -21,6 +21,7 @@ import {
   RendererResponseHandler,
   SerializerResponseRenderer,
   TransportInfo,
+  tryAddHeaderMessageVersionGetter,
 } from '@benzenejs/core-message-handlers';
 import {
   addHttpMessageHandlers,
@@ -52,6 +53,8 @@ import { ExpressResponseAdapter } from './ExpressResponseAdapter';
  * only the concrete adapter classes and the transport name differ. Called automatically by `benzene()`.
  */
 export function addExpress(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  // The version signal (core-concepts §2, wire-contracts §2): the `benzene-version` header.
+  tryAddHeaderMessageVersionGetter<ExpressContext>(services);
   tryAddScoped(services, JsonSerializer);
 
   tryAddScopedFactory(

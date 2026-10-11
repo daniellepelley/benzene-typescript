@@ -4,7 +4,7 @@
  * never pollutes another module's handler discovery.
  *
  * Mechanism A (handler-version dispatch): `order:create` has two handlers, one per version — the incoming
- * `benzene-version` picks which runs, and a producer that sends NO version gets the highest (v2).
+ * `benzene-version` picks which runs, and a producer that sends NO version gets the declared default (v1).
  * Mechanism B (transparent casting): `inventory:adjust` has ONE handler, on V3 — older producers are cast
  * to V3 before it runs (see `startUp.ts`), so it only ever sees its own schema.
  */
@@ -23,13 +23,16 @@ import { IProcessedLog } from './services/processedLog';
 import { Topics, Versions } from './topics';
 
 /**
- * Mechanism A — the V1 implementation of `order:create`. Registered for version `v1`; the router runs it
- * only when the incoming `benzene-version` is `v1`. Shares the topic with the V2 handler — two genuinely
- * different request shapes, two handlers, no casting between them.
+ * Mechanism A — the V1 implementation of `order:create`. Registered for version `v1` and declared the
+ * topic's DEFAULT handler: the router runs it when the incoming `benzene-version` is `v1`, and for a
+ * message that carries no version at all — so producers that predate versioning keep working
+ * (versioning.md §2.2: declare the oldest version the topic still accepts). Shares the topic with the V2
+ * handler — two genuinely different request shapes, two handlers, no casting between them.
  */
 @message(Topics.orderCreate, {
   register: false,
   version: Versions.v1,
+  isDefault: true,
   requestType: CreateOrderV1,
   responseType: OrderAcceptedV1,
 })
@@ -49,9 +52,9 @@ export class CreateOrderV1MessageHandler implements IMessageHandler<CreateOrderV
 }
 
 /**
- * Mechanism A — the V2 implementation of `order:create`. Registered for version `v2`. Because `v2` is the
- * highest registered version, it is also the one the `VersionSelector` falls back to when a producer
- * sends no version at all — i.e. V2 is the topic's default handler.
+ * Mechanism A — the V2 implementation of `order:create`. Registered for version `v2`; it runs only when
+ * the incoming `benzene-version` is exactly `v2`. A version no handler serves (`v9`) is `not-found` —
+ * never silently this handler (core-concepts §2: there is no "highest available" fallback).
  */
 @message(Topics.orderCreate, {
   register: false,
@@ -78,10 +81,10 @@ export class CreateOrderV2MessageHandler implements IMessageHandler<CreateOrderV
 }
 
 /**
- * Mechanism B — the ONE handler for `inventory:adjust`, written against the newest schema, V3. It is
- * UNVERSIONED (`@message(topic)` with no version) because the version axis is handled by the casting
- * pipeline, not by picking a handler: a V1 or V2 producer is up-cast to V3 (V1 by chaining V1→V2→V3)
- * before this method runs, so it only ever sees V3.
+ * Mechanism B — the ONE handler for `inventory:adjust`, written against the newest schema and registered
+ * at version `v3` (declared the default, so a message with no version reaches it too). A V1 or V2 message
+ * has no exact handler, so version selection picks the handler it can be CAST to (core-concepts §2): the
+ * payload is up-cast to V3 (V1 by chaining V1→V2→V3) before this method runs, so it only ever sees V3.
  *
  * It never references V1/V2 or any caster. To make the round trip observable it writes the two
  * chain-seeded fields (`warehouseId` from the V1→V2 hop, `reason` from the V2→V3 hop) into `trace`, which
@@ -89,6 +92,8 @@ export class CreateOrderV2MessageHandler implements IMessageHandler<CreateOrderV
  */
 @message(Topics.inventoryAdjust, {
   register: false,
+  version: Versions.v3,
+  isDefault: true,
   requestType: InventoryAdjustmentV3,
   responseType: InventoryAdjustmentV3,
 })

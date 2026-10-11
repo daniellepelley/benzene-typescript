@@ -16,6 +16,7 @@ import {
   addMediaFormatNegotiation,
   RendererResponseHandler,
   SerializerResponseRenderer,
+  tryAddHeaderMessageVersionGetter,
 } from '@benzenejs/core-message-handlers';
 import {
   addHttpMessageHandlers,
@@ -66,6 +67,8 @@ import { AzureHttpResponseAdapter } from './AzureHttpResponseAdapter';
  * `DefaultHttpStatusCodeMapper` (via `addHttpMessageHandlers`) so `"Ok"` becomes `"200"` etc.
  */
 export function addAzureHttp(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+  // The version signal (core-concepts §2, wire-contracts §2): the `benzene-version` header.
+  tryAddHeaderMessageVersionGetter<AzureHttpContext>(services);
   services.addScopedFactory(
     IMessageTopicGetter,
     (r) =>

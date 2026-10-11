@@ -1,6 +1,8 @@
 import {
+  getVersionedTopic,
   IMessageGetter,
   IMessageTopicGetter,
+  IMessageVersionGetter,
 } from '@benzenejs/abstractions-message-handlers';
 import {
   IMessageBodyGetter,
@@ -19,6 +21,7 @@ export class MessageGetter<TContext> implements IMessageGetter<TContext> {
     private readonly messageTopicGetter: IMessageTopicGetter<TContext>,
     private readonly messageBodyGetter: IMessageBodyGetter<TContext>,
     private readonly messageHeadersGetter: IMessageHeadersGetter<TContext>,
+    private readonly messageVersionGetter?: IMessageVersionGetter<TContext>,
   ) {}
 
   getBody(context: TContext): string | undefined {
@@ -29,7 +32,12 @@ export class MessageGetter<TContext> implements IMessageGetter<TContext> {
     return this.messageHeadersGetter.getHeaders(context);
   }
 
+  /**
+   * The transport's topic, joined with the message's own version signal (the `benzene-version` header,
+   * via the optional `IMessageVersionGetter`) — the version-aware key the router selects a handler with.
+   * A version the topic getter already supplied (a preset topic) wins.
+   */
   getTopic(context: TContext): ITopic | undefined {
-    return this.messageTopicGetter.getTopic(context);
+    return getVersionedTopic(this.messageTopicGetter, context, this.messageVersionGetter);
   }
 }

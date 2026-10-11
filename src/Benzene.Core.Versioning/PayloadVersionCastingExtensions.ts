@@ -1,7 +1,8 @@
 /** Port of Benzene.Core.Versioning.PayloadVersionCastingExtensions. */
-import { IBenzeneServiceContainer } from '@benzenejs/abstractions';
+import { Constructor, IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import {
   IMediaFormatNegotiator,
+  IPayloadCastLookUp,
   IMessageTopicGetter,
   IMessageVersionGetter,
   IRequestEnricher,
@@ -23,6 +24,9 @@ import { ISchemaCasters } from './Schemas/ISchemaCasters';
  * is downcast back to the requested version - the handler only ever sees its own (canonical) schema. A
  * topic with no registered casters, or a message that signals no version, is unaffected.
  * Port of Benzene.Core.Versioning.PayloadVersionCastingExtensions (C# extension method -> free function).
+ *
+ * Also registers the `IPayloadCastLookUp` version selection uses: a message carrying a version no handler
+ * is registered for exactly is routed to a handler it can be cast to (the declared default wins a tie).
  *
  * Call this AFTER the transport's registration (e.g. `addBenzeneMessage` + `addContextItems`), so these
  * `addScopedFactory` overrides win. C# self-registers the framework-default mappers as their own concrete
@@ -60,6 +64,17 @@ export function usePayloadVersionCasting<TContext>(
         resolver.tryGetService(ISchemaCasters),
       ) as unknown as IResponsePayloadMapper<unknown>,
   );
+
+  // Version selection (core-concepts §2) asks which handlers a requested version can be cast to. Only
+  // casts that this decorator will actually perform count, so the lookup is registered here rather than
+  // with the casters: a service that registers casters but never wires casting selects exact-match only.
+  services.addSingletonFactory(IPayloadCastLookUp, (resolver) => {
+    const schemaCasters = resolver.tryGetService(ISchemaCasters);
+    return {
+      canCast: (topic, fromVersion, toRequestType) =>
+        schemaCasters?.tryGetSchemaCaster(topic, fromVersion, toRequestType as Constructor<unknown>) !== undefined,
+    };
+  });
 
   return services;
 }

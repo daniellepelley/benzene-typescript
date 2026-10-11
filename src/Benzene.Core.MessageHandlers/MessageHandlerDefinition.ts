@@ -13,7 +13,17 @@ export class MessageHandlerDefinition implements IMessageHandlerDefinition {
     readonly requestType: ServiceIdentifier<unknown>,
     readonly responseType: ServiceIdentifier<unknown>,
     readonly handlerType: Constructor<unknown>,
+    readonly isDefault: boolean = false,
   ) {}
+
+  /**
+   * A copy of this definition declared the topic's **default handler** — the one a message carrying no
+   * version goes to when the topic has no unversioned handler (core-concepts §2). The decorator form is
+   * `@message(topic, { version, isDefault: true })`.
+   */
+  asDefault(): MessageHandlerDefinition {
+    return new MessageHandlerDefinition(this.topic, this.requestType, this.responseType, this.handlerType, true);
+  }
 
   static createInstance(
     topic: string,

@@ -118,9 +118,27 @@ describe('BenzeneMessageGetter', () => {
 
     expect(getter.getBody(context)).toBe('some-message');
     expect(getter.getTopic(context)?.id).toBe('some-topic');
-    expect(getter.getTopic(context)?.version).toBe('2.0');
     expect(getter.getHeaders(context)).toEqual({ orderId: 'some-order', version: '2.0' });
     expect(new TextDecoder().decode(getter.getBodyBytes(context))).toBe('some-message');
+  });
+
+  it('TopicVersion_ComesFromBenzeneVersionHeader_NotABareVersionHeader', () => {
+    // wire-contracts §2 (D10): one version header. A bare `version` is an ordinary header.
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addBenzeneMessage(container);
+    const scope = container.createServiceResolverFactory().createScope();
+    const getter = scope.getService(BenzeneMessageGetter);
+
+    const versioned = new BenzeneMessageRequest();
+    versioned.topic = 'some-topic';
+    versioned.headers = { 'benzene-version': 'v2', version: 'v9' };
+    expect(getter.getTopic(new BenzeneMessageContext(versioned))?.version).toBe('v2');
+
+    const bare = new BenzeneMessageRequest();
+    bare.topic = 'some-topic';
+    bare.headers = { version: 'v9' };
+    expect(getter.getTopic(new BenzeneMessageContext(bare))?.version).toBe('');
   });
 
   it('EmptyRequest_YieldsMissingTopicAndEmptyBytes', () => {

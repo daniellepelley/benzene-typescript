@@ -1,12 +1,14 @@
 /** Port of Benzene.Abstractions.Messages.MessageVersionHeaders. */
 
 /**
- * Well-known names for the header/attribute that carries a message's payload schema version on the wire.
+ * The one well-known name for the header/attribute that carries a message's version on the wire
+ * (wire-contracts §2, tier A): it selects the handler (core-concepts §2) and names the payload's schema
+ * version for casting (versioning.md).
  *
- * The inbound reader (`HeaderMessageVersionGetter`) tries a fallback list; `default` is its primary name
- * and the one the outbound helpers write, so a producer and consumer agree on the version signal without
- * hard-coding the literal in two places. HTTP additionally carries the version as a `/v{version}` route
- * segment; this header is the convention for every other transport (and the HTTP fallback).
+ * The inbound reader (`HeaderMessageVersionGetter`) reads exactly this name (or the one the application
+ * configured in its place) — there is no fallback list, so a `version`/`x-version` header is an ordinary
+ * header. It is also the name the outbound helpers write, so a producer and consumer agree without
+ * hard-coding the literal twice. HTTP may carry the version as a `/v{version}` route segment instead.
  *
  * C# `public static class` of a `const string` -> a frozen object; the string VALUE is the wire name.
  */

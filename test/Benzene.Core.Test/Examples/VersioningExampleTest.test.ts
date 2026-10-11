@@ -52,16 +52,38 @@ describe('@benzene-example/versioning', () => {
       expect(accepted.currency).toBe('GBP');
     });
 
-    it('falls back to the highest version (V2) when no version is signalled', async () => {
+    it('routes a message with no version to the declared default (V1)', async () => {
       const { app, resolverFactory, log } = buildVersioningApp();
 
       const response = await app.handleAsync(
-        request(Topics.orderCreate, { firstName: 'Jo', lastName: 'Bloggs', quantity: 1, currency: 'USD' }),
+        request(Topics.orderCreate, { customerName: 'Jo', quantity: 1 }),
         resolverFactory,
       );
 
-      expect((JSON.parse(response.body) as OrderAcceptedV2).handledBy).toBe('CreateOrderV2MessageHandler');
-      expect(log.entries[0]).toContain('order:create v2');
+      expect((JSON.parse(response.body) as OrderAcceptedV1).handledBy).toBe('CreateOrderV1MessageHandler');
+      expect(log.entries[0]).toContain('order:create v1');
+    });
+
+    it('answers a version no handler serves with not-found, never the highest version', async () => {
+      const { app, resolverFactory, log } = buildVersioningApp();
+
+      const response = await app.handleAsync(
+        request(Topics.orderCreate, { customerName: 'Jo', quantity: 1 }, 'v9'),
+        resolverFactory,
+      );
+
+      expect(response.statusCode).toBe(BenzeneResultStatus.notFound);
+      expect(log.entries).toHaveLength(0);
+    });
+
+    it('ignores a bare `version` header (one version header: benzene-version)', async () => {
+      const { app, resolverFactory } = buildVersioningApp();
+      const req = request(Topics.orderCreate, { customerName: 'Jo', quantity: 1 });
+      req.headers = { version: 'v2' };
+
+      const response = await app.handleAsync(req, resolverFactory);
+
+      expect((JSON.parse(response.body) as OrderAcceptedV1).handledBy).toBe('CreateOrderV1MessageHandler');
     });
   });
 

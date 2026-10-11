@@ -9,26 +9,29 @@ import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { HeaderMessageVersionGetter } from './HeaderMessageVersionGetter';
 
 /**
- * An application-wide override for the ordered header-name fallback {@link HeaderMessageVersionGetter}
- * reads the payload schema version from. Register it once via {@link addMessageVersionHeaderNames};
- * every transport's version getter (registered through {@link addHeaderMessageVersionGetter}) then
- * resolves it, so the header names are configured in one place. When it isn't registered, each getter
- * falls back to {@link HeaderMessageVersionGetter.defaultHeaderNames}. Resolved from the container by
- * its own class (the port's `ServiceIdentifier` accepts a constructor, like `JsonSerializer`).
+ * An application-wide rename of the one header {@link HeaderMessageVersionGetter} reads the message's
+ * version from (default `benzene-version`). Register it once via {@link addMessageVersionHeaderName};
+ * every transport's version getter (registered through {@link addHeaderMessageVersionGetter}) resolves
+ * it, so the name is configured in one place. Resolved from the container by its own class.
+ *
+ * DIVERGENCE: .NET's `MessageVersionHeaderNames` holds an ordered fallback list. spec-0.2.0 (D10) made the
+ * version header one name — "a configured name replaces the default, it does not join a list" — so the
+ * port's type holds exactly one, and is named for it.
  */
-export class MessageVersionHeaderNames {
-  constructor(readonly headerNames: readonly string[]) {}
+export class MessageVersionHeaderName {
+  constructor(readonly headerName: string) {}
 }
 
 /**
- * Overrides, application-wide, the ordered header-name fallback every transport's
- * {@link HeaderMessageVersionGetter} reads the version from. C# extension method -> free function.
+ * Renames, application-wide, the header every transport's {@link HeaderMessageVersionGetter} reads the
+ * version from — e.g. `addMessageVersionHeaderName(services, 'schema-version')` for producers that already
+ * send that name. C# extension method -> free function.
  */
-export function addMessageVersionHeaderNames(
+export function addMessageVersionHeaderName(
   services: IBenzeneServiceContainer,
-  ...headerNames: string[]
+  headerName: string,
 ): IBenzeneServiceContainer {
-  services.addSingletonFactory(MessageVersionHeaderNames, () => new MessageVersionHeaderNames(headerNames));
+  services.addSingletonFactory(MessageVersionHeaderName, () => new MessageVersionHeaderName(headerName));
   return services;
 }
 
@@ -36,14 +39,14 @@ function versionGetterFactory<TContext>(): (resolver: IServiceResolver) => IMess
   return (resolver) =>
     new HeaderMessageVersionGetter<TContext>(
       resolver.getService(IMessageHeadersGetter) as unknown as IMessageHeadersGetter<TContext>,
-      resolver.tryGetService(MessageVersionHeaderNames)?.headerNames,
+      resolver.tryGetService(MessageVersionHeaderName)?.headerName,
     ) as unknown as IMessageVersionGetter<unknown>;
 }
 
 /**
  * Registers {@link HeaderMessageVersionGetter} as the {@link IMessageVersionGetter}, reading the header
- * names from an application-wide {@link MessageVersionHeaderNames} override when registered and falling
- * back to the defaults otherwise. Transports call this instead of registering the getter directly.
+ * name from an application-wide {@link MessageVersionHeaderName} when registered and `benzene-version`
+ * otherwise. Transports call this instead of registering the getter directly.
  */
 export function addHeaderMessageVersionGetter<TContext>(
   services: IBenzeneServiceContainer,

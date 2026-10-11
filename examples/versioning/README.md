@@ -3,7 +3,7 @@
 One BenzeneMessage service dogfooding **both** of Benzene's payload-versioning axes
 ([spec](https://github.com/daniellepelley/Benzene/tree/main/docs/specification/versioning.md)). The
 version always travels as the **`benzene-version`** metadata header — never inside the body — and a
-message with no version signal is treated as the topic's default. Ported from the .NET
+message with no version signal goes to the topic's default handler. Ported from the .NET
 `Benzene.Examples.Versioning`.
 
 ## Mechanism A — handler-version dispatch (`order:create`)
@@ -15,14 +15,19 @@ Two genuinely different request shapes, two handlers, no casting: the incoming v
 | `v1` | `CreateOrderV1MessageHandler` | flat `customerName` |
 | `v2` | `CreateOrderV2MessageHandler` | `firstName`/`lastName` + `currency` |
 
-Registered with `@message('order:create', { version: 'v1' })` / `{ version: 'v2' }`. When a producer sends
-**no** version, the `VersionSelector` falls back to the highest registered version (`v2`) — so V2 is the
-topic's default handler.
+Registered with `@message('order:create', { version: 'v1', isDefault: true })` / `{ version: 'v2' }`. A
+version no handler serves (`v9`) is `not-found` — never silently another version's handler. When a producer
+sends **no** version, the message goes to the topic's **declared default**, V1 — the oldest version the
+topic still accepts, so producers that predate versioning keep working
+([core-concepts §2](https://github.com/daniellepelley/Benzene/tree/main/docs/specification/core-concepts.md)).
+A topic with only versioned handlers and no declared default is reported at start-up.
 
 ## Mechanism B — transparent payload casting with **caster chaining** (`inventory:adjust`)
 
-Three payload versions of one type, but only **one** handler — written against the newest, V3. Older
-producers are cast to V3 transparently, and the response cast back to the caller's version. The point is
+Three payload versions of one type, but only **one** handler — written against the newest and registered
+with `@message('inventory:adjust', { version: 'v3', isDefault: true })`. A V1 or V2 message has no exact
+handler, so version selection picks the handler it can be **cast** to; the payload is cast to V3
+transparently, and the response cast back to the caller's version. The point is
 **chaining**: only the *adjacent* casters are declared —
 
 ```
@@ -50,13 +55,8 @@ downcast — which is how a plain **V1** request/response proves *both* hops ran
   auto-mapper (no runtime property reflection in TS), so casters are explicit `(from) => to` functions.
   [`src/startUp.ts`](src/startUp.ts) therefore declares the adjacent downcasters (V3→V2, V2→V1) too — the
   expander still **chains** them (V3→V2→V1), which is the mechanism the example is about.
-- **One header for both axes.** The payload-casting version signal is the canonical `benzene-version`
-  (`HeaderMessageVersionGetter`'s primary name), but the router picks a versioned handler from the topic's
-  version, which the stock BenzeneMessage getter reads from a `version` header.
-  [`src/versionAwareMessageGetter.ts`](src/versionAwareMessageGetter.ts) closes that gap in the composition
-  root — it does exactly what `IMessageVersionGetter`'s contract calls for ("combine it with the topic into
-  the version-aware dispatch key"), stamping the routing version from the resolved version getter so **both**
-  axes read the one `benzene-version` header.
+- **One header for both axes.** `benzene-version` drives both which handler runs and which shape the payload
+  arrives in. A plain `version` header is an ordinary header and selects nothing (wire-contracts §2).
 
 ## Wiring — one place
 
@@ -69,6 +69,6 @@ decorators with `usePayloadVersionCasting` **after** the transport's default map
 
 `test/Benzene.Core.Test/Examples/VersioningExampleTest.test.ts` boots the real app and pushes
 `BenzeneMessageRequest`s through the front door with a `benzene-version` header, asserting handler dispatch
-(v1/v2/default) and the full V1→V2→V3 up/down-cast round trip (plus the single-hop, no-cast, and
+(v1/v2/declared default, an unknown version as `not-found`) and the full V1→V2→V3 up/down-cast round trip (plus the single-hop, no-cast, and
 no-version-bypass cases). The handlers are transport-agnostic — the same versioning behaviour holds on any
 transport that carries `benzene-version` as metadata (an attribute on SQS/SNS, a header on HTTP).

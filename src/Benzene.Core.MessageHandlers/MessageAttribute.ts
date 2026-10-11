@@ -18,6 +18,13 @@ import { MessageHandlersRegistry } from './MessageHandlersRegistry';
  */
 export interface MessageOptions {
   version?: string;
+  /**
+   * Declares this versioned handler the topic's **default handler**: a message that carries no
+   * `benzene-version` goes to it when the topic has no unversioned handler (core-concepts §2). At most one
+   * handler per topic may be declared default (a start-up check enforces it). Declaring the oldest
+   * version the topic still accepts keeps pre-versioning producers working. Defaults to `false`.
+   */
+  isDefault?: boolean;
   requestType?: ServiceIdentifier<unknown>;
   responseType?: ServiceIdentifier<unknown>;
   /** Register with a specific registry instead of MessageHandlersRegistry.global. */
@@ -37,6 +44,7 @@ export interface MessageMetadata {
   readonly version: string;
   readonly requestType: ServiceIdentifier<unknown>;
   readonly responseType: ServiceIdentifier<unknown>;
+  readonly isDefault: boolean;
 }
 
 const metadataStore = new WeakMap<Constructor<unknown>, MessageMetadata>();
@@ -54,6 +62,7 @@ export function message(
       version: options.version ?? '',
       requestType: options.requestType ?? VoidResult,
       responseType: options.responseType ?? VoidResult,
+      isDefault: options.isDefault ?? false,
     });
     if (options.register !== false) {
       (options.registry ?? MessageHandlersRegistry.global).register(target);
