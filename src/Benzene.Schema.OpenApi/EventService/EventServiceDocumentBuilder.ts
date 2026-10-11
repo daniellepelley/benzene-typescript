@@ -9,6 +9,10 @@ import { EventServiceDocument } from './EventServiceDocument';
 import { HttpMapping } from './HttpMapping';
 import { RequestResponse } from './RequestResponse';
 import { Send } from './Send';
+import { ContractDocumentRuntime, IServiceDeploymentInfo, ServicePlacement, ServiceProfile } from '../ServiceDeploymentInfo';
+
+/** The members of a Contract Document a producer may be unable to determine (contract-document.md §1 `degraded`). */
+export type ContractDocumentMember = 'requests' | 'events' | 'sends';
 
 /**
  * Accumulates the Contract Document (contract-document.md) from the feeds the `SpecBuilder` hands it,
@@ -29,7 +33,12 @@ export class EventServiceDocumentBuilder {
   private readonly defaultVersions = new Map<string, string>();
   private service = '';
   private serviceVersion?: string;
+  private versionScheme?: string;
   private description?: string;
+  private runtime: string = ContractDocumentRuntime;
+  private placement?: ServicePlacement;
+  private profile?: ServiceProfile;
+  private readonly degraded: ContractDocumentMember[] = [];
   private transports: string[] = [];
 
   constructor(private readonly schemaBuilder: ISchemaBuilder) {}
@@ -38,7 +47,13 @@ export class EventServiceDocumentBuilder {
     const document = new EventServiceDocument(this.requests, this.events, this.schemaBuilder.build(), this.sends);
     document.service = this.service;
     document.serviceVersion = this.serviceVersion;
+    // A versionScheme without a serviceVersion orders nothing (service-versions.md §2), so it rides only with one.
+    document.versionScheme = this.serviceVersion === undefined ? undefined : this.versionScheme;
     document.description = this.description;
+    document.runtime = this.runtime;
+    document.placement = this.placement;
+    document.profile = this.profile;
+    document.degraded = [...this.degraded];
     document.transports = this.transports;
     return document;
   }
@@ -47,11 +62,33 @@ export class EventServiceDocumentBuilder {
     return JSON.stringify(this.build().toJson());
   }
 
-  /** `service`, `serviceVersion` and `description` come from the application's info (§1). */
+  /** `service`, `serviceVersion`, `versionScheme` and `description` come from the application's info (§1). */
   addApplicationInfo(applicationInfo: IApplicationInfo): this {
     this.service = applicationInfo.name ?? '';
     this.serviceVersion = applicationInfo.version === '' ? undefined : applicationInfo.version;
+    this.versionScheme = applicationInfo.versionScheme === '' ? undefined : applicationInfo.versionScheme;
     this.description = applicationInfo.description === '' ? undefined : applicationInfo.description;
+    return this;
+  }
+
+  /** `runtime`, `placement` and `profile`: the deployment-side fields the service knows (§1). */
+  addDeploymentInfo(deploymentInfo: IServiceDeploymentInfo): this {
+    if (deploymentInfo.runtime !== undefined && deploymentInfo.runtime.trim() !== '') {
+      this.runtime = deploymentInfo.runtime;
+    }
+    this.placement = deploymentInfo.placement;
+    this.profile = deploymentInfo.profile;
+    return this;
+  }
+
+  /**
+   * Records a member this producer could not determine (§1 `degraded`): it stays in the document, empty, and
+   * an empty list then asserts nothing rather than "none".
+   */
+  addDegraded(member: ContractDocumentMember): this {
+    if (!this.degraded.includes(member)) {
+      this.degraded.push(member);
+    }
     return this;
   }
 

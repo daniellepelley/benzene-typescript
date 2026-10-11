@@ -14,6 +14,13 @@ export interface IApplicationInfo {
 
   /** The application's version. */
   readonly version: string;
+
+  /**
+   * The comparison scheme of {@link version} (`integer`, `semver`, `lexicographic` - service-versions.md §2),
+   * carried onto the Contract Document as `versionScheme`. Optional: absent means the version is an identity
+   * only, not an order (the .NET `IApplicationInfo.VersionScheme` default member).
+   */
+  readonly versionScheme?: string;
 }
 
 export const IApplicationInfo: ServiceToken<IApplicationInfo> =

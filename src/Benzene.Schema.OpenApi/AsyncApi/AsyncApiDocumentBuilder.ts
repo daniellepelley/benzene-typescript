@@ -1,7 +1,7 @@
 /** Port of Benzene.Schema.OpenApi.AsyncApi.AsyncApiDocumentBuilder (the `asyncapi` document format). */
-import { ServiceIdentifier } from '@benzenejs/abstractions';
+import { ServiceIdentifier, VoidResult } from '@benzenejs/abstractions';
 import { IApplicationInfo, IMessageHandlerDefinition } from '@benzenejs/abstractions-message-handlers';
-import { IMessageDefinition } from '@benzenejs/abstractions-messages';
+import { IMessageDefinition, OutboundDeclaration } from '@benzenejs/abstractions-messages';
 import { ISchemaBuilder } from '../ISchemaBuilder';
 import { SchemaBuilder } from '../SchemaBuilder';
 import { DEFAULT_RESPONSE_TOPIC_SUFFIX } from './AsyncApiSpecOptions';
@@ -175,16 +175,82 @@ export class AsyncApiDocumentBuilder {
     return this;
   }
 
+  /**
+   * The explicit event and send declarations (`MeshOutboundRegistry`, contract-document.md §3.3) — the same
+   * declarations the Contract Document's `events[]`/`sends[]` read. Both are things the application **sends**
+   * (AsyncAPI 3.0's `action: send`), told apart by whose channel they land on:
+   * - an **event** is published on this service's own channel (it defines the topic);
+   * - a **send** is a message put on another service's channel (that service defines the topic), with the
+   *   declared reply modelled as AsyncAPI's native `reply` on the `<topic>:<suffix>` channel.
+   */
+  addOutboundDeclarations(declarations: readonly OutboundDeclaration[]): this {
+    for (const declaration of declarations) {
+      const version = declaration.version ?? '';
+      if (declaration.kind === 'event') {
+        this.addSendOnly(
+          declaration.topic,
+          declaration.message ?? VoidResult,
+          version,
+          `Publishes the '${declaration.topic}' event, a topic this service defines.`,
+        );
+      } else {
+        this.addSendToOtherService(declaration.topic, declaration.request ?? VoidResult, declaration.response, version);
+      }
+    }
+    return this;
+  }
+
   // A message the application produces/sends outbound (a broadcast event or an egress send) ⇒
   // action: send, no reply.
-  private addSendOnly(topic: string, payloadType: ServiceIdentifier<unknown>): void {
+  private addSendOnly(
+    topic: string,
+    payloadType: ServiceIdentifier<unknown>,
+    version = '',
+    description?: string,
+  ): void {
     const channelKey = this.getOrAddChannel(topic);
-    const messageKey = addMessage(this.channels[channelKey], payloadType, messageName(topic, ''), this.schemaBuilder);
-    this.addOperation(topic, {
+    const messageKey = addMessage(this.channels[channelKey], payloadType, messageName(topic, version), this.schemaBuilder);
+    const operation: Record<string, unknown> = {
       action: 'send',
       channel: { $ref: `#/channels/${channelKey}` },
       messages: [messageRef(channelKey, messageKey)],
-    });
+    };
+    if (description !== undefined) {
+      operation['description'] = description;
+    }
+    this.addOperation(topic, operation);
+  }
+
+  // A declared send: the application sends a message on another service's channel; a declared reply type is
+  // the native `reply`, on the `<topic>:<suffix>` channel the handling service answers on.
+  private addSendToOtherService(
+    topic: string,
+    requestType: ServiceIdentifier<unknown>,
+    responseType: ServiceIdentifier<unknown> | undefined,
+    version: string,
+  ): void {
+    const channelKey = this.getOrAddChannel(topic);
+    const messageKey = addMessage(this.channels[channelKey], requestType, messageName(topic, version), this.schemaBuilder);
+    const operation: Record<string, unknown> = {
+      action: 'send',
+      channel: { $ref: `#/channels/${channelKey}` },
+      messages: [messageRef(channelKey, messageKey)],
+      description: `Sends to '${topic}', a topic another service defines.`,
+    };
+    if (responseType !== undefined && responseType !== VoidResult) {
+      const replyChannelKey = this.getOrAddChannel(`${topic}:${this.responseTopicSuffix}`);
+      const replyMessageKey = addMessage(
+        this.channels[replyChannelKey],
+        responseType,
+        messageName(topic, version),
+        this.schemaBuilder,
+      );
+      operation['reply'] = {
+        channel: { $ref: `#/channels/${replyChannelKey}` },
+        messages: [messageRef(replyChannelKey, replyMessageKey)],
+      };
+    }
+    this.addOperation(topic, operation);
   }
 
   // Returns the channels-map KEY for the given topic address, creating the channel if needed. The real topic

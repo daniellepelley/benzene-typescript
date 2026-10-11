@@ -9,10 +9,12 @@ export class ApplicationInfo implements IApplicationInfo {
   readonly name: string;
   readonly version: string;
   readonly description: string;
+  readonly versionScheme?: string;
 
-  constructor(name: string, version: string, description: string) {
+  constructor(name: string, version: string, description: string, versionScheme?: string) {
     this.name = name;
     this.version = version;
     this.description = description;
+    this.versionScheme = versionScheme === undefined || versionScheme.trim() === '' ? undefined : versionScheme;
   }
 }

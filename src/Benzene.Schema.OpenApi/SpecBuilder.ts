@@ -17,6 +17,7 @@ import { AsyncApiSpecOptions } from './AsyncApi/AsyncApiSpecOptions';
 import { EventServiceDocumentBuilder } from './EventService/EventServiceDocumentBuilder';
 import { OpenApiDocumentBuilder } from './OpenApi/OpenApiDocumentBuilder';
 import { SchemaBuilder } from './SchemaBuilder';
+import { IServiceDeploymentInfo } from './ServiceDeploymentInfo';
 import { SpecRequest } from './SpecRequest';
 
 /**
@@ -27,7 +28,7 @@ import { SpecRequest } from './SpecRequest';
  * `SchemaBuilder`.
  *
  * The schema catalogue is sourced from the registered `ITypeJsonSchemaSource`s (validation-derived /
- * bring-your-own) rather than CLR reflection — the same seam the mesh descriptor uses. A registered
+ * bring-your-own) rather than CLR reflection — the seam every TypeScript schema comes through. A registered
  * `ISchemaBuilder` is NOT consulted here (the C# BYO-schema-builder swap): in the port, bring-your-own is a
  * `MapTypeJsonSchemaSource` registered alongside the validators, so it flows through the same source list.
  *
@@ -52,6 +53,14 @@ export class SpecBuilder {
     return new SchemaBuilder(resolver.getServices(ITypeJsonSchemaSource));
   }
 
+  /**
+   * The Contract Document: one derivation that both `benzene:spec` serves and a mesh-enabled service registers
+   * (mesh.md §2). A member none of whose sources is registered is named in `degraded` (contract-document.md §1)
+   * rather than asserted empty: `requests` without an `IMessageHandlersFinder`; `events` without response-event
+   * definitions or explicit declarations; `sends` without sender definitions or explicit declarations. Events and
+   * sends are only ever declared, never inferred, so a service that declares none - and has no outbound registry
+   * to say "none" - is reported as not knowing.
+   */
   private createBenzene(resolver: IServiceResolver): string {
     const builder = new EventServiceDocumentBuilder(this.schemaBuilder(resolver));
 
@@ -60,12 +69,19 @@ export class SpecBuilder {
       builder.addApplicationInfo(applicationInfo);
     }
 
+    const deploymentInfo = resolver.tryGetService(IServiceDeploymentInfo);
+    if (deploymentInfo !== undefined) {
+      builder.addDeploymentInfo(deploymentInfo);
+    }
+
     const handlersFinder = resolver.tryGetService(IMessageHandlersFinder);
     const httpEndpointFinder = resolver.tryGetService(IHttpEndpointFinder);
     if (handlersFinder !== undefined && httpEndpointFinder !== undefined) {
       builder.addHttpEndpointDefinitions(httpEndpointFinder.findDefinitions(), handlersFinder.findDefinitions());
     } else if (handlersFinder !== undefined) {
       builder.addMessageHandlerDefinitions(handlersFinder.findDefinitions());
+    } else {
+      builder.addDegraded('requests');
     }
 
     // events: response events (broadcasts); sends: sender definitions; both: explicit declarations (§3.3).
@@ -82,6 +98,12 @@ export class SpecBuilder {
     const outbound = resolver.tryGetService(IMeshOutboundDefinitionLookUp);
     if (outbound !== undefined) {
       builder.addOutboundDeclarations(outbound.getAllDeclarations());
+    }
+    if (outbound === undefined && broadcastFinder === undefined) {
+      builder.addDegraded('events');
+    }
+    if (outbound === undefined && sendersFinder === undefined) {
+      builder.addDegraded('sends');
     }
 
     const transportsInfo = resolver.tryGetService(ITransportsInfo);
@@ -131,6 +153,12 @@ export class SpecBuilder {
     const sendersFinder = resolver.tryGetService(IMessageSendersFinder);
     if (sendersFinder !== undefined) {
       builder.addMessageSenderDefinitions(sendersFinder.findDefinitions());
+    }
+
+    // The explicit event and send declarations the Contract Document reads too (contract-document.md §3.3).
+    const outbound = resolver.tryGetService(IMeshOutboundDefinitionLookUp);
+    if (outbound !== undefined) {
+      builder.addOutboundDeclarations(outbound.getAllDeclarations());
     }
 
     return builder.generateJson();

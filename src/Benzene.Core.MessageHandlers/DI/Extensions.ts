@@ -203,8 +203,9 @@ export function setApplicationInfo(
   name: string,
   version: string,
   description: string,
+  versionScheme?: string,
 ): IBenzeneServiceContainer {
-  services.addSingletonFactory(IApplicationInfo, () => new ApplicationInfo(name, version, description));
+  services.addSingletonFactory(IApplicationInfo, () => new ApplicationInfo(name, version, description, versionScheme));
   return services;
 }
 

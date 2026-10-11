@@ -21,6 +21,7 @@ import { MeshOutboundRegistry } from '@benzenejs/mesh-wire';
 import { IHttpEndpointDefinition, IHttpEndpointFinder } from '@benzenejs/http';
 import { registerZodSchema, ZodJsonSchemaSource } from '@benzenejs/zod';
 import {
+  IServiceDeploymentInfo,
   AsyncApiSpecOptions,
   ComponentNameCollisionError,
   SpecBuilder,
@@ -78,6 +79,8 @@ interface ResolverConfig {
   httpEndpoints?: IHttpEndpointDefinition[];
   transports?: string[];
   applicationName?: string;
+  versionScheme?: string;
+  deployment?: IServiceDeploymentInfo;
   asyncApiResponseTopicSuffix?: string;
 }
 
@@ -95,8 +98,9 @@ function fakeResolver(config: ResolverConfig): IServiceResolver {
       if (id === IMeshOutboundDefinitionLookUp) return config.outbound as T | undefined;
       if (id === ITransportsInfo && config.transports) return { transports: config.transports } as T;
       if (id === IApplicationInfo && config.applicationName) {
-        return { name: config.applicationName, description: '', version: '1.0.0' } as T;
+        return { name: config.applicationName, description: '', version: '1.0.0', versionScheme: config.versionScheme } as T;
       }
+      if (id === IServiceDeploymentInfo) return config.deployment as T | undefined;
       if (id === AsyncApiSpecOptions && config.asyncApiResponseTopicSuffix) {
         const options = new AsyncApiSpecOptions();
         options.responseTopicSuffix = config.asyncApiResponseTopicSuffix;
@@ -208,6 +212,53 @@ describe('SpecBuilder (benzene document)', () => {
         new SpecRequest(),
       ),
     ).toThrow(/both as an event and as a send/);
+  });
+
+  it('carries the deployment-side fields (runtime, placement, profile) outside both hashes', () => {
+    const base = { sources: [new ZodJsonSchemaSource()], handlers: [handlerDef('orders:create', CreateOrder, OrderConfirmation)], applicationName: 'orders-api' };
+    const plain = JSON.parse(new SpecBuilder().createSpec(fakeResolver(base), new SpecRequest())) as Record<string, unknown>;
+    const deployed = JSON.parse(
+      new SpecBuilder().createSpec(
+        fakeResolver({
+          ...base,
+          versionScheme: 'semver',
+          deployment: { placement: { cloud: 'aws', region: 'eu-west-1' }, profile: { name: 'cloud-service', missing: ['R6'] } },
+        }),
+        new SpecRequest(),
+      ),
+    ) as Record<string, unknown>;
+
+    expect(plain['runtime']).toBe('typescript');
+    expect(plain['placement']).toBeUndefined();
+    expect(deployed['serviceVersion']).toBe('1.0.0');
+    expect(deployed['versionScheme']).toBe('semver');
+    expect(deployed['runtime']).toBe('typescript');
+    expect(deployed['placement']).toEqual({ cloud: 'aws', region: 'eu-west-1' });
+    expect(deployed['profile']).toEqual({ name: 'cloud-service', missing: ['R6'] });
+    // Identity and placement never move either hash (contract-document.md §6.2).
+    expect(deployed['contractHash']).toBe(plain['contractHash']);
+    expect(deployed['registrationHash']).toBe(plain['registrationHash']);
+    // There is no instanceId in a document (mesh.md §2).
+    expect('instanceId' in deployed).toBe(false);
+  });
+
+  it('names a member it cannot determine in degraded, and omits degraded when every member is known', () => {
+    // No handler finder, no event or send source: all three members are unknown.
+    const unknown = JSON.parse(new SpecBuilder().createSpec(fakeResolver({}), new SpecRequest())) as Record<string, unknown>;
+    expect(unknown['degraded']).toEqual(['requests', 'events', 'sends']);
+    expect(unknown['requests']).toEqual([]);
+
+    // Handlers + a sender feed: events is still unknown (nothing declares events).
+    const partial = JSON.parse(
+      new SpecBuilder().createSpec(fakeResolver({ handlers: [], senders: [] }), new SpecRequest()),
+    ) as Record<string, unknown>;
+    expect(partial['degraded']).toEqual(['events']);
+
+    // An outbound registry - even an empty one - makes events and sends complete.
+    const known = JSON.parse(
+      new SpecBuilder().createSpec(fakeResolver({ handlers: [], outbound: new MeshOutboundRegistry() }), new SpecRequest()),
+    ) as Record<string, unknown>;
+    expect('degraded' in known).toBe(false);
   });
 
   it('attaches httpMappings to the (topic, version) entry the route reaches', () => {
@@ -400,6 +451,54 @@ describe('SpecBuilder (asyncapi document)', () => {
     expect(doc.components.schemas['CreateOrder']).toBeDefined();
     expect(doc.components.schemas['OrderConfirmation']).toBeDefined();
     expect(doc.components.schemas['OrderPlaced']).toBeDefined();
+  });
+
+  it('reads the outbound declarations: events are published on their own channel, sends go to another service with their reply', () => {
+    const outbound = new MeshOutboundRegistry()
+      .register({ kind: 'event', topic: 'order:placed', message: OrderPlaced })
+      .register({ kind: 'send', topic: 'payment:take', request: CreateOrder })
+      .register({ kind: 'send', topic: 'inventory:reserve', version: 'v2', request: GetOrder, response: OrderConfirmation });
+    const json = new SpecBuilder().createSpec(
+      fakeResolver({ sources: [new ZodJsonSchemaSource()], handlers: [], outbound, applicationName: 'orders-api' }),
+      new SpecRequest('asyncapi'),
+    );
+    const doc = JSON.parse(json) as {
+      channels: Record<string, { address: string; messages: Record<string, { name: string; payload: unknown }> }>;
+      operations: Record<string, {
+        action: string;
+        description?: string;
+        channel: { $ref: string };
+        messages: { $ref: string }[];
+        reply?: { channel: { $ref: string }; messages: { $ref: string }[] };
+      }>;
+      components: { schemas: Record<string, unknown> };
+    };
+
+    // The event: a publish (`send`) on the channel this service defines, no reply.
+    const placed = doc.operations['order_placed']!;
+    expect(placed.action).toBe('send');
+    expect(placed.reply).toBeUndefined();
+    expect(placed.description).toContain('event');
+    expect(doc.channels['order_placed']!.address).toBe('order:placed');
+    expect(doc.channels['order_placed']!.messages['OrderPlaced']!.payload).toEqual({ $ref: '#/components/schemas/OrderPlaced' });
+
+    // A one-way send: a `send` onto another service's channel, no reply.
+    const take = doc.operations['payment_take']!;
+    expect(take.action).toBe('send');
+    expect(take.reply).toBeUndefined();
+    expect(take.description).toContain('another service');
+    expect(doc.channels['payment_take']!.address).toBe('payment:take');
+
+    // A send with a declared reply: the native `reply`, on the `<topic>:response` channel; the version names the message.
+    const reserve = doc.operations['inventory_reserve']!;
+    expect(reserve.action).toBe('send');
+    expect(reserve.messages[0]!.$ref).toBe('#/channels/inventory_reserve/messages/GetOrder');
+    expect(doc.channels['inventory_reserve']!.messages['GetOrder']!.name).toBe('inventory:reserve vv2');
+    expect(reserve.reply!.channel.$ref).toBe('#/channels/inventory_reserve_response');
+    expect(reserve.reply!.messages[0]!.$ref).toBe('#/channels/inventory_reserve_response/messages/OrderConfirmation');
+    expect(doc.channels['inventory_reserve_response']!.address).toBe('inventory:reserve:response');
+
+    expect(Object.keys(doc.components.schemas).sort()).toEqual(['CreateOrder', 'GetOrder', 'OrderConfirmation', 'OrderPlaced']);
   });
 
   it('honours a custom response-topic suffix', () => {

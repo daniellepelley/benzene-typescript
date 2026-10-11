@@ -7,7 +7,7 @@ import { ServiceIdentifier, ServiceToken, serviceToken } from '@benzenejs/abstra
  *
  * Divergence: C#'s `AddSchema(Type)` generates the schema by reflecting over the CLR type (Swashbuckle);
  * TypeScript erases types, so the schema is *sourced* from the registered `ITypeJsonSchemaSource`s (the
- * validation-derived / bring-your-own schemas) — the same seam the mesh descriptor uses. `Type` → a runtime
+ * validation-derived / bring-your-own schemas) — the same seam every schema in the Contract Document comes through. `Type` → a runtime
  * `ServiceIdentifier` (class constructor / `VoidResult` sentinel).
  *
  * A builder accumulates ONE document's catalogue and is stateful — construct a fresh one per spec build.

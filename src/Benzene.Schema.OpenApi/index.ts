@@ -17,6 +17,7 @@
 export * from './Constants';
 export * from './ReservedTopics';
 export * from './SpecRequest';
+export * from './ServiceDeploymentInfo';
 export * from './ISchemaBuilder';
 export * from './SchemaBuilder';
 export * from './SpecBuilder';
@@ -24,6 +25,7 @@ export * from './SpecCache';
 export * from './SpecMessageHandler';
 export * from './ComponentNameCollisionError';
 export * from './ContractDocumentStartUpCheck';
+export * from './DeriveContractDocument';
 export * from './Extensions';
 export * from './EventService/HttpMapping';
 export * from './EventService/RequestResponse';

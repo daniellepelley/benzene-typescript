@@ -1,7 +1,5 @@
 import { IServiceResolver, IStartUpCheck } from '@benzenejs/abstractions';
-import { SpecBuilder } from './SpecBuilder';
-import { SpecCache } from './SpecCache';
-import { SpecRequest } from './SpecRequest';
+import { deriveContractDocument } from './DeriveContractDocument';
 
 /**
  * Derives the Contract Document once at start-up, so a derivation error fails the service before any
@@ -16,13 +14,6 @@ export class ContractDocumentStartUpCheck implements IStartUpCheck {
   readonly name = 'contract-document';
 
   check(resolver: IServiceResolver): void {
-    const request = new SpecRequest('benzene', 'json');
-    const build = (r: SpecRequest): string => new SpecBuilder().createSpec(resolver, r);
-    const cache = resolver.tryGetService(SpecCache);
-    if (cache !== undefined) {
-      cache.getOrBuild(request, build);
-    } else {
-      build(request);
-    }
+    deriveContractDocument(resolver);
   }
 }
