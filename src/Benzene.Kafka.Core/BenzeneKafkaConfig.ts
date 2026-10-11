@@ -30,6 +30,13 @@ export interface BenzeneKafkaConfig extends Partial<SettlementOptions> {
   topics: string[];
 
   /**
+   * The record header the Benzene topic is read from - `topic` (wire-contracts.md §2) unless renamed.
+   * When a record has no such header it routes on the Kafka topic it was consumed from
+   * (transport-bindings.md, Kafka).
+   */
+  topicHeaderKey?: string;
+
+  /**
    * Where a partition starts reading when the consumer group has no committed offset. `undefined` (the
    * default) leaves kafkajs's own default (`false` — read only new records). Set `true` to process the
    * retained backlog on first run. Mapped to `consumer.subscribe({ fromBeginning })`. Confluent

@@ -443,8 +443,9 @@ message body. Like SNS, delivery is fire-and-forget.
 useKafka(app, (kafka) => useMessageHandlers(kafka, NotifyWarehouseHandler));
 ```
 
-Works for both Amazon MSK and self-managed Kafka. The record's Kafka topic routes it and the base64
-record value is the payload; record headers are mapped to Benzene message headers.
+Works for both Amazon MSK and self-managed Kafka. The record's `topic` header routes it, falling back to
+its Kafka topic when it has none; the base64 record value is the payload, and the other record headers
+are mapped to Benzene message headers.
 
 ### Adding validation
 

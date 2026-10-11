@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { IBenzeneResultOf, IBenzeneServiceContainer } from '@benzenejs/abstractions';
 import { IBenzeneApplicationBuilder } from '@benzenejs/abstractions-middleware';
-import { IMessageHandler, IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import { IMessageGetter, IMessageHandler, IMessageResult } from '@benzenejs/abstractions-message-handlers';
+import type { MSKEvent, MSKRecord } from 'aws-lambda';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { BenzeneResult } from '@benzenejs/results';
 import { BenzeneException } from '@benzenejs/core';
 import {
   addBenzene,
+  addContextItems,
   message,
   MessageHandlersRegistry,
   useMessageHandlers,
@@ -16,6 +18,8 @@ import {
   addKafka,
   KafkaApplication,
   KafkaContext,
+  KafkaMessageHeadersGetter,
+  KafkaMessageTopicGetter,
   useKafka,
 } from '@benzenejs/aws-lambda-kafka';
 import { useAwsLambda } from '@benzenejs/aws-lambda-core';
@@ -117,5 +121,47 @@ describe('KafkaApplication (direct)', () => {
     expect(seenTopics).toEqual(['orders']);
     expect(handled).toEqual(['7']);
     expect(messageResult?.isSuccessful).toBe(true);
+  });
+});
+
+// transport-bindings.md, Kafka (spec ruling Benzene 0b53dddb): a record routes on its `topic` header,
+// falling back to the Kafka topic it was consumed from.
+describe('MSK getters', () => {
+  function mskContext(topic: string, headers: Record<string, string>[]): KafkaContext {
+    const encode = (value: string): number[] => Array.from(Buffer.from(value, 'utf8'));
+    const record = {
+      topic,
+      partition: 0,
+      offset: 1,
+      value: '',
+      headers: headers.map((entry) => Object.fromEntries(Object.entries(entry).map(([k, v]) => [k, encode(v)]))),
+    } as unknown as MSKRecord;
+    return new KafkaContext({ eventSource: 'aws:kafka', records: {} } as unknown as MSKEvent, record);
+  }
+
+  it('routes on the topic header when present', () => {
+    expect(new KafkaMessageTopicGetter().getTopic(mskContext('orders', [{ topic: 'order:create' }]))?.id).toBe('order:create');
+  });
+
+  it('falls back to the Kafka topic when there is no topic header', () => {
+    expect(new KafkaMessageTopicGetter().getTopic(mskContext('orders', [{ tenant: 'acme' }]))?.id).toBe('orders');
+  });
+
+  it('flattens every header entry, consumes the topic header and does not inject the Kafka topic', () => {
+    const headers = new KafkaMessageHeadersGetter().getHeaders(
+      mskContext('orders', [{ topic: 'order:create' }, { 'benzene-version': '2' }, { tenant: 'acme' }]),
+    );
+    expect(headers).toEqual({ 'benzene-version': '2', tenant: 'acme' });
+  });
+
+  it('selects the version from benzene-version through the DI wiring', () => {
+    const container = new DefaultBenzeneServiceContainer();
+    addBenzene(container);
+    addKafka(container);
+    addContextItems(container);
+    const getter = container.createServiceResolverFactory().createScope().getService(IMessageGetter) as unknown as IMessageGetter<KafkaContext>;
+    const topic = getter.getTopic(mskContext('orders', [{ topic: 'order:create' }, { 'benzene-version': '2' }]));
+    expect(topic?.id).toBe('order:create');
+    expect(topic?.version).toBe('2');
   });
 });

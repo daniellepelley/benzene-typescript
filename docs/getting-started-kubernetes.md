@@ -73,9 +73,9 @@ message handler in Benzene's hexagonal architecture: the domain logic sits behin
 transport is just an adapter in front of it. Stacking `@httpEndpoint` and `@message` on the same
 class is what lets all three legs below register it unmodified.
 
-The **Benzene topic must equal the Kafka topic name literally** — there is no colon-separated
-topic-id convention on Kafka the way there is for HTTP (see [Kafka
-Setup](getting-started-kafka.md)). That's why `order-place` was picked over the colon-style
+With no `topic` header on the record, the **Benzene topic must equal the Kafka topic name
+literally** — a record routes on its `topic` header when it has one, else on its Kafka topic (see
+[Kafka Setup](getting-started-kafka.md)). That's why `order-place` was picked over the colon-style
 `order:place` this port otherwise favors: Kafka topic names may not contain `:`.
 
 ## 2. Declare all three transports in one startup

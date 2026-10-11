@@ -1,33 +1,35 @@
 /** Port of Benzene.Aws.Lambda.Kafka.KafkaMessageHeadersGetter. */
 import { IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
+import { DefaultMetadataTopicKey, withoutMetadataKey } from '@benzenejs/core-messages';
 import { KafkaContext } from './KafkaContext';
 
 /**
- * Extracts headers from a Kafka record's FIRST header batch, UTF-8 decoding each value, and adds the Kafka
- * topic name as a `topic` header.
+ * Extracts headers from a Kafka record, UTF-8 decoding each value.
  *
- * FIELD mapping: C# `KafkaEventRecord.Headers.FirstOrDefault()` — `Headers` is a list of header batches,
- * each `IDictionary<string, byte[]>`. In `@types/aws-lambda` `MSKRecord.headers` is `MSKRecordHeader[]`,
- * each `{ [key: string]: number[] }` (byte arrays), so the first batch is `headers[0]` and each value is
- * decoded from its byte array via `Buffer.from(bytes).toString('utf8')` (the port of `Encoding.UTF8.
- * GetString`). Faithful to .NET: when there is NO header batch the result is empty (the `topic` header is
- * only added alongside a present batch).
+ * FIELD mapping: in `@types/aws-lambda` `MSKRecord.headers` is `MSKRecordHeader[]` - Kafka's ordered,
+ * duplicate-key-capable header list, each entry `{ [key: string]: number[] }` (a byte array). Every entry
+ * is flattened into the dictionary, last-wins on a repeated key, and each value is decoded with
+ * `Buffer.from(bytes).toString('utf8')` (the port of `Encoding.UTF8.GetString`), as the .NET getter does.
+ *
+ * The Kafka topic is a routing concept resolved by `KafkaMessageTopicGetter` - it is not surfaced as a
+ * header - and the configured topic header (default `topic`) is consumed: it is the topic, not a header
+ * (transport-metadata-cases.json `headersExclude`).
  */
 export class KafkaMessageHeadersGetter implements IMessageHeadersGetter<KafkaContext> {
+  constructor(private readonly topicHeaderKey: string = DefaultMetadataTopicKey) {}
+
   getHeaders(context: KafkaContext): Record<string, string> {
-    const firstBatch = context.kafkaEventRecord.headers?.[0];
+    return withoutMetadataKey(KafkaMessageHeadersGetter.decodeHeaders(context), this.topicHeaderKey);
+  }
 
-    if (firstBatch === undefined) {
-      return {};
-    }
-
+  /** Every record header, UTF-8 decoded, the topic header included - what the topic getter reads. */
+  static decodeHeaders(context: KafkaContext): Record<string, string> {
     const headers: Record<string, string> = {};
-    for (const [key, bytes] of Object.entries(firstBatch)) {
-      headers[key] = Buffer.from(bytes).toString('utf8');
+    for (const entry of context.kafkaEventRecord.headers ?? []) {
+      for (const [key, bytes] of Object.entries(entry)) {
+        headers[key] = Buffer.from(bytes).toString('utf8');
+      }
     }
-
-    headers['topic'] = context.kafkaEventRecord.topic;
-
     return headers;
   }
 }

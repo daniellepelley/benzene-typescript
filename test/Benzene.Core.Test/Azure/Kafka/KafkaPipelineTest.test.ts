@@ -181,12 +181,26 @@ describe('Kafka getters', () => {
     expect(new KafkaMessageBodyGetter().getBody(context)).toBeUndefined();
   });
 
-  it('KafkaMessageTopicGetter reads the native topic name', () => {
+  it('KafkaMessageTopicGetter falls back to the native topic name when there is no topic header', () => {
     const context = new KafkaContext(createRecord('orders-topic', {}));
     expect(new KafkaMessageTopicGetter().getTopic(context)?.id).toBe('orders-topic');
   });
 
-  it('KafkaMessageHeadersGetter is always empty', () => {
+  // transport-bindings.md, Kafka (spec ruling Benzene 0b53dddb): the topic header wins over the Kafka topic.
+  it('KafkaMessageTopicGetter routes on the topic header when present', () => {
+    const record = { ...createRecord('orders-topic', {}), headers: { Topic: new TextEncoder().encode('order:create') } };
+    expect(new KafkaMessageTopicGetter().getTopic(new KafkaContext(record))?.id).toBe('order:create');
+  });
+
+  it('KafkaMessageHeadersGetter decodes the record headers and consumes the topic header', () => {
+    const record = {
+      ...createRecord('t', {}),
+      headers: { topic: 'order:create', 'benzene-version': new TextEncoder().encode('2'), skipped: 5 },
+    };
+    expect(new KafkaMessageHeadersGetter().getHeaders(new KafkaContext(record))).toEqual({ 'benzene-version': '2' });
+  });
+
+  it('KafkaMessageHeadersGetter is empty for a record with no headers', () => {
     const context = new KafkaContext(createRecord('t', {}));
     expect(new KafkaMessageHeadersGetter().getHeaders(context)).toEqual({});
   });

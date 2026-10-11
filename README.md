@@ -968,7 +968,7 @@ next to its C# counterpart:
     in each binding's getters; the port keeps them in `@benzenejs/core-messages`' `MetadataTopic`
     (`findMetadataValue`, `withoutMetadataKey`), which every native-metadata inbound binding (Lambda SQS
     and SNS, the self-hosted SQS consumer, Pub/Sub, both Service Bus bindings, the Event Hub consumer,
-    RabbitMQ) uses: the topic key is matched case-insensitively and is **consumed** - it is the topic and
+    RabbitMQ, the three Kafka bindings) uses: the topic key is matched case-insensitively and is **consumed** - it is the topic and
     is left out of the header dictionary (the fixture's `headersExclude`), while `benzene-version` stays a
     header for the version getter. Each binding's topic key is configurable and reaches both its getters
     (`addSqs`/`addSns`/`addServiceBus` and `useSqs`/`useSns`/`useServiceBus` gained an optional key
@@ -1635,7 +1635,10 @@ Ported (with tests):
   Also: `KafkaApplication` extends `MiddlewareApplicationWithResult` (the C# uses the plain, result-less
   `MiddlewareApplication` and gates commits on whether the handler threw); `KafkaMessageTopicGetter` is
   registered directly (not behind a `PresetTopicMessageTopicGetter` as SQS/Event Hubs are — a Kafka record
-  always carries its native topic); config class → interface with `withKafkaConfigDefaults`;
+  always carries its native topic to fall back to). It reads the record's `topic` header first and falls
+  back to the Kafka topic (spec ruling Benzene 0b53dddb; the C# getter reads the Kafka topic only), as the
+  Lambda MSK and Functions Kafka getters do; the header is consumed, and the Functions trigger now maps
+  record headers (its C# getter returns none); config class → interface with `withKafkaConfigDefaults`;
   `CancellationToken` → optional `AbortSignal`. The **outbound producer** IS ported (`Kafka/` subdir):
   `KafkaBenzeneMessageClient` (an `IBenzeneMessageClient` producing via a kafkajs `Producer`, taken
   explicitly like the consumer's `IKafkaConsumerFactory` seam), `KafkaClientMiddleware`,

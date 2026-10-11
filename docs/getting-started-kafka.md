@@ -44,9 +44,12 @@ Benzene separates *what your service does* from *how it's invoked*:
 
 - A **message handler** contains your logic. It receives a typed request and knows nothing about Kafka,
   consumer groups, or offsets.
-- Each handler is mapped to a **topic** via the `@message` decorator. On Kafka the topic string is the
-  **literal Kafka topic name** — there is no colon-separated topic-id convention the way there is for
-  HTTP. Whatever you pass to `@message('...')` must be exactly the Kafka topic the record arrives on.
+- Each handler is mapped to a **topic** via the `@message` decorator. A record's topic is its `topic`
+  header when it has one (so one Kafka topic can carry several Benzene topics, `order:create` included);
+  otherwise it is the **literal Kafka topic name** the record arrived on. With no header — what this
+  guide's producer sends — whatever you pass to `@message('...')` must be exactly that Kafka topic.
+  Rename the header with `topicHeaderKey` in `BenzeneKafkaConfig`; it is consumed as the topic and does
+  not appear among the message headers.
 - The **worker** connects a kafkajs consumer, subscribes to the configured topics, and runs each record
   through the pipeline, which routes it to the matching handler by topic.
 
@@ -97,7 +100,7 @@ export class HelloWorldMessage {
   name?: string;
 }
 
-// The @message topic must be the LITERAL Kafka topic name — not a colon-separated id.
+// With no `topic` header on the record, the @message topic is the LITERAL Kafka topic name.
 @message('hello_world', { requestType: HelloWorldMessage })
 export class HelloWorldMessageHandler implements IMessageHandlerNoResponse<HelloWorldMessage> {
   handleAsync(message: HelloWorldMessage): Promise<void> {
@@ -303,8 +306,8 @@ would, returning the handler's recorded result. Use `withServices(...)` on the b
 
 ## Troubleshooting
 
-**Handler never fires.** The `@message('...')` value must equal the **literal Kafka topic name**, not a
-colon-separated id. Confirm `topics` in `BenzeneKafkaConfig` includes that topic and that the broker has
+**Handler never fires.** The `@message('...')` value must equal the record's `topic` header, or — when
+the record has none — the **literal Kafka topic name**. Confirm `topics` in `BenzeneKafkaConfig` includes that topic and that the broker has
 it.
 
 **Records aren't redelivered after a failure.** Under the default auto-commit, a failed record is

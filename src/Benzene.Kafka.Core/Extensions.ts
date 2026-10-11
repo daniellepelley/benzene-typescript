@@ -60,7 +60,7 @@ export function useKafka(
   // (see the gRPC "wiring" divergence note in the README, which documents this same type-erasure fix).
   app.register((x) => {
     addBenzene(x);
-    addKafkaConsumer(x);
+    addKafkaConsumer(x, config.topicHeaderKey);
   });
 
   if (healthCheck && adminClientFactory !== undefined) {

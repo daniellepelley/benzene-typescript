@@ -16,12 +16,14 @@
  *   - C# `KafkaRecord.Value` (`byte[]`)       -> `value`  (UTF-8 decoded by `KafkaMessageBodyGetter`;
  *                                                modelled as bytes to match the C# `byte[]` /
  *                                                `Encoding.UTF8.GetString(...)`)
- * The remaining members (`key`, `offset`, `partition`, `headers`) are modelled for realism/parity —
- * the C# package's getters don't currently read them (its headers getter is always-empty), so they're
- * optional here and unused by the port.
+ *   - C# `KafkaRecord.Headers`                -> `headers` (read by `KafkaMessageHeadersGetter`, and by
+ *                                                `KafkaMessageTopicGetter` for the `topic` header -
+ *                                                a divergence: the C# getters ignore them)
+ * The remaining members (`key`, `offset`, `partition`) are modelled for realism/parity and are optional
+ * here and unused by the port.
  */
 export interface KafkaRecord {
-  /** The Kafka topic the record was published to. Drives Benzene routing. */
+  /** The Kafka topic the record was published to. Routes when the record has no `topic` header. */
   topic: string;
 
   /** The record value (payload) as raw bytes, UTF-8 decoded to the message body. C# `byte[]`. */
@@ -36,6 +38,9 @@ export interface KafkaRecord {
   /** The partition the record came from. Modelled for parity; not read by the port. */
   partition?: number;
 
-  /** The record's headers. Modelled for parity; the C# headers getter is always-empty. */
+  /**
+   * The record's headers: a string value is used as-is, a byte array is UTF-8 decoded, anything else is
+   * skipped. The `topic` header, when present, is the Benzene topic (else `topic` above routes).
+   */
   headers?: Record<string, unknown>;
 }

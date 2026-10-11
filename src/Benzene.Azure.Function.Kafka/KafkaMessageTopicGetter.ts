@@ -1,16 +1,26 @@
 /** Port of Benzene.Azure.Function.Kafka.KafkaMessageTopicGetter. */
 import { IMessageTopicGetter } from '@benzenejs/abstractions-message-handlers';
 import { ITopic } from '@benzenejs/abstractions-messages';
-import { Topic } from '@benzenejs/core-messages';
+import { DefaultMetadataTopicKey, findMetadataValue, Topic } from '@benzenejs/core-messages';
 import { KafkaContext } from './KafkaContext';
+import { KafkaMessageHeadersGetter } from './KafkaMessageHeadersGetter';
 
 /**
- * Extracts the message topic from a Kafka event's native topic name — no `topic` attribute needs
- * bolting on the way SQS/SNS/Service Bus require, since Kafka records carry their own topic. Field
- * mapping: C# `new Topic(context.KafkaEvent.Topic)` becomes `new Topic(context.kafkaEvent.topic)`.
+ * Extracts the message topic from a Kafka event (transport-bindings.md, Kafka): the record's `topic`
+ * header (matched case-insensitively, configurable), falling back to the Kafka topic the record was
+ * consumed from (`kafkaEvent.topic`), so a producer that writes no header still routes.
+ *
+ * DIVERGENCE: the C# getter returns `new Topic(context.KafkaEvent.Topic)` only; spec ruling Benzene
+ * 0b53dddb made the header win.
  */
 export class KafkaMessageTopicGetter implements IMessageTopicGetter<KafkaContext> {
+  /** The default topic header - the spec's reserved `topic` (wire-contracts.md §2). */
+  static readonly DefaultTopicHeader = DefaultMetadataTopicKey;
+
+  constructor(private readonly topicHeaderKey: string = KafkaMessageTopicGetter.DefaultTopicHeader) {}
+
   getTopic(context: KafkaContext): ITopic | undefined {
-    return new Topic(context.kafkaEvent.topic);
+    const header = findMetadataValue(KafkaMessageHeadersGetter.decodeHeaders(context), this.topicHeaderKey);
+    return new Topic(header !== undefined && header !== '' ? header : context.kafkaEvent.topic);
   }
 }

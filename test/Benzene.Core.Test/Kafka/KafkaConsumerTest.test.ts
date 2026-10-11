@@ -5,7 +5,9 @@ import { IServiceResolver } from '@benzenejs/abstractions';
 import {
   addBenzene,
   addBenzeneMessage,
+  addContextItems,
 } from '@benzenejs/core-message-handlers';
+import { IMessageGetter } from '@benzenejs/abstractions-message-handlers';
 import { MiddlewarePipelineBuilder } from '@benzenejs/core-middleware';
 import { DefaultBenzeneServiceContainer } from '@benzenejs/dependencies';
 import { BenzeneResult } from '@benzenejs/results';
@@ -59,12 +61,41 @@ function createResolverFactory() {
   const container = new DefaultBenzeneServiceContainer();
   addBenzene(container);
   addKafkaConsumer(container);
+  addContextItems(container);
   return container.createServiceResolverFactory();
 }
 
 describe('Kafka consumer mappers', () => {
-  it('reads the topic from the record', () => {
+  it('reads the topic from the record when it has no topic header (the Kafka-topic fallback)', () => {
     expect(new KafkaMessageTopicGetter().getTopic(context({ topic: 'my-topic' }))!.id).toBe('my-topic');
+  });
+
+  // transport-bindings.md, Kafka (spec ruling Benzene 0b53dddb): the topic header wins over the Kafka topic.
+  it('routes on the topic header when present, matched case-insensitively', () => {
+    const getter = new KafkaMessageTopicGetter();
+    expect(getter.getTopic(context({ topic: 'orders', headers: { topic: Buffer.from('order:create') } }))!.id).toBe('order:create');
+    expect(getter.getTopic(context({ topic: 'orders', headers: { Topic: 'order:create' } }))!.id).toBe('order:create');
+  });
+
+  it('honours a renamed topic header, leaving the default key an ordinary header', () => {
+    const ctx = context({ topic: 'orders', headers: { 'x-my-topic': 'order:create', topic: 'not-the-topic' } });
+    expect(new KafkaMessageTopicGetter('x-my-topic').getTopic(ctx)!.id).toBe('order:create');
+    expect(new KafkaMessageHeadersGetter('x-my-topic').getHeaders(ctx)).toEqual({ topic: 'not-the-topic' });
+  });
+
+  it('consumes the topic header: it is the topic, not a header', () => {
+    const headers = new KafkaMessageHeadersGetter().getHeaders(
+      context({ headers: { topic: 'order:create', 'benzene-version': '2', tenant: 'acme' } }),
+    );
+    expect(headers).toEqual({ 'benzene-version': '2', tenant: 'acme' });
+  });
+
+  it('routes a header-addressed record through the DI wiring, with the version from benzene-version', () => {
+    const scope = createResolverFactory().createScope();
+    const getter = scope.getService(IMessageGetter) as unknown as IMessageGetter<KafkaRecordContext>;
+    const topic = getter.getTopic(context({ topic: 'orders', headers: { topic: 'order:create', 'benzene-version': '2' } }));
+    expect(topic?.id).toBe('order:create');
+    expect(topic?.version).toBe('2');
   });
 
   it('returns the record value as a string', () => {

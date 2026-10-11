@@ -9,7 +9,7 @@ import {
 import { IMessageBodyGetter, IMessageHeadersGetter } from '@benzenejs/abstractions-messages';
 import { PipelineBuilderAction } from '@benzenejs/abstractions-middleware';
 import { IAzureFunctionAppBuilder } from '@benzenejs/azure-function-core';
-import { JsonSerializer, TransportInfo } from '@benzenejs/core-message-handlers';
+import { JsonSerializer, TransportInfo, tryAddHeaderMessageVersionGetter } from '@benzenejs/core-message-handlers';
 import { KafkaApplication } from './KafkaApplication';
 import { KafkaContext } from './KafkaContext';
 import { KafkaMessageBodyGetter } from './KafkaMessageBodyGetter';
@@ -33,18 +33,27 @@ import { KafkaOptions } from './KafkaOptions';
  * interface's shared `<unknown>` token (one context type per pipeline, so the erased `<KafkaContext>` is
  * closed here). Where C# uses `TryAddScoped` the port uses `tryAddScoped`; `AddScoped`/`AddSingleton`
  * become the non-`try` factory registrations, so these Kafka getters win over any generic defaults.
+ *
+ * `topicHeaderKey` is the record header the topic is read from (default `topic`), falling back to the
+ * Kafka topic when the header is absent (transport-bindings.md, Kafka); the header is consumed - the
+ * topic, not a header - and a `benzene-version` header selects the handler version
+ * (`tryAddHeaderMessageVersionGetter`, as .NET's `TryAddHeaderMessageVersionGetter`).
  */
-export function addKafka(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+export function addKafka(
+  services: IBenzeneServiceContainer,
+  topicHeaderKey: string = KafkaMessageTopicGetter.DefaultTopicHeader,
+): IBenzeneServiceContainer {
   tryAddScoped(services, JsonSerializer);
 
   services.addScopedFactory(
     IMessageTopicGetter,
-    () => new KafkaMessageTopicGetter() as IMessageTopicGetter<unknown>,
+    () => new KafkaMessageTopicGetter(topicHeaderKey) as IMessageTopicGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new KafkaMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new KafkaMessageHeadersGetter(topicHeaderKey) as IMessageHeadersGetter<unknown>,
   );
+  tryAddHeaderMessageVersionGetter<KafkaContext>(services);
   services.addScopedFactory(
     IMessageBodyGetter,
     () => new KafkaMessageBodyGetter() as IMessageBodyGetter<unknown>,
@@ -71,13 +80,16 @@ export function addKafka(services: IBenzeneServiceContainer): IBenzeneServiceCon
  * @param app The Azure Function app builder to add Kafka handling to.
  * @param action Configures the Kafka middleware pipeline.
  * @param configure Optionally configures `KafkaOptions` (e.g. `catchExceptions` / `raiseOnFailureStatus`).
+ * @param topicHeaderKey The record header the topic is read from (default `topic`); a record without it
+ * routes on its Kafka topic.
  */
 export function useKafka(
   app: IAzureFunctionAppBuilder,
   action: PipelineBuilderAction<KafkaContext>,
   configure?: (options: KafkaOptions) => void,
+  topicHeaderKey: string = KafkaMessageTopicGetter.DefaultTopicHeader,
 ): IAzureFunctionAppBuilder {
-  app.register((x) => addKafka(x));
+  app.register((x) => addKafka(x, topicHeaderKey));
   const pipeline = app.create<KafkaContext>();
   action(pipeline);
   const options = new KafkaOptions();

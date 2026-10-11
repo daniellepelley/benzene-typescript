@@ -39,19 +39,23 @@ import { OutboundEventBridgeContextConverter } from '@benzenejs/clients-aws-even
 import { S3Options } from '@benzenejs/aws-lambda-s3';
 import { DynamoDbOptions } from '@benzenejs/aws-lambda-dynamodb';
 import { KinesisOptions } from '@benzenejs/aws-lambda-kinesis';
-import { KafkaOptions as MskKafkaOptions } from '@benzenejs/aws-lambda-kafka';
+import { addKafka as addMskKafka, KafkaContext as MskKafkaContext, KafkaOptions as MskKafkaOptions } from '@benzenejs/aws-lambda-kafka';
 import { BenzeneMessageLambdaOptions } from '@benzenejs/aws-lambda-core';
 import { addServiceBus, ServiceBusContext, ServiceBusOptions } from '@benzenejs/azure-function-service-bus';
 import { QueueStorageOptions } from '@benzenejs/azure-function-queue-storage';
 import { EventGridOptions } from '@benzenejs/azure-function-event-grid';
-import { KafkaOptions as FunctionsKafkaOptions } from '@benzenejs/azure-function-kafka';
+import {
+  addKafka as addFunctionsKafka,
+  KafkaContext as FunctionsKafkaContext,
+  KafkaOptions as FunctionsKafkaOptions,
+} from '@benzenejs/azure-function-kafka';
 import { EventHubOptions } from '@benzenejs/azure-function-event-hub';
 import { TimerOptions } from '@benzenejs/azure-function-timer';
 import { BlobStorageOptions } from '@benzenejs/azure-function-blob-storage';
 import { CosmosDbChangeFeedOptions } from '@benzenejs/azure-function-cosmos-db';
 import { BenzeneCosmosChangeFeedConfig } from '@benzenejs/azure-cosmos-db';
 import { addEventHubConsumer, EventHubConsumerContext, withEventHubConfigDefaults } from '@benzenejs/azure-event-hub';
-import { withKafkaConfigDefaults } from '@benzenejs/kafka-core';
+import { addKafkaConsumer, KafkaRecordContext, withKafkaConfigDefaults } from '@benzenejs/kafka-core';
 import { addRabbitMqConsumer, RabbitMqAckMode, RabbitMqContext, withRabbitMqConfigDefaults } from '@benzenejs/rabbitmq';
 import {
   addGooglePubSub,
@@ -60,7 +64,8 @@ import {
   PubSubOptions,
 } from '@benzenejs/google-cloud-functions-pubsub';
 import { Constants } from '@benzenejs/core-messages';
-import type { SNSEventRecord, SQSRecord } from 'aws-lambda';
+import type { MSKEvent, MSKRecord, SNSEventRecord, SQSRecord } from 'aws-lambda';
+import type { EachMessagePayload } from 'kafkajs';
 import type { ServiceBusReceivedMessage } from '@azure/service-bus';
 import type { ReceivedEventData } from '@azure/event-hubs';
 import type { ConsumeMessage } from 'amqplib';
@@ -92,6 +97,7 @@ type Settlement = 'redeliver' | 'skip-and-continue' | 'n/a';
 
 interface MetadataFixture {
   defaultMetadataKeys: { topic: string; version: string; headers: string };
+  topicSources: { binding: string; source: string; fallback?: string }[];
   metadataCases: MetadataCase[];
   overrideCases: OverrideCase[];
   settlementDefaults: {
@@ -147,8 +153,6 @@ describe('TransportMetadataConformanceTest', () => {
   // native channel, the binding is registered through its real DI function (with the case's topic key on
   // an override), and the topic, version and headers are read back through the container's IMessageGetter
   // - the same path the router reads them on. benzene-version is tier A, so every case runs unconditionally.
-  // Kafka is not here: its topicSources entry says metadata, but this port (like .NET) routes a Kafka record
-  // by its native topic name.
   describe('metadataCases', () => {
     for (const binding of metadataBindings) {
       describe(binding.name, () => {
@@ -157,6 +161,27 @@ describe('TransportMetadataConformanceTest', () => {
             assertResolution(binding, expectedTopicKey, metadataCase.metadata, metadataCase.expected);
           });
         }
+      });
+    }
+  });
+
+  // topicSources: a metadata binding with a `fallback` routes on it when the topic key is absent, and the
+  // key, when present, always wins (conformance/README.md). The fixture's fallback is prose, so the native
+  // value is this runner's: a routing key / Kafka topic of 'native:fallback'.
+  describe('topicSources fallback', () => {
+    const fallbacks = new Map(
+      fixture.topicSources.filter((source) => source.fallback !== undefined).map((source) => [source.binding, source.fallback]),
+    );
+
+    it('names a fallback for exactly the bindings this runner exercises one for', () => {
+      const exercised = new Set(metadataBindings.flatMap((binding) => (binding.fallbackBinding === undefined ? [] : [binding.fallbackBinding])));
+      expect([...fallbacks.keys()].sort()).toEqual([...exercised].sort());
+    });
+
+    for (const binding of metadataBindings.filter((b) => b.fallbackBinding !== undefined)) {
+      it(`${binding.name}: the key wins; absent, the ${binding.fallbackBinding} fallback routes`, () => {
+        assertResolution(binding, expectedTopicKey, { topic: 'conformance:greet' }, { topic: 'conformance:greet', headersExclude: ['topic'] }, 'native:fallback');
+        assertResolution(binding, expectedTopicKey, { 'x-correlation-id': 'abc-123' }, { topic: 'native:fallback', headers: { 'x-correlation-id': 'abc-123' } }, 'native:fallback');
       });
     }
   });
@@ -240,8 +265,11 @@ describe('TransportMetadataConformanceTest', () => {
  */
 interface MetadataBinding {
   name: string;
+  /** The topicSources binding whose `fallback` this binding routes on when the topic key is absent. */
+  fallbackBinding?: string;
   register: (container: DefaultBenzeneServiceContainer, topicKey: string) => void;
-  context: (metadata: Record<string, string>) => unknown;
+  /** `fallback`: the native routing value a `fallbackBinding` falls back to (empty when not given). */
+  context: (metadata: Record<string, string>, fallback?: string) => unknown;
 }
 
 const metadataBindings: MetadataBinding[] = [
@@ -298,14 +326,50 @@ const metadataBindings: MetadataBinding[] = [
     // No routing key: the AMQP routing-key fallback (topicSources) is for a non-Benzene producer and
     // would otherwise stand in for an absent topic header.
     name: 'rabbitmq: BasicProperties.Headers',
+    fallbackBinding: 'rabbitmq',
     register: (container, topicKey) => addRabbitMqConsumer(container, topicKey),
-    context: (metadata) =>
+    context: (metadata, fallback = '') =>
       RabbitMqContext.createInstance({
         content: Buffer.from('{}'),
-        fields: { routingKey: '' },
+        fields: { routingKey: fallback },
         // RabbitMQ carries header values as byte[]: deliver them that way.
         properties: { headers: mapValues(metadata, (value) => Buffer.from(value)) },
       } as unknown as ConsumeMessage),
+  },
+  // Kafka (topicSources: metadata, falling back to the Kafka topic the record was consumed from - spec
+  // ruling Benzene 0b53dddb). As for RabbitMQ, the cases run with an empty Kafka topic so the fallback
+  // cannot stand in for an absent topic header; the fallback has its own assertion below.
+  {
+    name: 'kafka (self-hosted consumer): headers',
+    fallbackBinding: 'kafka',
+    register: (container, topicKey) => addKafkaConsumer(container, topicKey),
+    context: (metadata, fallback = '') =>
+      KafkaRecordContext.createInstance({
+        topic: fallback,
+        partition: 0,
+        message: { key: null, value: Buffer.from('{}'), offset: '1', headers: mapValues(metadata, (value) => Buffer.from(value)) },
+      } as unknown as EachMessagePayload),
+  },
+  {
+    name: 'kafka (lambda msk): headers',
+    fallbackBinding: 'kafka',
+    register: (container, topicKey) => addMskKafka(container, topicKey),
+    context: (metadata, fallback = '') =>
+      new MskKafkaContext({ eventSource: 'aws:kafka', records: {} } as unknown as MSKEvent, {
+        topic: fallback,
+        partition: 0,
+        offset: 1,
+        value: '',
+        // MSK delivers Kafka's header list as one { key: bytes } object per header.
+        headers: Object.entries(metadata).map(([key, value]) => ({ [key]: Array.from(Buffer.from(value)) })),
+      } as unknown as MSKRecord),
+  },
+  {
+    name: 'kafka (functions trigger): headers',
+    fallbackBinding: 'kafka',
+    register: (container, topicKey) => addFunctionsKafka(container, topicKey),
+    context: (metadata, fallback = '') =>
+      new FunctionsKafkaContext({ topic: fallback, headers: mapValues(metadata, (value) => new TextEncoder().encode(value)) }),
   },
 ];
 
@@ -319,6 +383,7 @@ function assertResolution(
   topicKey: string,
   metadata: Record<string, string>,
   expected: MetadataExpectation,
+  fallback?: string,
 ): void {
   const container = new DefaultBenzeneServiceContainer();
   addBenzene(container);
@@ -326,7 +391,7 @@ function assertResolution(
   addContextItems(container);
   const scope = container.createServiceResolverFactory().createScope();
   const getter = scope.getService(IMessageGetter) as unknown as IMessageGetter<unknown>;
-  const context = binding.context(metadata);
+  const context = binding.context(metadata, fallback);
 
   const topic = getter.getTopic(context);
   const topicId = topic === undefined || topic.id === Constants.missing.id ? '' : topic.id;

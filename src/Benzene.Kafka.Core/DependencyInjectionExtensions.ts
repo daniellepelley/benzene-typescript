@@ -36,18 +36,24 @@ import { KafkaRecordContext } from './KafkaMessage/KafkaRecordContext';
  * property, which can be absent). A Kafka record always carries its own topic, so — matching the C#
  * `AddKafka`, which registers `KafkaMessageTopicGetter` directly — this port registers the plain getter
  * with no preset-topic fallback.
+ *
+ * `topicHeaderKey` is the record header the topic is read from (default `topic`), falling back to the
+ * Kafka topic when the header is absent; the header is consumed - the topic, not a header.
  */
-export function addKafkaConsumer(services: IBenzeneServiceContainer): IBenzeneServiceContainer {
+export function addKafkaConsumer(
+  services: IBenzeneServiceContainer,
+  topicHeaderKey: string = KafkaMessageTopicGetter.DefaultTopicHeader,
+): IBenzeneServiceContainer {
   tryAddScoped(services, JsonSerializer);
 
   services.addScopedFactory(
     IMessageTopicGetter,
-    () => new KafkaMessageTopicGetter() as IMessageTopicGetter<unknown>,
+    () => new KafkaMessageTopicGetter(topicHeaderKey) as IMessageTopicGetter<unknown>,
   );
   addHeaderMessageVersionGetter<KafkaRecordContext>(services);
   services.addScopedFactory(
     IMessageHeadersGetter,
-    () => new KafkaMessageHeadersGetter() as IMessageHeadersGetter<unknown>,
+    () => new KafkaMessageHeadersGetter(topicHeaderKey) as IMessageHeadersGetter<unknown>,
   );
   services.addScopedFactory(
     IMessageBodyGetter,
