@@ -20,12 +20,10 @@ import { zodValidationErrors } from '@benzenejs/zod';
  * have to know which validator a service happens to use in order to know whether it can attach an
  * error to an input.
  *
- * The rule for `field` is the validator's own path, verbatim - the same rule .NET follows, where
- * FluentValidation's `PropertyName` arrives dotted and JsonSchema's `InstanceLocation` arrives as a
- * pointer. So ajv gives a JSON Pointer because that is what ajv produces, and yup gives its dotted
- * path because that is what yup produces. zod and joi report a path as an array with no native
- * string form, so those two are rendered as JSON Pointers - wire-contracts.md section 1.3's
- * "JSON Pointer for schema-based validators" is the tie-breaker where the validator has no opinion.
+ * The rule for `field` is wire-contracts.md section 1.3's: an RFC 6901 JSON Pointer into the
+ * request's JSON form, whatever the validator's own path syntax. ajv already speaks pointers; zod's
+ * and joi's path arrays are rendered as pointers, and yup's dotted path is converted - so all four
+ * agree with each other and with .NET's FluentValidation and DataAnnotations adapters.
  */
 
 describe('structured validation errors', () => {
