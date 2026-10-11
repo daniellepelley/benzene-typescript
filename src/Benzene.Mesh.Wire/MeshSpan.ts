@@ -6,8 +6,10 @@ const ambient = new AsyncLocalStorage<MeshSpan | undefined>();
 
 /**
  * The current invocation's position in a trace: the ids the trace middleware assigned (or adopted
- * from the caller's traceparent) for the event it will export. A handler making a downstream Benzene
- * call forwards `toTraceparent()` as the `traceparent` header (docs/specification/mesh.md §3) - the
+ * from the caller's traceparent) for the event it will export. Every downstream Benzene message - a send,
+ * one-way or with a reply, or a published event - forwards `toTraceparent()` as the `traceparent` header
+ * (and `traceState` as `tracestate`; docs/specification/mesh.md §3, M2 of §7.1): put
+ * `useMeshTraceContext` on the outbound route, or forward it by hand on a raw client call - the
  * join that lets a collector correlate an *observed* call with the declared edge it exercises (§4.2's
  * liveness/drift signals), never the producer/consumer graph itself, which is declared from the
  * registered Contract Document's `requests` and `events` ∪ `sends` alone regardless of whether any call
@@ -23,6 +25,11 @@ export class MeshSpan {
   constructor(
     readonly traceId: string,
     readonly spanId: string,
+    /**
+     * The caller's W3C `tracestate`, carried through unchanged when its `traceparent` was joined (a
+     * `tracestate` beside a missing or malformed `traceparent` is discarded, per W3C trace-context).
+     */
+    readonly traceState?: string,
   ) {}
 
   /**

@@ -51,7 +51,9 @@ export function useMeshTrace<TContext>(
     traceEvent.correlationId = getHeader(headers, 'x-correlation-id');
 
     const started = performance.now();
-    const span = new MeshSpan(traceEvent.traceId, traceEvent.spanId);
+    // tracestate rides with a joined traceparent only (W3C trace-context: discard it beside a bad traceparent).
+    const traceState = parsed === undefined ? undefined : getHeader(headers, 'tracestate');
+    const span = new MeshSpan(traceEvent.traceId, traceEvent.spanId, traceState === '' ? undefined : traceState);
     try {
       await MeshSpan.runWith(span, () => next());
     } finally {
@@ -63,6 +65,34 @@ export function useMeshTrace<TContext>(
         // a broken exporter loses its own event, never the caller's response (spec §6)
       }
     }
+  });
+}
+
+/**
+ * Forwards the current invocation's trace context on every message sent through `app` - an outbound route
+ * pipeline (`addOutboundRouting`'s `route(topic, pipeline => ...)`), which is how both sends (one-way or with a
+ * reply) and published events (`@benzenejs/response-events` publishes through `IBenzeneMessageSender`) leave a
+ * service. It stamps `traceparent` (built from `MeshSpan.current`, the span `useMeshTrace` assigned) and the
+ * caller's `tracestate` onto the outbound headers: mesh.md §3's outbound propagation, M2 of the meshed-service
+ * claim (§7.1). Outside a traced invocation (`MeshSpan.current` undefined) it adds nothing - the §6 degradation
+ * rule - and a `traceparent` the caller already set explicitly is left as it is.
+ *
+ * Structurally typed on `{ headers }` (the shape of `@benzenejs/clients`' `OutboundContext`) so this package
+ * takes no dependency on the clients package. The OpenTelemetry counterpart is `@benzenejs/clients`'
+ * `useW3CTraceContext`, which reads the active OpenTelemetry span instead.
+ */
+export function useMeshTraceContext<TContext extends { headers: Record<string, string> }>(
+  app: IMiddlewarePipelineBuilder<TContext>,
+): IMiddlewarePipelineBuilder<TContext> {
+  return app.useFn('MeshTraceContext', (context, next) => {
+    const span = MeshSpan.current;
+    if (span !== undefined && getHeader(context.headers, 'traceparent') === undefined) {
+      context.headers['traceparent'] = span.toTraceparent();
+      if (span.traceState !== undefined) {
+        context.headers['tracestate'] = span.traceState;
+      }
+    }
+    return next();
   });
 }
 
