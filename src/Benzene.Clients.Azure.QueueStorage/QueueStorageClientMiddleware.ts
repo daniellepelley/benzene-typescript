@@ -13,7 +13,11 @@ export class QueueStorageClientMiddleware implements IMiddleware<QueueStorageSen
   constructor(private readonly queueClient: QueueClient) {}
 
   async handleAsync(context: QueueStorageSendMessageContext, _next: NextFunc): Promise<void> {
-    await this.queueClient.sendMessage(context.messageText);
-    context.isSent = true;
+    try {
+      await this.queueClient.sendMessage(context.messageText);
+      context.isSent = true;
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

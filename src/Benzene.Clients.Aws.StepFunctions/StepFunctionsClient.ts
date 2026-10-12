@@ -2,7 +2,7 @@
 import { ExecutionAlreadyExists, SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { ILogger, ISerializer, IBenzeneResultOf } from '@benzenejs/abstractions';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
-import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneResult, failedSendResult } from '@benzenejs/results';
 import { IStepFunctionsClient } from './IStepFunctionsClient';
 
 /** The characters Step Functions rejects in an execution name (whitespace/control handled separately). */
@@ -50,7 +50,9 @@ export class StepFunctionsClient implements IStepFunctionsClient {
         return BenzeneResult.accepted<TResponse>();
       }
       this.logger.logError(error, `Sending message to ${this.stateMachineArn} failed`);
-      return BenzeneResult.serviceUnavailable<TResponse>(error instanceof Error ? error.message : String(error));
+      // transport-bindings §1: a timed-out start is `timeout`, an unreachable endpoint `service-unavailable`,
+      // and a rejection Step Functions itself answered maps through the reverse HTTP table.
+      return failedSendResult<TResponse>(error);
     }
   }
 

@@ -3,6 +3,7 @@ import { ISerializer, VoidResult } from '@benzenejs/abstractions';
 import { IContextConverter } from '@benzenejs/abstractions-middleware';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
 import { convertStatusCode, OutboundContext } from '@benzenejs/clients';
+import { failedSendResult } from '@benzenejs/results';
 import { EventBridgeSendMessageContext } from './EventBridgeSendMessageContext';
 
 /**
@@ -47,6 +48,12 @@ export class OutboundEventBridgeContextConverter
   }
 
   mapResponseAsync(contextIn: OutboundContext, contextOut: EventBridgeSendMessageContext): Promise<void> {
+    // The SDK call rejected before the broker accepted the message (transport-bindings §1): a result, not
+    // an exception.
+    if (contextOut.transportFailure !== undefined) {
+      contextIn.response = failedSendResult<VoidResult>(contextOut.transportFailure);
+      return Promise.resolve();
+    }
     const status = contextOut.response?.$metadata?.httpStatusCode ?? 200;
     contextIn.response = convertStatusCode<VoidResult>(status, new VoidResult());
     return Promise.resolve();

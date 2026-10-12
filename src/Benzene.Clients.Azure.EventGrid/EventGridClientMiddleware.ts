@@ -20,11 +20,15 @@ export class EventGridClientMiddleware implements IMiddleware<EventGridSendMessa
   constructor(private readonly publisherClient: EventGridPublisherClient<InputSchema>) {}
 
   async handleAsync(context: EventGridSendMessageContext, _next: NextFunc): Promise<void> {
-    if (context.cloudEvent !== undefined) {
-      await this.publisherClient.send([context.cloudEvent]);
-    } else {
-      await this.publisherClient.send([context.eventGridEvent!]);
+    try {
+      if (context.cloudEvent !== undefined) {
+        await this.publisherClient.send([context.cloudEvent]);
+      } else {
+        await this.publisherClient.send([context.eventGridEvent!]);
+      }
+      context.isSent = true;
+    } catch (error) {
+      context.transportFailure = error;
     }
-    context.isSent = true;
   }
 }

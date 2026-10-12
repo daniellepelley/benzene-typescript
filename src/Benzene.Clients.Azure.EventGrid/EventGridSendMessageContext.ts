@@ -14,6 +14,13 @@ export class EventGridSendMessageContext {
   /** Whether the event was sent. Set by `EventGridClientMiddleware` once the send completes without throwing. */
   isSent = false;
 
+  /**
+   * Set instead of a completed send when the SDK call rejected before the broker accepted the message; the
+   * outbound converter turns it into a failed result (`failedSendResult`, transport-bindings.md §1) rather
+   * than letting the exception escape the send. A port addition.
+   */
+  transportFailure?: unknown;
+
   private constructor(
     /** The CloudEvent to send, or `undefined` if this context carries a classic {@link eventGridEvent}. */
     readonly cloudEvent: SendCloudEventInput<unknown> | undefined,

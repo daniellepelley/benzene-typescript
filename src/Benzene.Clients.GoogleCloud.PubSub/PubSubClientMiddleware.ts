@@ -18,6 +18,10 @@ export class PubSubClientMiddleware implements IMiddleware<PubSubSendMessageCont
   constructor(private readonly pubSub: PubSub) {}
 
   async handleAsync(context: PubSubSendMessageContext, _next: NextFunc): Promise<void> {
-    context.messageId = await this.pubSub.topic(context.topicName).publishMessage(context.message);
+    try {
+      context.messageId = await this.pubSub.topic(context.topicName).publishMessage(context.message);
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

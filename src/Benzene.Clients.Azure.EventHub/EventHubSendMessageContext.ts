@@ -15,6 +15,13 @@ export class EventHubSendMessageContext {
   isSent = false;
 
   /**
+   * Set instead of a completed send when the SDK call rejected before the broker accepted the message; the
+   * outbound converter turns it into a failed result (`failedSendResult`, transport-bindings.md §1) rather
+   * than letting the exception escape the send. A port addition.
+   */
+  transportFailure?: unknown;
+
+  /**
    * @param eventData The event to send.
    * @param partitionKey The partition key that co-locates related events on the same partition
    *   (preserving their order), or `undefined` to let Event Hubs distribute the event across partitions.

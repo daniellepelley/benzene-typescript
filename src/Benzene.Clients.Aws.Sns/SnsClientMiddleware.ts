@@ -13,6 +13,10 @@ export class SnsClientMiddleware implements IMiddleware<SnsSendMessageContext> {
   constructor(private readonly amazonSns: SNSClient) {}
 
   async handleAsync(context: SnsSendMessageContext, _next: NextFunc): Promise<void> {
-    context.response = await this.amazonSns.send(new PublishCommand(context.request));
+    try {
+      context.response = await this.amazonSns.send(new PublishCommand(context.request));
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

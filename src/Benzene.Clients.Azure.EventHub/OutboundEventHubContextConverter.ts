@@ -4,7 +4,7 @@ import { ISerializer, VoidResult } from '@benzenejs/abstractions';
 import { IContextConverter } from '@benzenejs/abstractions-middleware';
 import { OutboundContext } from '@benzenejs/clients';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
-import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneResult, failedSendResult } from '@benzenejs/results';
 import { EventHubSendMessageContext } from './EventHubSendMessageContext';
 
 /**
@@ -57,7 +57,13 @@ export class OutboundEventHubContextConverter
     return Promise.resolve(new EventHubSendMessageContext(eventData, partitionKey));
   }
 
-  mapResponseAsync(contextIn: OutboundContext, _contextOut: EventHubSendMessageContext): Promise<void> {
+  mapResponseAsync(contextIn: OutboundContext, contextOut: EventHubSendMessageContext): Promise<void> {
+    // The SDK call rejected before the broker accepted the message (transport-bindings §1): a result, not
+    // an exception.
+    if (contextOut.transportFailure !== undefined) {
+      contextIn.response = failedSendResult<VoidResult>(contextOut.transportFailure);
+      return Promise.resolve();
+    }
     contextIn.response = BenzeneResult.accepted<VoidResult>(new VoidResult());
     return Promise.resolve();
   }

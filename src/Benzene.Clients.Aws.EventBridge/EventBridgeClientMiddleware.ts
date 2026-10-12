@@ -13,6 +13,10 @@ export class EventBridgeClientMiddleware implements IMiddleware<EventBridgeSendM
   constructor(private readonly amazonEventBridge: EventBridgeClient) {}
 
   async handleAsync(context: EventBridgeSendMessageContext, _next: NextFunc): Promise<void> {
-    context.response = await this.amazonEventBridge.send(new PutEventsCommand(context.request));
+    try {
+      context.response = await this.amazonEventBridge.send(new PutEventsCommand(context.request));
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

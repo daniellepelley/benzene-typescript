@@ -16,7 +16,7 @@ import {
   NullBenzeneServiceContainer,
   NullServiceResolver,
 } from '@benzenejs/core-middleware';
-import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneResult, failedSendResult } from '@benzenejs/results';
 import { Channel } from 'amqplib';
 import { RabbitMqConstants } from '../RabbitMqConstants';
 import { RabbitMqContextConverter } from './RabbitMqContextConverter';
@@ -88,7 +88,8 @@ export class RabbitMqBenzeneMessageClient implements IBenzeneMessageClient {
         : BenzeneResult.unexpectedError<TResponse>();
     } catch (ex) {
       this.logger.logError(ex, `Sending message ${request.topic} failed`);
-      return BenzeneResult.serviceUnavailable<TResponse>(ex instanceof Error ? ex.message : String(ex));
+      // transport-bindings §1: `timeout` for a timed-out send, otherwise `service-unavailable`.
+      return failedSendResult<TResponse>(ex);
     }
   }
 

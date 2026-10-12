@@ -14,7 +14,11 @@ export class ServiceBusClientMiddleware implements IMiddleware<ServiceBusSendMes
   constructor(private readonly sender: ServiceBusSender) {}
 
   async handleAsync(context: ServiceBusSendMessageContext, _next: NextFunc): Promise<void> {
-    await this.sender.sendMessages(context.message);
-    context.isSent = true;
+    try {
+      await this.sender.sendMessages(context.message);
+      context.isSent = true;
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

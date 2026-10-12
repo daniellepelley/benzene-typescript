@@ -1,5 +1,5 @@
 /** Port of Benzene.Clients.Azure.EventHub.EventHubClientMiddleware. */
-import { CreateBatchOptions, EventHubProducerClient } from '@azure/event-hubs';
+import { CreateBatchOptions, EventDataBatch, EventHubProducerClient } from '@azure/event-hubs';
 import { IMiddleware, NextFunc } from '@benzenejs/abstractions-middleware';
 import { EventHubSendMessageContext } from './EventHubSendMessageContext';
 
@@ -25,12 +25,23 @@ export class EventHubClientMiddleware implements IMiddleware<EventHubSendMessage
         ? {}
         : { partitionKey: context.partitionKey };
 
-    const batch = await this.producerClient.createBatch(batchOptions);
+    let batch: EventDataBatch;
+    try {
+      batch = await this.producerClient.createBatch(batchOptions);
+    } catch (error) {
+      context.transportFailure = error;
+      return;
+    }
     if (!batch.tryAdd(context.eventData)) {
+      // Not a transport failure: the event can never be sent, so this stays an exception.
       throw new Error('The event is too large to fit in a single Event Hubs batch.');
     }
 
-    await this.producerClient.sendBatch(batch);
-    context.isSent = true;
+    try {
+      await this.producerClient.sendBatch(batch);
+      context.isSent = true;
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

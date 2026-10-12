@@ -3,7 +3,7 @@ import { SendEventGridEventInput } from '@azure/eventgrid';
 import { VoidResult } from '@benzenejs/abstractions';
 import { IContextConverter } from '@benzenejs/abstractions-middleware';
 import { OutboundContext } from '@benzenejs/clients';
-import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneResult, failedSendResult } from '@benzenejs/results';
 import { EventGridSendMessageContext } from './EventGridSendMessageContext';
 
 /**
@@ -28,7 +28,13 @@ export class OutboundEventGridEventSchemaContextConverter
     return Promise.resolve(EventGridSendMessageContext.forEventGridEvent(eventGridEvent));
   }
 
-  mapResponseAsync(contextIn: OutboundContext, _contextOut: EventGridSendMessageContext): Promise<void> {
+  mapResponseAsync(contextIn: OutboundContext, contextOut: EventGridSendMessageContext): Promise<void> {
+    // The SDK call rejected before the broker accepted the message (transport-bindings §1): a result, not
+    // an exception.
+    if (contextOut.transportFailure !== undefined) {
+      contextIn.response = failedSendResult<VoidResult>(contextOut.transportFailure);
+      return Promise.resolve();
+    }
     contextIn.response = BenzeneResult.accepted<VoidResult>(new VoidResult());
     return Promise.resolve();
   }

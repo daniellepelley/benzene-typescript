@@ -11,5 +11,12 @@ export class SqsSendMessageContext {
   /** The SQS send response, set by `SqsClientMiddleware`. */
   response?: SendMessageCommandOutput;
 
+  /**
+   * Set instead of a completed send when the SDK call rejected before the broker accepted the message; the
+   * outbound converter turns it into a failed result (`failedSendResult`, transport-bindings.md §1) rather
+   * than letting the exception escape the send. A port addition.
+   */
+  transportFailure?: unknown;
+
   constructor(readonly request: SendMessageCommandInput) {}
 }

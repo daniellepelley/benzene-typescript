@@ -17,8 +17,9 @@ export interface IStepFunctionsClient {
    *   a repeated name for the same state machine and input as idempotent, so a retry after a lost
    *   response won't start a duplicate — the repeat is reported as success. Sanitized to Step Functions'
    *   allowed name charset/length; omitted/empty lets AWS generate a UUID name.
-   * @returns An accepted result if the execution started (or was an idempotent repeat), or a
-   *   service-unavailable result if starting it threw.
+   * @returns An accepted result if the execution started (or was an idempotent repeat); if starting it
+   *   threw, a `timeout`/`service-unavailable` result, or the status Step Functions rejected it with
+   *   (`failedSendResult`, transport-bindings.md §1).
    */
   startExecutionAsync<TMessage, TResponse>(
     message: TMessage,

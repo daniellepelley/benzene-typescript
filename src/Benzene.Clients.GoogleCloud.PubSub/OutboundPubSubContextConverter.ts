@@ -3,7 +3,7 @@ import { ISerializer, VoidResult } from '@benzenejs/abstractions';
 import { IContextConverter } from '@benzenejs/abstractions-middleware';
 import { OutboundContext } from '@benzenejs/clients';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
-import { BenzeneResult } from '@benzenejs/results';
+import { BenzeneResult, failedSendResult } from '@benzenejs/results';
 import { PubSubPublishMessage, PubSubSendMessageContext } from './PubSubSendMessageContext';
 
 /**
@@ -68,7 +68,13 @@ export class OutboundPubSubContextConverter
     return Promise.resolve(new PubSubSendMessageContext(this.topicName, message));
   }
 
-  mapResponseAsync(contextIn: OutboundContext, _contextOut: PubSubSendMessageContext): Promise<void> {
+  mapResponseAsync(contextIn: OutboundContext, contextOut: PubSubSendMessageContext): Promise<void> {
+    // The SDK call rejected before the broker accepted the message (transport-bindings §1): a result, not
+    // an exception.
+    if (contextOut.transportFailure !== undefined) {
+      contextIn.response = failedSendResult<VoidResult>(contextOut.transportFailure);
+      return Promise.resolve();
+    }
     contextIn.response = BenzeneResult.accepted<VoidResult>(new VoidResult());
     return Promise.resolve();
   }

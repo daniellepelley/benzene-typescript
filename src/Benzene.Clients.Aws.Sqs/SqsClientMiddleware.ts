@@ -14,6 +14,10 @@ export class SqsClientMiddleware implements IMiddleware<SqsSendMessageContext> {
   constructor(private readonly amazonSqs: SQSClient) {}
 
   async handleAsync(context: SqsSendMessageContext, _next: NextFunc): Promise<void> {
-    context.response = await this.amazonSqs.send(new SendMessageCommand(context.request));
+    try {
+      context.response = await this.amazonSqs.send(new SendMessageCommand(context.request));
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }
