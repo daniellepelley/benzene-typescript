@@ -811,13 +811,13 @@ next to its C# counterpart:
   their own consumer getters, not `addBenzeneMessage`). (5) **rich error details** — wire-contracts.md §4.2's
   `grpc-status-details-bin` trailer IS ported (`RichErrorDetails.ts`): a failed result's structured `errors`
   cross the wire as a `google.rpc.Status` carrying a `google.rpc.BadRequest`, one `FieldViolation` per error
-  (`message` → `description`, `field` → `field`), and `@benzenejs/grpc-client` reads them back into the
+  (`message` → `description`, `field` → `field`, `code` → `reason`), and `@benzenejs/grpc-client` reads them back into the
   result's `errors`. Where `Grpc.Core` hands .NET generated `Google.Rpc` types, `@grpc/grpc-js` ships none
   (it has no notion of the trailer at all), so the four small, frozen messages are encoded and decoded
   directly rather than by taking a protobuf-runtime dependency plus vendored descriptors. Two deliberate
   calls: the `BadRequest` rides on **any** errored result, not only `validation-error` (§4.2's sentence is
-  unconditional; .NET narrows it), and `BenzeneError.code` is carried **nowhere** — §4.2 does not say where
-  it goes, and `FieldViolation.reason` is only a candidate home until it does. **Deferred** (documented in
+  unconditional; .NET narrows it), and `BenzeneError.code` rides in `FieldViolation.reason` (spec 1.1's
+  §4.2: a server SHOULD write it there, a client SHOULD read it back). **Deferred** (documented in
   `index.ts` and not half-built): the **ASP.NET hosting** package (`Benzene.Grpc.AspNet`, no JS analog) and
   any gRPC **health-check** type (another package's concern). The outbound **client** is now ported as
   `@benzenejs/grpc-client` (next bullet).
@@ -1331,7 +1331,11 @@ Ported (with tests):
   `application/problem+json` body rebuilds the result's `errors` (field and code intact) and is attached,
   as the envelope reader `asBenzeneResult` does for a failure envelope (core-concepts §12; the C#
   `HttpContextConverter` reads no failure body, and C#'s internal `BenzeneResult.AttachReceivedProblem` is
-  the exported `BenzeneResult.receivedProblem` here, since the clients live in another package) - plus the full
+  the exported `BenzeneResult.receivedProblem` here, since the clients live in another package), the status
+  taken from the document's `benzeneStatus` (wire §4.1). A rejected `fetch` - a call that failed before any
+  reply - is caught by `HttpClientMiddleware` onto `HttpSendMessageContext.transportFailure` (a port addition:
+  .NET's `HttpClient` throws and its message client catches) and becomes a `timeout`/`service-unavailable`
+  result (`transportFailureResult`, transport-bindings §1) - plus the full
   `Benzene.Clients` wrapper suite — retry, correlation-id and header-forwarding message-client
   decorators, their builders, and the client factory.
 - Caching (`@benzenejs/cache-core` + `@benzenejs/cache-redis`§): the lazy-load `CacheEntry` abstraction

@@ -252,7 +252,7 @@ map to `OK`) — that's what the client's reverse mapper prefers (see the next s
 There is no JSON problem document over gRPC. A failed result's structured `errors` — the `message` and
 `field` a validation adapter produces — travel in the standard `grpc-status-details-bin` trailer instead,
 as a `google.rpc.Status` carrying a `google.rpc.BadRequest` with **one `FieldViolation` per error**
-(`message` → `description`, `field` → `field`). This is the ordinary gRPC error-details mechanism, so any
+(`message` → `description`, `field` → `field` as a dotted path, `code` → `reason`). This is the ordinary gRPC error-details mechanism, so any
 gRPC client in any language reads it: `status.FromCallContext` in .NET, `status.FromError` in Go,
 `rpc_status` in Python. A Benzene TypeScript client reads it back into `result.errors` automatically,
 falling back to the flat status detail string when a server attaches no details:
@@ -260,11 +260,15 @@ falling back to the flat status detail string when a server attaches no details:
 ```ts
 const result = await sendMessageAsync(client, 'order:place', { customerId: '' });
 // result.status  === 'validation-error'
-// result.errors  === [{ message: 'customerId must not be empty', field: '/customerId' }]
+// result.errors  === [{ message: 'customerId must not be empty', field: '/customerId', code: 'required' }]
 ```
 
-`BenzeneError.code` is deliberately not carried: the wire contract doesn't yet say where it belongs, and
-guessing would make the three language ports disagree.
+`BenzeneError.code` travels in `FieldViolation.reason`, so a rule identifier survives a gRPC hop just as it
+does an HTTP one ([wire contracts §4.2](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/wire-contracts.md#42-grpc)).
+
+A call that fails before the server replies never throws: a dead or unreachable server comes back as
+`service-unavailable` (gRPC `UNAVAILABLE`), and a call whose deadline elapsed as `timeout`
+(`DEADLINE_EXCEEDED`), so you handle a down peer the way you handle any other failed result.
 
 ## 7. Calling other gRPC services
 

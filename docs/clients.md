@@ -127,7 +127,20 @@ if (!result.isSuccessful) {
 }
 ```
 
-The HTTP client below does the same for an `application/problem+json` response.
+The result's `status` is the document's `benzeneStatus`, so a status your own services define (say
+`quota-exhausted`) arrives as itself rather than as whatever its HTTP code maps back to. The HTTP client
+below does the same for an `application/problem+json` response.
+
+### When there is no reply
+
+A call that fails before any reply arrives — nothing listening, a refused or reset connection, an aborted
+or timed-out call — resolves to a failed result rather than rejecting: `timeout` when the call was aborted
+or its deadline elapsed, otherwise `service-unavailable`, with the underlying error's message (and its
+`cause`'s, where `fetch` puts the socket error) as the one error. So a down peer is handled like any other
+failure, and `RetryBenzeneMessageClient` retries it like any other `service-unavailable`. The HTTP client,
+the gRPC client and the mesh dispatchers all follow this; `transportFailureResult(error)` in
+`@benzenejs/results` is the shared rule if you write your own transport. Bound an HTTP call by passing a
+`fetchFn` that sets `signal: AbortSignal.timeout(ms)`.
 
 ## Wiring routes: `OutboundRoutingBuilder`
 
@@ -266,8 +279,10 @@ out(builder, (senders) =>
 Then resolve an `IMessageSender<CreateOrder, OrderCreated>` and call `sendMessageAsync`; the response
 body is deserialized and the HTTP status code mapped onto an `IBenzeneResult` (200 → `ok`, 404 →
 `not-found`, 503 → `service-unavailable`, …). A failure is never deserialized as the response type: an
-`application/problem+json` body rebuilds the result's `errors` (field and code intact) and is attached
-to it, as [above](#reading-a-failure); any other failure body is left unread. The three builder helpers (all free functions taking the
+`application/problem+json` body sets the result's status from its `benzeneStatus`, rebuilds its `errors`
+(field and code intact) and is attached to it, as [above](#reading-a-failure); any other failure body is
+left unread and the status comes from the HTTP code. A `fetch` that rejects is a `timeout` or
+`service-unavailable` result, never a thrown error ([When there is no reply](#when-there-is-no-reply)). The three builder helpers (all free functions taking the
 pipeline builder first):
 
 - `useHttpClientToSend<TReq, TRes>(app, verb, path, fetchFn?)` — converts the client pipeline into an
