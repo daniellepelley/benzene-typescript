@@ -190,6 +190,28 @@ describe('HttpMeshServiceDispatcher', () => {
     expect(calls[0]!.url).toBe('https://gateway.internal/orders/invoke');
   });
 
+  it('a refused connection is service-unavailable, not an exception (transport-bindings §1)', async () => {
+    const refused = (() =>
+      Promise.reject(new TypeError('fetch failed', { cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }) }))) as unknown as typeof fetch;
+    const dispatcher = new HttpMeshServiceDispatcher(refused);
+    const entry = new MeshServiceRegistryEntry('orders', 'https://orders.example/spec', 'h');
+
+    const result = await dispatcher.dispatchAsync(entry, new MeshDispatchEnvelope('t', {}, ''));
+
+    expect(result.statusCode).toBe(BenzeneResultStatus.serviceUnavailable);
+    expect(result.body).toBe('fetch failed: connect ECONNREFUSED');
+  });
+
+  it('an aborted or timed-out call is timeout', async () => {
+    const timedOut = (() => Promise.reject(new DOMException('The operation timed out.', 'TimeoutError'))) as unknown as typeof fetch;
+    const dispatcher = new HttpMeshServiceDispatcher(timedOut);
+    const entry = new MeshServiceRegistryEntry('orders', 'https://orders.example/spec', 'h');
+
+    const result = await dispatcher.dispatchAsync(entry, new MeshDispatchEnvelope('t', {}, ''), AbortSignal.timeout(1));
+
+    expect(result.statusCode).toBe(BenzeneResultStatus.timeout);
+  });
+
   it('throws when there is neither an invokeUrl nor a specUrl', async () => {
     const dispatcher = new HttpMeshServiceDispatcher(stubFetch(200, '').fetchFn);
     const entry = new MeshServiceRegistryEntry('orders', '', 'h');

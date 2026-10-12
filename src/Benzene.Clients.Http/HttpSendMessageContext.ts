@@ -32,6 +32,14 @@ export class HttpSendMessageContext {
   /** Port of C# `HttpResponseMessage Response { get; set; }` — the fetch `Response`. */
   response!: Response;
 
+  /**
+   * Set instead of {@link response} when the call failed before any reply arrived - the `fetch` rejected
+   * (no connection, refused or reset, an aborted or timed-out call). `HttpContextConverter` turns it into a
+   * `timeout` or `service-unavailable` result rather than throwing (transport-bindings.md §1). A port
+   * addition: .NET's `HttpClient` throws and its message client catches.
+   */
+  transportFailure?: unknown;
+
   constructor(request: HttpRequestMessage) {
     this.request = request;
   }

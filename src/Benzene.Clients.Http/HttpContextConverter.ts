@@ -3,6 +3,7 @@ import { IBenzeneClientContext } from '@benzenejs/abstractions-messages';
 import { IContextConverter } from '@benzenejs/abstractions-middleware';
 import { convertStatusCode, failedResultFromProblem, readProblemDocument } from '@benzenejs/clients';
 import { JsonSerializer } from '@benzenejs/core-message-handlers';
+import { transportFailureResult } from '@benzenejs/results';
 import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageContext';
 
 /**
@@ -12,7 +13,7 @@ import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageCon
  * the way back it maps the HTTP status code to a `BenzeneResult` via `convertStatusCode`: a success
  * carries the body deserialized to `TResponse`; a failure whose body is `application/problem+json`
  * carries the document's status (`benzeneStatus`), its errors (field and code intact) and the document
- * itself.
+ * itself; a call that failed before any reply arrived is a `timeout` or `service-unavailable` result.
  * Port of Benzene.Client.Http.HttpContextConverter&lt;TRequest, TResponse&gt;.
  *
  * The .NET `response.StatusCode.Convert(response)` (`Benzene.Results.BenzeneResultExtensions.Convert`)
@@ -60,6 +61,13 @@ export class HttpContextConverter<TRequest, TResponse>
     contextIn: IBenzeneClientContext<TRequest, TResponse>,
     contextOut: HttpSendMessageContext,
   ): Promise<void> {
+    // The call failed before any reply arrived (transport-bindings §1): a result, not an exception -
+    // `timeout` for an aborted or timed-out call, otherwise `service-unavailable`.
+    if (contextOut.transportFailure !== undefined) {
+      contextIn.response = transportFailureResult<TResponse>(contextOut.transportFailure);
+      return;
+    }
+
     // A fetch `Response` body is single-read; read it once as text (C# `ReadAsStringAsync`).
     const body = await contextOut.response.text();
     const httpStatus = contextOut.response.status;

@@ -1,6 +1,6 @@
 /** Port of Benzene.Mesh.Dispatch.HttpMeshServiceDispatcher. */
 import { MeshServiceRegistryEntry, MeshServiceSource } from '@benzenejs/mesh-contracts';
-import { MeshDispatchEnvelope, MeshDispatchResult } from './MeshDispatchEnvelope';
+import { MeshDispatchEnvelope, MeshDispatchResult, transportFailureDispatchResult } from './MeshDispatchEnvelope';
 import { IMeshServiceDispatcher } from './IMeshServiceDispatcher';
 
 /** The `SourceOptions` key overriding the invoke URL. */
@@ -17,7 +17,8 @@ export type DispatchFetch = (url: string, init: RequestInit) => Promise<Response
  * present, otherwise derived from the entry's `specUrl` origin as `<origin>/benzene/invoke`.
  *
  * `HttpClient` -> an injectable `fetch` (default global `fetch`), the same adaptation as
- * `@benzenejs/health-checks-http`.
+ * `@benzenejs/health-checks-http`. A `fetch` that rejects - the call failed before the service replied - is a
+ * `timeout` or `service-unavailable` result ({@link transportFailureDispatchResult}), not an exception.
  */
 export class HttpMeshServiceDispatcher implements IMeshServiceDispatcher {
   constructor(private readonly fetchFn: DispatchFetch = fetch) {}
@@ -38,12 +39,18 @@ export class HttpMeshServiceDispatcher implements IMeshServiceDispatcher {
       body: envelope.body,
     });
 
-    const response = await this.fetchFn(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: payload,
-      signal: cancellationToken,
-    });
+    let response: Response;
+    try {
+      response = await this.fetchFn(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+        signal: cancellationToken,
+      });
+    } catch (error) {
+      // Failed before any reply (transport-bindings §1): a `timeout`/`service-unavailable` result, not a throw.
+      return transportFailureDispatchResult(error);
+    }
     const responseBody = await response.text();
 
     // The envelope endpoint answers 200 for every envelope it processed, the outcome inside the envelope

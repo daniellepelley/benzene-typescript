@@ -20,7 +20,9 @@ export const defaultFetch: FetchLike = (request) =>
 
 /**
  * The terminal middleware that actually performs the HTTP call: it sends the context's request and
- * stores the response on the context.
+ * stores the response on the context. A `fetch` that rejects - the call failed before any reply arrived -
+ * is caught and stored as `context.transportFailure`, for `HttpContextConverter` to turn into a `timeout` or
+ * `service-unavailable` result (transport-bindings.md §1) instead of an exception escaping the send.
  * Port of Benzene.Client.Http.HttpClientMiddleware.
  *
  * HttpClient -> fetch adaptation. .NET injects an `HttpClient` and calls `SendAsync`. The port injects
@@ -38,6 +40,10 @@ export class HttpClientMiddleware implements IMiddleware<HttpSendMessageContext>
   readonly name = 'HttpClientMiddleware';
 
   async handleAsync(context: HttpSendMessageContext, _next: NextFunc): Promise<void> {
-    context.response = await this.fetchFn(context.request);
+    try {
+      context.response = await this.fetchFn(context.request);
+    } catch (error) {
+      context.transportFailure = error;
+    }
   }
 }

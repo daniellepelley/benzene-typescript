@@ -7,3 +7,4 @@ export * from './BenzeneResultExtensions';
 export * from './BenzeneResultStatus';
 export * from './ProblemDetails';
 export * from './ProblemTypes';
+export * from './TransportFailure';
