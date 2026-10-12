@@ -1,5 +1,5 @@
 import { BenzeneError, IBenzeneResultOf, ISerializer } from '@benzenejs/abstractions';
-import { BenzeneResult, ProblemDetails } from '@benzenejs/results';
+import { BenzeneResult, BenzeneResultStatus, ProblemDetails } from '@benzenejs/results';
 import { BenzeneMessageClientResponse } from '../BenzeneMessageClientResponse';
 import { BenzeneResultHttpMapper } from './BenzeneResultHttpMapper';
 
@@ -66,27 +66,32 @@ export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneRe
  * re-classified (spec-0.2.0 removed the older-sender fallback).
  *
  * A failure body is read as the RFC 9457 problem document it is (wire-contracts §1.3, whatever its inner
- * content type): the result's `errors` are rebuilt from it with `field` and `code` intact, in order, and
- * the received document is attached (core-concepts §12 "Error fidelity") - see
- * {@link failedResultFromProblem}.
+ * content type): the result's `errors` are rebuilt from it with `field` and `code` intact, in order, the
+ * received document is attached (core-concepts §12 "Error fidelity"), and the result's status is the
+ * document's `benzeneStatus` when it carries one (wire-contracts §4.1) - see {@link failedResultFromProblem}.
+ * So a failure whose envelope `statusCode` this reader cannot map is still read from its document's
+ * `benzeneStatus`; only a failure with neither yields `unexpected-error`.
  */
 export function asBenzeneResult<TResponse>(
   response: BenzeneMessageClientResponse,
   serializer: ISerializer,
 ): IBenzeneResultOf<TResponse> {
   const status = BenzeneResultHttpMapper.normalizeStatus(response.statusCode);
-  if (status === undefined) {
-    return BenzeneResult.unexpectedError<TResponse>(`Status code ${response.statusCode} not mapped`);
-  }
-
   const isSuccessful = response.isSuccessful === true;
 
   if (isSuccessful) {
+    if (status === undefined) {
+      return BenzeneResult.unexpectedError<TResponse>(`Status code ${response.statusCode} not mapped`);
+    }
     const payload = response.body === '' ? undefined : serializer.deserialize<TResponse>(response.body);
     return BenzeneResult.set<TResponse>(status, payload as TResponse, true);
   }
 
-  return failedResultFromProblem<TResponse>(status, readProblemDocument(response.body, serializer));
+  const problem = readProblemDocument(response.body, serializer);
+  if (status === undefined && benzeneStatusOf(problem) === undefined) {
+    return BenzeneResult.unexpectedError<TResponse>(`Status code ${response.statusCode} not mapped`);
+  }
+  return failedResultFromProblem<TResponse>(status ?? BenzeneResultStatus.unexpectedError, problem);
 }
 
 /**
@@ -109,8 +114,12 @@ export function readProblemDocument(body: string | undefined | null, serializer:
 }
 
 /**
- * The failed `status` result for a received problem document - core-concepts §12 "Error fidelity": the
- * result's `errors` are rebuilt from the document's `errors` with `field` and `code` intact and in order
+ * The failed result for a received problem document. Its status is the document's `benzeneStatus` when
+ * that is a non-empty string (wire-contracts §4.1, spec 1.1: a client that reads a problem document SHOULD
+ * take the status from it, so an application-defined status survives the hop); otherwise `status`, the one
+ * the caller derived from the transport (the reverse HTTP table, or the envelope's `statusCode`).
+ *
+ * core-concepts §12 "Error fidelity": the result's `errors` are rebuilt from the document's `errors` with `field` and `code` intact and in order
  * (authoritative when present, even empty); a document with no `errors` member yields its `detail` as one
  * opaque message (never split on commas), and no `detail` yields no errors (wire-contracts §1.3, "Without
  * `errors`"). The document is attached to the result (`BenzeneResult.receivedProblem`), so
@@ -121,7 +130,13 @@ export function failedResultFromProblem<T>(status: string, problem: ProblemDetai
   if (problem === undefined) {
     return BenzeneResult.set<T>(status, undefined, false);
   }
-  return BenzeneResult.receivedProblem<T>(status, errorsFromProblem(problem), problem);
+  return BenzeneResult.receivedProblem<T>(benzeneStatusOf(problem) ?? status, errorsFromProblem(problem), problem);
+}
+
+/** The document's `benzeneStatus`, when it is a non-empty string. */
+function benzeneStatusOf(problem: ProblemDetails | undefined): string | undefined {
+  const value: unknown = (problem as { benzeneStatus?: unknown } | undefined)?.benzeneStatus;
+  return typeof value === 'string' && value !== '' ? value : undefined;
 }
 
 function errorsFromProblem(problem: ProblemDetails): BenzeneError[] {

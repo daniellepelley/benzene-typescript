@@ -11,7 +11,8 @@ import { HttpRequestMessage, HttpSendMessageContext } from './HttpSendMessageCon
  * the request message to a JSON body and builds the request with the configured verb/path/headers; on
  * the way back it maps the HTTP status code to a `BenzeneResult` via `convertStatusCode`: a success
  * carries the body deserialized to `TResponse`; a failure whose body is `application/problem+json`
- * carries the document's errors (field and code intact) and the document itself.
+ * carries the document's status (`benzeneStatus`), its errors (field and code intact) and the document
+ * itself.
  * Port of Benzene.Client.Http.HttpContextConverter&lt;TRequest, TResponse&gt;.
  *
  * The .NET `response.StatusCode.Convert(response)` (`Benzene.Results.BenzeneResultExtensions.Convert`)
@@ -69,9 +70,11 @@ export class HttpContextConverter<TRequest, TResponse>
       return;
     }
 
-    // A failure: the status comes from the HTTP code (wire-contracts §4.1, reverse table). When the body
-    // is an `application/problem+json` document, the result's `errors` are rebuilt from it with `field`
-    // and `code` intact and the document is attached (core-concepts §12 "Error fidelity"). Any other
+    // A failure. When the body is an `application/problem+json` document, the result's status is its
+    // `benzeneStatus` (wire-contracts §4.1, spec 1.1 - so an application-defined status survives the hop),
+    // its `errors` are rebuilt with `field` and `code` intact, and the document is attached (core-concepts
+    // §12 "Error fidelity"). Otherwise - or for a document without `benzeneStatus` - the status comes from
+    // the HTTP code through the reverse table. Any other
     // failure body (an HTML error page, an empty body) is not parsed: deserializing it as TResponse would
     // throw and hide the real status.
     const mapped = convertStatusCode<TResponse>(httpStatus, undefined as TResponse);

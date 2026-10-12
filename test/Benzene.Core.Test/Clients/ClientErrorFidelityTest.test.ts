@@ -65,6 +65,27 @@ describe('envelope client (asBenzeneResult)', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("takes the status from the document's benzeneStatus, so an application-defined status survives (§4.1)", () => {
+    const custom = { ...problem, type: 'https://example.com/problems/quota', benzeneStatus: 'quota-exhausted' };
+    // An envelope carrying an application-defined status this reader cannot map...
+    const unmapped = new BenzeneMessageClientResponse('quota-exhausted', JSON.stringify(custom), {}, false);
+    const fromUnmapped = asBenzeneResult<unknown>(unmapped, serializer);
+    expect(fromUnmapped.isSuccessful).toBe(false);
+    expect(fromUnmapped.status).toBe('quota-exhausted');
+    expect(fromUnmapped.errors).toEqual(problem.errors);
+    // ...and one whose statusCode is a numeric HTTP code: the document still wins.
+    const numeric = new BenzeneMessageClientResponse('500', JSON.stringify(custom), {}, false);
+    expect(asBenzeneResult<unknown>(numeric, serializer).status).toBe('quota-exhausted');
+  });
+
+  it('falls back to the envelope statusCode for a document without benzeneStatus, or no document', () => {
+    const { benzeneStatus: _status, ...withoutStatus } = problem;
+    expect(asBenzeneResult<unknown>(envelope(JSON.stringify(withoutStatus)), serializer).status).toBe('conflict');
+    expect(asBenzeneResult<unknown>(envelope(''), serializer).status).toBe('conflict');
+    const neither = new BenzeneMessageClientResponse('quota-exhausted', '', {}, false);
+    expect(asBenzeneResult<unknown>(neither, serializer).status).toBe(BenzeneResultStatus.unexpectedError);
+  });
+
   it('yields no errors for no detail, an empty body or a body that is not a problem document', () => {
     expect(asBenzeneResult<unknown>(envelope(JSON.stringify({ benzeneStatus: 'conflict' })), serializer).errors).toEqual([]);
     expect(asBenzeneResult<unknown>(envelope(''), serializer).errors).toEqual([]);
@@ -75,12 +96,33 @@ describe('envelope client (asBenzeneResult)', () => {
 });
 
 describe('HTTP client (HttpContextConverter)', () => {
-  it('rebuilds errors from an application/problem+json failure, keeping the status the HTTP code maps to', async () => {
+  it('rebuilds errors from an application/problem+json failure', async () => {
     const result = await overHttp(409, JSON.stringify(problem), 'application/problem+json; charset=utf-8');
     expect(result.isSuccessful).toBe(false);
     expect(result.status).toBe(BenzeneResultStatus.conflict);
     expect(result.errors).toEqual(problem.errors);
     expect(ProblemTypes.from(result).type).toBe(problem.type);
+  });
+
+  it("takes the status from the document's benzeneStatus, not the reverse table (§4.1)", async () => {
+    // An application-defined failure goes out as 500 (the unknown-status row); its status comes back whole.
+    const custom = { ...problem, status: 500, benzeneStatus: 'quota-exhausted' };
+    const result = await overHttp(500, JSON.stringify(custom), 'application/problem+json');
+    expect(result.isSuccessful).toBe(false);
+    expect(result.status).toBe('quota-exhausted');
+    expect(result.errors).toEqual(problem.errors);
+
+    // A status code the reverse table does not know at all, carrying a document: the document decides.
+    const unmapped = await overHttp(402, JSON.stringify({ ...custom, status: 402 }), 'application/problem+json');
+    expect(unmapped.status).toBe('quota-exhausted');
+    expect(unmapped.errors).toEqual(problem.errors);
+  });
+
+  it('uses the reverse table for a document without benzeneStatus', async () => {
+    const { benzeneStatus: _status, ...withoutStatus } = problem;
+    const result = await overHttp(429, JSON.stringify(withoutStatus), 'application/problem+json');
+    expect(result.status).toBe(BenzeneResultStatus.tooManyRequests);
+    expect(result.errors).toEqual(problem.errors);
   });
 
   it('matches the content type case-insensitively', async () => {
