@@ -16,6 +16,13 @@ function failure(index: number, error: unknown): FailedBatchEntry {
   return new FailedBatchEntry(index, code, message);
 }
 
+/** Fails every entry from `fromIndex` up to `count` with the same error (a batch that could not be created). */
+function failFrom(fromIndex: number, count: number, error: unknown, failures: FailedBatchEntry[]): void {
+  for (let index = fromIndex; index < count; index++) {
+    failures.push(failure(index, error));
+  }
+}
+
 /**
  * Sends messages to a Service Bus queue or topic using a native `ServiceBusMessageBatch`: messages are
  * packed into size-bounded batches (`createMessageBatch` + `tryAddMessage`) and each full batch is sent with
@@ -26,7 +33,9 @@ function failure(index: number, error: unknown): FailedBatchEntry {
  * A Service Bus batch send is atomic — it accepts every message or throws — so failures are reported at
  * batch granularity: a `sendMessages` throw fails every message in that batch, against its index in the
  * original request collection. A message too large to fit an empty batch is its own failure without
- * aborting the rest.
+ * aborting the rest. Creating a batch is the first call that reaches the broker, so a `createMessageBatch`
+ * that rejects (no connection) fails every entry that batch would have carried — this and every later
+ * entry — rather than throwing (transport-bindings.md §1, spec 1.1).
  */
 export class ServiceBusBatchMessageClient implements IBenzeneBatchMessageClient {
   private readonly converter: OutboundServiceBusContextConverter;
@@ -42,7 +51,13 @@ export class ServiceBusBatchMessageClient implements IBenzeneBatchMessageClient 
   async sendBatchAsync<TRequest>(requests: readonly IBenzeneClientRequest<TRequest>[]): Promise<BatchSendResult> {
     const failures: FailedBatchEntry[] = [];
 
-    let batch = await this.sender.createMessageBatch();
+    let batch: ServiceBusMessageBatch;
+    try {
+      batch = await this.sender.createMessageBatch();
+    } catch (error) {
+      failFrom(0, requests.length, error, failures);
+      return new BatchSendResult(failures);
+    }
     let batchIndices: number[] = [];
     let index = 0;
 
@@ -66,7 +81,13 @@ export class ServiceBusBatchMessageClient implements IBenzeneBatchMessageClient 
         }
 
         await this.sendAndTrack(batch, batchIndices, failures);
-        batch = await this.sender.createMessageBatch();
+        try {
+          batch = await this.sender.createMessageBatch();
+        } catch (error) {
+          // This and every later entry were never sent.
+          failFrom(index, requests.length, error, failures);
+          return new BatchSendResult(failures);
+        }
         batchIndices = [];
 
         if (!batch.tryAddMessage(message)) {

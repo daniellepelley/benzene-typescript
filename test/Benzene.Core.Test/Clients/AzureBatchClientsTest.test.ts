@@ -18,11 +18,17 @@ function req(topic: string, message: unknown, headers: Record<string, string> = 
 }
 
 describe('EventHubBatchMessageClient', () => {
-  // A fake producer whose batches accept up to `perBatch` events; sendBatch optionally throws.
-  function fakeProducer(perBatch: number, throwOnSend = false) {
+  // A fake producer whose batches accept up to `perBatch` events; sendBatch optionally throws, and
+  // createBatch rejects on the (1-based) calls listed in `failCreateOn`.
+  function fakeProducer(perBatch: number, throwOnSend = false, failCreateOn: number[] = []) {
     const sent: unknown[][] = [];
+    let creates = 0;
     const producer = {
       createBatch: (_options?: unknown) => {
+        creates++;
+        if (failCreateOn.includes(creates)) {
+          return Promise.reject(Object.assign(new Error('connect ECONNREFUSED'), { name: 'ServiceCommunicationError' }));
+        }
         const events: unknown[] = [];
         return Promise.resolve({
           tryAdd: (e: unknown) => {
@@ -85,13 +91,55 @@ describe('EventHubBatchMessageClient', () => {
     expect(result.failures.map((f) => f.index)).toEqual([0, 1]);
     expect(result.failures[0]!.errorCode).toBe('ServiceCommunicationError');
   });
+
+  it('fails every event (against its index) instead of throwing when createBatch rejects', async () => {
+    const { producer, sent } = fakeProducer(10, false, [1]);
+    const batch = new EventHubBatchMessageClient(producer as unknown as EventHubProducerClient);
+    const result = await batch.sendBatchAsync([req('t', { a: 1 }), req('t', { a: 2 })]);
+
+    expect(sent).toEqual([]);
+    expect(result.allSucceeded).toBe(false);
+    expect(result.failures.map((f) => f.index)).toEqual([0, 1]);
+    expect(result.failures[0]!.errorCode).toBe('ServiceCommunicationError');
+    expect(result.failures[0]!.errorMessage).toBe('connect ECONNREFUSED');
+  });
+
+  it('keeps the sent batch and fails the rest of the group when a rolled createBatch rejects', async () => {
+    const { producer, sent } = fakeProducer(2, false, [2]);
+    const batch = new EventHubBatchMessageClient(producer as unknown as EventHubProducerClient);
+    const result = await batch.sendBatchAsync([req('t', { a: 1 }), req('t', { a: 2 }), req('t', { a: 3 }), req('t', { a: 4 })]);
+
+    // The first batch (0, 1) went out; the roll for event 2 failed, so 2 and 3 were never sent.
+    expect(sent.map((b) => b.length)).toEqual([2]);
+    expect(result.failures.map((f) => f.index)).toEqual([2, 3]);
+  });
+
+  it('fails only the partition-key group whose createBatch rejects; other groups still send', async () => {
+    const { producer, sent } = fakeProducer(10, false, [1]);
+    const batch = new EventHubBatchMessageClient(producer as unknown as EventHubProducerClient, 'topic', 'pk');
+    const result = await batch.sendBatchAsync([
+      req('t', { a: 1 }, { pk: 'A' }),
+      req('t', { a: 2 }, { pk: 'B' }),
+      req('t', { a: 3 }, { pk: 'A' }),
+    ]);
+
+    // Group A is created first (insertion order) and fails; group B sends.
+    expect(result.failures.map((f) => f.index)).toEqual([0, 2]);
+    expect(sent.map((b) => b.length)).toEqual([1]);
+  });
 });
 
 describe('ServiceBusBatchMessageClient', () => {
-  function fakeSender(perBatch: number, throwOnSend = false) {
+  // createMessageBatch rejects on the (1-based) calls listed in `failCreateOn`.
+  function fakeSender(perBatch: number, throwOnSend = false, failCreateOn: number[] = []) {
     const sent: unknown[][] = [];
+    let creates = 0;
     const sender = {
       createMessageBatch: () => {
+        creates++;
+        if (failCreateOn.includes(creates)) {
+          return Promise.reject(Object.assign(new Error('connect ECONNREFUSED'), { name: 'ServiceBusError' }));
+        }
         const messages: unknown[] = [];
         return Promise.resolve({
           tryAddMessage: (m: unknown) => {
@@ -134,6 +182,44 @@ describe('ServiceBusBatchMessageClient', () => {
 
     expect(result.failures.map((f) => f.index)).toEqual([0, 1]);
     expect(result.failures[0]!.errorCode).toBe('ServiceBusError');
+  });
+
+  it('fails every message (against its index) instead of throwing when createMessageBatch rejects', async () => {
+    const { sender, sent } = fakeSender(10, false, [1]);
+    const batch = new ServiceBusBatchMessageClient(sender as unknown as ServiceBusSender);
+    const result = await batch.sendBatchAsync([req('t', { a: 1 }), req('t', { a: 2 }), req('t', { a: 3 })]);
+
+    expect(sent).toEqual([]);
+    expect(result.allSucceeded).toBe(false);
+    expect(result.failures.map((f) => f.index)).toEqual([0, 1, 2]);
+    expect(result.failures[0]!.errorCode).toBe('ServiceBusError');
+    expect(result.failures[0]!.errorMessage).toBe('connect ECONNREFUSED');
+  });
+
+  it('keeps the sent batch and fails the rest when a rolled createMessageBatch rejects', async () => {
+    const { sender, sent } = fakeSender(2, false, [2]);
+    const batch = new ServiceBusBatchMessageClient(sender as unknown as ServiceBusSender);
+    const result = await batch.sendBatchAsync([req('t', { a: 1 }), req('t', { a: 2 }), req('t', { a: 3 }), req('t', { a: 4 })]);
+
+    // The first batch (0, 1) went out; the roll for message 2 failed, so 2 and 3 were never sent.
+    expect(sent.map((b) => b.length)).toEqual([2]);
+    expect(result.failures.map((f) => f.index)).toEqual([2, 3]);
+  });
+
+  it('resolves with every entry failed when createMessageBatch throws synchronously', async () => {
+    const sender = {
+      createMessageBatch: () => {
+        throw Object.assign(new Error('sender closed'), { name: 'ServiceBusError' });
+      },
+      sendMessages: () => Promise.resolve(),
+    };
+    const batch = new ServiceBusBatchMessageClient(sender as unknown as ServiceBusSender);
+    const result = await batch.sendBatchAsync([req('t', { a: 1 }), req('t', { a: 2 })]);
+
+    expect(result.failures.map((f) => [f.index, f.errorMessage])).toEqual([
+      [0, 'sender closed'],
+      [1, 'sender closed'],
+    ]);
   });
 });
 

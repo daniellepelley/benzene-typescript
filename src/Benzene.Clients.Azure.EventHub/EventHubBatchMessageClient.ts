@@ -17,6 +17,18 @@ function failure(index: number, error: unknown): FailedBatchEntry {
   return new FailedBatchEntry(index, code, message);
 }
 
+/** Fails every event of `group` from `fromPosition` on with the same error (a batch that could not be created). */
+function failFrom(
+  group: readonly { index: number }[],
+  fromPosition: number,
+  error: unknown,
+  failures: FailedBatchEntry[],
+): void {
+  for (let position = fromPosition; position < group.length; position++) {
+    failures.push(failure(group[position]!.index, error));
+  }
+}
+
 /**
  * Sends messages to Azure Event Hubs using native `EventDataBatch` objects (`createBatch` + `tryAdd` +
  * `sendBatch`) instead of one send per event. Each event is built by the same
@@ -27,7 +39,10 @@ function failure(index: number, error: unknown): FailedBatchEntry {
  * batching; within each group events are packed into size-bounded batches (`tryAdd` returning false starts
  * a new batch). Failures are reported at batch granularity — a `sendBatch` throw fails every event in that
  * batch, against its index in the original request collection — plus per-event `EventTooLarge` for an event
- * that can't fit an empty batch. (Unlike .NET, the JS `EventDataBatch` isn't disposable; it's GC'd.)
+ * that can't fit an empty batch. Creating a batch is the first call that reaches the hub, so a `createBatch`
+ * that rejects (no connection) fails every event of that partition-key group it would have carried — this
+ * and every later one — rather than throwing (transport-bindings.md §1, spec 1.1); other groups still send.
+ * (Unlike .NET, the JS `EventDataBatch` isn't disposable; it's GC'd.)
  */
 export class EventHubBatchMessageClient implements IBenzeneBatchMessageClient {
   private readonly converter: OutboundEventHubContextConverter;
@@ -78,10 +93,17 @@ export class EventHubBatchMessageClient implements IBenzeneBatchMessageClient {
   ): Promise<void> {
     const options: CreateBatchOptions = partitionKey === '' ? {} : { partitionKey };
 
-    let batch = await this.producerClient.createBatch(options);
+    let batch: EventDataBatch;
+    try {
+      batch = await this.producerClient.createBatch(options);
+    } catch (error) {
+      failFrom(group, 0, error, failures);
+      return;
+    }
     let batchIndices: number[] = [];
 
-    for (const { context, index } of group) {
+    for (let position = 0; position < group.length; position++) {
+      const { context, index } = group[position]!;
       if (!batch.tryAdd(context.eventData)) {
         if (batchIndices.length === 0) {
           failures.push(new FailedBatchEntry(index, 'EventTooLarge', 'The event is too large to fit in a single Event Hubs batch.'));
@@ -89,7 +111,13 @@ export class EventHubBatchMessageClient implements IBenzeneBatchMessageClient {
         }
 
         await this.sendAndTrack(batch, batchIndices, failures);
-        batch = await this.producerClient.createBatch(options);
+        try {
+          batch = await this.producerClient.createBatch(options);
+        } catch (error) {
+          // This and every later event of the group were never sent.
+          failFrom(group, position, error, failures);
+          return;
+        }
         batchIndices = [];
 
         if (!batch.tryAdd(context.eventData)) {

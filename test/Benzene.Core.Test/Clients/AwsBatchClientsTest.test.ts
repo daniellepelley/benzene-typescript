@@ -91,6 +91,20 @@ describe('SnsBatchMessageClient', () => {
     expect(result.failures[0]!.index).toBe(0);
     expect(result.failures[0]!.errorCode).toBe('Throttled');
   });
+
+  it('resolves with the failed chunk reported per entry when a later PublishBatch fails in transport', async () => {
+    const { commands, client } = capturing((_c, call) =>
+      call === 0 ? {} : Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    );
+    const batch = new SnsBatchMessageClient(client as unknown as SNSClient, 'arn:aws:sns:eu:0:topic');
+
+    const result = await batch.sendBatchAsync(Array.from({ length: 12 }, (_, i) => req('t', { i })));
+
+    expect(commands).toHaveLength(2);
+    // The first chunk (0-9) was accepted; only the second chunk's entries failed.
+    expect(result.failures.map((f) => f.index)).toEqual([10, 11]);
+    expect(result.failures[0]!.errorMessage).toBe('connect ECONNREFUSED');
+  });
 });
 
 describe('EventBridgeBatchMessageClient', () => {
@@ -111,5 +125,18 @@ describe('EventBridgeBatchMessageClient', () => {
     expect(result.failures).toHaveLength(1);
     expect(result.failures[0]!.index).toBe(1);
     expect(result.failures[0]!.errorCode).toBe('InternalException');
+  });
+
+  it('resolves with the failed chunk reported per entry when a later PutEvents fails in transport', async () => {
+    const { commands, client } = capturing((_c, call) =>
+      call === 0 ? { FailedEntryCount: 0, Entries: [] } : Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }),
+    );
+    const batch = new EventBridgeBatchMessageClient(client as unknown as EventBridgeClient, 'orders.service');
+
+    const result = await batch.sendBatchAsync(Array.from({ length: 11 }, (_, i) => req('orders:created', { i })));
+
+    expect(commands).toHaveLength(2);
+    expect(result.failures.map((f) => f.index)).toEqual([10]);
+    expect(result.failures[0]!.errorMessage).toBe('socket hang up');
   });
 });
