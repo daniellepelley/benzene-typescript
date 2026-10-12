@@ -16,12 +16,10 @@ import { BenzeneError } from '@benzenejs/abstractions';
  * path (wire-contracts §4.2, D8): segments unescaped per RFC 6901, joined with `.`, a segment made only of
  * decimal digits written `[n]` — `/items/0/sku` → `items[0].sku` ({@link jsonPointerToFieldPath}). The
  * reader converts back ({@link fieldPathToJsonPointer}), so `BenzeneError.field` is a pointer in-process
- * whichever transport carried it. `BenzeneError.code` is deliberately carried NOWHERE:
- * the spec sentence does not say where it goes, and three ports each inventing a home for it is
- * precisely the divergence the spec exists to prevent. (`FieldViolation` *does* have a third string
- * field, `reason` (field 3), added to `google/rpc/error_details.proto` in 2022 and documented as "a
- * unique identifier for this violation type" — the obvious candidate home for `code`, but not used here
- * until the spec says so. This note is the record that it exists.)
+ * whichever transport carried it. `BenzeneError.code` → `FieldViolation.reason` (field 3), and back
+ * (wire-contracts §4.2, spec 1.1: a server SHOULD write it, a client SHOULD read it), so an error's
+ * `code` survives a gRPC hop as it does an HTTP one. An error with no `code` leaves `reason` unset, and an
+ * unset or empty `reason` reads back as no `code`.
  *
  * The `BadRequest` detail is attached whenever the result carries errors, not only for
  * `validation-error`: §4.2's sentence is unconditional. (.NET's `AddRichErrorDetails` restricts it to
@@ -88,7 +86,7 @@ function encodeFieldViolation(error: BenzeneError): Buffer {
   // default-value omission - the same distinction .NET draws.
   writeString(out, 1, jsonPointerToFieldPath(error.field) ?? '');
   writeString(out, 2, error.message ?? '');
-  // Field 3 (`reason`) is deliberately not written - see the module note on `BenzeneError.code`.
+  writeString(out, 3, error.code ?? '');
   return Buffer.from(out);
 }
 
@@ -212,7 +210,7 @@ function writeBytes(out: number[], fieldNumber: number, value: Buffer): void {
 /**
  * Reads the structured errors back out of a call's trailing metadata: the `grpc-status-details-bin`
  * trailer's `google.rpc.Status` → its `google.rpc.BadRequest` detail → one {@link BenzeneError} per
- * `FieldViolation` (`description` → `message`, `field` → `field` when set).
+ * `FieldViolation` (`description` → `message`, `field` → `field` and `reason` → `code`, each when set).
  *
  * Returns an empty array when the trailer is absent, holds something other than a `Status`, or carries
  * no `BadRequest` detail — the caller then falls back to the call's flat status detail string, which is
@@ -284,6 +282,7 @@ function collectFromBadRequest(badRequestBytes: Buffer, errors: BenzeneError[]):
 function readFieldViolation(violationBytes: Buffer): BenzeneError {
   let fieldPath = '';
   let description = '';
+  let reason = '';
 
   const reader = new Reader(violationBytes);
   while (!reader.done) {
@@ -292,14 +291,23 @@ function readFieldViolation(violationBytes: Buffer): BenzeneError {
       fieldPath = reader.readLengthDelimited().toString('utf8');
     } else if (field.number === 2 && field.wireType === WIRE_LENGTH_DELIMITED) {
       description = reader.readLengthDelimited().toString('utf8');
+    } else if (field.number === 3 && field.wireType === WIRE_LENGTH_DELIMITED) {
+      reason = reader.readLengthDelimited().toString('utf8');
     } else {
-      // `reason` (field 3) and anything else a future producer adds are skipped, not guessed at.
+      // Anything else a future producer adds (`localized_message`, ...) is skipped, not guessed at.
       reader.skip(field.wireType);
     }
   }
 
+  const error: BenzeneError = { message: description };
   const field = fieldPathToJsonPointer(fieldPath);
-  return field === undefined ? { message: description } : { message: description, field };
+  if (field !== undefined) {
+    error.field = field;
+  }
+  if (reason !== '') {
+    error.code = reason;
+  }
+  return error;
 }
 
 /** A minimal proto3 wire-format reader — enough to walk the four messages above and skip the rest. */

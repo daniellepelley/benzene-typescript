@@ -198,12 +198,14 @@ describe('gRPC rich error details (wire-contracts.md §4.2)', () => {
     expect(Buffer.isBuffer(detailsTrailer)).toBe(true);
 
     expect(decodeFieldViolations(detailsTrailer as Buffer)).toEqual([
-      { message: 'customerId must not be empty', field: '/customerId' },
-      { message: 'lines must contain at least one item', field: '/lines' },
+      { message: 'customerId must not be empty', field: '/customerId', code: 'required' },
+      { message: 'lines must contain at least one item', field: '/lines', code: 'minItems' },
     ]);
+    // §4.2 (spec 1.1): `code` rides in FieldViolation.reason.
+    expect((detailsTrailer as Buffer).includes(Buffer.from('minItems', 'utf8'))).toBe(true);
   });
 
-  it('the client recovers the structured errors, field and all', async () => {
+  it('the client recovers the structured errors, field and code and all', async () => {
     const result = await benzeneClient.sendMessageAsync<PlaceOrder, OrderPlaced>({
       topic: PLACE_TOPIC,
       message: { customerId: '' },
@@ -213,8 +215,8 @@ describe('gRPC rich error details (wire-contracts.md §4.2)', () => {
     expect(result.status).toBe(BenzeneResultStatus.validationError);
     expect(result.isSuccessful).toBe(false);
     expect(result.errors).toEqual([
-      { message: 'customerId must not be empty', field: '/customerId' },
-      { message: 'lines must contain at least one item', field: '/lines' },
+      { message: 'customerId must not be empty', field: '/customerId', code: 'required' },
+      { message: 'lines must contain at least one item', field: '/lines', code: 'minItems' },
     ]);
   });
 
@@ -246,15 +248,17 @@ describe('gRPC rich error details (wire-contracts.md §4.2)', () => {
 });
 
 describe('the google.rpc codec', () => {
-  it('round-trips message and field, and leaves an unscoped error without a field', () => {
+  it('round-trips message, field and code, and leaves an unscoped error without a field', () => {
     const errors: BenzeneError[] = [
-      { message: 'scoped', field: '/a', code: 'ignored-on-purpose' },
+      { message: 'scoped', field: '/a', code: 'rule-a' },
       { message: 'unscoped' },
+      { message: 'coded only', code: 'rule-b' },
     ];
 
     expect(decodeFieldViolations(encodeRichStatus(3, 'scoped; unscoped', errors))).toEqual([
-      { message: 'scoped', field: '/a' },
+      { message: 'scoped', field: '/a', code: 'rule-a' },
       { message: 'unscoped' },
+      { message: 'coded only', code: 'rule-b' },
     ]);
   });
 
@@ -288,11 +292,25 @@ describe('the google.rpc codec', () => {
     expect(fieldPathToJsonPointer(dotted)).toBe(pointer);
   });
 
-  it('carries `code` nowhere - the spec does not say where it goes', () => {
-    const encoded = encodeRichStatus(3, 'nope', [{ message: 'm', field: '/f', code: 'SECRET-RULE-ID' }]);
+  it('writes `code` into FieldViolation.reason (field 3) and reads it back (§4.2, spec 1.1)', () => {
+    const encoded = encodeRichStatus(3, 'nope', [{ message: 'm', field: '/f', code: 'RULE-ID' }]);
 
-    expect(encoded.includes(Buffer.from('SECRET-RULE-ID', 'utf8'))).toBe(false);
-    expect(decodeFieldViolations(encoded)).toEqual([{ message: 'm', field: '/f' }]);
+    // The FieldViolation: field 1 `f`, field 2 `m`, field 3 `RULE-ID` - reason is tag 0x1a.
+    const violation = Buffer.concat([
+      Buffer.from([0x0a, 1]), Buffer.from('f'),
+      Buffer.from([0x12, 1]), Buffer.from('m'),
+      Buffer.from([0x1a, 7]), Buffer.from('RULE-ID'),
+    ]);
+    expect(encoded.includes(violation)).toBe(true);
+    expect(decodeFieldViolations(encoded)).toEqual([{ message: 'm', field: '/f', code: 'RULE-ID' }]);
+  });
+
+  it('leaves reason unset for an error without a code', () => {
+    const encoded = encodeRichStatus(3, 'nope', [{ message: 'm' }]);
+    const violation = Buffer.concat([Buffer.from([0x12, 1]), Buffer.from('m')]);
+
+    expect(encoded.subarray(encoded.length - violation.length).equals(violation)).toBe(true);
+    expect(decodeFieldViolations(encoded)).toEqual([{ message: 'm' }]);
   });
 
   it('writes the canonical Any type_url', () => {
