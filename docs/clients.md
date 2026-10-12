@@ -139,7 +139,13 @@ or its deadline elapsed, otherwise `service-unavailable`, with the underlying er
 `cause`'s, where `fetch` puts the socket error) as the one error. So a down peer is handled like any other
 failure, and `RetryBenzeneMessageClient` retries it like any other `service-unavailable`. The HTTP client,
 the gRPC client and the mesh dispatchers all follow this; `transportFailureResult(error)` in
-`@benzenejs/results` is the shared rule if you write your own transport. Bound an HTTP call by passing a
+`@benzenejs/results` is the shared rule if you write your own transport.
+
+One-way sends follow it too. When the SQS, SNS, EventBridge, Step Functions, Service Bus, Event Hub, Event
+Grid, Queue Storage, Pub/Sub, Kafka or RabbitMQ SDK call rejects before the broker accepts the message, the
+send resolves to `timeout` or `service-unavailable` instead of throwing. When the broker itself refused it
+(an AWS service exception, an Azure `RestError`), its HTTP status maps through the usual table instead: an
+`AccessDenied` is `forbidden`, a throttle `too-many-requests`. `failedSendResult(error)` is that rule. Bound an HTTP call by passing a
 `fetchFn` that sets `signal: AbortSignal.timeout(ms)`.
 
 ## Wiring routes: `OutboundRoutingBuilder`
