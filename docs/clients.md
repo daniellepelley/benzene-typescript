@@ -480,7 +480,12 @@ if (!result.allSucceeded) {
 
 Failure granularity follows each provider: SQS/SNS report per-entry `Failed` lists and EventBridge a
 positional response; Service Bus / Event Hub / Event Grid sends are atomic, so a batch-level throw fails
-every message in that batch. The still-deferred piece is the *generic-context* standalone client per
+every message in that batch. A batch send never throws for a transport failure (see
+[When there is no reply](#when-there-is-no-reply)): a chunk that fails in transport is reported against
+each of its entries, and so is a Service Bus `createMessageBatch` or Event Hub `createBatch` that rejects
+(no connection) — it fails every entry that batch would have carried: the rest of your collection for
+Service Bus, the rest of that partition key's events for Event Hub (other partition keys still send).
+Each such entry carries the error's name as `errorCode` and its message as `errorMessage`. The still-deferred piece is the *generic-context* standalone client per
 transport — blocked on the same runtime type-erasure as typed outbound responses.
 
 ## Health checks: contract drift
