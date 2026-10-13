@@ -3,7 +3,7 @@
 One greeter domain, **hosted on gRPC across all four RPC shapes** — unary, server-streaming,
 client-streaming, and bidirectional. The handlers in [`src/handlers.ts`](src/handlers.ts) are written
 once and know nothing about grpc-js; the [`useGrpc`](../../src/Benzene.Grpc) bridge routes each gRPC
-method to the handler's Benzene topic and runs the pipeline. Ported from the .NET `Benzene.Example.Grpc`
+method to the handler's Benzene topic and runs the pipeline. Ported from the .NET `Benzene.Examples.Grpc`
 (server + client + component test).
 
 | Handler (`src/handlers.ts`) | RPC shape | gRPC method | Topic |

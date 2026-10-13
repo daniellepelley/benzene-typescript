@@ -1,5 +1,5 @@
 /**
- * The outbound gRPC client, ported from the .NET example's `Benzene.Example.Grpc.Client`. A caller sends a
+ * The outbound gRPC client, ported from the .NET example's `Benzene.Examples.Grpc.Client`. A caller sends a
  * Benzene message by TOPIC (`say_hello`) and the client maps it to the gRPC method, performs the unary
  * call, and maps the gRPC status back to a Benzene result — the caller never sees grpc-js.
  *

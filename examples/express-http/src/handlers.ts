@@ -1,5 +1,5 @@
 /**
- * A plain Benzene HTTP order domain — the Node/Express analog of the .NET `Benzene.Example.Asp`. Each
+ * A plain Benzene HTTP order domain — the Node/Express analog of the .NET `Benzene.Examples.Asp`. Each
  * handler declares its HTTP route with `@httpEndpoint` alongside its `@message` topic and knows nothing
  * about Express; `@benzenejs/express` routes the request. `register: false` — the handlers record their
  * metadata but join no registry; `orderService.ts` passes them to `useMessageHandlers` explicitly.

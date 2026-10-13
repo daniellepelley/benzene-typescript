@@ -2,7 +2,7 @@
 
 A user-signup **distributed transaction with rollback** over [`@benzenejs/saga`](../../src/Benzene.Saga):
 the flow spans several services and either **completes in full or rolls back in full**, leaving no
-orphaned records — so it can be safely retried. Ported from the .NET `Benzene.Example.Saga`.
+orphaned records — so it can be safely retried. Ported from the .NET `Benzene.Examples.Saga`.
 
 The saga (see [`src/signupSaga.ts`](src/signupSaga.ts)):
 

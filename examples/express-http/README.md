@@ -1,7 +1,7 @@
 # `@benzene-example/express-http`
 
 A plain Benzene HTTP order service on a **standalone Express server** — the Node/Express analog of the
-.NET `Benzene.Example.Asp`, via [`@benzenejs/express`](../../src/Benzene.Express). Benzene owns the HTTP
+.NET `Benzene.Examples.Asp`, via [`@benzenejs/express`](../../src/Benzene.Express). Benzene owns the HTTP
 verbs + URLs it has `@httpEndpoint` handlers for, and everything else falls through to the ordinary Express
 pipeline (the strangler-fig pattern).
 

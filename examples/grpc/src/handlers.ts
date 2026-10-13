@@ -1,5 +1,5 @@
 /**
- * The greeter domain, written ONCE, transport-agnostic. Ported from the .NET `Benzene.Example.Grpc`
+ * The greeter domain, written ONCE, transport-agnostic. Ported from the .NET `Benzene.Examples.Grpc`
  * handlers (`SayHello…MessageHandler`): one handler per gRPC RPC shape (unary, server-streaming,
  * client-streaming, bidirectional). Each declares its Benzene `@message` topic AND the gRPC method it
  * answers with `@grpcMethod`; it knows nothing about the grpc-js `Server` that delivered the call — the
