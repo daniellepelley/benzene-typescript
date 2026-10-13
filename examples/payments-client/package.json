@@ -11,10 +11,10 @@
     "generate": "codegen-client --file contracts/payments.spec.json --output topic-client --namespace generated --service-name Payments --topics payments:capture --out src"
   },
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0-beta.1",
-    "@benzenejs/clients": "0.1.0-beta.1"
+    "@benzenejs/abstractions": "0.1.0-beta.2",
+    "@benzenejs/clients": "0.1.0-beta.2"
   },
   "devDependencies": {
-    "@benzenejs/codegen-client": "0.1.0-beta.1"
+    "@benzenejs/codegen-client": "0.1.0-beta.2"
   }
 }

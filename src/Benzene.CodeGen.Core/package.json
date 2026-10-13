@@ -1,6 +1,6 @@
 {
   "name": "@benzenejs/codegen-core",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "TypeScript port of Benzene.CodeGen.Core: the Contract Document hashes (contract-document.md §6) shared by the runtime and the client generator",
   "license": "MIT",
   "type": "commonjs",

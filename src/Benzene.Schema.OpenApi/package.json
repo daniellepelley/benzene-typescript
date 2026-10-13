@@ -1,22 +1,22 @@
 {
   "name": "@benzenejs/schema-openapi",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "TypeScript port of Benzene.Schema.OpenApi (the Contract Document served on benzene:spec, with $ref/components sourced from validation schemas)",
   "license": "MIT",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0-beta.1",
-    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
-    "@benzenejs/abstractions-messages": "0.1.0-beta.1",
-    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
-    "@benzenejs/abstractions-validation": "0.1.0-beta.1",
-    "@benzenejs/codegen-core": "0.1.0-beta.1",
-    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
-    "@benzenejs/core-messages": "0.1.0-beta.1",
-    "@benzenejs/http": "0.1.0-beta.1",
-    "@benzenejs/results": "0.1.0-beta.1"
+    "@benzenejs/abstractions": "0.1.0-beta.2",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.2",
+    "@benzenejs/abstractions-messages": "0.1.0-beta.2",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.2",
+    "@benzenejs/abstractions-validation": "0.1.0-beta.2",
+    "@benzenejs/codegen-core": "0.1.0-beta.2",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.2",
+    "@benzenejs/core-messages": "0.1.0-beta.2",
+    "@benzenejs/http": "0.1.0-beta.2",
+    "@benzenejs/results": "0.1.0-beta.2"
   },
   "files": [
     "dist"

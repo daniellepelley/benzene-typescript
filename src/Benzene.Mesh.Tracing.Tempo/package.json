@@ -1,19 +1,19 @@
 {
   "name": "@benzenejs/mesh-tracing-tempo",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "TypeScript port of Benzene.Mesh.Tracing.Tempo",
   "license": "MIT",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0-beta.1",
-    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
-    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
-    "@benzenejs/http": "0.1.0-beta.1",
-    "@benzenejs/mesh-aggregator": "0.1.0-beta.1",
-    "@benzenejs/mesh-contracts": "0.1.0-beta.1",
-    "@benzenejs/results": "0.1.0-beta.1"
+    "@benzenejs/abstractions": "0.1.0-beta.2",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.2",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.2",
+    "@benzenejs/http": "0.1.0-beta.2",
+    "@benzenejs/mesh-aggregator": "0.1.0-beta.2",
+    "@benzenejs/mesh-contracts": "0.1.0-beta.2",
+    "@benzenejs/results": "0.1.0-beta.2"
   },
   "files": [
     "dist"

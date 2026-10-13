@@ -1,7 +1,9 @@
 # The npm release is half-published, and the error message hid it
 
-**Status: the workflow is fixed and the decision is taken — finish `0.1.0-beta.1`. What remains is
-one maintainer action (the `NPM_TOKEN` secret) and a workflow re-run.**
+**Status (2026-10-13): publish `0.1.0-beta.2`, all 130 packages as one set.** Every workspace is
+bumped and the release workflow's verify job passes locally (build, typecheck, 2279 tests, a clean
+dry-run, and nothing at `0.1.0-beta.2` on the registry). **One maintainer action remains: an
+`NPM_TOKEN` that can publish without a one-time password** (below, "The 2026-10-13 run").
 
 ## What is actually on npm
 
@@ -74,14 +76,23 @@ blocker, not the first.
 
 ## The decision taken
 
-**Finish `0.1.0-beta.1`**: publish the missing 104 at the current version rather than bumping the
-whole set to `0.1.0-beta.2`.
+**Superseded on 2026-10-13: publish `0.1.0-beta.2`.** Finishing `0.1.0-beta.1` was decided first,
+to avoid a bump. It would have left the 25 August-era packages, old abstractions and the Lambda
+bindings that can lose a failure, as the published `0.1.0-beta.1` beside 104 new ones. A
+`0.1.0-beta.2` of all 130 packages is one consistent set built together, and it discharges the
+release-notes caveat below outright.
 
-The trade-off, recorded honestly: the 25 packages already on the registry are the 14 August build,
-and `@benzenejs/abstractions` has changed since (`BenzeneError` moved into it and
-`IBenzeneResult.errors` widened to `BenzeneError[]`). Consumers of `0.1.0-beta.1` will therefore get
-old abstractions against new dependents. The next bump to `0.1.0-beta.2` publishes all 129 as one
-consistent set and supersedes it under the `beta` tag.
+## The 2026-10-13 run: the token needs a one-time password
+
+The Release workflow was run from `main` (still `0.1.0-beta.1`) on 2026-10-13. Build, typecheck and
+tests passed; the publish skipped the 25 packages already on the registry and stopped at the first
+new one, `@benzenejs/azure-event-hub`, with `npm error code EOTP: This operation requires a one-time
+password`. Nothing was published. So `NPM_TOKEN` is present, and it is a token that still demands
+2FA on publish, which CI cannot answer. The fix is a token that can publish without an OTP: a
+granular access token with read and write on the `@benzenejs` packages and "bypass two-factor
+authentication" enabled, saved as the `NPM_TOKEN` repository secret. npm's notice in the same log
+says such tokens are being restricted, so once every package exists, register a Trusted Publisher
+per package (trusted publishing needs no token) and retire the secret.
 
 ## The release-notes condition — discharged in source, with one caveat
 

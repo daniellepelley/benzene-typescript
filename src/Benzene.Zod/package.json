@@ -1,19 +1,19 @@
 {
   "name": "@benzenejs/zod",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Benzene validation integration adapting Zod (mirrors Benzene.FluentValidation)",
   "license": "MIT",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@benzenejs/abstractions": "0.1.0-beta.1",
-    "@benzenejs/abstractions-messages": "0.1.0-beta.1",
-    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.1",
-    "@benzenejs/abstractions-middleware": "0.1.0-beta.1",
-    "@benzenejs/abstractions-validation": "0.1.0-beta.1",
-    "@benzenejs/results": "0.1.0-beta.1",
-    "@benzenejs/core-message-handlers": "0.1.0-beta.1",
+    "@benzenejs/abstractions": "0.1.0-beta.2",
+    "@benzenejs/abstractions-messages": "0.1.0-beta.2",
+    "@benzenejs/abstractions-message-handlers": "0.1.0-beta.2",
+    "@benzenejs/abstractions-middleware": "0.1.0-beta.2",
+    "@benzenejs/abstractions-validation": "0.1.0-beta.2",
+    "@benzenejs/results": "0.1.0-beta.2",
+    "@benzenejs/core-message-handlers": "0.1.0-beta.2",
     "zod": "^4.4.3"
   },
   "files": [
