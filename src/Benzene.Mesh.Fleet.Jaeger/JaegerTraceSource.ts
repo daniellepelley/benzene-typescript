@@ -1,6 +1,7 @@
 /** Port of Benzene.Mesh.Fleet.Jaeger.JaegerTraceSource. */
 import {
   CorrelationView,
+  flowStatus,
   IMeshTraceSource,
   MeshTimeRange,
   MeshTimeRangeResolver,
@@ -245,6 +246,9 @@ function toTraceSummary(trace: JaegerMappedTrace): TraceSummary {
   summary.failed = trace.events.some((e) => !BenzeneResultStatus.isSuccess(e.status));
   // The flow's entry topic: the earliest mapped event's.
   summary.topic = [...trace.events].sort((a, b) => a.startedAt - b.startedAt)[0].topic;
+  // How the flow ended (mesh.md §4): the mapper reads each span's benzene.status, so the rule applies as on
+  // the in-memory collector; a span without the tag reads as unknown and the status is then omitted.
+  summary.status = flowStatus(trace.events, summary.failed);
   return summary;
 }
 

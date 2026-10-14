@@ -147,6 +147,8 @@ export class TempoTraceSource implements IMeshTraceSource {
         // and accurate event count come from the drill-in trace (getTraceAsync).
         summary.failed = false;
         summary.events = 0;
+        // No `status` either: the search summary holds no span's benzene.status, so it is unknown and
+        // omitted (mesh.md §4); the drill-in trace carries each event's.
         return summary;
       })
       .sort((a, b) => b.startedAt - a.startedAt)

@@ -161,8 +161,9 @@ singleton/scoped/transient semantics.
 that body), the `MeshOutboundRegistry` event/send declarations, `MeshHeartbeat`
 (`{ service, serviceVersion?, instanceId, registrationHash, sentAt, health }`), and the **trace feed** (§3):
 `MeshTraceEvent` / `MeshTraceBatch`, the ambient `MeshSpan` (over `AsyncLocalStorage`), the `Traceparent`
-parser, `IMeshStatusReader`, the lossy `HttpMeshTraceExporter`, and `useMeshTrace`; plus the issue feed
-(§4.1). One adaptation is documented in "Multi-language interoperability": C#'s `System.Threading.Channels`
+parser, `IMeshStatusReader`, the lossy `HttpMeshTraceExporter`, and `useMeshTrace`; plus the issue feed's
+wire shapes (§4.1: `MeshIssue`, `MeshIssueBatch`, `MeshIssueError`, the classification and fingerprint) — not
+its emitter (.NET's `UseMeshIssues` / `HttpMeshIssueExporter`), which is not ported yet. One adaptation is documented in "Multi-language interoperability": C#'s `System.Threading.Channels`
 exporter pump → a bounded buffer + timer loop with a fire-and-forget sync `dispose()`.
 
 ‡ `Benzene.Azure.Function.AspNet` routes Azure Functions HTTP through the .NET-only ASP.NET Core
@@ -1899,7 +1900,16 @@ Ported (with tests):
   lowercase-hex over `service|topic|version|classification|discriminator`, identical to the C# recipe so
   issue dedup is cross-language stable — and in the collector `MeshCollectorHandlers.all` carries all **9**
   handlers (register/heartbeat/traces/**issues** + the five `benzene:mesh:query:*` reads), with `store.addIssues` /
-  `FleetView.issues` / the per-service `issues` missing-feed marker wired. **One deferral remains**
+  `FleetView.issues` / the per-service `issues` missing-feed marker wired. Spec 1.2 candidate (mesh.md §4,
+  §4.1), written from the spec ahead of a .NET counterpart: an issue's `errors` detail (`MeshIssueError` /
+  `MeshIssueErrors` in `@benzenejs/mesh-wire` — `(field, code)` pairs, never `message`, an empty member
+  being an absent one, merged by identity and bounded to 10, malformed entries skipped without costing the
+  issue) is merged by the collector and
+  reported on the fleet view's issue; and a fleet view's `TraceSummary` carries the flow's `status`
+  (`flowStatus`: the earliest failing event's when it failed, else the earliest event's), set by the
+  in-memory store and the Jaeger and enriched X-Ray sources, omitted by Tempo and X-Ray summary-plane rows,
+  whose search summaries hold no span status. This port has no issue *emitter* (see the mesh-wire note
+  above), so nothing here produces `errors`; it is read and merged only. **One deferral remains**
   (reported, not faked): threading a usage *window* to the usage sources — it needs `MeshUsageWindow` + an
   `IMeshUsageSource.fetchUsageAsync` param (a breaking change to an already-published interface), so the
   composite still decides `countsWindowed` from each source's *returned* window but can't ask a source to

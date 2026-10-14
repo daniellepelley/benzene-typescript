@@ -7,6 +7,7 @@ import {
 import type { TraceSummary as XRayTraceSummary } from '@aws-sdk/client-xray';
 import {
   CorrelationView,
+  flowStatus,
   IMeshTraceSource,
   MeshTimeRange,
   MeshTimeRangeResolver,
@@ -347,6 +348,9 @@ function enrichedRow(summary: XRayTraceSummary, events: MeshTraceEvent[]): Trace
   row.events = events.length;
   // The flow's entry topic: the earliest mapped event's (map returns events in start order).
   row.topic = events[0].topic;
+  // How the flow ended (mesh.md §4), from the mapped events' benzene.status. `failed` is X-Ray's own error
+  // flag here, so when it and the events disagree no event decides the flow and the status is omitted.
+  row.status = flowStatus(events, row.failed);
   return row;
 }
 
@@ -365,6 +369,7 @@ function toSummaryPlaneRow(summary: XRayTraceSummary): TraceSummary {
   ];
   row.startedAt = parseTraceStart(summary.Id);
   row.events = 0; // X-Ray summaries carry no span count; the drill-in trace has it.
+  // No `status`: a summary-plane row has no Benzene spans to read it from (mesh.md §4 - omitted when unknown).
   return row;
 }
 

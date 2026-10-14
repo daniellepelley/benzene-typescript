@@ -9,6 +9,7 @@
  * `List<T>`/`Dictionary<string,long>` -> arrays / `Record<string, number>`.
  */
 import { MeshIssue, MeshPlacement, MeshRegistration, MeshTraceEvent } from '@benzenejs/mesh-wire';
+import { BenzeneResultStatus } from '@benzenejs/results';
 
 /** Health classification of a service, from its instances' latest heartbeats. */
 export const MeshHealth = {
@@ -171,6 +172,39 @@ export class TraceSummary {
    * attribute one (a summary-plane row that mapped no Benzene spans). Omitted from the wire when absent.
    */
   topic?: string;
+
+  /**
+   * How the flow ended (mesh.md §4): the status of its earliest-started failing event when {@link failed},
+   * otherwise of its earliest-started event - see {@link flowStatus}. `undefined` (omitted from the wire)
+   * when unknown, as on a plane whose trace store does not hold the events' Benzene status; readers must
+   * tolerate its absence.
+   */
+  status?: string;
+}
+
+/**
+ * A flow's {@link TraceSummary.status} (mesh.md §4) from its events, given in receipt order: the status of
+ * the earliest-started failing event when the flow failed, otherwise of the earliest-started event, equal
+ * start times keeping receipt order. An event is failing exactly when it makes the summary failed - outside
+ * the success class, as {@link TraceSummary.failed} is derived - so `failed` defaults to that derivation.
+ *
+ * A plane whose `failed` comes from elsewhere (a backend's own error flag) passes it: when it disagrees with
+ * the events - failed with no failing event, or not failed with one - no event decides the flow and the
+ * status is unknown. So is an empty status (a span whose Benzene status was not mapped). Both read as
+ * `undefined`.
+ */
+export function flowStatus(
+  events: readonly MeshTraceEvent[],
+  failed: boolean = events.some((e) => !BenzeneResultStatus.isSuccess(e.status)),
+): string | undefined {
+  // Array.prototype.sort is stable, so equal start times keep receipt order.
+  const ordered = [...events].sort((a, b) => a.startedAt - b.startedAt);
+  const failing = ordered.find((e) => !BenzeneResultStatus.isSuccess(e.status));
+  if (failed !== (failing !== undefined)) {
+    return undefined;
+  }
+  const status = (failing ?? ordered[0])?.status;
+  return typeof status === 'string' && status.length > 0 ? status : undefined;
 }
 
 /**

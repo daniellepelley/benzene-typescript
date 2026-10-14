@@ -1,4 +1,8 @@
-/** Port of Benzene.Mesh.Wire.MeshIssue (and its MeshIssueBatch/MeshIssueClassification/MeshIssueFingerprint). */
+/**
+ * Port of Benzene.Mesh.Wire.MeshIssue (and its MeshIssueBatch/MeshIssueClassification/MeshIssueFingerprint).
+ * `MeshIssueError`/`MeshIssueErrors` (the issue's `errors` detail, spec §4.1) implement the spec 1.2 candidate
+ * directly from mesh.md, ahead of a .NET counterpart.
+ */
 import { createHash } from 'node:crypto';
 
 /**
@@ -56,6 +60,143 @@ export class MeshIssue {
    * never prose. Unknown keys are tolerated by readers.
    */
   resolutionHint?: string;
+
+  /**
+   * The structured detail behind the failures this issue counts (spec §4.1): the failing results'
+   * problem-document `(field, code)` pairs - never the `message` - each with a DELTA count like
+   * {@link count}, at most {@link MeshIssueErrors.maxEntries} of them in {@link MeshIssueErrors.order}.
+   * `undefined` (omitted on the wire) when there are none. Not part of the fingerprint.
+   */
+  errors?: MeshIssueError[];
+}
+
+/**
+ * One entry of an issue's error detail (spec §4.1). Its identity is the (`field`, `code`) pair - an empty
+ * string being the same as an absent member (`undefined`), which is distinct from every non-empty string - and
+ * it carries at least one of the two. `message`
+ * is deliberately not a member: it is free text a validator may have built from the payload.
+ */
+export class MeshIssueError {
+  /** The problem-document error's `field` (a JSON Pointer into the request), when it carried one. */
+  field?: string;
+
+  /** The problem-document error's `code`, when it carried one. */
+  code?: string;
+
+  /** DELTA on the wire, exactly as {@link MeshIssue.count} is; cumulative once a collector has merged it. */
+  count = 0;
+}
+
+/**
+ * The spec §4.1 rules for {@link MeshIssue.errors}, shared by every side that holds them: the bound and
+ * order, the merge by identity, and the lenient reading of a received `errors` member.
+ */
+export const MeshIssueErrors = {
+  /** Both sides keep at most this many entries per issue (spec §4.1). */
+  maxEntries: 10,
+
+  /**
+   * The spec §4.1 order: count descending, then `field`, then `code`, each in ordinal (UTF-16 code-unit)
+   * order with an absent member first.
+   */
+  order(a: MeshIssueError, b: MeshIssueError): number {
+    return b.count - a.count || compareMember(a.field, b.field) || compareMember(a.code, b.code);
+  },
+
+  /** The highest {@link maxEntries} entries, in {@link order}. Returns a new array. */
+  bound(entries: readonly MeshIssueError[]): MeshIssueError[] {
+    return [...entries].sort(MeshIssueErrors.order).slice(0, MeshIssueErrors.maxEntries);
+  },
+
+  /**
+   * Merges `incoming` into `existing` by (`field`, `code`) identity - `count += delta` - then applies
+   * {@link bound}. Either side may be `undefined`; neither is mutated. Returns new entries.
+   */
+  merge(
+    existing: readonly MeshIssueError[] | undefined,
+    incoming: readonly MeshIssueError[] | undefined,
+  ): MeshIssueError[] {
+    const merged = new Map<string, MeshIssueError>();
+    for (const entry of [...(existing ?? []), ...(incoming ?? [])]) {
+      const key = identityOf(entry);
+      const held = merged.get(key);
+      if (held === undefined) {
+        merged.set(key, errorOf(entry.field, entry.code, entry.count));
+      } else {
+        held.count += entry.count;
+      }
+    }
+    return MeshIssueErrors.bound([...merged.values()]);
+  },
+
+  /**
+   * Reads a received `errors` member leniently (spec §4.1): an entry that is not an object, carries neither
+   * a non-empty string `field` nor a non-empty string `code` (an empty string is an absent member), or whose
+   * `count` is not a positive integer is skipped - never the
+   * issue or the batch it arrived in. A member that is not an array reads as no entries. The result is not
+   * merged or bounded; {@link merge} does that.
+   */
+  decode(value: unknown): MeshIssueError[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    const entries: MeshIssueError[] = [];
+    for (const item of value as unknown[]) {
+      if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+        continue;
+      }
+      const record = item as Record<string, unknown>;
+      const field = memberOf(record.field);
+      const code = memberOf(record.code);
+      const count = record.count;
+      if ((field === undefined && code === undefined) || typeof count !== 'number' || !Number.isInteger(count) || count <= 0) {
+        continue;
+      }
+      entries.push(errorOf(field, code, count));
+    }
+    return entries;
+  },
+} as const;
+
+// A member as spec §4.1 reads it: a non-empty string, else absent (an empty string is the same as an absent one).
+function memberOf(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function errorOf(field: string | undefined, code: string | undefined, count: number): MeshIssueError {
+  const entry = new MeshIssueError();
+  // Assigned only when present (non-empty), so an absent member is omitted from the wire, never written as
+  // null or as the empty string it is equal to.
+  if (field !== undefined && field.length > 0) {
+    entry.field = field;
+  }
+  if (code !== undefined && code.length > 0) {
+    entry.code = code;
+  }
+  entry.count = count;
+  return entry;
+}
+
+// The (field, code) identity as a Map key: an empty member is the absent one (null), which JSON keeps distinct
+// from every non-empty string.
+function identityOf(entry: MeshIssueError): string {
+  return JSON.stringify([memberOf(entry.field) ?? null, memberOf(entry.code) ?? null]);
+}
+
+// Ordinal, absent (or empty, the same thing) first.
+function compareMember(x: string | undefined, y: string | undefined): number {
+  const a = memberOf(x);
+  const b = memberOf(y);
+  if (a === b) {
+    return 0;
+  }
+  if (a === undefined) {
+    return -1;
+  }
+  if (b === undefined) {
+    return 1;
+  }
+  return a < b ? -1 : 1;
 }
 
 /**

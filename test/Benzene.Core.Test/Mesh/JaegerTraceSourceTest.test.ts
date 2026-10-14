@@ -193,8 +193,10 @@ describe('JaegerTraceSource', () => {
     expect(flows[0].events).toBe(1); // Jaeger returns full traces → real span count
     expect(flows[0].services).toEqual(['billing-api']);
     expect(flows[0].topic).toBe('billing:charge'); // the flow's entry topic (earliest event's)
+    expect(flows[0].status).toBe('not-found'); // the flow's status (mesh.md §4), from benzene.status
     expect(flows[1].traceId).toBe('t-a');
     expect(flows[1].failed).toBe(false); // status ok
+    expect(flows[1].status).toBe('ok');
   });
 
   it('getRecentFlowsAsync discovers services when none are configured', async () => {

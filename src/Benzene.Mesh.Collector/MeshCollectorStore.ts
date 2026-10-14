@@ -41,6 +41,7 @@ import {
   MeshIssue,
   MeshIssueBatch,
   MeshIssueClassification,
+  MeshIssueErrors,
   MeshIssueFingerprint,
   MeshPlacement,
   MeshRegistration,
@@ -66,6 +67,7 @@ import {
   TopicSummary,
   TraceSummary,
   TraceView,
+  flowStatus,
 } from './Views';
 
 interface InstanceState {
@@ -285,8 +287,9 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   /**
    * Ingests an issue batch (spec §4.1): fingerprint-keyed delta merge (`count += delta`, `firstSeen = min`,
-   * `lastSeen = max`, exemplars keep the newest ≤3, other fields latest-wins), bounded (evict oldest
-   * `lastSeen` when full). Invalid entries (no fingerprint or topic) are skipped, never rejected; an empty
+   * `lastSeen = max`, exemplars keep the newest ≤3, `errors` merged by (`field`, `code`) identity and bounded,
+   * other fields latest-wins), bounded (evict oldest `lastSeen` when full). Invalid entries (no fingerprint or
+   * topic) are skipped, never rejected - and so is an invalid `errors` entry, without costing its issue; an empty
    * batch is the feed's liveness assertion and marks the service's issue feed as wired. Returns how many
    * entries were accepted.
    */
@@ -305,6 +308,8 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
       // ISO-8601 on the wire (mesh.md §4.1); epoch ms in memory. A number still ingests.
       incoming.firstSeen = MeshTime.fromWire(incoming.firstSeen as unknown);
       incoming.lastSeen = MeshTime.fromWire(incoming.lastSeen as unknown, incoming.firstSeen);
+      // Read leniently (spec §4.1): a malformed entry is dropped here, the issue itself still merges.
+      incoming.errors = MeshIssueErrors.decode(incoming.errors as unknown);
       this.mergeIssue(incoming);
       accepted++;
     }
@@ -370,6 +375,10 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
         issue.exemplarTraceIds.shift(); // keep the newest
       }
     }
+    // Error detail (spec §4.1): delta counts merged by (field, code) identity, then the same bound and order
+    // the emitter applies. Reported only when the issue holds any.
+    const errors = MeshIssueErrors.merge(issue.errors, incoming.errors);
+    issue.errors = errors.length > 0 ? errors : undefined;
   }
 
   fleet(range?: MeshTimeRange): FleetView {
@@ -651,7 +660,11 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
 
   private traceSummaries(limit: number, window?: ResolvedWindow): TraceSummary[] {
     const groups = new Map<string, MeshTraceEvent[]>();
-    for (const event of this.ring) {
+    // Receipt order (oldest first), not slot order: once the ring has wrapped, the oldest event is at `next`.
+    // Each group then keeps its events in receipt order, which `flowStatus` needs for equal start times.
+    const inReceiptOrder =
+      this.ring.length < this.capacity ? this.ring : [...this.ring.slice(this.next), ...this.ring.slice(0, this.next)];
+    for (const event of inReceiptOrder) {
       const list = groups.get(event.traceId);
       if (list === undefined) {
         groups.set(event.traceId, [event]);
@@ -678,6 +691,8 @@ export class MeshCollectorStore implements IMeshFleetReadModel {
           .sort((a, b) => a.startedAt - b.startedAt)
           .map((x) => x.topic)
           .find((t) => t !== undefined && t.length > 0);
+        // How the flow ended (mesh.md §4): its earliest failing event's status, else its earliest event's.
+        summary.status = flowStatus(events, summary.failed);
         return summary;
       })
       // A flow is in-window when it started in [from,to]; no window => today's unfiltered last-N.
@@ -811,5 +826,6 @@ function copyIssue(x: MeshIssue): MeshIssue {
   copy.lastSeen = x.lastSeen;
   copy.exemplarTraceIds = [...x.exemplarTraceIds];
   copy.resolutionHint = x.resolutionHint;
+  copy.errors = x.errors?.map((e) => ({ ...e }));
   return copy;
 }

@@ -75,7 +75,7 @@ function corrSegment(id: string, service: string, topic: string, correlationId: 
 }
 
 /** Mirrors the C# `FlowSegment`: a topic-bearing segment carrying a benzene.service tag and a real start. */
-function flowSegment(service: string, topic: string, startSeconds: number, endSeconds: number): string {
+function flowSegment(service: string, topic: string, startSeconds: number, endSeconds: number, status = 'ok'): string {
   const id = service.replace(/-/g, '') + '0001';
   return `{
     "id": "${id}",
@@ -85,7 +85,7 @@ function flowSegment(service: string, topic: string, startSeconds: number, endSe
     "annotations": {
       "benzene_topic": "${topic}",
       "benzene_service": "${service}",
-      "benzene_status": "ok"
+      "benzene_status": "${status}"
     }
   }`;
 }
@@ -392,6 +392,44 @@ describe('XRayTraceSource', () => {
     expect(flow.failed).toBe(true); // summary's HasError flag is kept
     expect(flow.durationMs).toBeCloseTo(250, 3); // summary duration (seconds → ms)
     expect(flow.topic).toBe('benzene:mesh:aggregate'); // entry topic from the earliest mapped event
+    // X-Ray flags an error its only Benzene span (status ok) does not show: no event decides the flow, so its
+    // status is unknown and omitted rather than reported as the ok of a flow marked failed.
+    expect(flow.status).toBeUndefined();
+  });
+
+  it('getRecentFlowsAsync carries the flow status from the mapped spans', async () => {
+    // mesh.md §4: a failed flow names its earliest-started failing event, not the ok that ran first; a
+    // successful one carries its earliest event's status.
+    const failedFlow = '1-5c000000-aaaaaaaaaaaaaaaaaaaaaaaa';
+    const okFlow = '1-5b000000-bbbbbbbbbbbbbbbbbbbbbbbb';
+    const stub = new XRayStub(
+      () => ({
+        Traces: [
+          {
+            Id: failedFlow,
+            Segments: [
+              { Document: flowSegment('frontdoor', 'welcome', 1600000000.1, 1600000000.4) },
+              { Document: flowSegment('audit', 'audit:log', 1600000000.3, 1600000000.35, 'service-unavailable') },
+              { Document: flowSegment('greeter', 'greet', 1600000000.2, 1600000000.3, 'validation-error') },
+            ],
+          },
+          { Id: okFlow, Segments: [{ Document: flowSegment('orders-api', 'orders:create', 1500000000.1, 1500000000.2, 'created') }] },
+        ],
+      }),
+      () => ({
+        TraceSummaries: [
+          { Id: failedFlow, Duration: 0.3, HasError: true },
+          { Id: okFlow, Duration: 0.1 },
+        ],
+      }),
+    );
+
+    const flows = await new XRayTraceSource(stub.client).getRecentFlowsAsync(20);
+
+    expect(flows.map((f) => [f.traceId, f.failed, f.status])).toEqual([
+      [failedFlow, true, 'validation-error'],
+      [okFlow, false, 'created'],
+    ]);
   });
 
   it('getRecentFlowsAsync orders by real start within the same epoch second', async () => {
@@ -453,6 +491,7 @@ describe('XRayTraceSource', () => {
     expect(flows[1].services).toEqual(['orders-api']); // ServiceIds name
     expect(flows[1].events).toBe(0); // no span count on the summary plane
     expect(flows[1].topic).toBeUndefined(); // no Benzene span mapped → no topic attribution
+    expect(flows[1].status).toBeUndefined(); // ...and no span status to name the flow's (mesh.md §4)
   });
 
   it('getRecentFlowsAsync with enrichment off reproduces the summary plane without fetching traces', async () => {

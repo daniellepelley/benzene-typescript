@@ -9,6 +9,7 @@ import {
   MeshHeartbeat,
   MeshIssue,
   MeshIssueBatch,
+  MeshIssueErrors,
   MeshRegistration,
   MeshTraceEvent,
 } from '@benzenejs/mesh-wire';
@@ -532,6 +533,121 @@ describe('MeshCollectorStore', () => {
     const accepted = store.addIssues(batch('orders', [issue('cccc3333cccc3333cccc3333cccc3333', '', 1, 9_00, 9_00)]));
     expect(accepted).toBe(0);
     expect(store.fleet().issues.length).toBe(0);
+  });
+
+  it('AddIssues_ErrorDetail_MergesAcrossFlushesByIdentity_AndIsReportedOnTheFleetIssue', () => {
+    // The wire is plain JSON, so the batch is parsed from text exactly as the handler receives it.
+    const store = new MeshCollectorStore();
+    const fp = 'dddd4444dddd4444dddd4444dddd4444';
+    const flush = (errors: unknown[]) =>
+      JSON.parse(
+        JSON.stringify({
+          service: 'orders',
+          issues: [{ ...issue(fp, 'order:create', 1, 9_00, 9_00, [], 'validation-error', 'validation'), errors }],
+        }),
+      ) as MeshIssueBatch;
+
+    store.addIssues(flush([{ field: '/orderId', code: 'required', count: 2 }]));
+    store.addIssues(flush([{ field: '/orderId', code: 'required', count: 1 }, { field: '/orderId', count: 1 }]));
+
+    const merged = store.fleet().issues[0];
+    expect(merged.count).toBe(2);
+    expect(JSON.parse(JSON.stringify(merged.errors))).toEqual([
+      { field: '/orderId', code: 'required', count: 3 },
+      { field: '/orderId', count: 1 }, // the absent code is its own identity, not merged into 'required'
+    ]);
+  });
+
+  it('AddIssues_InvalidErrorDetail_IsSkipped_TheIssueAndBatchStillAccepted', () => {
+    // Lenient decoding (spec §4.1): a non-object, a memberless entry, a non-positive or fractional count, or an
+    // `errors` member that is not an array costs only that entry - never the issue, never its siblings.
+    const store = new MeshCollectorStore();
+    const body = {
+      service: 'orders',
+      issues: [
+        {
+          ...issue('eeee5555eeee5555eeee5555eeee5555', 'order:create', 2, 9_00, 9_00, [], 'validation-error', 'validation'),
+          errors: ['required', null, 7, { count: 3 }, { field: '/a', count: 0 }, { field: '/a', count: 2.5 }, { code: 'x', count: '1' }],
+        },
+        {
+          ...issue('ffff6666ffff6666ffff6666ffff6666', 'order:update', 1, 9_00, 9_00, [], 'validation-error', 'validation'),
+          errors: { field: '/a', count: 1 },
+        },
+      ],
+    };
+
+    const accepted = store.addIssues(JSON.parse(JSON.stringify(body)) as MeshIssueBatch);
+
+    expect(accepted).toBe(2);
+    const issues = store.fleet().issues;
+    expect(issues).toHaveLength(2);
+    for (const kept of issues) {
+      expect(kept.errors).toBeUndefined(); // nothing valid to hold -> no `errors` on the issue
+      expect(JSON.parse(JSON.stringify(kept))).not.toHaveProperty('errors');
+    }
+  });
+
+  it('AddIssues_WithoutErrorDetail_OmitsErrors_AndKeepsWhatAnEarlierFlushHeld', () => {
+    const store = new MeshCollectorStore();
+    const fp = 'abab7777abab7777abab7777abab7777';
+    const withErrors = issue(fp, 'order:create', 1, 9_00, 9_00, [], 'validation-error', 'validation');
+    withErrors.errors = MeshIssueErrors.decode([{ code: 'TotalsDisagree', count: 1 }]);
+    store.addIssues(batch('orders', [issue('acac8888acac8888acac8888acac8888', 'order:create', 1, 9_00, 9_00)]));
+    store.addIssues(batch('orders', [withErrors]));
+    store.addIssues(batch('orders', [issue(fp, 'order:create', 1, 9_10, 9_10, [], 'validation-error', 'validation')]));
+
+    const issues = store.fleet().issues;
+    expect(issues.find((x) => x.fingerprint === 'acac8888acac8888acac8888acac8888')!.errors).toBeUndefined();
+    const merged = issues.find((x) => x.fingerprint === fp)!;
+    expect(merged.count).toBe(2);
+    expect(merged.errors?.map((e) => [e.code, e.count])).toEqual([['TotalsDisagree', 1]]); // a flush with none adds none
+  });
+
+  it('FleetFlowStatus_FailedFlow_NamesItsEarliestFailingEvent_NotTheOkThatRanFirst', () => {
+    const store = new MeshCollectorStore();
+    store.addEvents([
+      event('t-1', 's-1', 'frontdoor', 'welcome', 1_000, 'ok'),
+      event('t-1', 's-3', 'audit', 'audit:log', 1_010, 'service-unavailable'),
+      event('t-1', 's-2', 'greeter', 'greet', 1_005, 'validation-error'), // received later, started earlier
+    ]);
+    store.addEvents([event('t-2', 's-4', 'frontdoor', 'welcome', 2_000, 'ok'), event('t-2', 's-5', 'greeter', 'greet', 2_005, 'created')]);
+
+    const flows = store.fleet().traces;
+    expect(flows.find((f) => f.traceId === 't-1')!.status).toBe('validation-error');
+    expect(flows.find((f) => f.traceId === 't-2')!.status).toBe('ok'); // succeeded: the earliest event's
+  });
+
+  it('FleetFlowStatus_EqualStartTimes_KeepReceiptOrder_EvenAfterTheRingWraps', () => {
+    // A ring of 4 wrapped once: slot order is no longer receipt order, but the earlier-received of two failing
+    // events with the same start still names the flow.
+    const store = new MeshCollectorStore(4);
+    store.addEvents([
+      event('old', 'o-1', 'svc', 'topic', 1, 'ok'),
+      event('old', 'o-2', 'svc', 'topic', 2, 'ok'),
+      event('t', 's-1', 'svc', 'topic', 5_000, 'ok'),
+      event('t', 's-2', 'svc', 'topic', 5_010, 'conflict'), // received first
+    ]);
+    store.addEvents([
+      event('t', 's-3', 'svc', 'topic', 5_010, 'timeout'), // same start, received second - lands in slot 0
+      event('t', 's-4', 'svc', 'topic', 5_020, 'not-found'),
+    ]);
+
+    const flow = store.fleet().traces.find((f) => f.traceId === 't')!;
+    expect(flow.events).toBe(4);
+    expect(flow.status).toBe('conflict');
+  });
+
+  it('FleetFlowStatus_IsOmittedWhenTheDecidingEventCarriedNoStatus', () => {
+    const store = new MeshCollectorStore();
+    // A genuinely absent status (JS applies a parameter default for explicit `undefined`, so build directly).
+    const unknown = event('t', 's-2', 'svc', 'topic', 1_005);
+    unknown.status = undefined as unknown as string;
+    store.addEvents([event('t', 's-1', 'svc', 'topic', 1_000, 'ok'), unknown]);
+
+    const flow = store.fleet().traces[0];
+    expect(flow.failed).toBe(true); // an absent status is a failure (the success class is closed)
+    expect(flow.status).toBeUndefined(); // ...but not a status to report
+    expect(JSON.parse(JSON.stringify(flow))).not.toHaveProperty('status');
   });
 
   it('IssuesFeedAbsence_IsFlaggedOnlyWhenFailureNeedsExplaining', () => {

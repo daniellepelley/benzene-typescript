@@ -197,6 +197,7 @@ describe('TempoTraceSource', () => {
     expect(flows[0].durationMs).toBe(55);
     expect(flows[0].services).toEqual(['billing-api']);
     expect(flows[0].events).toBe(0);
+    expect(flows[0].status).toBeUndefined(); // the search summary holds no benzene.status (mesh.md §4: omitted)
     expect(flows[1].traceId).toBe('old');
     expect(router.requests).toBe(1); // recent flows is a single search, no per-row fetch
   });
