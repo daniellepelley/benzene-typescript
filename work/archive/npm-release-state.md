@@ -1,3 +1,11 @@
+> ARCHIVED 2026-10-15: actioned — `0.1.0-beta.2` of all 130 packages is on npm. Verified against
+> the registry, not this doc's claim: the Release workflow run 38694481287 (from `13f30ee`)
+> succeeded after `NPM_TOKEN` was replaced with a granular token that bypasses two-factor; every
+> `@benzenejs/*` package carries `beta` = `0.1.0-beta.2`; and a clean `npm install @benzenejs/core`
+> resolves `0.1.0-beta.2` with its `@benzenejs/*` dependencies at `0.1.0-beta.2`. Two live
+> remainders moved to `work/remaining-items.md`: the 25 August packages still have
+> `latest` = `0.1.0-beta.1`, and publishing has to move off the token before January 2027.
+
 # The npm release is half-published, and the error message hid it
 
 **Status (2026-10-13): publish `0.1.0-beta.2`, all 130 packages as one set.** Every workspace is

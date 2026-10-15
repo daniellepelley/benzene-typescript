@@ -21,3 +21,20 @@ doc it came from; when an item is done, delete it here (and if this file empties
 Context: Option B (a runtime `responseType` token for validated/class-revived responses) was
 considered and deliberately deferred in the archived design note (§5); the `SchemaCasters` seam can
 layer it on later without redesign.
+
+## From `work/archive/npm-release-state.md` (`0.1.0-beta.2` published 2026-10-15)
+
+1. **Point `latest` at `0.1.0-beta.2` on the 25 August packages.** npm sets `latest` on a package's
+   first publish, so the 104 packages created by this release resolve `0.1.0-beta.2` with no tag.
+   The 25 published in August (`@benzenejs/abstractions*`, `ajv`, `auth-*`, `avro`, `aws-lambda*`,
+   `aws-sqs*`, `azure-cosmos-db`) still have `latest` = `0.1.0-beta.1`, the build whose Lambda
+   bindings can acknowledge and lose a returned failure. A maintainer, logged in with two-factor,
+   runs `npm dist-tag add <pkg>@0.1.0-beta.2 latest` for each (and may `npm deprecate` the
+   `0.1.0-beta.1` versions).
+2. **Move publishing off `NPM_TOKEN` before January 2027,** when npm plans to stop bypass-2FA tokens
+   publishing directly. Register a trusted publisher per package (`npm trust github <pkg> --repo
+   daniellepelley/benzene-typescript --file release.yml --allow-publish`), then change `release.yml`
+   so it no longer requires the `NPM_TOKEN` secret, and delete the secret. A package added later
+   needs its first version through staged publishing or a token, since a trusted publisher can only
+   be registered on a package that exists.
+
