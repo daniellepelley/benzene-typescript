@@ -25,9 +25,10 @@ layer it on later without redesign.
 ## From `work/archive/npm-release-state.md` (`0.1.0-beta.2` published 2026-10-15)
 
 1. **Move publishing off `NPM_TOKEN` before January 2027,** when npm plans to stop bypass-2FA tokens
-   publishing directly. Register a trusted publisher per package (`npm trust github <pkg> --repo
-   daniellepelley/benzene-typescript --file release.yml --allow-publish`), then change `release.yml`
-   so it no longer requires the `NPM_TOKEN` secret, and delete the secret. A package added later
-   needs its first version through staged publishing or a token, since a trusted publisher can only
-   be registered on a package that exists.
+   publishing directly. The repository side is done: `release.yml` no longer requires the secret
+   (npm tries trusted publishing first, and without a token a release that adds a package stops and
+   names it), and `scripts/trust-publishers.mjs` registers `release.yml` as every package's trusted
+   publisher. Left, for a maintainer with 2FA (docs/publishing.md, "Registering the trusted
+   publishers"): run the script (two passes of the 5-minute 2FA window for 130 packages), confirm
+   the next release publishes over OIDC, then delete the `NPM_TOKEN` secret.
 

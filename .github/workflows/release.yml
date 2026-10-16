@@ -7,15 +7,12 @@ name: Release
 # prerelease (`0.1.0-beta.N`), and the version string says so.
 #
 # Authentication (see docs/publishing.md):
-#   * The `NPM_TOKEN` repository secret — a granular access token with read AND write access to the
-#     `@benzenejs` scope — is what actually authorises the publish. It is required, because npm has
-#     no "pending publisher" concept: a package that does not exist on the registry yet CANNOT be
-#     created by trusted publishing, only by a token.
-#   * `id-token: write` is still granted, so for any package that HAS a Trusted Publisher registered
-#     for this repository and this workflow file, npm uses OIDC and the token is never exercised.
-#     Registering trusted publishers (npmjs.com -> package -> Settings -> Trusted Publisher:
-#     organization `daniellepelley`, repository `benzene-typescript`, workflow `release.yml`) is
-#     therefore an optional hardening step, done per package, once the package exists.
+#   * Trusted publishing (OIDC) is the primary path: each package registers this repository and
+#     this workflow file as its trusted publisher (a maintainer runs scripts/trust-publishers.mjs
+#     once), so with `id-token: write` npm publishes, and moves `latest`, without a stored secret.
+#   * The `NPM_TOKEN` secret is optional. npm tries OIDC first and falls back to it, and it is
+#     needed only for what OIDC cannot do: create a package that is not on npm yet. Without it, a
+#     release that adds a package stops before publishing anything and names the new package.
 #
 # The publish step is RESUMABLE: it skips every package already on the registry at the current
 # version and publishes the rest. A run that dies partway (npm rate-limits bulk publishing of new
@@ -60,7 +57,7 @@ jobs:
     needs: build-and-verify
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # lets trusted publishing take over for packages that have it registered
+      id-token: write # trusted publishing: npm exchanges this for a short-lived publish token
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -69,20 +66,21 @@ jobs:
           node-version: 22.x
           registry-url: "https://registry.npmjs.org"
 
-      # Without this, setup-node leaves NODE_AUTH_TOKEN at its literal placeholder
-      # (XXXXX-XXXXX-XXXXX-XXXXX) and every publish fails with a 404 that reads like a missing
-      # scope rather than a missing credential. Fail here instead, where the cause is legible.
-      - name: Check the publish credential is present
+      # Not required: trusted publishing needs no secret. Said up front because without one, a
+      # release that adds a package cannot publish it (the publish step names it and stops).
+      - name: Say how this run authenticates
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::The NPM_TOKEN repository secret is not set. Create a granular access token on npmjs.com with read and write access to the @benzenejs scope, add it as the NPM_TOKEN secret, and re-run. See docs/publishing.md."
-            exit 1
+            echo "::notice::No NPM_TOKEN secret: publishing through trusted publishing only, which cannot create a package that is not on npm yet. See docs/publishing.md."
+          else
+            echo "NPM_TOKEN is set: npm tries trusted publishing first and falls back to the token."
           fi
 
       - name: Install
         run: npm ci
+      # Trusted publishing needs npm 11.5.1+, and moving a dist-tag over it a later one still.
       - name: Ensure npm CLI supports trusted publishing
         run: npm install -g npm@latest
       - name: Build (CommonJS dist/ for every package)
@@ -96,7 +94,7 @@ jobs:
       # npm sets `latest` only on a package's first publish, so a package that existed before this
       # release would keep installing its old version by default. Move `latest` to the version just
       # published, for every package; skips those already there and never moves it backwards.
-      # The Promote latest workflow runs this step alone.
+      # To retry just this step, re-run this job: the publish finds nothing left and skips ahead.
       - name: Point latest at this release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

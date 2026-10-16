@@ -3,8 +3,8 @@
 Benzene ships as 129 independent packages on npm under the `@benzenejs` scope (one per `src/*`
 folder — see the workspace layout in the root README). They are released **in lockstep at one
 shared version** by the [`release`](../.github/workflows/release.yml) workflow, which authenticates
-with the `NPM_TOKEN` repository secret and lets **npm trusted publishing** (OpenID Connect) take
-over for any package that has a trusted publisher registered.
+through **npm trusted publishing** (OpenID Connect): no stored secret, for every package that has
+this repository registered as its trusted publisher. A token is needed only to create a package.
 
 ## Pre-1.0: every release is a beta, and `latest` follows it
 
@@ -37,9 +37,9 @@ Pushing a tag `vX.Y.Z` (or running the workflow manually) triggers two jobs:
    are skipped, same as `npm publish --workspaces` would. Then it runs
    `node scripts/promote-latest.mjs`, which points `latest` at the version just published for every
    package not already there. It never moves `latest` backwards, and it fails if any package is
-   missing at this version (finish the publish first). The **Promote latest** workflow (Actions →
-   Promote latest → Run workflow, with an optional dry run) runs that step alone: to retry it, or
-   to fix packages an earlier release left behind.
+   missing at this version (finish the publish first). To retry just that step, re-run the publish
+   job: it finds nothing left to publish and goes straight on to `latest`. (The **Promote latest**
+   workflow runs the step alone too, with an optional dry run, but it needs `NPM_TOKEN`; see below.)
 
    **The publish is resumable, and that is the point.** npm can never re-publish a version, so a
    plain `npm publish --workspaces` is unrecoverable if it stops partway: every re-run dies on the
@@ -48,39 +48,80 @@ Pushing a tag `vX.Y.Z` (or running the workflow manually) triggers two jobs:
    asks the registry what is already out and skips it, finishing a half-done release is just
    re-running the workflow.
 
-## Authentication: why a token, and where OIDC fits
+## Authentication: trusted publishing, and when a token is still needed
 
-Unlike PyPI, **npm cannot pre-register a trusted publisher for a package that doesn't exist yet** —
-there's no "pending publisher" equivalent. A package has to be created by a real, token-authenticated
-publish first, and only then can trusted publishing be configured for it. So the workflow cannot run
-on OIDC alone: it needs a token.
+Releases publish through **npm trusted publishing**. The publish job has `id-token: write`; npm
+exchanges the GitHub Actions identity for a short-lived token scoped to one package, provided that
+package names this repository and `release.yml` as its trusted publisher. There is no long-lived
+secret to leak or rotate, and every publish carries a provenance statement. Moving `latest` works the
+same way.
 
-1. **Set the `NPM_TOKEN` secret** (required). On npmjs.com → **Access Tokens** → **Generate New
-   Token** → **Granular Access Token**, give it **Read and write** access to the `@benzenejs`
-   scope, then add it to the repository as the `NPM_TOKEN` secret (Settings → Secrets and variables
-   → Actions). The workflow checks it is present before building and fails with a clear message if
-   it isn't — an absent secret otherwise leaves `NODE_AUTH_TOKEN` at `actions/setup-node`'s literal
-   `XXXXX-XXXXX-XXXXX-XXXXX` placeholder, and every publish 404s as if the scope didn't exist.
+npm is retiring direct publishing with "bypass 2FA" granular tokens (from January 2027), so trusted
+publishing is the path to keep releases automated.
 
-   `--access public` is passed on every publish because npm defaults new scoped packages to
-   private, which would need a paid plan.
+### Registering the trusted publishers (once, by a maintainer)
 
-2. **Optionally, register a trusted publisher per package.** Once a package exists on the registry,
-   registering this repository and workflow as its trusted publisher means npm authenticates that
-   package's publishes over OIDC and ignores the token entirely — worth doing, but strictly a
-   hardening step, and one that can only ever cover packages that already exist. On npmjs.com, for
-   each package —
-   `npm.com/package/@benzenejs/<name>/access` → **Trusted Publisher** → **GitHub Actions** — add:
+Trust can only be registered for a package that already exists, and only by a logged-in maintainer
+with two-factor authentication: npm refuses a bypass-2FA token for it, so this cannot run in CI.
+From a clone, with npm 11.15 or later:
 
-   | Field | Value |
-   |---|---|
-   | Organization or user | `daniellepelley` |
-   | Repository | `benzene-typescript` |
-   | Workflow filename | `release.yml` |
-   | Allowed actions | `npm publish` |
-   | Environment name | *(leave blank unless you add a matching `environment:` to the `publish` job for required-reviewer approval gating)* |
+```bash
+npm install -g npm@latest
+npm login
+node scripts/trust-publishers.mjs --dry-run   # what it would register
+node scripts/trust-publishers.mjs
+```
 
-   This is a genuinely per-package, click-through step — there is no bulk API for it today.
+For each package it registers GitHub Actions, repository `daniellepelley/benzene-typescript`,
+workflow `release.yml`, allowed to publish. The first registration asks for 2FA; tick **skip
+two-factor authentication for the next 5 minutes** and the rest go straight through. About 80 fit in
+that window, so expect to run it twice: it skips every package already set up, and leaves alone (and
+lists) any package that trusts something else, since npm allows only one trusted publisher per
+package. `npm trust list @benzenejs/<name>` shows a package's setting.
+
+The same setting is on npmjs.com, per package, under **Settings → Trusted Publisher → GitHub
+Actions**:
+
+| Field | Value |
+|---|---|
+| Organization or user | `daniellepelley` |
+| Repository | `benzene-typescript` |
+| Workflow filename | `release.yml` |
+| Allowed actions | `npm publish` |
+| Environment name | *(blank, unless you add a matching `environment:` to the `publish` job for required-reviewer approval)* |
+
+### The `NPM_TOKEN` secret: optional, for new packages
+
+npm has no "pending publisher": a package that is not on npm yet **cannot** be created by trusted
+publishing. So the workflow still accepts an `NPM_TOKEN` secret (a granular access token with read
+and write access to the `@benzenejs` scope). When it is set, npm tries trusted publishing first and
+falls back to the token. When it is not, a release that would add a package stops before publishing
+anything and names the new package, rather than releasing everything else and leaving it behind.
+
+Once every package is registered, delete the secret. The **Promote latest** workflow is the one
+thing that then stops working: npm allows one trusted publisher per package and that is `release.yml`,
+so a separate workflow file cannot move `latest` over OIDC. Re-running the Release publish job does
+the same job.
+
+`--access public` is passed on every publish because npm defaults new scoped packages to private,
+which would need a paid plan.
+
+### Adding a package
+
+A new `src/*` package has to reach npm once before trusted publishing can take it over. Either keep
+`NPM_TOKEN` set for the release that adds it, or publish its first version by hand and then register
+it:
+
+```bash
+npm run build
+cd src/<Benzene.NewPackage>
+npm publish --access public --tag beta   # prompts for 2FA
+cd ../..
+node scripts/trust-publishers.mjs        # registers just the new one; the rest are skipped
+```
+
+Then run the Release workflow as usual. It skips what is already on npm, so the hand-published
+package is not published twice.
 
 ## Cutting a release
 

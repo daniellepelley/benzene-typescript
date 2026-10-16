@@ -8,7 +8,11 @@ name: Promote latest
 #
 # Safe to run any time: it skips packages already at the current version, never moves `latest`
 # backwards, and fails if the current version is not fully published. Tick "dry run" to see what it
-# would change without changing anything. Uses the same NPM_TOKEN as Release (docs/publishing.md).
+# would change without changing anything.
+#
+# Needs the NPM_TOKEN secret. Trusted publishing cannot stand in for it here: npm allows one trusted
+# publisher per package, and that is the Release workflow, whose own last step does this same job
+# over OIDC (re-running its publish job re-runs that step). This workflow is for a token-holder only.
 
 on:
   workflow_dispatch:
@@ -37,7 +41,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::The NPM_TOKEN repository secret is not set. See docs/publishing.md."
+            echo "::error::The NPM_TOKEN repository secret is not set. Without it, re-run the publish job of the latest Release run instead: it moves latest over trusted publishing. See docs/publishing.md."
             exit 1
           fi
 

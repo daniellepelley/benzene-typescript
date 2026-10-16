@@ -12,6 +12,11 @@
  * Interrupt it, re-run it, run it after a partly-successful CI job — it always picks up exactly
  * where it left off, because the registry is the source of truth for what's done.
  *
+ * Authentication is npm's: trusted publishing (OIDC) when the package has a trusted publisher
+ * registered for this repository's Release workflow, otherwise whatever token npm is configured
+ * with. Trusted publishing cannot create a package, so in CI without a token a release that adds a
+ * package stops before publishing anything and names it (docs/publishing.md).
+ *
  * Usage:  node scripts/publish-workspaces.mjs [--dry-run]
  * Env:    NPM_DIST_TAG            dist-tag to publish under (default: beta)
  *         PUBLISH_DELAY_MS        pause between publishes (default: 5000)
@@ -19,7 +24,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { publishablePackages, isPublished } from './workspace-packages.mjs';
+import { publishablePackages, registryState } from './workspace-packages.mjs';
 
 const dryRun = process.argv.includes('--dry-run');
 const tag = process.env.NPM_DIST_TAG || 'beta';
@@ -37,21 +42,23 @@ const packages = publishablePackages();
 console.log(`${packages.length} publishable workspace package(s); checking the registry…`);
 
 const todo = [];
+const newPackages = [];
 let alreadyPublished = 0;
 for (const pkg of packages) {
-  let published;
+  let state;
   try {
-    published = await isPublished(pkg.name, pkg.version);
+    state = await registryState(pkg.name, pkg.version);
   } catch (error) {
     // A registry read that fails is not a reason to abandon a release: try the publish and let npm
     // be the authority. A duplicate comes back as "cannot publish over", which is handled below.
     console.error(`  ${error.message} — will attempt ${pkg.name} anyway.`);
-    published = false;
+    state = { exists: true, published: false };
   }
-  if (published) {
+  if (state.published) {
     alreadyPublished++;
     continue;
   }
+  if (!state.exists) newPackages.push(pkg);
   todo.push(pkg);
 }
 
@@ -59,6 +66,24 @@ console.log(`${alreadyPublished} already published at this version, ${todo.lengt
 if (todo.length === 0) {
   console.log('Nothing to do.');
   process.exit(0);
+}
+
+// Without a token, CI can publish only through trusted publishing, which npm allows for a package
+// that already exists and never for a new one. Stop before publishing anything rather than release
+// all but the new packages: a half-released version is the state this script exists to avoid.
+// (setup-node writes a placeholder when the token is empty; a local run uses `npm login` instead.)
+const ciToken = process.env.NODE_AUTH_TOKEN;
+const ciWithoutToken =
+  process.env.GITHUB_ACTIONS === 'true' && (!ciToken || ciToken === 'XXXXX-XXXXX-XXXXX-XXXXX');
+if (ciWithoutToken && newPackages.length > 0 && !dryRun) {
+  console.error(
+    `${newPackages.length} package(s) are new to npm, and there is no NPM_TOKEN, so this run can ` +
+      `publish only through trusted publishing, which cannot create a package:\n` +
+      `  ${newPackages.map((p) => p.name).join('\n  ')}\n\n` +
+      `Publish each one once by hand (see "Adding a package" in docs/publishing.md), register its ` +
+      `trusted publisher with scripts/trust-publishers.mjs, then re-run this workflow.`,
+  );
+  process.exit(1);
 }
 
 /**
@@ -117,13 +142,12 @@ for (const [index, pkg] of todo.entries()) {
         console.error(
           `\nnpm refused to publish ${pkg.name} as an authentication failure, not a problem with ` +
             `the package.\n\nCheck, in this order:\n` +
-            `  1. The NPM_TOKEN secret is set on the repository and is a granular access token ` +
-            `with read AND write access to the @benzenejs scope (a read-only or expired token ` +
-            `produces exactly this 404).\n` +
-            `  2. If you meant to publish via trusted publishing (OIDC) instead, the package must ` +
-            `already exist on npm and have a Trusted Publisher registered for this repository and ` +
-            `workflow file. npm has no "pending publisher", so a package that does not exist yet ` +
-            `CANNOT be created by OIDC — it needs a token for its first publish.\n`,
+            `  1. The package has a trusted publisher registered for this repository and the ` +
+            `release.yml workflow (npm trust list ${pkg.name}); scripts/trust-publishers.mjs ` +
+            `registers it. npm tries trusted publishing first and falls back to the token.\n` +
+            `  2. If the NPM_TOKEN secret is set, it is a granular access token with read AND write ` +
+            `access to the @benzenejs scope (a read-only or expired token produces exactly this ` +
+            `404).\n`,
         );
         process.exit(1);
       }

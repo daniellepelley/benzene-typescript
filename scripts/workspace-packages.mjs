@@ -70,11 +70,20 @@ export function publishablePackages() {
   return publishable;
 }
 
-/** Whether `name@version` is already on the registry. A plain unauthenticated GET. */
-export async function isPublished(name, version) {
+/**
+ * What the registry holds for `name`: whether the package exists at all, and whether `version` of
+ * it is published. The difference matters for trusted publishing, which can publish a new version
+ * of an existing package but cannot create a package. A plain unauthenticated GET.
+ */
+export async function registryState(name, version) {
   const response = await fetch(`https://registry.npmjs.org/${name.replace('/', '%2F')}`);
-  if (response.status === 404) return false; // package doesn't exist at all yet
+  if (response.status === 404) return { exists: false, published: false };
   if (!response.ok) throw new Error(`Could not read the registry entry for ${name}: HTTP ${response.status}`);
   const metadata = await response.json();
-  return Object.keys(metadata.versions ?? {}).includes(version);
+  return { exists: true, published: Object.keys(metadata.versions ?? {}).includes(version) };
+}
+
+/** Whether `name@version` is already on the registry. */
+export async function isPublished(name, version) {
+  return (await registryState(name, version)).published;
 }

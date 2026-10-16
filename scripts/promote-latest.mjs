@@ -17,7 +17,9 @@
  * means the publish it follows did not finish.
  *
  * Usage:  node scripts/promote-latest.mjs [--dry-run]
- * Env:    NODE_AUTH_TOKEN         npm token with write access to the @benzenejs scope
+ * Auth:   trusted publishing when run by the Release workflow; otherwise an npm token
+ * Env:    NODE_AUTH_TOKEN         npm token with write access to the @benzenejs scope (optional
+ *                                 under trusted publishing)
  *         PROMOTE_DELAY_MS        pause between tag changes (default: 1000)
  *         RATE_LIMIT_BUDGET_MS    total time to spend waiting out 429s (default: 1800000 = 30min)
  */
@@ -147,9 +149,11 @@ async function main() {
           console.error(
             `\nnpm refused to change the '${TAG}' tag of ${pkg.name}: an authentication failure, ` +
               `not a problem with the package.\n` +
-              `Check that NPM_TOKEN is a granular access token with read AND write access to the ` +
-              `@benzenejs scope and "Bypass two-factor authentication" ticked (EOTP means it is ` +
-              `missing). See docs/publishing.md.\n`,
+              `From the Release workflow, check that the package has this repository's release.yml ` +
+              `as its trusted publisher (npm trust list ${pkg.name}). From anywhere else, check that ` +
+              `NPM_TOKEN is a granular access token with read AND write access to the @benzenejs ` +
+              `scope and "Bypass two-factor authentication" ticked (EOTP means it is missing). See ` +
+              `docs/publishing.md.\n`,
           );
           process.exit(1);
         }
