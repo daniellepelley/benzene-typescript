@@ -2,8 +2,9 @@ name: Release
 
 # Builds all 130 Benzene TypeScript packages to CommonJS and publishes them to npm. Fires on a
 # version tag (e.g. `v0.1.0-beta.1`) and is also runnable on demand via the Actions tab. Publishes
-# under the `beta` npm dist-tag, so a plain `npm install @benzenejs/<pkg>` (no tag) never resolves
-# to it.
+# under the `beta` npm dist-tag, then points `latest` at the same version, so a plain
+# `npm install @benzenejs/<pkg>` (no tag) installs this release. Pre-1.0 every version is a
+# prerelease (`0.1.0-beta.N`), and the version string says so.
 #
 # Authentication (see docs/publishing.md):
 #   * The `NPM_TOKEN` repository secret — a granular access token with read AND write access to the
@@ -91,3 +92,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node scripts/publish-workspaces.mjs
+
+      # npm sets `latest` only on a package's first publish, so a package that existed before this
+      # release would keep installing its old version by default. Move `latest` to the version just
+      # published, for every package; skips those already there and never moves it backwards.
+      # The Promote latest workflow runs this step alone.
+      - name: Point latest at this release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/promote-latest.mjs

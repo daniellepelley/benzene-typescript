@@ -24,13 +24,12 @@ layer it on later without redesign.
 
 ## From `work/archive/npm-release-state.md` (`0.1.0-beta.2` published 2026-10-15)
 
-1. **Point `latest` at `0.1.0-beta.2` on the 25 August packages.** npm sets `latest` on a package's
-   first publish, so the 104 packages created by this release resolve `0.1.0-beta.2` with no tag.
-   The 25 published in August (`@benzenejs/abstractions*`, `ajv`, `auth-*`, `avro`, `aws-lambda*`,
-   `aws-sqs*`, `azure-cosmos-db`) still have `latest` = `0.1.0-beta.1`, the build whose Lambda
-   bindings can acknowledge and lose a returned failure. A maintainer, logged in with two-factor,
-   runs `npm dist-tag add <pkg>@0.1.0-beta.2 latest` for each (and may `npm deprecate` the
-   `0.1.0-beta.1` versions).
+1. **Point `latest` at `0.1.0-beta.2` on the 25 August packages.** npm sets `latest` only on a
+   package's first publish, so the 25 first published at `0.1.0-beta.1` (`@benzenejs/abstractions*`,
+   `ajv`, `auth-*`, `avro`, `aws-lambda*`, `aws-sqs*`, `azure-cosmos-db`) still install the August
+   build by default. Release now moves `latest` itself (`scripts/promote-latest.mjs`); for these 25,
+   run the one-off **Promote latest** workflow once from `main`. Delete this item when its run is
+   green and `npm view @benzenejs/aws-lambda dist-tags` shows `latest: 0.1.0-beta.2`.
 2. **Move publishing off `NPM_TOKEN` before January 2027,** when npm plans to stop bypass-2FA tokens
    publishing directly. Register a trusted publisher per package (`npm trust github <pkg> --repo
    daniellepelley/benzene-typescript --file release.yml --allow-publish`), then change `release.yml`

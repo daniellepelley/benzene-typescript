@@ -6,19 +6,20 @@ shared version** by the [`release`](../.github/workflows/release.yml) workflow, 
 with the `NPM_TOKEN` repository secret and lets **npm trusted publishing** (OpenID Connect) take
 over for any package that has a trusted publisher registered.
 
-## Pre-1.0: every release is a beta, and never resolves by default
+## Pre-1.0: every release is a beta, and `latest` follows it
 
 Until Benzene for TypeScript reaches 1.0, every version carries a prerelease identifier —
-`0.1.0-beta.1`, `0.1.0-beta.2`, …, `0.1.0-rc.1`, never a bare `0.1.0` — **and** is published under
-the npm dist-tag `beta`, never `latest`. Both matter, for different reasons:
+`0.1.0-beta.1`, `0.1.0-beta.2`, …, `0.1.0-rc.1`, never a bare `0.1.0` (matching the `-beta.N`
+convention the .NET port uses in `VERSIONING.md`). The version string is what says "early testing,
+not production"; semver-aware tooling treats it as a prerelease wherever it is installed from.
 
-- The dist-tag is what actually protects consumers: `npm install @benzenejs/core` resolves the
-  `latest` tag by default, and since we never publish one, that command **fails outright** rather
-  than silently installing a prerelease. Only an explicit `npm install @benzenejs/core@beta` or
-  `npm install @benzenejs/core@0.1.0-beta.1` will resolve it.
-- The prerelease version segment makes that intent visible in the version number itself (matching
-  the `-beta.N` convention the .NET port already uses in `VERSIONING.md`), and means that if a
-  `latest` tag is ever set by mistake, semver-aware tooling still treats it as a prerelease.
+Each release publishes under the `beta` dist-tag and then points **`latest`** at the same version,
+so `npm install @benzenejs/core` with no tag installs the newest release. This was not always the
+policy: the release used to publish under `beta` only, so that a plain install would fail. npm
+defeats that — it sets `latest` on a package's first publish whatever tag is passed — and the result
+was worse than either choice: after `0.1.0-beta.2`, the 104 packages it created installed
+`0.1.0-beta.2` by default, while the 25 first published at `0.1.0-beta.1` still installed the August
+build. Moving `latest` on every release keeps one command meaning one release.
 
 Inter-package dependencies (`@benzenejs/abstractions: 0.1.0-beta.1`, etc.) stay pinned to the exact
 shared version — a coordinated bump keeps the whole stack installable together.
@@ -33,7 +34,12 @@ Pushing a tag `vX.Y.Z` (or running the workflow manually) triggers two jobs:
 2. **publish** — rebuilds (cheap — a few seconds) and runs `node scripts/publish-workspaces.mjs`,
    which publishes every non-private workspace that isn't already on the registry at this version,
    one at a time, under the `beta` dist-tag. The private workspaces under `test/` and `examples/`
-   are skipped, same as `npm publish --workspaces` would.
+   are skipped, same as `npm publish --workspaces` would. Then it runs
+   `node scripts/promote-latest.mjs`, which points `latest` at the version just published for every
+   package not already there. It never moves `latest` backwards, and it fails if any package is
+   missing at this version (finish the publish first). The **Promote latest** workflow (Actions →
+   Promote latest → Run workflow, with an optional dry run) runs that step alone: to retry it, or
+   to fix packages an earlier release left behind.
 
    **The publish is resumable, and that is the point.** npm can never re-publish a version, so a
    plain `npm publish --workspaces` is unrecoverable if it stops partway: every re-run dies on the
@@ -94,8 +100,8 @@ on OIDC alone: it needs a token.
    ```
 
 3. Watch the `Release` workflow. On success, `npm install @benzenejs/http@<version>` (and friends)
-   resolves the new version, pulling its `@benzenejs/*` dependencies from the registry. A bare
-   `npm install @benzenejs/http` continues to fail outright (no `latest` tag), same as before.
+   resolves the new version, pulling its `@benzenejs/*` dependencies from the registry, and so does
+   a bare `npm install @benzenejs/http`, through `latest`.
 
 ## If a release stops partway
 

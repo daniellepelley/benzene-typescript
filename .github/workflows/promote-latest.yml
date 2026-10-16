@@ -1,0 +1,48 @@
+name: Promote latest
+
+# One-off, run by hand: points the `latest` dist-tag of every @benzenejs package at the version on
+# `main`, so `npm install @benzenejs/<pkg>` with no tag installs the current release. The Release
+# workflow does the same as its last step; this exists to fix packages a past release left behind
+# (after 0.1.0-beta.2, the 25 first published at 0.1.0-beta.1 still had `latest` on the old build),
+# and to re-run that step alone if it ever fails.
+#
+# Safe to run any time: it skips packages already at the current version, never moves `latest`
+# backwards, and fails if the current version is not fully published. Tick "dry run" to see what it
+# would change without changing anything. Uses the same NPM_TOKEN as Release (docs/publishing.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: list the changes without making them"
+        type: boolean
+        default: false
+
+jobs:
+  promote:
+    name: Point latest at the current release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Check the publish credential is present
+        if: ${{ !inputs.dry_run }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::The NPM_TOKEN repository secret is not set. See docs/publishing.md."
+            exit 1
+          fi
+
+      # The script needs only Node and the workspace package.json files, so there is no install.
+      - name: Point latest at each package's current version
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/promote-latest.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
