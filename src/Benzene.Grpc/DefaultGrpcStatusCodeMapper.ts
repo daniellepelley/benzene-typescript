@@ -25,6 +25,8 @@ export class DefaultGrpcStatusCodeMapper implements IGrpcStatusCodeMapper {
     [BenzeneResultStatus.forbidden]: status.PERMISSION_DENIED,
     [BenzeneResultStatus.notFound]: status.NOT_FOUND,
     [BenzeneResultStatus.conflict]: status.ALREADY_EXISTS,
+    [BenzeneResultStatus.preconditionFailed]: status.FAILED_PRECONDITION,
+    [BenzeneResultStatus.preconditionRequired]: status.FAILED_PRECONDITION,
     [BenzeneResultStatus.notImplemented]: status.UNIMPLEMENTED,
     [BenzeneResultStatus.serviceUnavailable]: status.UNAVAILABLE,
     [BenzeneResultStatus.tooManyRequests]: status.RESOURCE_EXHAUSTED,

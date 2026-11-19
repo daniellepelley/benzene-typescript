@@ -10,6 +10,8 @@ export * from './HttpStatusCodeResponseHandler';
 export * from './HttpProblemDetailsResponsePayloadMapper';
 export * from './HttpEndpointAttribute';
 export * from './Extensions';
+export * from './Conditional/EntityTags';
+export * from './Conditional/Preconditions';
 export * from './Routing/IHttpEndpointDefinition';
 export * from './Routing/HttpEndpointDefinition';
 export * from './Routing/IHttpEndpointFinder';

@@ -20,6 +20,10 @@ export function convertHttpStatusCode(httpStatusCode: number): IBenzeneResultOf<
       return BenzeneResult.accepted();
     case 200:
       return BenzeneResult.ok();
+    case 304:
+      // Not a Benzene status: a 304 reaches a client only when it sent If-None-Match, so the copy it
+      // already holds is current (wire-contracts.md §4.1, spec 1.3).
+      return BenzeneResult.ok();
     case 201:
       return BenzeneResult.created();
     case 204:
@@ -30,6 +34,10 @@ export function convertHttpStatusCode(httpStatusCode: number): IBenzeneResultOf<
       return BenzeneResult.badRequest();
     case 409:
       return BenzeneResult.setErrors(BenzeneResultStatus.conflict);
+    case 412:
+      return BenzeneResult.preconditionFailed();
+    case 428:
+      return BenzeneResult.preconditionRequired();
     case 403:
       return BenzeneResult.forbidden();
     case 401:

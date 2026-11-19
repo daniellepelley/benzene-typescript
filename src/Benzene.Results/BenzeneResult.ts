@@ -161,6 +161,22 @@ export const BenzeneResult = {
     return BenzeneResult.setErrors(BenzeneResultStatus.validationError, ...errors);
   },
 
+  /**
+   * A failed result: a precondition the request set does not hold, e.g. an `If-Match` entity tag that
+   * is no longer current (HTTP 412). Spec 1.3.
+   */
+  preconditionFailed<T = VoidResult>(...errors: (string | BenzeneError)[]): IBenzeneResultOf<T> {
+    return BenzeneResult.setErrors(BenzeneResultStatus.preconditionFailed, ...errors);
+  },
+
+  /**
+   * A failed result: the operation requires a precondition (e.g. `If-Match`) and none was sent
+   * (HTTP 428). Spec 1.3.
+   */
+  preconditionRequired<T = VoidResult>(...errors: (string | BenzeneError)[]): IBenzeneResultOf<T> {
+    return BenzeneResult.setErrors(BenzeneResultStatus.preconditionRequired, ...errors);
+  },
+
   serviceUnavailable<T = VoidResult>(...errors: (string | BenzeneError)[]): IBenzeneResultOf<T> {
     return BenzeneResult.setErrors(BenzeneResultStatus.serviceUnavailable, ...errors);
   },

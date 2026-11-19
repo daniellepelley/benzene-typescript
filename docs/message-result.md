@@ -62,12 +62,15 @@ BenzeneResult.forbidden<OrderDto>();
 BenzeneResult.unauthorized<OrderDto>();
 BenzeneResult.serviceUnavailable<OrderDto>();
 BenzeneResult.tooManyRequests<OrderDto>();
+BenzeneResult.preconditionFailed<OrderDto>();   // 412: a stale If-Match (spec 1.3)
+BenzeneResult.preconditionRequired<OrderDto>(); // 428: no If-Match where one is required (spec 1.3)
 BenzeneResult.unexpectedError<OrderDto>('Something went wrong');
 ```
 
 The success-style factories (`ok`, `created`, `accepted`, `updated`, `deleted`, `ignored`) produce
 `isSuccessful === true`. The error-style factories (`notFound`, `badRequest`, `validationError`,
-`forbidden`, `unauthorized`, `serviceUnavailable`, `tooManyRequests`, `unexpectedError`) accept
+`forbidden`, `unauthorized`, `serviceUnavailable`, `tooManyRequests`, `preconditionFailed`,
+`preconditionRequired`, `unexpectedError`) accept
 `...errors: (string | BenzeneError)[]` and produce `isSuccessful === false`. A plain string becomes a
 message-only error, so the common case stays a one-liner; pass a `BenzeneError` when the producer
 knows the `field` the value came from and the `code` of the rule that rejected it, and both reach the
@@ -113,6 +116,8 @@ export const BenzeneResultStatus = {
   notImplemented: 'not-implemented',
   unexpectedError: 'unexpected-error',
   conflict: 'conflict',
+  preconditionFailed: 'precondition-failed',
+  preconditionRequired: 'precondition-required',
   forbidden: 'forbidden',
   unauthorized: 'unauthorized',
   tooManyRequests: 'too-many-requests',
@@ -203,7 +208,9 @@ the result's own success flag: an application-defined *successful* status become
 | `forbidden` | 403 |
 | `not-found` | 404 |
 | `conflict` | 409 |
+| `precondition-failed` | 412 |
 | `validation-error` | 422 |
+| `precondition-required` | 428 |
 | `too-many-requests` | 429 |
 | `unexpected-error` | 500 |
 | `not-implemented` | 501 |
@@ -221,6 +228,28 @@ carries them individually. The Benzene status travels as `benzeneStatus`, becaus
 JSON-negotiated failure is served as `application/problem+json` (XML: `application/problem+xml`). So a
 `BenzeneResult.notFound<OrderDto>('Order 123 not found')` becomes an HTTP `404`, `content-type:
 application/problem+json`, and a body whose `status` is `404` too — not the (empty) `OrderDto` payload.
+
+### Conditional requests (`If-Match`)
+
+Optimistic concurrency is a handler's own check: compare the caller's `If-Match` with the resource's
+current entity tag before changing anything. `Preconditions.checkIfMatch` (`@benzenejs/http`) returns
+`undefined` when it matches, otherwise the failure to answer with — `preconditionRequired` (428) when
+there is no `If-Match`, `preconditionFailed` (412) when it is stale. Pass `false` as the third argument
+to let a request without `If-Match` through. `EntityTags` makes tags (`strong('v2')` → `"v2"`,
+`weak('v2')` → `W/"v2"`) and compares them (`ifMatch` strong, `ifNoneMatch` weak, lists and `*`).
+
+```ts
+import { EntityTags, Preconditions } from '@benzenejs/http';
+
+const failed = Preconditions.checkIfMatch<TaskDto>(request.ifMatch, EntityTags.strong(task.version));
+if (failed) return failed; // 428 or 412, served as application/problem+json
+```
+
+The `If-Match` value reaches the handler however your request carries it: unlike .NET, no enricher binds
+the header onto a request property. The HTTP binding's optional `304 Not Modified` rule for
+`If-None-Match` is not implemented, because a result cannot carry response headers such as `ETag` in
+this port ([wire-contracts §4.1](https://github.com/daniellepelley/Benzene/blob/main/docs/specification/wire-contracts.md)).
+An HTTP client does read a `304` it receives as `ok`.
 
 ### Async/event transports — settlement (ack/nack/retry)
 

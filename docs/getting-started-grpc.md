@@ -233,6 +233,7 @@ pinned by its `grpc-status-mapping.json` conformance fixture:
 | `forbidden` | `PERMISSION_DENIED` |
 | `notFound` | `NOT_FOUND` |
 | `conflict` | `ALREADY_EXISTS` |
+| `preconditionFailed`, `preconditionRequired` | `FAILED_PRECONDITION` |
 | `notImplemented` | `UNIMPLEMENTED` |
 | `serviceUnavailable` | `UNAVAILABLE` |
 | `tooManyRequests` | `RESOURCE_EXHAUSTED` |

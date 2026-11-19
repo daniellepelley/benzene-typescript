@@ -7,11 +7,16 @@ import { BenzeneResult, BenzeneResultStatus } from '@benzenejs/results';
  *
  * The code -> status table is the INVERSE of `@benzenejs/http`'s `DefaultHttpStatusCodeMapper`
  * status -> code table (200->Ok, 201->Created, 202->Accepted, 400->BadRequest, 401->Unauthorized,
- * 403->Forbidden, 404->NotFound, 409->Conflict, 422->ValidationError, 429->TooManyRequests,
- * 500->UnexpectedError, 501->NotImplemented, 503->ServiceUnavailable, 504->Timeout). It carries a
- * few extras the forward table has no single owner for: 204->Ok (the forward table sends both
- * `Updated` and `Deleted` to 204, so the inverse collapses 204 to `Ok`), 408->Timeout, and
- * 502->ServiceUnavailable.
+ * 403->Forbidden, 404->NotFound, 409->Conflict, 412->PreconditionFailed, 422->ValidationError,
+ * 428->PreconditionRequired, 429->TooManyRequests, 500->UnexpectedError, 501->NotImplemented,
+ * 503->ServiceUnavailable, 504->Timeout). It carries a few extras the forward table has no single
+ * owner for: 204->Ok (the forward table sends both `Updated` and `Deleted` to 204, so the inverse
+ * collapses 204 to `Ok`), 304->Ok (spec 1.3: a 304 reaches a client only when it sent
+ * `If-None-Match`, so the copy it holds is current), 408->Timeout, and 502->ServiceUnavailable.
+ *
+ * TS bend: .NET (as of spec 1.3) adds 304/412/428 only to `MapBenzeneResultStatus`; its `Map` and
+ * `NormalizeStatus` partitions still omit them (`Map("412")` reads as "not mapped"). This port adds them
+ * to every partition so all three agree with the spec's reverse table (wire-contracts.md §4.1).
  *
  * C# `null` -> `undefined`; the static class of extension-style helpers becomes an object literal.
  */
@@ -23,6 +28,7 @@ export const BenzeneResultHttpMapper = {
       case '201':
       case '202':
       case '204':
+      case '304':
         return BenzeneResult.set<T>(BenzeneResultHttpMapper.mapBenzeneResultStatus(statusCode), undefined, true);
       case '400':
       case '401':
@@ -30,7 +36,9 @@ export const BenzeneResultHttpMapper = {
       case '404':
       case '408':
       case '409':
+      case '412':
       case '422':
+      case '428':
       case '429':
       case '500':
       case '501':
@@ -48,6 +56,7 @@ export const BenzeneResultHttpMapper = {
     switch (statusCode) {
       case '200':
       case '204':
+      case '304':
         return BenzeneResultStatus.ok;
       case '201':
         return BenzeneResultStatus.created;
@@ -65,6 +74,10 @@ export const BenzeneResultHttpMapper = {
         return BenzeneResultStatus.timeout;
       case '409':
         return BenzeneResultStatus.conflict;
+      case '412':
+        return BenzeneResultStatus.preconditionFailed;
+      case '428':
+        return BenzeneResultStatus.preconditionRequired;
       case '422':
         return BenzeneResultStatus.validationError;
       case '429':
@@ -101,13 +114,16 @@ export const BenzeneResultHttpMapper = {
       case '201':
       case '202':
       case '204':
+      case '304':
       case '400':
       case '401':
       case '403':
       case '404':
       case '408':
       case '409':
+      case '412':
       case '422':
+      case '428':
       case '429':
       case '500':
       case '501':

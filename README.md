@@ -1074,6 +1074,17 @@ next to its C# counterpart:
   - **`httpMappings` by (topic, version).** `IHttpEndpointDefinition` gains an optional `version`
     (`@httpEndpoint` routes carry their handler's); a route on a bare topic attaches to the entry a request
     without a version reaches (the unversioned handler, else the declared default).
+- **spec-1.3.0 (conditional requests) — where the port bends, and why.**
+  - **The HTTP client partitions read 304, 412 and 428.** .NET adds them to
+    `BenzeneResultHttpMapper.MapBenzeneResultStatus` (and `HttpStatusCode.Convert`) only; its `Map` still
+    answers "not mapped" for `412`/`428`/`304` and `NormalizeStatus` leaves them as raw text.
+    `BenzeneResultHttpMapper.map` and `.normalizeStatus` here map them too, so every client path agrees with
+    the spec's reverse table (wire-contracts §4.1).
+  - **`Benzene.Http.Conditional`: `EntityTags` and `Preconditions` only.** Both are frozen object literals
+    (`checkIfMatch` returns `IBenzeneResultOf<T> | undefined` for C#'s nullable result). Not ported:
+    `ConditionalGetResponseHandler` (the 304 MAY needs an `ETag` response header on the result, and results
+    here carry no response headers) and `ConditionalRequestEnricher` (with the request type erased, an
+    enricher fills only a property the deserialized body already has).
 
 ## Multi-language interoperability
 

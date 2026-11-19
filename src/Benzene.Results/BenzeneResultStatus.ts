@@ -22,6 +22,15 @@ export const BenzeneResultStatus = {
   notImplemented: 'not-implemented',
   unexpectedError: 'unexpected-error',
   conflict: 'conflict',
+
+  /**
+   * A precondition the request set on the target's current state does not hold - e.g. an `If-Match`
+   * entity tag that is no longer current. HTTP 412. Spec 1.3.
+   */
+  preconditionFailed: 'precondition-failed',
+
+  /** The operation requires a precondition (e.g. `If-Match`) and none was sent. HTTP 428. Spec 1.3. */
+  preconditionRequired: 'precondition-required',
   forbidden: 'forbidden',
   unauthorized: 'unauthorized',
   tooManyRequests: 'too-many-requests',
@@ -53,6 +62,8 @@ const failureStatuses = new Set([
   'forbidden',
   'not-found',
   'conflict',
+  'precondition-failed',
+  'precondition-required',
   'too-many-requests',
   'timeout',
   'not-implemented',

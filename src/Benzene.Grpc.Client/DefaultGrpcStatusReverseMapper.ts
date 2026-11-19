@@ -24,6 +24,7 @@ export class DefaultGrpcStatusReverseMapper implements IGrpcStatusReverseMapper 
     [status.PERMISSION_DENIED]: BenzeneResultStatus.forbidden,
     [status.NOT_FOUND]: BenzeneResultStatus.notFound,
     [status.ALREADY_EXISTS]: BenzeneResultStatus.conflict,
+    [status.FAILED_PRECONDITION]: BenzeneResultStatus.preconditionFailed,
     [status.UNIMPLEMENTED]: BenzeneResultStatus.notImplemented,
     [status.UNAVAILABLE]: BenzeneResultStatus.serviceUnavailable,
     [status.RESOURCE_EXHAUSTED]: BenzeneResultStatus.tooManyRequests,

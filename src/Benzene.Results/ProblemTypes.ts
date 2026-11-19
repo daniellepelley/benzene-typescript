@@ -31,6 +31,8 @@ const registry: Readonly<Record<string, RegistryRow>> = {
   [BenzeneResultStatus.forbidden]: { type: `${baseUri}forbidden`, title: 'Forbidden', httpStatus: 403 },
   [BenzeneResultStatus.notFound]: { type: `${baseUri}not-found`, title: 'Not found', httpStatus: 404 },
   [BenzeneResultStatus.conflict]: { type: `${baseUri}conflict`, title: 'Conflict', httpStatus: 409 },
+  [BenzeneResultStatus.preconditionFailed]: { type: `${baseUri}precondition-failed`, title: 'Precondition failed', httpStatus: 412 },
+  [BenzeneResultStatus.preconditionRequired]: { type: `${baseUri}precondition-required`, title: 'Precondition required', httpStatus: 428 },
   [BenzeneResultStatus.validationError]: { type: `${baseUri}validation-error`, title: 'Validation failed', httpStatus: 422 },
   [BenzeneResultStatus.tooManyRequests]: { type: `${baseUri}too-many-requests`, title: 'Too many requests', httpStatus: 429 },
   [BenzeneResultStatus.unexpectedError]: { type: `${baseUri}unexpected-error`, title: 'Unexpected error', httpStatus: 500 },
@@ -58,6 +60,12 @@ export const ProblemTypes = {
 
   /** The {@link ProblemDetails.type} URI for `conflict`. */
   conflict: `${baseUri}conflict`,
+
+  /** The {@link ProblemDetails.type} URI for `precondition-failed`. */
+  preconditionFailed: `${baseUri}precondition-failed`,
+
+  /** The {@link ProblemDetails.type} URI for `precondition-required`. */
+  preconditionRequired: `${baseUri}precondition-required`,
 
   /** The {@link ProblemDetails.type} URI for `validation-error`. */
   validationError: `${baseUri}validation-error`,

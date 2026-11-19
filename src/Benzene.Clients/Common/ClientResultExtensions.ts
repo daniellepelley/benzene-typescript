@@ -29,6 +29,7 @@ export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneRe
     case '201':
     case '202':
     case '204':
+    case '304':
       // Success: carry the deserialized payload (mirrors BenzeneResultExtensions.Convert<T>(payload)).
       return BenzeneResult.set<T>(status, payload, true);
     case '400':
@@ -37,7 +38,9 @@ export function convertStatusCode<T>(statusCode: number, payload: T): IBenzeneRe
     case '404':
     case '408':
     case '409':
+    case '412':
     case '422':
+    case '428':
     case '429':
     case '500':
     case '501':
